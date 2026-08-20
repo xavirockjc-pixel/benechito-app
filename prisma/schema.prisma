@@ -1,0 +1,122 @@
+// Esquema de datos Benechito
+// Diseñado para ser PORTABLE: hoy corre en SQLite (local, sin Docker) y
+// migra a PostgreSQL/Supabase cambiando solo el `provider` y `DATABASE_URL`.
+// Por eso se evitan enums nativos y arrays: los estados son String.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Negocio = prospecto y cliente son la misma entidad; cambia el `estado`.
+/// Estados: nuevo, contactado, interesado, visita_agendada,
+///          instalacion_pendiente, punto_activo, reposicion, inactivo
+model Negocio {
+  id            String   @id @default(cuid())
+  // Contacto
+  nombreContacto String
+  nombreNegocio  String
+  whatsapp       String
+  comuna         String
+  ciudad         String?
+  tipoNegocio    String?
+  direccion      String?
+  // Interés (captación)
+  interesPunto   String?  // nivel de interés declarado en el formulario
+  interesHelados Boolean  @default(false)
+  observaciones  String?
+  // Estado comercial (CRM)
+  estado         String   @default("nuevo")
+  origen         String   @default("landing") // landing | manual | otro
+  // Fechas clave
+  fechaIngreso     DateTime  @default(now())
+  fechaInstalacion DateTime?
+  ultimaReposicion DateTime?
+  proximaReposicion DateTime?
+  // Notas internas del equipo
+  notas          String?
+
+  productos   PuntoProducto[]
+  reposiciones Reposicion[]
+  actividades  Actividad[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([estado])
+}
+
+/// Catálogo de productos Benechito.
+/// linea: trufa | cuchufli | helado | proteico
+model Producto {
+  id       String  @id @default(cuid())
+  linea    String
+  nombre   String            // sabor / nombre comercial
+  base     String?           // blanca | cafe (trufas)
+  formato  String?           // "pack 3", "pack 5", "pack 9"
+  sku      String? @unique
+  activo   Boolean @default(true)
+
+  instalaciones PuntoProducto[]
+  reposicionItems ReposicionItem[]
+
+  createdAt DateTime @default(now())
+}
+
+/// Qué productos (y cuántos) hay instalados en la góndola de un negocio.
+model PuntoProducto {
+  id         String   @id @default(cuid())
+  negocio    Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId  String
+  producto   Producto @relation(fields: [productoId], references: [id])
+  productoId String
+  cantidadInstalada Int @default(0)
+
+  @@unique([negocioId, productoId])
+}
+
+/// Registro de cada reposición realizada a un negocio.
+model Reposicion {
+  id        String   @id @default(cuid())
+  negocio   Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId String
+  fecha     DateTime @default(now())
+  notas     String?
+  items     ReposicionItem[]
+}
+
+model ReposicionItem {
+  id           String     @id @default(cuid())
+  reposicion   Reposicion @relation(fields: [reposicionId], references: [id], onDelete: Cascade)
+  reposicionId String
+  producto     Producto   @relation(fields: [productoId], references: [id])
+  productoId   String
+  cantidad     Int        @default(0)
+}
+
+/// Historial / timeline de cada negocio (cambios de estado, notas, contactos).
+model Actividad {
+  id        String   @id @default(cuid())
+  negocio   Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId String
+  tipo      String   // cambio_estado | nota | contacto | instalacion | reposicion | creado
+  descripcion String
+  createdAt DateTime @default(now())
+
+  @@index([negocioId])
+}
+
+/// Usuarios del panel interno (login simple del equipo).
+model Usuario {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  nombre    String
+  passwordHash String
+  rol       String   @default("equipo") // admin | equipo
+  createdAt DateTime @default(now())
+}

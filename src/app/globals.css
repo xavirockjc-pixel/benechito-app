@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+/* ===========================================================
+   BENECHITO — Sistema de marca (helados y dulces artesanales)
+   Paleta oficial del logo: azul Benechito (primario),
+   naranjo/rojo cálido (energía), dorado suave (crecimiento),
+   blanco/crema (fondos luminosos). Estética alegre y limpia.
+   =========================================================== */
+@theme {
+  --color-azul: #1479c4;      /* azul Benechito (primario) */
+  --color-azul-2: #0f5e9c;    /* azul oscuro (hover/acento) */
+  --color-tinta: #123a5c;     /* azul tinta para textos */
+  --color-naranja: #f28a1e;   /* naranjo cálido */
+  --color-naranja-2: #e0730c;
+  --color-rojo: #e23b2c;      /* rojo cálido */
+  --color-dorado: #d8a944;    /* dorado suave */
+  --color-dorado-2: #eccb78;
+  --color-crema: #fdf8ef;     /* fondo luminoso */
+  --color-crema-2: #f5e9d4;
+  --color-verde: #2f9e44;
+
+  /* Alias de compatibilidad para el panel/CRM (colores anteriores) */
+  --color-navy: #123a5c;
+  --color-navy-2: #0f2e49;
+  --color-choco: #123a5c;
+  --color-choco-2: #3c5f7d;
+
+  --font-display: var(--font-baloo), system-ui, sans-serif;
+  --font-body: var(--font-nunito), system-ui, sans-serif;
+  --font-script: var(--font-pacifico), cursive;
+}
+
+:root {
+  --background: var(--color-crema);
+  --foreground: var(--color-tinta);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+}
+
+/* Títulos redondeados tipo logo Benechito */
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Acento manuscrito ("Hecho a lo Benechito") */
+.script {
+  font-family: var(--font-script);
+  font-weight: 400;
+}
+
+/* Fondo luminoso con sutil color de marca */
+.bg-papel {
+  background-color: var(--color-crema);
+  background-image:
+    radial-gradient(circle at 15% 10%, rgba(20, 121, 196, 0.05) 0, transparent 40%),
+    radial-gradient(circle at 85% 20%, rgba(242, 138, 30, 0.05) 0, transparent 38%);
+}
+
+/* Patrón de doodles de dulces (temática del pendón Benechito) */
+.bg-doodles {
+  background-image: url("/marca/doodles.svg");
+  background-size: 300px 300px;
+  background-repeat: repeat;
+}
+
+/* Sello "Hecho a lo Benechito" reutilizable */
+.sello {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.25rem 0.85rem;
+  font-weight: 800;
+}
+
+@keyframes flotar {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.flotar { animation: flotar 5s ease-in-out infinite; }
+
+html { scroll-behavior: smooth; }

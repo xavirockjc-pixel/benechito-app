@@ -1,0 +1,52 @@
+{
+  "id": "benechitoLead001",
+  "name": "Benechito · Nuevo prospecto → WhatsApp",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "nuevo-prospecto",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "b1a11111-1111-4111-8111-111111111111",
+      "name": "Webhook nuevo prospecto",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [420, 300],
+      "webhookId": "nuevo-prospecto"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://evolution:8080/message/sendText/benechito",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "benechito-evo-key-2026" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"56965813188\",\n  \"text\": \"🔔 *Nuevo prospecto Benechito*\\n\\n🏪 {{ $json.body.negocio.nombreNegocio }}\\n👤 {{ $json.body.negocio.nombreContacto }}\\n📱 {{ $json.body.negocio.whatsapp }}\\n📍 {{ $json.body.negocio.comuna }}\\n\\nRevisa el panel para gestionarlo.\"\n}",
+        "options": {}
+      },
+      "id": "c2a22222-2222-4222-8222-222222222222",
+      "name": "Enviar WhatsApp (Evolution)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [720, 300]
+    }
+  ],
+  "connections": {
+    "Webhook nuevo prospecto": {
+      "main": [
+        [
+          { "node": "Enviar WhatsApp (Evolution)", "type": "main", "index": 0 }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}
