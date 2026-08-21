@@ -30,6 +30,9 @@ export default async function ClienteRuta({
     0,
   );
   const wa = cliente.whatsapp.replace(/[^0-9]/g, "");
+  const msgVoy = encodeURIComponent(
+    `Hola${cliente.nombreContacto ? " " + cliente.nombreContacto : ""}, soy de Benechito 🍦. Voy en camino a tu local, ¿te encuentro?`,
+  );
 
   return (
     <div>
@@ -40,6 +43,7 @@ export default async function ClienteRuta({
         <p className="text-sm text-slate-500">
           {cliente.nombreContacto} · {cliente.comuna || "—"}
         </p>
+        {cliente.direccion && <p className="mt-0.5 text-sm text-slate-600">📌 {cliente.direccion}</p>}
         <p className="text-xs text-slate-400">{tipoClienteLabel[cliente.tipoCliente] ?? cliente.tipoCliente}</p>
 
         <div className="mt-3 flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2">
@@ -75,6 +79,17 @@ export default async function ClienteRuta({
             </span>
           )}
         </div>
+
+        {wa && (
+          <a
+            href={`https://wa.me/${wa}?text=${msgVoy}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-2 block text-center text-xs font-semibold text-slate-400 underline"
+          >
+            avisar al cliente que voy (opcional)
+          </a>
+        )}
 
         <div className="mt-2">
           <GuardarUbicacionAqui negocioId={cliente.id} />
