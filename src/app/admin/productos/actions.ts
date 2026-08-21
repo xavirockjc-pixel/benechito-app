@@ -25,6 +25,8 @@ export async function crearProducto(formData: FormData) {
       sku: val(formData, "sku") || null,
       codigoBarras: val(formData, "codigoBarras") || null,
       categoria: val(formData, "categoria") || null,
+      tipo: val(formData, "tipo") === "reventa" ? "reventa" : "propio",
+      costo: val(formData, "costo") ? Number(val(formData, "costo")) : null,
       activo: formData.get("activo") === "si",
     },
   });
@@ -75,6 +77,8 @@ export async function actualizarProducto(formData: FormData) {
       sku: val(formData, "sku") || null,
       codigoBarras: val(formData, "codigoBarras") || null,
       categoria: val(formData, "categoria") || null,
+      tipo: val(formData, "tipo") === "reventa" ? "reventa" : "propio",
+      costo: val(formData, "costo") ? Number(val(formData, "costo")) : null,
       activo: formData.get("activo") === "si",
     },
   });

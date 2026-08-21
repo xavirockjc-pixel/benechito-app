@@ -12,7 +12,7 @@ const inputCls = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 t
 
 export default async function ProduccionPage() {
   const [productos, sabores, ordenes] = await Promise.all([
-    prisma.producto.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
+    prisma.producto.findMany({ where: { activo: true, tipo: "propio" }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.ordenProduccion.findMany({
       orderBy: { createdAt: "desc" },

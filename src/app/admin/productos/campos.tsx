@@ -6,6 +6,11 @@ const LINEAS = [
   { value: "cuchufli", label: "Cuchuflís" },
   { value: "helado", label: "Helados" },
   { value: "proteico", label: "Proteicos" },
+  { value: "bebida", label: "Bebidas" },
+  { value: "snack", label: "Snacks" },
+  { value: "abarrote", label: "Abarrotes" },
+  { value: "distribucion", label: "Distribución" },
+  { value: "otro", label: "Otro" },
 ];
 
 const inputCls =
@@ -20,6 +25,14 @@ export function CamposProducto({ p }: { p?: Producto }) {
       </label>
 
       <label className="text-sm font-bold text-navy">
+        Tipo *
+        <select name="tipo" required defaultValue={p?.tipo ?? "propio"} className={inputCls}>
+          <option value="propio">Propio (lo fabricas)</option>
+          <option value="reventa">Reventa / Distribución (lo compras)</option>
+        </select>
+      </label>
+
+      <label className="text-sm font-bold text-navy">
         Línea *
         <select name="linea" required defaultValue={p?.linea ?? ""} className={inputCls}>
           <option value="">Selecciona…</option>
@@ -31,17 +44,22 @@ export function CamposProducto({ p }: { p?: Producto }) {
 
       <label className="text-sm font-bold text-navy">
         Formato / presentación
-        <input name="formato" placeholder="pack 3, 500ml…" defaultValue={p?.formato ?? ""} className={inputCls} />
+        <input name="formato" placeholder="pack 3, 1.5 L, unidad…" defaultValue={p?.formato ?? ""} className={inputCls} />
+      </label>
+
+      <label className="text-sm font-bold text-navy">
+        Categoría <span className="font-normal text-choco-2">(para agrupar)</span>
+        <input name="categoria" placeholder="Bebidas, Snacks…" defaultValue={p?.categoria ?? ""} className={inputCls} />
+      </label>
+
+      <label className="text-sm font-bold text-navy">
+        Costo <span className="font-normal text-choco-2">(reventa: para el margen)</span>
+        <input type="number" name="costo" min="0" step="1" inputMode="numeric" defaultValue={p?.costo != null ? String(p.costo) : ""} className={inputCls} />
       </label>
 
       <label className="text-sm font-bold text-navy">
         Base <span className="font-normal text-choco-2">(trufas)</span>
         <input name="base" placeholder="blanca / cafe" defaultValue={p?.base ?? ""} className={inputCls} />
-      </label>
-
-      <label className="text-sm font-bold text-navy">
-        Categoría
-        <input name="categoria" defaultValue={p?.categoria ?? ""} className={inputCls} />
       </label>
 
       <label className="text-sm font-bold text-navy">

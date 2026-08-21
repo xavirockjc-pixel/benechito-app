@@ -77,7 +77,10 @@ model Producto {
   formato      String? // "pack 3", "pack 5", "pack 9" (= presentación comercial)
   sku          String? @unique
   codigoBarras String? // EAN / código de barras (v2)
-  categoria    String? // agrupación comercial (v2)
+  categoria    String? // agrupación comercial (Bebidas, Snacks, Distribución…)
+  // tipo: propio (fabricado: producción/sabores) | reventa (comprado y revendido)
+  tipo         String  @default("propio")
+  costo        Decimal? @db.Decimal(12, 2) // costo de compra (para reventa: margen)
   activo       Boolean @default(true)
 
   instalaciones   PuntoProducto[]
