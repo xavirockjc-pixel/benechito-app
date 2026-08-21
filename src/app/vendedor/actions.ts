@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { borrarCookieSesion } from "@/lib/auth";
+import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
 import { estadoPagoDe, MEDIOS_PAGO } from "@/lib/dominio/ventas";
 
 type LineaTerreno = { productoId: string; cantidad: number; precioUnit: number };
@@ -12,6 +12,29 @@ type LineaTerreno = { productoId: string; cantidad: number; precioUnit: number }
 export async function logout() {
   await borrarCookieSesion();
   redirect("/login");
+}
+
+/** Ubicación (vehículo) asignada al vendedor logueado, o null. */
+async function miVehiculoId(): Promise<string | null> {
+  const u = await usuarioActual();
+  if (!u) return null;
+  const usuario = await prisma.usuario.findUnique({ where: { id: u.sub }, select: { vehiculoId: true } });
+  return usuario?.vehiculoId ?? null;
+}
+
+/** La bodega principal (primera ubicación tipo bodega). */
+async function bodegaId(): Promise<string | null> {
+  const b = await prisma.ubicacion.findFirst({ where: { tipo: "bodega" } });
+  return b?.id ?? null;
+}
+
+/** Aplica una variación de stock a una ubicación (upsert). */
+async function aplicarDelta(productoId: string, ubicacionId: string, delta: number) {
+  await prisma.stock.upsert({
+    where: { productoId_ubicacionId: { productoId, ubicacionId } },
+    update: { cantidad: { increment: delta } },
+    create: { productoId, ubicacionId, cantidad: delta },
+  });
 }
 
 /** Recalcula el estado de pago de una venta según sus abonos. */
@@ -26,9 +49,9 @@ async function recalcularEstadoPago(ventaId: string) {
 }
 
 /**
- * Venta en terreno: crea la venta al cliente con los precios de su lista. Según el modo
- * de pago queda pagada (efectivo/transferencia) o a crédito (pendiente → cuenta corriente).
- * (El descuento de stock del vehículo se conecta en la parte de "carga de ruta".)
+ * Venta en terreno: crea la venta al cliente con los precios de su lista y DESCUENTA
+ * del stock del camión del vendedor (registra el movimiento). Según el modo de pago
+ * queda pagada (efectivo/transferencia) o a crédito (pendiente → cuenta corriente).
  */
 export async function venderTerreno(formData: FormData) {
   const negocioId = String(formData.get("negocioId") ?? "").trim();
@@ -47,25 +70,41 @@ export async function venderTerreno(formData: FormData) {
 
   const total = items.reduce((s, i) => s + i.precioUnit * i.cantidad, 0);
 
-  const ubicacion =
-    (await prisma.ubicacion.findFirst({ where: { tipo: "vehiculo" } })) ??
-    (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } })) ??
-    (await prisma.ubicacion.findFirst());
-  if (!ubicacion) return;
+  // Ubicación de la venta = camión del vendedor (o el primer vehículo / sala como respaldo).
+  const ubicacionId =
+    (await miVehiculoId()) ??
+    (await prisma.ubicacion.findFirst({ where: { tipo: "vehiculo" } }))?.id ??
+    (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } }))?.id ??
+    (await prisma.ubicacion.findFirst())?.id;
+  if (!ubicacionId) return;
 
   const aCredito = modo === "credito";
   const medio = (MEDIOS_PAGO as readonly string[]).includes(modo) ? modo : "efectivo";
 
-  await prisma.venta.create({
+  const venta = await prisma.venta.create({
     data: {
       negocioId,
-      ubicacionId: ubicacion.id,
+      ubicacionId,
       total,
       estadoPago: aCredito ? "pendiente" : "pagado",
       documento: "boleta",
       ...(aCredito ? {} : { pagos: { create: { medio, monto: total } } }),
     },
   });
+
+  // Descuenta del camión y registra el movimiento por cada línea.
+  for (const it of items) {
+    await aplicarDelta(it.productoId, ubicacionId, -it.cantidad);
+    await prisma.movimientoStock.create({
+      data: {
+        productoId: it.productoId,
+        tipo: "venta",
+        ubicacionOrigenId: ubicacionId,
+        cantidad: it.cantidad,
+        referencia: venta.id,
+      },
+    });
+  }
 
   await prisma.actividad.create({
     data: {
@@ -175,4 +214,64 @@ export async function guardarUbicacionCliente(formData: FormData) {
 
   revalidatePath(`/vendedor/cliente/${negocioId}`);
   redirect(`/vendedor/cliente/${negocioId}`);
+}
+
+// ===========================================================================
+//  Camión del vendedor (carga / venta / devolución)
+// ===========================================================================
+
+/** Asigna el vehículo con el que trabaja el vendedor. */
+export async function asignarVehiculo(formData: FormData) {
+  const vehiculoId = String(formData.get("vehiculoId") ?? "").trim() || null;
+  const u = await usuarioActual();
+  if (!u) return;
+  await prisma.usuario.update({ where: { id: u.sub }, data: { vehiculoId } });
+  revalidatePath("/vendedor/camion");
+}
+
+/** Carga producto al camión: transferencia bodega → mi vehículo. */
+export async function cargarVehiculo(formData: FormData) {
+  const productoId = String(formData.get("productoId") ?? "").trim();
+  const cantidad = Number(String(formData.get("cantidad") ?? "").trim());
+  if (!productoId || !Number.isFinite(cantidad) || cantidad <= 0) return;
+
+  const vehId = await miVehiculoId();
+  const bod = await bodegaId();
+  if (!vehId || !bod) return;
+
+  await aplicarDelta(productoId, bod, -cantidad);
+  await aplicarDelta(productoId, vehId, cantidad);
+  await prisma.movimientoStock.create({
+    data: { productoId, tipo: "transferencia", ubicacionOrigenId: bod, ubicacionDestinoId: vehId, cantidad },
+  });
+
+  revalidatePath("/vendedor/camion");
+}
+
+/**
+ * Devuelve a bodega TODO lo que quedó en el camión (lo que no se vendió).
+ * Se suma automáticamente al stock de bodega y el camión queda en cero.
+ */
+export async function devolverTodoABodega() {
+  const vehId = await miVehiculoId();
+  const bod = await bodegaId();
+  if (!vehId || !bod) return;
+
+  const enCamion = await prisma.stock.findMany({ where: { ubicacionId: vehId, cantidad: { gt: 0 } } });
+  for (const s of enCamion) {
+    await aplicarDelta(s.productoId, bod, s.cantidad);
+    await aplicarDelta(s.productoId, vehId, -s.cantidad);
+    await prisma.movimientoStock.create({
+      data: {
+        productoId: s.productoId,
+        tipo: "transferencia",
+        ubicacionOrigenId: vehId,
+        ubicacionDestinoId: bod,
+        cantidad: s.cantidad,
+        referencia: "devolucion-ruta",
+      },
+    });
+  }
+
+  revalidatePath("/vendedor/camion");
 }

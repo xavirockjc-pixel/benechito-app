@@ -143,6 +143,10 @@ model Usuario {
   activo       Boolean  @default(true)
   createdAt    DateTime @default(now())
 
+  // Vehículo/ubicación con la que trabaja este usuario (vendedor/chofer).
+  vehiculo     Ubicacion? @relation("UsuarioVehiculo", fields: [vehiculoId], references: [id])
+  vehiculoId   String?
+
   // --- v2: back-relations ---
   clientesAsignados Negocio[]   @relation("VendedorClientes")
   ventasRegistradas Venta[]     @relation("VendedorVentas")
@@ -184,6 +188,7 @@ model Ubicacion {
   movimientosOrigen  MovimientoStock[] @relation("MovOrigen")
   movimientosDestino MovimientoStock[] @relation("MovDestino")
   pedidosOrigen      Pedido[]          @relation("PedidoOrigen")
+  usuarios           Usuario[]         @relation("UsuarioVehiculo")
 
   @@index([sucursalId])
 }

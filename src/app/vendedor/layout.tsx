@@ -43,13 +43,15 @@ export default async function VendedorLayout({
         <Link href="/vendedor" className="flex flex-col items-center gap-0.5 px-4 py-1 font-semibold text-slate-700">
           <span className="text-lg">🏪</span> Clientes
         </Link>
-        <Link href="/vendedor/nuevo" className="flex flex-col items-center gap-0.5 px-4 py-1 font-semibold text-slate-700">
-          <span className="text-lg">➕</span> Nuevo
-        </Link>
-        <Link href="/vendedor/ruta" className="flex flex-col items-center gap-0.5 px-4 py-1 font-semibold text-slate-700">
+        <Link href="/vendedor/ruta" className="flex flex-col items-center gap-0.5 px-3 py-1 font-semibold text-slate-700">
           <span className="text-lg">🚚</span> Ruta
         </Link>
-        <span className="truncate px-2 text-right text-[10px] text-slate-400">{usuario?.nombre}</span>
+        <Link href="/vendedor/camion" className="flex flex-col items-center gap-0.5 px-3 py-1 font-semibold text-slate-700">
+          <span className="text-lg">📦</span> Camión
+        </Link>
+        <Link href="/vendedor/nuevo" className="flex flex-col items-center gap-0.5 px-3 py-1 font-semibold text-slate-700">
+          <span className="text-lg">➕</span> Nuevo
+        </Link>
       </nav>
     </div>
   );
