@@ -7,15 +7,20 @@ import { prisma } from "@/lib/prisma";
 const val = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const num = (fd: FormData, k: string) => Number(val(fd, k));
 
-/** Crea una orden de producción (planificada). */
+/** Crea una orden de producción (planificada). El objetivo es "prod:<id>" o "sab:<id>". */
 export async function crearOP(formData: FormData) {
-  const productoId = val(formData, "productoId");
+  const objetivo = val(formData, "objetivo"); // "prod:xxx" | "sab:yyy"
   const cantidadPlan = num(formData, "cantidadPlan");
-  if (!productoId || !Number.isFinite(cantidadPlan) || cantidadPlan <= 0) return;
+  if (!objetivo || !Number.isFinite(cantidadPlan) || cantidadPlan <= 0) return;
+
+  const [tipo, refId] = objetivo.split(":");
+  const esSabor = tipo === "sab";
+  if (!refId) return;
 
   const op = await prisma.ordenProduccion.create({
     data: {
-      productoId,
+      productoId: esSabor ? null : refId,
+      saborId: esSabor ? refId : null,
       cantidadPlan,
       lote: val(formData, "lote") || null,
       responsable: val(formData, "responsable") || null,
@@ -67,22 +72,31 @@ export async function terminarOP(formData: FormData) {
     },
   });
 
-  // Ingreso a bodega del producto terminado.
+  // Ingreso a bodega de lo producido: si es SABOR va al stock de sabores; si es
+  // PRODUCTO (pack) va al stock de productos (con su movimiento).
   if (destinoId && cantidadReal > 0) {
-    await prisma.stock.upsert({
-      where: { productoId_ubicacionId: { productoId: op.productoId, ubicacionId: destinoId } },
-      update: { cantidad: { increment: cantidadReal } },
-      create: { productoId: op.productoId, ubicacionId: destinoId, cantidad: cantidadReal },
-    });
-    await prisma.movimientoStock.create({
-      data: {
-        productoId: op.productoId,
-        tipo: "produccion",
-        ubicacionDestinoId: destinoId,
-        cantidad: cantidadReal,
-        referencia: op.id,
-      },
-    });
+    if (op.saborId) {
+      await prisma.stockSabor.upsert({
+        where: { saborId_ubicacionId: { saborId: op.saborId, ubicacionId: destinoId } },
+        update: { cantidad: { increment: cantidadReal } },
+        create: { saborId: op.saborId, ubicacionId: destinoId, cantidad: cantidadReal },
+      });
+    } else if (op.productoId) {
+      await prisma.stock.upsert({
+        where: { productoId_ubicacionId: { productoId: op.productoId, ubicacionId: destinoId } },
+        update: { cantidad: { increment: cantidadReal } },
+        create: { productoId: op.productoId, ubicacionId: destinoId, cantidad: cantidadReal },
+      });
+      await prisma.movimientoStock.create({
+        data: {
+          productoId: op.productoId,
+          tipo: "produccion",
+          ubicacionDestinoId: destinoId,
+          cantidad: cantidadReal,
+          referencia: op.id,
+        },
+      });
+    }
   }
 
   revalidatePath(`/admin/produccion/${id}`);

@@ -397,9 +397,12 @@ model Preventa {
 /// Orden de producción: al terminarse ingresa el producto fabricado a bodega.
 /// (Recetas, materias primas y trazabilidad de lote se amplían más adelante.)
 model OrdenProduccion {
-  id           String   @id @default(cuid())
-  producto     Producto @relation(fields: [productoId], references: [id])
-  productoId   String
+  id           String    @id @default(cuid())
+  // Produce un PRODUCTO (pack) o un SABOR (para reposición). Uno de los dos.
+  producto     Producto? @relation(fields: [productoId], references: [id])
+  productoId   String?
+  sabor        Sabor?    @relation(fields: [saborId], references: [id])
+  saborId      String?
   cantidadPlan Int
   cantidadReal Int?
   merma        Int      @default(0)
@@ -467,8 +470,9 @@ model Sabor {
   activo    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  stock           StockSabor[]
-  reposicionItems ReposicionItem[]
+  stock             StockSabor[]
+  reposicionItems   ReposicionItem[]
+  ordenesProduccion OrdenProduccion[]
 
   @@index([linea])
 }

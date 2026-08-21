@@ -15,9 +15,15 @@ export default async function FichaOP({ params }: { params: Promise<{ id: string
   const { id } = await params;
   const op = await prisma.ordenProduccion.findUnique({
     where: { id },
-    include: { producto: { select: { nombre: true } }, ubicacionDestino: { select: { nombre: true } } },
+    include: {
+      producto: { select: { nombre: true } },
+      sabor: { select: { nombre: true } },
+      ubicacionDestino: { select: { nombre: true } },
+    },
   });
   if (!op) notFound();
+  const objetivoNombre = op.producto?.nombre ?? op.sabor?.nombre ?? "—";
+  const esSabor = Boolean(op.saborId);
 
   const bodegas = await prisma.ubicacion.findMany({ where: { tipo: "bodega", activo: true }, orderBy: { nombre: "asc" } });
   const c = estadoOPColor[op.estado];
@@ -29,7 +35,10 @@ export default async function FichaOP({ params }: { params: Promise<{ id: string
 
       <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">{op.producto.nombre}</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">
+            {objetivoNombre}
+            {esSabor && <span className="ml-2 rounded bg-blue-100 px-2 py-0.5 text-xs font-bold text-blue-700">sabor</span>}
+          </h1>
           <p className="text-sm text-slate-500">
             Plan: {op.cantidadPlan} u.{op.lote ? ` · lote ${op.lote}` : ""}{op.responsable ? ` · ${op.responsable}` : ""}
           </p>
