@@ -58,6 +58,7 @@ model Negocio {
   pedidos      Pedido[]
   ventas       Venta[]
   preventas    Preventa[]
+  paradasRuta  ParadaRuta[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -153,6 +154,7 @@ model Usuario {
   clientesAsignados Negocio[]   @relation("VendedorClientes")
   ventasRegistradas Venta[]     @relation("VendedorVentas")
   auditorias        Auditoria[]
+  rutas             Ruta[]      @relation("RutaVendedor")
 }
 
 // ===========================================================================
@@ -408,4 +410,42 @@ model OrdenProduccion {
   fechaTermino DateTime?
 
   @@index([estado])
+}
+
+// ===========================================================================
+//  v2 — RUTA (planificación y ejecución de la ruta del vendedor)
+// ===========================================================================
+
+/// Ruta de un día asignada a un vendedor. Deja registro de lo planificado y hecho.
+model Ruta {
+  id         String   @id @default(cuid())
+  nombre     String?
+  fecha      DateTime @default(now())
+  vendedor   Usuario? @relation("RutaVendedor", fields: [vendedorId], references: [id])
+  vendedorId String?
+  // estado: planificada | en_curso | cerrada
+  estado     String   @default("planificada")
+  notas      String?
+  createdAt  DateTime @default(now())
+
+  paradas ParadaRuta[]
+
+  @@index([vendedorId])
+  @@index([estado])
+}
+
+/// Parada de una ruta = un cliente a visitar, con su orden y resultado.
+model ParadaRuta {
+  id        String  @id @default(cuid())
+  ruta      Ruta    @relation(fields: [rutaId], references: [id], onDelete: Cascade)
+  rutaId    String
+  negocio   Negocio @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId String
+  orden     Int     @default(0)
+  // estado: pendiente | vendido | no_compro | no_estaba | visitado
+  estado    String  @default("pendiente")
+  notas     String?
+
+  @@unique([rutaId, negocioId])
+  @@index([rutaId])
 }
