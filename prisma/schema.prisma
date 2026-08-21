@@ -114,12 +114,15 @@ model Reposicion {
   items     ReposicionItem[]
 }
 
+/// Ítem de reposición: puede ser por producto (pack) o por SABOR (reposición de Puntos).
 model ReposicionItem {
   id           String     @id @default(cuid())
   reposicion   Reposicion @relation(fields: [reposicionId], references: [id], onDelete: Cascade)
   reposicionId String
-  producto     Producto   @relation(fields: [productoId], references: [id])
-  productoId   String
+  producto     Producto?  @relation(fields: [productoId], references: [id])
+  productoId   String?
+  sabor        Sabor?     @relation(fields: [saborId], references: [id])
+  saborId      String?
   cantidad     Int        @default(0)
 }
 
@@ -464,7 +467,8 @@ model Sabor {
   activo    Boolean  @default(true)
   createdAt DateTime @default(now())
 
-  stock StockSabor[]
+  stock           StockSabor[]
+  reposicionItems ReposicionItem[]
 
   @@index([linea])
 }

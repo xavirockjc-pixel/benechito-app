@@ -107,8 +107,8 @@ export default async function ClienteRuta({
         <Link href={`/vendedor/cliente/${cliente.id}/resultado`} className="rounded-2xl border-2 border-slate-200 bg-white py-6 text-center text-base font-extrabold text-slate-700 active:bg-slate-50">
           📝<br />Resultado
         </Link>
-        <Link href={`/vendedor/cliente/${cliente.id}/vender`} className="rounded-2xl border-2 border-slate-200 bg-white py-6 text-center text-base font-extrabold text-slate-700 active:bg-slate-50">
-          📦<br />Entregar
+        <Link href={`/vendedor/cliente/${cliente.id}/reponer`} className="rounded-2xl border-2 border-slate-200 bg-white py-6 text-center text-base font-extrabold text-slate-700 active:bg-slate-50">
+          🍫<br />Reponer
         </Link>
       </div>
 

@@ -254,6 +254,45 @@ export async function cargarSabor(formData: FormData) {
   revalidatePath("/vendedor/camion");
 }
 
+/**
+ * Reposición POR SABOR de un Punto: el vendedor cuenta cuántas de cada sabor dejó.
+ * Descuenta de su caja (StockSabor del camión) y deja el registro de la reposición.
+ */
+export async function reponerPunto(formData: FormData) {
+  const negocioId = String(formData.get("negocioId") ?? "").trim();
+  if (!negocioId) return;
+
+  const vehId = await miVehiculoId();
+  if (!vehId) return;
+
+  const sabores = await prisma.sabor.findMany({ where: { activo: true }, select: { id: true } });
+  const items: { saborId: string; cantidad: number }[] = [];
+  for (const s of sabores) {
+    const c = Number(String(formData.get(`sabor_${s.id}`) ?? "").trim());
+    if (Number.isFinite(c) && c > 0) items.push({ saborId: s.id, cantidad: c });
+  }
+  if (items.length === 0) return;
+
+  // Descuenta de la caja (camión) por sabor.
+  for (const it of items) await aplicarDeltaSabor(it.saborId, vehId, -it.cantidad);
+
+  const total = items.reduce((s, i) => s + i.cantidad, 0);
+  await prisma.reposicion.create({
+    data: {
+      negocioId,
+      notas: `Reposición por sabor: ${total} u.`,
+      items: { create: items.map((i) => ({ saborId: i.saborId, cantidad: i.cantidad })) },
+    },
+  });
+  await prisma.negocio.update({ where: { id: negocioId }, data: { ultimaReposicion: new Date() } });
+  await prisma.actividad.create({
+    data: { negocioId, tipo: "reposicion", descripcion: `Reposición por sabor: ${total} unidades` },
+  });
+
+  revalidatePath(`/vendedor/cliente/${negocioId}`);
+  redirect(`/vendedor/cliente/${negocioId}`);
+}
+
 /** Carga producto al camión: transferencia bodega → mi vehículo. */
 export async function cargarVehiculo(formData: FormData) {
   const productoId = String(formData.get("productoId") ?? "").trim();
