@@ -10,6 +10,7 @@ import {
 } from "@/lib/dominio/pedidos";
 import { listaParaCliente, tipoClienteLabel } from "@/lib/dominio/precios";
 import { agregarItem, quitarItem, cambiarEstadoPedido, eliminarPedido } from "../actions";
+import { generarVenta } from "../../ventas/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,7 @@ export default async function FichaPedido({
     include: {
       negocio: true,
       items: { include: { producto: true }, orderBy: { producto: { nombre: "asc" } } },
+      venta: { select: { id: true } },
     },
   });
   if (!pedido) notFound();
@@ -181,6 +183,29 @@ export default async function FichaPedido({
                 El precio se toma de la lista <strong>{lista?.nombre ?? "automática"}</strong> del cliente.
               </p>
             </form>
+          </section>
+
+          {/* Venta asociada */}
+          <section className="mt-5 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+            <h2 className="mb-2 text-sm font-bold text-slate-900">Venta</h2>
+            {pedido.venta ? (
+              <Link
+                href={`/admin/ventas/${pedido.venta.id}`}
+                className="inline-block rounded-lg bg-green-600 px-4 py-2 text-sm font-bold text-white transition hover:brightness-105"
+              >
+                Ver venta →
+              </Link>
+            ) : pedido.items.length > 0 ? (
+              <form action={generarVenta}>
+                <input type="hidden" name="pedidoId" value={pedido.id} />
+                <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-bold text-white transition hover:brightness-105">
+                  Generar venta ({fmtCLP(total)})
+                </button>
+                <p className="mt-2 text-xs text-slate-400">Crea la venta y su cobro. El pedido sigue su propio estado.</p>
+              </form>
+            ) : (
+              <p className="text-sm text-slate-500">Agrega productos para generar la venta.</p>
+            )}
           </section>
 
           {pedido.notas && (

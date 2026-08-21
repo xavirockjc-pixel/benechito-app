@@ -10,6 +10,7 @@ import {
   actualizarClasificacion,
 } from "../actions";
 import { TIPOS_CLIENTE, tipoClienteLabel, canalLabel } from "@/lib/dominio/precios";
+import { fmtCLP } from "@/lib/dominio/pedidos";
 
 export const dynamic = "force-dynamic";
 
@@ -31,10 +32,19 @@ export default async function FichaNegocio({
       actividades: { orderBy: { createdAt: "desc" } },
       productos: { include: { producto: true } },
       reposiciones: { orderBy: { fecha: "desc" }, take: 5 },
+      ventas: { include: { pagos: { select: { monto: true } } }, orderBy: { fecha: "desc" } },
     },
   });
 
   if (!negocio) notFound();
+
+  // Cuenta corriente: total vendido, pagado y saldo (deuda) del cliente.
+  const ccTotal = negocio.ventas.reduce((s, v) => s + Number(v.total), 0);
+  const ccPagado = negocio.ventas.reduce(
+    (s, v) => s + v.pagos.reduce((a, p) => a + Number(p.monto), 0),
+    0,
+  );
+  const ccSaldo = ccTotal - ccPagado;
   const meta = estadoMeta[negocio.estado as Estado];
   const waLink = `https://wa.me/${negocio.whatsapp.replace(/[^0-9]/g, "")}`;
 
@@ -114,6 +124,33 @@ export default async function FichaNegocio({
               <Dato label="Interés en helados" valor={negocio.interesHelados ? "Sí 🍦" : "No"} />
               <Dato label="Origen" valor={negocio.origen} />
             </dl>
+          </Card>
+
+          {/* Cuenta corriente */}
+          <Card titulo="Cuenta corriente">
+            {negocio.ventas.length === 0 ? (
+              <p className="text-sm text-choco-2">Sin ventas registradas.</p>
+            ) : (
+              <div className="flex flex-wrap gap-4 text-sm">
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-choco-2">Vendido</p>
+                  <p className="font-bold text-navy">{fmtCLP(ccTotal)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-choco-2">Pagado</p>
+                  <p className="font-bold text-navy">{fmtCLP(ccPagado)}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-wide text-choco-2">Saldo (deuda)</p>
+                  <p className={`font-extrabold ${ccSaldo > 0 ? "text-rojo" : "text-verde"}`}>
+                    {fmtCLP(ccSaldo)}
+                  </p>
+                </div>
+                <div className="ml-auto self-center">
+                  <span className="text-xs text-choco-2">{negocio.ventas.length} venta(s)</span>
+                </div>
+              </div>
+            )}
           </Card>
 
           {/* Clasificación comercial */}
