@@ -110,6 +110,12 @@ export default async function AdminLayout({
 
         {/* Usuario */}
         <div className="border-t border-slate-800 pt-4">
+          <Link
+            href="/vendedor"
+            className="mb-3 flex items-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
+          >
+            📱 App Vendedor
+          </Link>
           <p className="text-sm font-bold text-white">{usuario?.nombre}</p>
           <p className="mb-3 truncate text-xs text-slate-500">{usuario?.email}</p>
           <form action={logout}>

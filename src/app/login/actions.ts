@@ -32,5 +32,8 @@ export async function login(
   });
   await crearCookieSesion(token);
 
-  redirect(next.startsWith("/admin") ? next : "/admin");
+  // Destino: respeta `next` si es una zona válida; si no, según el rol.
+  const zonaValida = next.startsWith("/admin") || next.startsWith("/vendedor");
+  const porRol = ["vendedor", "chofer"].includes(usuario.rol) ? "/vendedor" : "/admin";
+  redirect(zonaValida ? next : porRol);
 }

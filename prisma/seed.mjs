@@ -90,6 +90,19 @@ async function main() {
   });
   console.log(`✔ Usuario admin: ${email}`);
 
+  // Usuario vendedor (para la app de terreno /vendedor)
+  await prisma.usuario.upsert({
+    where: { email: "vendedor@benechito.com" },
+    update: {},
+    create: {
+      email: "vendedor@benechito.com",
+      nombre: "Vendedor Ruta",
+      rol: "vendedor",
+      passwordHash: await bcrypt.hash("benechito123", 10),
+    },
+  });
+  console.log("✔ Usuario vendedor: vendedor@benechito.com");
+
   // Negocios de ejemplo (puedes borrarlos desde el panel)
   const ejemplos = [
     { nombreContacto: "Rosa Pérez", nombreNegocio: "Almacén Doña Rosa", whatsapp: "+56 9 1111 1111", comuna: "Puente Alto", tipoNegocio: "Almacén", estado: "punto_activo", interesHelados: true },
