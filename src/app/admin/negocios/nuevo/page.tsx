@@ -7,7 +7,7 @@ const tipos = ["Almacén", "Minimarket", "Kiosco", "Botillería", "Panadería", 
 export default function NuevoNegocio() {
   return (
     <div>
-      <Link href="/panel/negocios" className="text-sm font-semibold text-naranja">
+      <Link href="/admin/negocios" className="text-sm font-semibold text-naranja">
         ← Volver
       </Link>
       <h1 className="mt-2 text-2xl font-extrabold text-navy">Nuevo negocio</h1>

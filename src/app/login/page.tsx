@@ -33,7 +33,7 @@ export default function LoginPage({
             Acceso del equipo
           </p>
 
-          <input type="hidden" name="next" value={next ?? "/panel"} />
+          <input type="hidden" name="next" value={next ?? "/admin"} />
 
           <label className="mt-6 block text-sm font-bold text-navy">
             Email

@@ -78,7 +78,7 @@ function Bloque({
         {negocios.map((n) => (
           <Link
             key={n.id}
-            href={`/panel/negocios/${n.id}`}
+            href={`/admin/negocios/${n.id}`}
             className="flex items-center justify-between border-b border-crema-2 px-4 py-3 last:border-0 hover:bg-crema/40"
           >
             <div>

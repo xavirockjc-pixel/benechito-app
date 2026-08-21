@@ -29,12 +29,12 @@ export default async function Dashboard() {
   });
 
   const kpis = [
-    { label: "Prospectos nuevos", valor: nuevos, href: "/panel/negocios?estado=nuevo", color: "#17376a" },
-    { label: "Puntos activos", valor: activos, href: "/panel/negocios?estado=punto_activo", color: "#2f7d34" },
-    { label: "Instalaciones pendientes", valor: instalacionPend, href: "/panel/negocios?estado=instalacion_pendiente", color: "#b8860b" },
-    { label: "Reposiciones pendientes", valor: reposicionesPend, href: "/panel/reposiciones", color: "#0e7490" },
-    { label: "Clientes inactivos", valor: inactivos, href: "/panel/negocios?estado=inactivo", color: "#8a8a8a" },
-    { label: "Total de puntos", valor: total, href: "/panel/negocios", color: "#ef7a1a" },
+    { label: "Prospectos nuevos", valor: nuevos, href: "/admin/negocios?estado=nuevo", color: "#17376a" },
+    { label: "Puntos activos", valor: activos, href: "/admin/negocios?estado=punto_activo", color: "#2f7d34" },
+    { label: "Instalaciones pendientes", valor: instalacionPend, href: "/admin/negocios?estado=instalacion_pendiente", color: "#b8860b" },
+    { label: "Reposiciones pendientes", valor: reposicionesPend, href: "/admin/reposiciones", color: "#0e7490" },
+    { label: "Clientes inactivos", valor: inactivos, href: "/admin/negocios?estado=inactivo", color: "#8a8a8a" },
+    { label: "Total de puntos", valor: total, href: "/admin/negocios", color: "#ef7a1a" },
   ];
 
   const ultimos = await prisma.negocio.findMany({
@@ -50,7 +50,7 @@ export default async function Dashboard() {
           <p className="text-sm text-choco-2">Evolución de la red Benechito</p>
         </div>
         <Link
-          href="/panel/negocios/nuevo"
+          href="/admin/negocios/nuevo"
           className="rounded-full bg-naranja px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-naranja-2"
         >
           + Nuevo negocio
@@ -83,7 +83,7 @@ export default async function Dashboard() {
           return (
             <Link
               key={e}
-              href={`/panel/negocios?estado=${e}`}
+              href={`/admin/negocios?estado=${e}`}
               className="flex items-center gap-3 rounded-xl bg-white p-2.5 ring-1 ring-crema-2 transition hover:ring-naranja/40"
             >
               <span
@@ -113,7 +113,7 @@ export default async function Dashboard() {
         {ultimos.map((n) => (
           <Link
             key={n.id}
-            href={`/panel/negocios/${n.id}`}
+            href={`/admin/negocios/${n.id}`}
             className="flex items-center justify-between border-b border-crema-2 px-4 py-3 last:border-0 hover:bg-crema/40"
           >
             <div>

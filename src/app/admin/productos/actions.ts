@@ -28,9 +28,9 @@ export async function crearProducto(formData: FormData) {
     },
   });
 
-  revalidatePath("/panel/productos");
-  revalidatePath("/panel/precios");
-  redirect("/panel/productos");
+  revalidatePath("/admin/productos");
+  revalidatePath("/admin/precios");
+  redirect("/admin/productos");
 }
 
 /** Edición de un producto existente. */
@@ -54,7 +54,7 @@ export async function actualizarProducto(formData: FormData) {
     },
   });
 
-  revalidatePath("/panel/productos");
-  revalidatePath("/panel/precios");
-  redirect("/panel/productos");
+  revalidatePath("/admin/productos");
+  revalidatePath("/admin/precios");
+  redirect("/admin/productos");
 }

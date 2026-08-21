@@ -13,7 +13,7 @@ export async function login(
 ): Promise<LoginState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
-  const next = String(formData.get("next") ?? "/panel");
+  const next = String(formData.get("next") ?? "/admin");
 
   if (!email || !password) {
     return { error: "Ingresa tu email y contraseña." };
@@ -32,5 +32,5 @@ export async function login(
   });
   await crearCookieSesion(token);
 
-  redirect(next.startsWith("/panel") ? next : "/panel");
+  redirect(next.startsWith("/admin") ? next : "/admin");
 }

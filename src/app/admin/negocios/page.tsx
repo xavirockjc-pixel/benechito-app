@@ -33,7 +33,7 @@ export default async function NegociosPage({
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-extrabold text-navy">Negocios</h1>
         <Link
-          href="/panel/negocios/nuevo"
+          href="/admin/negocios/nuevo"
           className="rounded-full bg-naranja px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-naranja-2"
         >
           + Nuevo
@@ -41,7 +41,7 @@ export default async function NegociosPage({
       </div>
 
       {/* Buscador */}
-      <form className="mt-4" action="/panel/negocios">
+      <form className="mt-4" action="/admin/negocios">
         {filtroEstado && <input type="hidden" name="estado" value={filtroEstado} />}
         <input
           name="q"
@@ -54,7 +54,7 @@ export default async function NegociosPage({
       {/* Filtros por estado */}
       <div className="mt-4 flex flex-wrap gap-2">
         <Link
-          href="/panel/negocios"
+          href="/admin/negocios"
           className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${
             !filtroEstado ? "bg-navy text-white ring-navy" : "bg-white text-navy ring-crema-2"
           }`}
@@ -64,7 +64,7 @@ export default async function NegociosPage({
         {ESTADOS.map((e) => (
           <Link
             key={e}
-            href={`/panel/negocios?estado=${e}`}
+            href={`/admin/negocios?estado=${e}`}
             className="rounded-full px-3 py-1 text-xs font-bold ring-1"
             style={
               filtroEstado === e
@@ -87,7 +87,7 @@ export default async function NegociosPage({
         {negocios.map((n) => (
           <Link
             key={n.id}
-            href={`/panel/negocios/${n.id}`}
+            href={`/admin/negocios/${n.id}`}
             className="flex items-center justify-between gap-3 border-b border-crema-2 px-4 py-3 last:border-0 hover:bg-crema/40"
           >
             <div className="min-w-0">

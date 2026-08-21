@@ -33,6 +33,6 @@ export async function guardarPrecios(formData: FormData) {
     });
   }
 
-  revalidatePath(`/panel/precios/${listaId}`);
-  revalidatePath("/panel/precios");
+  revalidatePath(`/admin/precios/${listaId}`);
+  revalidatePath("/admin/precios");
 }

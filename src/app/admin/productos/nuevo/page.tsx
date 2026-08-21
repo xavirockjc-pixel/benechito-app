@@ -5,7 +5,7 @@ import { CamposProducto } from "../campos";
 export default function NuevoProducto() {
   return (
     <div>
-      <Link href="/panel/productos" className="text-sm font-semibold text-naranja">
+      <Link href="/admin/productos" className="text-sm font-semibold text-naranja">
         ← Catálogo
       </Link>
       <h1 className="mt-2 text-2xl font-extrabold text-navy">Nuevo producto</h1>

@@ -5,7 +5,7 @@ const secret = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "benechito-dev-secret-cambiar"
 );
 
-/** Protege /panel/*: si no hay sesión válida, redirige a /login. */
+/** Protege /admin/*: si no hay sesión válida, redirige a /login. */
 export async function proxy(req: NextRequest) {
   const token = req.cookies.get("benechito_session")?.value;
   let valido = false;
@@ -27,5 +27,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/panel/:path*"],
+  matcher: ["/admin/:path*"],
 };

@@ -17,7 +17,7 @@ export default async function EditarProducto({
 
   return (
     <div>
-      <Link href="/panel/productos" className="text-sm font-semibold text-naranja">
+      <Link href="/admin/productos" className="text-sm font-semibold text-naranja">
         ← Catálogo
       </Link>
       <h1 className="mt-2 text-2xl font-extrabold text-navy">Editar producto</h1>

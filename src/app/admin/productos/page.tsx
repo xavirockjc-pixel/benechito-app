@@ -27,14 +27,14 @@ export default async function ProductosPage() {
           <h1 className="text-2xl font-extrabold text-navy">Catálogo de productos</h1>
           <p className="text-sm text-choco-2">
             Producto único. Los precios se gestionan por lista en{" "}
-            <Link href="/panel/precios" className="font-semibold text-naranja">
+            <Link href="/admin/precios" className="font-semibold text-naranja">
               Precios
             </Link>
             .
           </p>
         </div>
         <Link
-          href="/panel/productos/nuevo"
+          href="/admin/productos/nuevo"
           className="rounded-full bg-naranja px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-naranja-2"
         >
           + Nuevo producto
@@ -51,7 +51,7 @@ export default async function ProductosPage() {
             {items.map((p) => (
               <Link
                 key={p.id}
-                href={`/panel/productos/${p.id}`}
+                href={`/admin/productos/${p.id}`}
                 className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-crema-2 transition hover:ring-naranja"
               >
                 <div className="flex items-center justify-between">

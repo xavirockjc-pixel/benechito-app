@@ -29,7 +29,7 @@ export default async function PreciosPage() {
           return (
             <Link
               key={l.id}
-              href={`/panel/precios/${l.id}`}
+              href={`/admin/precios/${l.id}`}
               className="rounded-2xl bg-white p-4 shadow-sm ring-1 ring-crema-2 transition hover:ring-naranja"
             >
               <div className="flex items-center justify-between">

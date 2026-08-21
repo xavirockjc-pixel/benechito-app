@@ -38,7 +38,7 @@ export async function crearNegocio(formData: FormData) {
     },
   });
 
-  redirect(`/panel/negocios/${negocio.id}`);
+  redirect(`/admin/negocios/${negocio.id}`);
 }
 
 /** Cambia el estado comercial y registra la actividad. */
@@ -63,8 +63,8 @@ export async function cambiarEstado(formData: FormData) {
     },
   });
 
-  revalidatePath(`/panel/negocios/${id}`);
-  revalidatePath("/panel");
+  revalidatePath(`/admin/negocios/${id}`);
+  revalidatePath("/admin");
 }
 
 /** Agrega una nota al historial del negocio. */
@@ -76,7 +76,7 @@ export async function agregarNota(formData: FormData) {
   await prisma.actividad.create({
     data: { negocioId: id, tipo: "nota", descripcion: texto },
   });
-  revalidatePath(`/panel/negocios/${id}`);
+  revalidatePath(`/admin/negocios/${id}`);
 }
 
 /** Registra una reposición y actualiza fechas. */
@@ -103,8 +103,8 @@ export async function registrarReposicion(formData: FormData) {
     },
   });
 
-  revalidatePath(`/panel/negocios/${id}`);
-  revalidatePath("/panel/reposiciones");
+  revalidatePath(`/admin/negocios/${id}`);
+  revalidatePath("/admin/reposiciones");
 }
 
 /** Actualiza la clasificación comercial (tipo de cliente y lista de precios asignada). */
@@ -128,12 +128,12 @@ export async function actualizarClasificacion(formData: FormData) {
     },
   });
 
-  revalidatePath(`/panel/negocios/${id}`);
+  revalidatePath(`/admin/negocios/${id}`);
 }
 
 /** Elimina un negocio (y su historial en cascada). */
 export async function eliminarNegocio(formData: FormData) {
   const id = String(formData.get("id"));
   await prisma.negocio.delete({ where: { id } });
-  redirect("/panel/negocios");
+  redirect("/admin/negocios");
 }

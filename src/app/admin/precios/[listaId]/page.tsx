@@ -41,7 +41,7 @@ export default async function EditarListaPage({
 
   return (
     <div>
-      <Link href="/panel/precios" className="text-sm font-semibold text-naranja">
+      <Link href="/admin/precios" className="text-sm font-semibold text-naranja">
         ← Listas de precios
       </Link>
       <h1 className="mt-2 text-2xl font-extrabold text-navy">{lista.nombre}</h1>

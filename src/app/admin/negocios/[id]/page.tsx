@@ -45,7 +45,7 @@ export default async function FichaNegocio({
 
   return (
     <div>
-      <Link href="/panel/negocios" className="text-sm font-semibold text-naranja">
+      <Link href="/admin/negocios" className="text-sm font-semibold text-naranja">
         ← Negocios
       </Link>
 

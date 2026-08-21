@@ -16,7 +16,7 @@ npm run dev                 # http://localhost:3000
 ```
 
 - **Landing:** http://localhost:3000
-- **Panel:** http://localhost:3000/panel
+- **Administración:** http://localhost:3000/admin
 - **Login:** http://localhost:3000/login
   - Usuario: `admin@benechito.com` · Contraseña: `benechito123` (cambiar en `.env`)
 
@@ -40,7 +40,7 @@ src/
     estados.ts            Estados del embudo comercial
     prisma.ts             Cliente Prisma
     auth.ts               Sesión (JWT/cookie)
-  proxy.ts                Protege /panel
+  proxy.ts                Protege /admin
 prisma/
   schema.prisma           Modelo de datos
   seed.mjs                Carga inicial
