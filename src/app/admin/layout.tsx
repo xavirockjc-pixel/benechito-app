@@ -40,6 +40,13 @@ const modulos: Modulo[] = [
       { href: "#", label: "Mantención", icon: "🔧" },
     ],
   },
+  {
+    titulo: "Sistema",
+    activo: true,
+    items: [
+      { href: "/admin/usuarios", label: "Usuarios", icon: "👥" },
+    ],
+  },
 ];
 
 // Items planos activos (para la barra móvil).
