@@ -34,6 +34,13 @@ const modulos: Modulo[] = [
     ],
   },
   {
+    titulo: "Finanzas",
+    activo: true,
+    items: [
+      { href: "/admin/finanzas", label: "Finanzas", icon: "💰" },
+    ],
+  },
+  {
     titulo: "Técnico",
     activo: false,
     items: [
