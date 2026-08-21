@@ -115,6 +115,13 @@ export default async function CamionPage() {
         </form>
       )}
 
+      <Link
+        href="/vendedor/cierre"
+        className="mt-4 block rounded-xl bg-slate-900 py-3 text-center text-sm font-extrabold text-white active:brightness-95"
+      >
+        🧾 Cierre de ruta del día
+      </Link>
+
       <div className="mt-5 text-center">
         <Link href="/vendedor" className="text-sm font-semibold text-[#1479c4]">← Volver a clientes</Link>
       </div>
