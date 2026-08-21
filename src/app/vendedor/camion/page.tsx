@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
-import { asignarVehiculo, cargarVehiculo, devolverTodoABodega } from "../actions";
+import { asignarVehiculo, cargarVehiculo, devolverTodoABodega, cargarSabor } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -43,15 +43,20 @@ export default async function CamionPage() {
   }
 
   // Con vehículo → stock actual + cargar + devolver
-  const [productos, stockCamion, stockBodega] = await Promise.all([
+  const [productos, stockCamion, stockBodega, sabores, saborCamion] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.stock.findMany({ where: { ubicacionId: vehiculo.id }, include: { producto: { select: { nombre: true } } } }),
     bodega ? prisma.stock.findMany({ where: { ubicacionId: bodega.id } }) : Promise.resolve([]),
+    prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
+    prisma.stockSabor.findMany({ where: { ubicacionId: vehiculo.id }, include: { sabor: { select: { nombre: true } } } }),
   ]);
 
   const enCamion = stockCamion.filter((s) => s.cantidad !== 0).sort((a, b) => a.producto.nombre.localeCompare(b.producto.nombre));
   const totalCamion = enCamion.reduce((s, x) => s + x.cantidad, 0);
   const bodegaDe = new Map(stockBodega.map((s) => [s.productoId, s.cantidad]));
+
+  const cajaSabores = saborCamion.filter((s) => s.cantidad !== 0).sort((a, b) => a.sabor.nombre.localeCompare(b.sabor.nombre));
+  const totalCaja = cajaSabores.reduce((s, x) => s + x.cantidad, 0);
 
   return (
     <div>
@@ -114,6 +119,38 @@ export default async function CamionPage() {
           <p className="mt-1 text-center text-xs text-slate-400">Al terminar la ruta, lo que no vendiste vuelve solo a bodega.</p>
         </form>
       )}
+
+      {/* Caja de reposición (por sabor) — para reponer los Puntos */}
+      <section className="mt-6 rounded-xl border border-[#1479c4]/30 bg-blue-50/40 p-4 shadow-sm">
+        <h2 className="mb-2 text-sm font-bold text-slate-900">🍫 Caja de reposición ({totalCaja} u.)</h2>
+        <p className="mb-2 text-xs text-slate-500">Sabores que llevas para reponer los Puntos.</p>
+        {cajaSabores.length === 0 ? (
+          <p className="text-sm text-slate-500">Caja vacía. Carga sabores abajo.</p>
+        ) : (
+          <ul className="grid grid-cols-2 gap-x-4 text-sm">
+            {cajaSabores.map((s) => (
+              <li key={s.id} className="flex justify-between py-1">
+                <span className="text-slate-800">{s.sabor.nombre}</span>
+                <span className="font-bold text-slate-900">{s.cantidad}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {sabores.length > 0 && (
+          <form action={cargarSabor} className="mt-3 grid grid-cols-[1fr_auto_auto] items-end gap-2">
+            <label className="text-xs font-bold text-slate-600">Sabor
+              <select name="saborId" required defaultValue="" className={`mt-1 ${inputCls}`}>
+                <option value="">Selecciona…</option>
+                {sabores.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-bold text-slate-600">Cant.
+              <input type="number" name="cantidad" min="1" step="1" defaultValue="1" inputMode="numeric" className="mt-1 w-20 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+            </label>
+            <button className="rounded-lg bg-[#1479c4] px-4 py-2 text-sm font-bold text-white">Cargar</button>
+          </form>
+        )}
+      </section>
 
       <Link
         href="/vendedor/cierre"

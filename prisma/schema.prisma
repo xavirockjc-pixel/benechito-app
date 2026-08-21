@@ -188,6 +188,7 @@ model Ubicacion {
   activo     Boolean  @default(true)
 
   stock              Stock[]
+  stockSabores       StockSabor[]
   ventas             Venta[]
   movimientosOrigen  MovimientoStock[] @relation("MovOrigen")
   movimientosDestino MovimientoStock[] @relation("MovDestino")
@@ -448,4 +449,36 @@ model ParadaRuta {
 
   @@unique([rutaId, negocioId])
   @@index([rutaId])
+}
+
+// ===========================================================================
+//  v2 — SABORES (para producción y reposición por sabor de los Puntos)
+// ===========================================================================
+
+/// Sabor de un producto (trufa, cuchuflí, helado…). NO tiene precio: los sabores
+/// se usan para producción y para reponer los Puntos (reposición por sabor).
+model Sabor {
+  id        String   @id @default(cuid())
+  nombre    String
+  linea     String   // trufa | cuchufli | helado | ...
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  stock StockSabor[]
+
+  @@index([linea])
+}
+
+/// Stock POR SABOR en una ubicación. La "caja de reposición" del vendedor es su
+/// stock de sabores en el vehículo. Al reponer un Punto se descuenta de aquí.
+model StockSabor {
+  id          String    @id @default(cuid())
+  sabor       Sabor     @relation(fields: [saborId], references: [id], onDelete: Cascade)
+  saborId     String
+  ubicacion   Ubicacion @relation(fields: [ubicacionId], references: [id], onDelete: Cascade)
+  ubicacionId String
+  cantidad    Int       @default(0)
+
+  @@unique([saborId, ubicacionId])
+  @@index([ubicacionId])
 }

@@ -9,51 +9,64 @@ const slug = (s) =>
   s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
    .replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 
-// --- Trufas (pack 3) ---
-const trufas = [
-  { nombre: "Frutilla", base: "blanca" },
-  { nombre: "Pistacho", base: "blanca" },
-  { nombre: "Manjar Nueces", base: "blanca" },
-  { nombre: "Banana Chips", base: "blanca" },
-  { nombre: "Coco Chips", base: "blanca" },
-  { nombre: "Tradicional", base: "cafe" },
-  { nombre: "Café Latte", base: "cafe" },
-  { nombre: "Avellana", base: "cafe" },
-  { nombre: "Almendra", base: "cafe" },
-].map((t) => ({ ...t, linea: "trufa", formato: "pack 3", sku: `TRF-${slug(t.nombre)}` }));
+// --- Productos que se VENDEN y tienen precio (por línea/formato, NO por sabor) ---
+const productos = [
+  { linea: "trufa",    nombre: "Trufas",            formato: "pack 3",           sku: "TRF-pack3" },
+  { linea: "cuchufli", nombre: "Cuchuflí bañado",   formato: "pack 5",           sku: "CCH-banado-p5" },
+  { linea: "cuchufli", nombre: "Cuchuflí relleno",  formato: "pack 9",           sku: "CCH-relleno-p9" },
+  { linea: "helado",   nombre: "Tú y Yo",           formato: "unidad (pack 50)", categoria: "Helados", sku: "HEL-tu-y-yo" },
+  { linea: "helado",   nombre: "Paleta de Leche",   formato: "unidad (pack 50)", categoria: "Helados", sku: "HEL-paleta-de-leche" },
+  { linea: "helado",   nombre: "Paleta de Agua",    formato: "unidad (pack 50)", categoria: "Helados", sku: "HEL-paleta-de-agua" },
+  { linea: "helado",   nombre: "Paleta Premium",    formato: "unidad",           categoria: "Helados", sku: "HEL-paleta-premium" },
+  { linea: "helado",   nombre: "Postre 500 ml",     formato: "500 ml (pack 16)", categoria: "Helados", sku: "HEL-postre-500-ml" },
+];
 
-// --- Cuchuflís (bañados pack 5 / rellenos pack 9) ---
-const cuchuflis = [
-  { nombre: "Chocolate", formato: "pack 5" },
-  { nombre: "Manjar", formato: "pack 9" },
-  { nombre: "Blanco", formato: "pack 9" },
-  { nombre: "Manjar Nuez", formato: "pack 9" },
-  { nombre: "Manjar Almendra", formato: "pack 9" },
-].map((c) => ({ ...c, linea: "cuchufli", base: null, sku: `CCH-${slug(c.nombre)}` }));
+// --- Sabores (apartado propio: producción y reposición por sabor, SIN precio) ---
+const saboresTrufa = ["Frutilla", "Pistacho", "Manjar Nueces", "Banana Chips", "Coco Chips", "Tradicional", "Café Latte", "Avellana", "Almendra"];
+const saboresCuchufli = ["Chocolate", "Manjar", "Blanco", "Manjar Nuez", "Manjar Almendra"];
+const sabores = [
+  ...saboresTrufa.map((nombre) => ({ nombre, linea: "trufa" })),
+  ...saboresCuchufli.map((nombre) => ({ nombre, linea: "cuchufli" })),
+];
 
-// --- Helados (se venden por unidad; surtidos o de 1 sabor) ---
-// Nota: modelados por LÍNEA (el precio va por línea). Se pueden dividir por
-// sabor más adelante si hace falta. Precios se cargan desde el panel.
-const helados = [
-  { nombre: "Tú y Yo", formato: "unidad (pack 50)" },
-  { nombre: "Paleta de Leche", formato: "unidad (pack 50)" },
-  { nombre: "Paleta de Agua", formato: "unidad (pack 50)" },
-  { nombre: "Paleta Premium", formato: "unidad" },
-  { nombre: "Postre 500 ml", formato: "500 ml (pack 16)" },
-].map((h) => ({ ...h, linea: "helado", base: null, categoria: "Helados", sku: `HEL-${slug(h.nombre)}` }));
-
-const productos = [...trufas, ...cuchuflis, ...helados];
+// SKUs viejos (cuando las trufas/cuchuflís eran productos por sabor): se limpian.
+const skusObsoletos = [
+  ...saboresTrufa.map((n) => `TRF-${slug(n)}`),
+  ...saboresCuchufli.map((n) => `CCH-${slug(n)}`),
+];
 
 async function main() {
-  // Productos (idempotente por sku)
+  // Limpiar productos-por-sabor viejos (si existen y no tienen referencias).
+  let limpiados = 0;
+  for (const sku of skusObsoletos) {
+    const viejo = await prisma.producto.findUnique({ where: { sku } });
+    if (!viejo) continue;
+    try {
+      await prisma.producto.delete({ where: { id: viejo.id } });
+      limpiados++;
+    } catch {
+      // tiene referencias (precios/ventas): lo desactivamos en vez de borrar.
+      await prisma.producto.update({ where: { id: viejo.id }, data: { activo: false } });
+    }
+  }
+  if (limpiados) console.log(`✔ ${limpiados} productos-por-sabor viejos eliminados`);
+
+  // Productos que se venden (idempotente por sku)
   for (const p of productos) {
     await prisma.producto.upsert({
       where: { sku: p.sku },
-      update: { nombre: p.nombre, linea: p.linea, base: p.base ?? null, formato: p.formato },
+      update: { nombre: p.nombre, linea: p.linea, formato: p.formato, categoria: p.categoria ?? null, activo: true },
       create: p,
     });
   }
   console.log(`✔ ${productos.length} productos cargados`);
+
+  // Sabores (idempotente por nombre+línea)
+  for (const s of sabores) {
+    const existe = await prisma.sabor.findFirst({ where: { nombre: s.nombre, linea: s.linea } });
+    if (!existe) await prisma.sabor.create({ data: s });
+  }
+  console.log(`✔ ${sabores.length} sabores cargados`);
 
   // --- v2: Núcleo multiubicación (Empresa → Sucursal → Ubicaciones) ---
   let empresa = await prisma.empresa.findFirst({ where: { nombre: "Benechito" } });

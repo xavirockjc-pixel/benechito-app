@@ -30,6 +30,7 @@ const modulos: Modulo[] = [
     activo: true,
     items: [
       { href: "/admin/produccion", label: "Producción", icon: "🏭" },
+      { href: "/admin/sabores", label: "Sabores", icon: "🍫" },
     ],
   },
   {

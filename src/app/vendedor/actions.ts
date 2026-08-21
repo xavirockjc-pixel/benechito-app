@@ -229,6 +229,31 @@ export async function asignarVehiculo(formData: FormData) {
   revalidatePath("/vendedor/camion");
 }
 
+// --- Caja de reposición: stock POR SABOR en el camión del vendedor ---
+async function aplicarDeltaSabor(saborId: string, ubicacionId: string, delta: number) {
+  await prisma.stockSabor.upsert({
+    where: { saborId_ubicacionId: { saborId, ubicacionId } },
+    update: { cantidad: { increment: delta } },
+    create: { saborId, ubicacionId, cantidad: delta },
+  });
+}
+
+/** Carga sabores a la caja de reposición: bodega → mi camión (por sabor). */
+export async function cargarSabor(formData: FormData) {
+  const saborId = String(formData.get("saborId") ?? "").trim();
+  const cantidad = Number(String(formData.get("cantidad") ?? "").trim());
+  if (!saborId || !Number.isFinite(cantidad) || cantidad <= 0) return;
+
+  const vehId = await miVehiculoId();
+  const bod = await bodegaId();
+  if (!vehId || !bod) return;
+
+  await aplicarDeltaSabor(saborId, bod, -cantidad);
+  await aplicarDeltaSabor(saborId, vehId, cantidad);
+
+  revalidatePath("/vendedor/camion");
+}
+
 /** Carga producto al camión: transferencia bodega → mi vehículo. */
 export async function cargarVehiculo(formData: FormData) {
   const productoId = String(formData.get("productoId") ?? "").trim();
