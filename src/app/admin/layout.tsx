@@ -18,6 +18,7 @@ const modulos: Modulo[] = [
       { href: "/admin/precios", label: "Precios", icon: "🏷️" },
       { href: "/admin/pedidos", label: "Pedidos", icon: "🧾" },
       { href: "/admin/ventas", label: "Ventas", icon: "💵" },
+      { href: "/admin/inventario", label: "Inventario", icon: "📦" },
       { href: "/admin/reposiciones", label: "Reposiciones", icon: "🔄" },
     ],
   },
