@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { tipoClienteLabel } from "@/lib/dominio/precios";
+import GuardarUbicacionAqui from "../../GuardarUbicacionAqui";
 
 export const dynamic = "force-dynamic";
 
@@ -48,16 +49,36 @@ export default async function ClienteRuta({
           </span>
         </div>
 
-        {wa && (
-          <a
-            href={`https://wa.me/${wa}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-3 block rounded-xl bg-green-500 py-2.5 text-center text-sm font-bold text-white"
-          >
-            💬 WhatsApp
-          </a>
-        )}
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {wa && (
+            <a
+              href={`https://wa.me/${wa}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-xl bg-green-500 py-2.5 text-center text-sm font-bold text-white"
+            >
+              💬 WhatsApp
+            </a>
+          )}
+          {cliente.latitud && cliente.longitud ? (
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${cliente.latitud},${cliente.longitud}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`rounded-xl bg-[#1479c4] py-2.5 text-center text-sm font-bold text-white ${wa ? "" : "col-span-2"}`}
+            >
+              🗺️ Cómo llegar
+            </a>
+          ) : (
+            <span className={`rounded-xl bg-slate-100 py-2.5 text-center text-sm font-semibold text-slate-400 ${wa ? "" : "col-span-2"}`}>
+              Sin ubicación
+            </span>
+          )}
+        </div>
+
+        <div className="mt-2">
+          <GuardarUbicacionAqui negocioId={cliente.id} />
+        </div>
       </div>
 
       {/* Acciones grandes */}

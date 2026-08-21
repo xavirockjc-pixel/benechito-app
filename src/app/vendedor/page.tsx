@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { tipoClienteLabel } from "@/lib/dominio/precios";
+import MiUbicacion from "./MiUbicacion";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,10 @@ export default async function VendedorHome({
 
   return (
     <div>
+      <div className="mb-3">
+        <MiUbicacion />
+      </div>
+
       <h1 className="text-xl font-extrabold text-slate-900">Mis clientes</h1>
 
       <form className="mt-3">

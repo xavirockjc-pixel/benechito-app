@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { crearClienteRuta } from "../actions";
+import CapturarUbicacion from "../CapturarUbicacion";
 
 const inputCls = "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]";
 
@@ -29,6 +30,12 @@ export default function NuevoClienteRuta() {
         <label className="block text-sm font-bold text-slate-700">Tipo de negocio
           <input name="tipoNegocio" placeholder="Almacén, kiosco…" className={`mt-1 ${inputCls}`} />
         </label>
+
+        <div>
+          <p className="mb-1 text-sm font-bold text-slate-700">Ubicación</p>
+          <CapturarUbicacion />
+        </div>
+
         <button className="w-full rounded-xl bg-[#1479c4] py-3 text-base font-extrabold text-white shadow active:brightness-95">
           Guardar cliente
         </button>

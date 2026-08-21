@@ -124,6 +124,21 @@ export default async function FichaNegocio({
               <Dato label="Interés en helados" valor={negocio.interesHelados ? "Sí 🍦" : "No"} />
               <Dato label="Origen" valor={negocio.origen} />
             </dl>
+            <div className="mt-3 border-t border-crema-2 pt-3">
+              <dt className="text-xs uppercase tracking-wide text-choco-2">Ubicación GPS</dt>
+              {negocio.latitud && negocio.longitud ? (
+                <a
+                  href={`https://www.google.com/maps?q=${negocio.latitud},${negocio.longitud}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-semibold text-naranja underline"
+                >
+                  🗺️ Ver en mapa ({negocio.latitud.toFixed(5)}, {negocio.longitud.toFixed(5)})
+                </a>
+              ) : (
+                <p className="text-sm text-choco-2">Sin ubicación registrada</p>
+              )}
+            </div>
           </Card>
 
           {/* Cuenta corriente */}

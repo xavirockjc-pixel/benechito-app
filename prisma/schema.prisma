@@ -26,6 +26,9 @@ model Negocio {
   ciudad            String?
   tipoNegocio       String?
   direccion         String?
+  // Ubicación GPS (capturada en terreno por el vendedor)
+  latitud           Float?
+  longitud          Float?
   // Interés (captación)
   interesPunto      String? // nivel de interés declarado en el formulario
   interesHelados    Boolean      @default(false)

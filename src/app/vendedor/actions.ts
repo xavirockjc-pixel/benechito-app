@@ -121,10 +121,19 @@ export async function registrarResultado(formData: FormData) {
   redirect(`/vendedor/cliente/${negocioId}`);
 }
 
-/** Capta un cliente nuevo en terreno. */
+/** Parsea una coordenada del formulario (o null si no es válida). */
+function coord(fd: FormData, k: string): number | null {
+  const n = Number(String(fd.get(k) ?? "").trim());
+  return Number.isFinite(n) && n !== 0 ? n : null;
+}
+
+/** Capta un cliente nuevo en terreno (con su ubicación GPS si se capturó). */
 export async function crearClienteRuta(formData: FormData) {
   const get = (k: string) => String(formData.get(k) ?? "").trim();
   if (!get("nombreNegocio")) return;
+
+  const latitud = coord(formData, "latitud");
+  const longitud = coord(formData, "longitud");
 
   const cliente = await prisma.negocio.create({
     data: {
@@ -134,13 +143,36 @@ export async function crearClienteRuta(formData: FormData) {
       comuna: get("comuna"),
       direccion: get("direccion") || null,
       tipoNegocio: get("tipoNegocio") || null,
+      latitud,
+      longitud,
       tipoCliente: "prospecto",
       estado: "nuevo",
       origen: "ruta",
-      actividades: { create: { tipo: "creado", descripcion: "Cliente captado en ruta" } },
+      actividades: {
+        create: {
+          tipo: "creado",
+          descripcion: latitud ? "Cliente captado en ruta (con ubicación GPS)" : "Cliente captado en ruta",
+        },
+      },
     },
   });
 
   revalidatePath("/vendedor");
   redirect(`/vendedor/cliente/${cliente.id}`);
+}
+
+/** Fija/actualiza la ubicación GPS de un cliente existente (estando parado en el local). */
+export async function guardarUbicacionCliente(formData: FormData) {
+  const negocioId = String(formData.get("negocioId") ?? "").trim();
+  const latitud = coord(formData, "latitud");
+  const longitud = coord(formData, "longitud");
+  if (!negocioId || latitud === null || longitud === null) return;
+
+  await prisma.negocio.update({ where: { id: negocioId }, data: { latitud, longitud } });
+  await prisma.actividad.create({
+    data: { negocioId, tipo: "contacto", descripcion: "Ubicación GPS actualizada en terreno" },
+  });
+
+  revalidatePath(`/vendedor/cliente/${negocioId}`);
+  redirect(`/vendedor/cliente/${negocioId}`);
 }
