@@ -1,17 +1,15 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
+import { puedeAccederAdmin, ROLES_TERRENO } from "@/lib/dominio/permisos";
 
 const secret = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "benechito-dev-secret-cambiar"
 );
 
-// Roles que trabajan en terreno: solo ven la app del vendedor, no el panel.
-const ROLES_TERRENO = ["vendedor", "chofer"];
-
 /**
  * Protege /admin/* y /vendedor/*: si no hay sesión válida, redirige a /login.
- * Además separa por rol: los de terreno (vendedor/chofer) no entran al panel;
- * quedan en su app. Los de administración no necesitan la app de terreno.
+ * Separa por rol: los de terreno (vendedor/chofer) quedan en su app; y dentro
+ * del panel cada rol solo entra a lo que le corresponde.
  */
 export async function proxy(req: NextRequest) {
   const token = req.cookies.get("benechito_session")?.value;
@@ -32,9 +30,17 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Vendedor/chofer intentando entrar al panel → lo mandamos a su app.
-  if (req.nextUrl.pathname.startsWith("/admin") && ROLES_TERRENO.includes(rol)) {
-    return NextResponse.redirect(new URL("/vendedor", req.url));
+  const path = req.nextUrl.pathname;
+
+  if (path.startsWith("/admin")) {
+    // Terreno no entra al panel → a su app.
+    if (ROLES_TERRENO.includes(rol)) {
+      return NextResponse.redirect(new URL("/vendedor", req.url));
+    }
+    // Rol acotado sin permiso para esta sección → al dashboard.
+    if (!puedeAccederAdmin(rol, path)) {
+      return NextResponse.redirect(new URL("/admin", req.url));
+    }
   }
 
   return NextResponse.next();

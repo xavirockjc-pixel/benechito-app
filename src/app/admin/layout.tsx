@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { usuarioActual } from "@/lib/auth";
+import { puedeAccederAdmin, ROLES_FULL } from "@/lib/dominio/permisos";
 import { logout } from "./actions";
 
 // Sistema de administración organizado por módulos (ver ARQUITECTURA-ECOSYSTEM.md).
@@ -57,15 +58,23 @@ const modulos: Modulo[] = [
   },
 ];
 
-// Items planos activos (para la barra móvil).
-const itemsMovil = modulos.filter((m) => m.activo).flatMap((m) => m.items);
-
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   const usuario = await usuarioActual();
+  const rol = usuario?.rol ?? "";
+  const esFull = ROLES_FULL.includes(rol);
+
+  // Filtra el menú según el rol: los roles acotados solo ven lo suyo.
+  const modulosVisibles = modulos
+    .map((m) => ({
+      ...m,
+      items: esFull ? m.items : m.items.filter((n) => n.href !== "#" && puedeAccederAdmin(rol, n.href)),
+    }))
+    .filter((m) => esFull || m.items.length > 0);
+  const itemsMovilVisibles = modulosVisibles.filter((m) => m.activo).flatMap((m) => m.items);
 
   return (
     <div className="flex min-h-screen bg-slate-100 text-slate-800">
@@ -89,7 +98,7 @@ export default async function AdminLayout({
 
           {/* Módulos */}
           <nav className="space-y-6">
-            {modulos.map((m) => (
+            {modulosVisibles.map((m) => (
               <div key={m.titulo}>
                 <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
                   {m.titulo}
@@ -155,7 +164,7 @@ export default async function AdminLayout({
         </div>
         {/* Nav móvil */}
         <nav className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-white px-2 py-2 md:hidden">
-          {itemsMovil.map((n) => (
+          {itemsMovilVisibles.map((n) => (
             <Link
               key={n.label}
               href={n.href}
