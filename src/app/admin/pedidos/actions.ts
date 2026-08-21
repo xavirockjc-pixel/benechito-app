@@ -61,6 +61,15 @@ export async function quitarItem(formData: FormData) {
   revalidatePath(`/admin/pedidos/${pedidoId}`);
 }
 
+/** Elimina un pedido completo (sus líneas se borran en cascada). */
+export async function eliminarPedido(formData: FormData) {
+  const pedidoId = String(formData.get("pedidoId") ?? "").trim();
+  if (!pedidoId) return;
+  await prisma.pedido.delete({ where: { id: pedidoId } });
+  revalidatePath("/admin/pedidos");
+  redirect("/admin/pedidos");
+}
+
 /** Cambia el estado del pedido (independiente del pago). */
 export async function cambiarEstadoPedido(formData: FormData) {
   const pedidoId = String(formData.get("pedidoId") ?? "").trim();

@@ -58,12 +58,20 @@ export default async function FichaNegocio({
             {negocio.ciudad ? `, ${negocio.ciudad}` : ""}
           </p>
         </div>
-        <span
-          className="rounded-lg px-3 py-1.5 text-sm font-bold"
-          style={{ color: meta?.color, backgroundColor: meta?.bg }}
-        >
-          {meta?.label ?? negocio.estado}
-        </span>
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/admin/negocios/${negocio.id}/editar`}
+            className="rounded-lg border border-crema-2 bg-white px-3 py-1.5 text-sm font-semibold text-navy transition hover:border-naranja"
+          >
+            ✏️ Editar
+          </Link>
+          <span
+            className="rounded-lg px-3 py-1.5 text-sm font-bold"
+            style={{ color: meta?.color, backgroundColor: meta?.bg }}
+          >
+            {meta?.label ?? negocio.estado}
+          </span>
+        </div>
       </div>
 
       {/* Acciones rápidas */}

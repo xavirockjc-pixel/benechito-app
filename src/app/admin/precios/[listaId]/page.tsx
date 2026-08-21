@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { canalLabel } from "@/lib/dominio/precios";
-import { guardarPrecios } from "../actions";
+import { guardarPrecios, actualizarLista, eliminarLista } from "../actions";
+
+const canalesEdit = ["sala", "web", "reparto", "negocio", "punto", "revendedor", "distribuidor", "supermercado"];
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +51,30 @@ export default async function EditarListaPage({
         Canal: {canalLabel[lista.canal] ?? lista.canal}. Deja en blanco (o 0) un producto para que
         <strong> no esté disponible</strong> en esta lista.
       </p>
+
+      {/* Editar / eliminar la lista */}
+      <details className="mt-4 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-crema-2">
+        <summary className="cursor-pointer text-sm font-bold text-navy">⚙️ Editar o eliminar esta lista</summary>
+        <form action={actualizarLista} className="mt-3 grid gap-3 sm:grid-cols-[1fr_1fr_auto_auto] sm:items-end">
+          <input type="hidden" name="id" value={lista.id} />
+          <label className="text-sm font-bold text-navy">Nombre
+            <input name="nombre" defaultValue={lista.nombre} className="mt-1 w-full rounded-xl border border-crema-2 bg-crema/40 px-3 py-2 font-normal text-choco outline-none focus:border-naranja" />
+          </label>
+          <label className="text-sm font-bold text-navy">Canal
+            <select name="canal" defaultValue={lista.canal} className="mt-1 w-full rounded-xl border border-crema-2 bg-crema/40 px-3 py-2 font-normal text-choco outline-none focus:border-naranja">
+              {canalesEdit.map((c) => <option key={c} value={c}>{canalLabel[c] ?? c}</option>)}
+            </select>
+          </label>
+          <label className="flex items-center gap-2 pb-2 text-sm font-semibold text-navy">
+            <input type="checkbox" name="activo" value="si" defaultChecked={lista.activo} className="h-5 w-5 accent-naranja" /> Activa
+          </label>
+          <button className="rounded-full bg-navy px-4 py-2 text-sm font-bold text-white transition hover:bg-navy-2">Guardar</button>
+        </form>
+        <form action={eliminarLista} className="mt-3">
+          <input type="hidden" name="id" value={lista.id} />
+          <button className="text-sm font-semibold text-rojo/80 hover:text-rojo">Eliminar esta lista</button>
+        </form>
+      </details>
 
       <form action={guardarPrecios} className="mt-6">
         <input type="hidden" name="listaId" value={lista.id} />

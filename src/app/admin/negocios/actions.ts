@@ -107,6 +107,34 @@ export async function registrarReposicion(formData: FormData) {
   revalidatePath("/admin/reposiciones");
 }
 
+/** Edición de los datos de contacto del cliente. */
+export async function actualizarNegocio(formData: FormData) {
+  const id = String(formData.get("id"));
+  const get = (k: string) => {
+    const v = formData.get(k);
+    return v ? String(v).trim() : "";
+  };
+  if (!id || !get("nombreContacto") || !get("nombreNegocio")) return;
+
+  await prisma.negocio.update({
+    where: { id },
+    data: {
+      nombreContacto: get("nombreContacto"),
+      nombreNegocio: get("nombreNegocio"),
+      whatsapp: get("whatsapp"),
+      comuna: get("comuna"),
+      ciudad: get("ciudad") || null,
+      tipoNegocio: get("tipoNegocio") || null,
+      direccion: get("direccion") || null,
+      interesHelados: formData.get("interesHelados") === "si",
+      observaciones: get("observaciones") || null,
+    },
+  });
+
+  revalidatePath(`/admin/negocios/${id}`);
+  redirect(`/admin/negocios/${id}`);
+}
+
 /** Actualiza la clasificación comercial (tipo de cliente y lista de precios asignada). */
 export async function actualizarClasificacion(formData: FormData) {
   const id = String(formData.get("id"));

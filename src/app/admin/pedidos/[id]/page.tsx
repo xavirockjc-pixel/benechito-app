@@ -9,7 +9,7 @@ import {
   fmtCLP,
 } from "@/lib/dominio/pedidos";
 import { listaParaCliente, tipoClienteLabel } from "@/lib/dominio/precios";
-import { agregarItem, quitarItem, cambiarEstadoPedido } from "../actions";
+import { agregarItem, quitarItem, cambiarEstadoPedido, eliminarPedido } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -189,6 +189,13 @@ export default async function FichaPedido({
               <p className="text-sm text-slate-600">{pedido.notas}</p>
             </section>
           )}
+
+          <form action={eliminarPedido} className="mt-5">
+            <input type="hidden" name="pedidoId" value={pedido.id} />
+            <button className="text-sm font-semibold text-rojo/70 hover:text-rojo">
+              Eliminar pedido
+            </button>
+          </form>
         </div>
       </div>
     </div>

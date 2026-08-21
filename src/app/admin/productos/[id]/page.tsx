@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { actualizarProducto } from "../actions";
+import { actualizarProducto, eliminarProducto } from "../actions";
 import { CamposProducto } from "../campos";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +30,13 @@ export default async function EditarProducto({
         <CamposProducto p={producto} />
         <button className="mt-5 rounded-full bg-naranja px-6 py-2.5 font-bold text-white shadow-md transition hover:bg-naranja-2">
           Guardar cambios
+        </button>
+      </form>
+
+      <form action={eliminarProducto} className="mt-4 max-w-2xl">
+        <input type="hidden" name="id" value={producto.id} />
+        <button className="text-sm font-semibold text-rojo/80 hover:text-rojo">
+          Eliminar producto
         </button>
       </form>
     </div>

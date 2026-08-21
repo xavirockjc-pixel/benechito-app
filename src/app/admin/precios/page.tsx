@@ -15,12 +15,21 @@ export default async function PreciosPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-navy">Listas de precios</h1>
-      <p className="mt-1 max-w-2xl text-sm text-choco-2">
-        Un producto <strong>único</strong>, muchos precios. Cada canal/tipo de cliente tiene su lista;
-        el sistema aplica el precio correcto automáticamente. Configura aquí el precio de cada producto
-        por lista.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-extrabold text-navy">Listas de precios</h1>
+          <p className="mt-1 max-w-2xl text-sm text-choco-2">
+            Un producto <strong>único</strong>, muchos precios. Cada canal/tipo de cliente tiene su lista;
+            el sistema aplica el precio correcto automáticamente.
+          </p>
+        </div>
+        <Link
+          href="/admin/precios/nueva"
+          className="rounded-full bg-naranja px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-naranja-2"
+        >
+          + Nueva lista
+        </Link>
+      </div>
 
       <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {listas.map((l) => {

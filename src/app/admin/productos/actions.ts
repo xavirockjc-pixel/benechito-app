@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 const val = (fd: FormData, k: string) => {
@@ -27,6 +28,30 @@ export async function crearProducto(formData: FormData) {
       activo: formData.get("activo") === "si",
     },
   });
+
+  revalidatePath("/admin/productos");
+  revalidatePath("/admin/precios");
+  redirect("/admin/productos");
+}
+
+/**
+ * Elimina un producto. Si está referenciado en pedidos/reposiciones/góndolas
+ * (no se puede borrar sin perder historial), lo DESACTIVA en vez de romper.
+ */
+export async function eliminarProducto(formData: FormData) {
+  const id = val(formData, "id");
+  if (!id) return;
+
+  try {
+    await prisma.producto.delete({ where: { id } });
+  } catch (e) {
+    // FK constraint → el producto tiene historial; se desactiva.
+    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2003") {
+      await prisma.producto.update({ where: { id }, data: { activo: false } });
+    } else {
+      throw e;
+    }
+  }
 
   revalidatePath("/admin/productos");
   revalidatePath("/admin/precios");
