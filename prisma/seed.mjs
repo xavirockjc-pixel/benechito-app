@@ -44,8 +44,43 @@ async function main() {
   }
   console.log(`✔ ${productos.length} productos cargados`);
 
+  // --- v2: Núcleo multiubicación (Empresa → Sucursal → Ubicaciones) ---
+  let empresa = await prisma.empresa.findFirst({ where: { nombre: "Benechito" } });
+  if (!empresa) empresa = await prisma.empresa.create({ data: { nombre: "Benechito" } });
+
+  let sucursal = await prisma.sucursal.findFirst({ where: { empresaId: empresa.id, nombre: "Coronel" } });
+  if (!sucursal) sucursal = await prisma.sucursal.create({ data: { empresaId: empresa.id, nombre: "Coronel" } });
+
+  const ubicaciones = [
+    { nombre: "Bodega Fábrica", tipo: "bodega" },   // Río Salado 963
+    { nombre: "Sala de Ventas", tipo: "sala" },     // Manuel Montt 0860
+    { nombre: "Vehículo 1", tipo: "vehiculo" },
+  ];
+  for (const u of ubicaciones) {
+    const existe = await prisma.ubicacion.findFirst({ where: { sucursalId: sucursal.id, nombre: u.nombre } });
+    if (!existe) await prisma.ubicacion.create({ data: { ...u, sucursalId: sucursal.id } });
+  }
+  console.log(`✔ Núcleo: 1 empresa, 1 sucursal, ${ubicaciones.length} ubicaciones`);
+
+  // --- v2: Listas de precios (estructura; los PRECIOS reales se cargan en E2) ---
+  const listas = [
+    { nombre: "Sala de Ventas",  canal: "sala" },
+    { nombre: "Web",             canal: "web" },
+    { nombre: "Reparto",         canal: "reparto" },
+    { nombre: "Negocio",         canal: "negocio" },
+    { nombre: "Punto Benechito", canal: "punto" },
+    { nombre: "Revendedor",      canal: "revendedor" },
+    { nombre: "Distribuidor",    canal: "distribuidor" },
+    { nombre: "Supermercado",    canal: "supermercado" },
+  ];
+  for (const l of listas) {
+    const existe = await prisma.listaPrecio.findFirst({ where: { canal: l.canal } });
+    if (!existe) await prisma.listaPrecio.create({ data: l });
+  }
+  console.log(`✔ ${listas.length} listas de precios creadas (sin precios aún — se cargan en E2)`);
+
   // Usuario admin
-  const email = process.env.SEED_ADMIN_EMAIL ?? "admin@benechito.cl";
+  const email = process.env.SEED_ADMIN_EMAIL ?? "admin@benechito.com";
   const pass = process.env.SEED_ADMIN_PASSWORD ?? "benechito123";
   const nombre = process.env.SEED_ADMIN_NOMBRE ?? "Equipo Benechito";
   await prisma.usuario.upsert({

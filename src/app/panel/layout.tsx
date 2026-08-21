@@ -7,6 +7,7 @@ const nav = [
   { href: "/panel/negocios", label: "Negocios", icon: "🏪" },
   { href: "/panel/reposiciones", label: "Reposiciones", icon: "🔄" },
   { href: "/panel/productos", label: "Productos", icon: "🍫" },
+  { href: "/panel/precios", label: "Precios", icon: "🏷️" },
 ];
 
 export default async function PanelLayout({

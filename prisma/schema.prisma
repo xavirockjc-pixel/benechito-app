@@ -17,75 +17,93 @@ datasource db {
 /// Estados: nuevo, contactado, interesado, visita_agendada,
 ///          instalacion_pendiente, punto_activo, reposicion, inactivo
 model Negocio {
-  id            String   @id @default(cuid())
+  id                String       @id @default(cuid())
   // Contacto
-  nombreContacto String
-  nombreNegocio  String
-  whatsapp       String
-  comuna         String
-  ciudad         String?
-  tipoNegocio    String?
-  direccion      String?
+  nombreContacto    String
+  nombreNegocio     String
+  whatsapp          String
+  comuna            String
+  ciudad            String?
+  tipoNegocio       String?
+  direccion         String?
   // Interés (captación)
-  interesPunto   String?  // nivel de interés declarado en el formulario
-  interesHelados Boolean  @default(false)
-  observaciones  String?
+  interesPunto      String? // nivel de interés declarado en el formulario
+  interesHelados    Boolean      @default(false)
+  observaciones     String?
   // Estado comercial (CRM)
-  estado         String   @default("nuevo")
-  origen         String   @default("landing") // landing | manual | otro
+  estado            String       @default("nuevo")
+  origen            String       @default("landing") // landing | manual | otro
+  // --- v2: clasificación comercial ---
+  // tipoCliente determina la lista de precios cuando listaPrecioId es null.
+  tipoCliente       String       @default("prospecto") // consumidor|negocio|punto_benechito|revendedor|distribuidor|supermercado|prospecto
+  listaPrecio       ListaPrecio? @relation(fields: [listaPrecioId], references: [id])
+  listaPrecioId     String?
+  vendedor          Usuario?     @relation("VendedorClientes", fields: [vendedorId], references: [id])
+  vendedorId        String?
   // Fechas clave
-  fechaIngreso     DateTime  @default(now())
-  fechaInstalacion DateTime?
-  ultimaReposicion DateTime?
+  fechaIngreso      DateTime     @default(now())
+  fechaInstalacion  DateTime?
+  ultimaReposicion  DateTime?
   proximaReposicion DateTime?
   // Notas internas del equipo
-  notas          String?
+  notas             String?
 
-  productos   PuntoProducto[]
+  productos    PuntoProducto[]
   reposiciones Reposicion[]
   actividades  Actividad[]
+  // --- v2: operación comercial ---
+  pedidos      Pedido[]
+  ventas       Venta[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([estado])
+  @@index([tipoCliente])
 }
 
 /// Catálogo de productos Benechito.
 /// linea: trufa | cuchufli | helado | proteico
 model Producto {
-  id       String  @id @default(cuid())
-  linea    String
-  nombre   String            // sabor / nombre comercial
-  base     String?           // blanca | cafe (trufas)
-  formato  String?           // "pack 3", "pack 5", "pack 9"
-  sku      String? @unique
-  activo   Boolean @default(true)
+  id           String  @id @default(cuid())
+  linea        String
+  nombre       String // sabor / nombre comercial
+  base         String? // blanca | cafe (trufas)
+  formato      String? // "pack 3", "pack 5", "pack 9" (= presentación comercial)
+  sku          String? @unique
+  codigoBarras String? // EAN / código de barras (v2)
+  categoria    String? // agrupación comercial (v2)
+  activo       Boolean @default(true)
 
-  instalaciones PuntoProducto[]
+  instalaciones   PuntoProducto[]
   reposicionItems ReposicionItem[]
+  // --- v2: catálogo comercial ---
+  precios         PrecioProducto[]
+  pedidoItems     PedidoItem[]
+  stock           Stock[]
+  movimientos     MovimientoStock[]
 
   createdAt DateTime @default(now())
 }
 
 /// Qué productos (y cuántos) hay instalados en la góndola de un negocio.
 model PuntoProducto {
-  id         String   @id @default(cuid())
-  negocio    Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
-  negocioId  String
-  producto   Producto @relation(fields: [productoId], references: [id])
-  productoId String
-  cantidadInstalada Int @default(0)
+  id                String   @id @default(cuid())
+  negocio           Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId         String
+  producto          Producto @relation(fields: [productoId], references: [id])
+  productoId        String
+  cantidadInstalada Int      @default(0)
 
   @@unique([negocioId, productoId])
 }
 
 /// Registro de cada reposición realizada a un negocio.
 model Reposicion {
-  id        String   @id @default(cuid())
-  negocio   Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  id        String           @id @default(cuid())
+  negocio   Negocio          @relation(fields: [negocioId], references: [id], onDelete: Cascade)
   negocioId String
-  fecha     DateTime @default(now())
+  fecha     DateTime         @default(now())
   notas     String?
   items     ReposicionItem[]
 }
@@ -101,22 +119,237 @@ model ReposicionItem {
 
 /// Historial / timeline de cada negocio (cambios de estado, notas, contactos).
 model Actividad {
-  id        String   @id @default(cuid())
-  negocio   Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
-  negocioId String
-  tipo      String   // cambio_estado | nota | contacto | instalacion | reposicion | creado
+  id          String   @id @default(cuid())
+  negocio     Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId   String
+  tipo        String // cambio_estado | nota | contacto | instalacion | reposicion | creado
   descripcion String
-  createdAt DateTime @default(now())
+  createdAt   DateTime @default(now())
 
   @@index([negocioId])
 }
 
 /// Usuarios del panel interno (login simple del equipo).
 model Usuario {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  nombre    String
+  id           String   @id @default(cuid())
+  email        String   @unique
+  nombre       String
   passwordHash String
-  rol       String   @default("equipo") // admin | equipo
+  // rol (v2): propietario|admin|caja|produccion|bodega|vendedor|chofer|tecnico|rrhh (compat: admin|equipo)
+  rol          String   @default("equipo")
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  // --- v2: back-relations ---
+  clientesAsignados Negocio[]   @relation("VendedorClientes")
+  ventasRegistradas Venta[]     @relation("VendedorVentas")
+  auditorias        Auditoria[]
+}
+
+// ===========================================================================
+//  v2 — NÚCLEO (multiubicación): Empresa → Sucursal → Ubicación
+// ===========================================================================
+
+model Empresa {
+  id         String     @id @default(cuid())
+  nombre     String
+  sucursales Sucursal[]
+  createdAt  DateTime   @default(now())
+}
+
+model Sucursal {
+  id          String      @id @default(cuid())
+  empresa     Empresa     @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId   String
+  nombre      String
+  ubicaciones Ubicacion[]
+
+  @@index([empresaId])
+}
+
+/// Ubicación física de stock: bodega fábrica | sala de ventas | vehículo 1 | vehículo 2 ...
+model Ubicacion {
+  id         String   @id @default(cuid())
+  sucursal   Sucursal @relation(fields: [sucursalId], references: [id], onDelete: Cascade)
+  sucursalId String
+  nombre     String
+  tipo       String // bodega | sala | vehiculo | otro
+  activo     Boolean  @default(true)
+
+  stock              Stock[]
+  ventas             Venta[]
+  movimientosOrigen  MovimientoStock[] @relation("MovOrigen")
+  movimientosDestino MovimientoStock[] @relation("MovDestino")
+  pedidosOrigen      Pedido[]          @relation("PedidoOrigen")
+
+  @@index([sucursalId])
+}
+
+// ===========================================================================
+//  v2 — LISTAS DE PRECIOS (producto único, muchos precios)
+// ===========================================================================
+
+/// Lista de precios por canal / tipo de cliente.
+/// Ej: Sala de Ventas, Web, Reparto, Negocio, Punto Benechito, Revendedor, Distribuidor, Supermercado.
+model ListaPrecio {
+  id            String    @id @default(cuid())
+  nombre        String
+  canal         String // sala | web | reparto | negocio | punto | revendedor | distribuidor | supermercado
+  vigenciaDesde DateTime?
+  vigenciaHasta DateTime?
+  activo        Boolean   @default(true)
+
+  precios   PrecioProducto[]
+  clientes  Negocio[]
+  createdAt DateTime         @default(now())
+}
+
+/// Precio de UN producto en UNA lista. cantidadMinima permite tramos/descuentos por volumen.
+model PrecioProducto {
+  id             String      @id @default(cuid())
+  producto       Producto    @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  productoId     String
+  lista          ListaPrecio @relation(fields: [listaId], references: [id], onDelete: Cascade)
+  listaId        String
+  precio         Decimal     @db.Decimal(12, 2)
+  cantidadMinima Int         @default(1)
+  descuento      Decimal?    @db.Decimal(12, 2)
+
+  @@unique([productoId, listaId, cantidadMinima])
+  @@index([listaId])
+}
+
+// ===========================================================================
+//  v2 — PEDIDOS / VENTAS / PAGOS  (conceptos SEPARADOS)
+// ===========================================================================
+
+/// Pedido = intención de compra. Su estado es INDEPENDIENTE del estado de pago.
+model Pedido {
+  id                String     @id @default(cuid())
+  negocio           Negocio    @relation(fields: [negocioId], references: [id])
+  negocioId         String
+  canal             String // web | whatsapp | sala | vendedor | preventa | distribuidor
+  estado            String     @default("solicitud") // solicitud|confirmado|preparacion|listo|entregado|finalizado
+  ubicacionOrigen   Ubicacion? @relation("PedidoOrigen", fields: [ubicacionOrigenId], references: [id])
+  ubicacionOrigenId String?
+  notas             String?
+
+  items PedidoItem[]
+  venta Venta?
+
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([negocioId])
+  @@index([estado])
+}
+
+model PedidoItem {
+  id         String   @id @default(cuid())
+  pedido     Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  pedidoId   String
+  producto   Producto @relation(fields: [productoId], references: [id])
+  productoId String
+  cantidad   Int
+  precioUnit Decimal  @db.Decimal(12, 2)
+
+  @@index([pedidoId])
+}
+
+/// Venta = hecho económico. Genera documento y descuenta stock. estadoPago ≠ estado del pedido.
+model Venta {
+  id          String    @id @default(cuid())
+  pedido      Pedido?   @relation(fields: [pedidoId], references: [id])
+  pedidoId    String?   @unique
+  negocio     Negocio   @relation(fields: [negocioId], references: [id])
+  negocioId   String
+  ubicacion   Ubicacion @relation(fields: [ubicacionId], references: [id])
+  ubicacionId String
+  vendedor    Usuario?  @relation("VendedorVentas", fields: [vendedorId], references: [id])
+  vendedorId  String?
+  total       Decimal   @db.Decimal(12, 2)
+  documento   String? // boleta | factura (integración tributaria futura)
+  estadoPago  String    @default("pendiente") // pendiente | parcial | pagado | vencido
+  fecha       DateTime  @default(now())
+
+  pagos Pago[]
+
+  @@index([negocioId])
+  @@index([estadoPago])
+}
+
+/// Pago = abono a una venta. Una venta puede tener varios pagos (crédito, mixtos).
+model Pago {
+  id      String   @id @default(cuid())
+  venta   Venta    @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  ventaId String
+  medio   String // efectivo | transferencia | tarjeta | credito | otro
+  monto   Decimal  @db.Decimal(12, 2)
+  fecha   DateTime @default(now())
+
+  @@index([ventaId])
+}
+
+// ===========================================================================
+//  v2 — INVENTARIO MULTIUBICACIÓN
+// ===========================================================================
+
+/// Stock de un producto EN una ubicación. Cargar un vehículo = TRANSFERENCIA, no venta.
+model Stock {
+  id          String    @id @default(cuid())
+  producto    Producto  @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  productoId  String
+  ubicacion   Ubicacion @relation(fields: [ubicacionId], references: [id], onDelete: Cascade)
+  ubicacionId String
+  cantidad    Int       @default(0)
+
+  @@unique([productoId, ubicacionId])
+  @@index([ubicacionId])
+}
+
+/// Cada movimiento de inventario (auditable).
+model MovimientoStock {
+  id                 String     @id @default(cuid())
+  producto           Producto   @relation(fields: [productoId], references: [id])
+  productoId         String
+  tipo               String // ingreso | venta | transferencia | merma | ajuste | produccion
+  ubicacionOrigen    Ubicacion? @relation("MovOrigen", fields: [ubicacionOrigenId], references: [id])
+  ubicacionOrigenId  String?
+  ubicacionDestino   Ubicacion? @relation("MovDestino", fields: [ubicacionDestinoId], references: [id])
+  ubicacionDestinoId String?
+  cantidad           Int
+  referencia         String? // id de venta, pedido, orden de producción, etc.
+  fecha              DateTime   @default(now())
+
+  @@index([productoId])
+}
+
+// ===========================================================================
+//  v2 — METAS y AUDITORÍA (Hub / seguridad)
+// ===========================================================================
+
+/// Meta/objetivo comercial u operativo. El Hub muestra Meta → Real → Diferencia → % cumplimiento.
+model Meta {
+  id        String   @id @default(cuid())
+  tipo      String // ventas | clientes_nuevos | puntos_instalados | margen | merma | produccion | cobranza
+  periodo   String // "2026-08" | "2026-Q3" | "2026" | "temporada-verano"
+  objetivo  Decimal  @db.Decimal(14, 2)
+  ambito    String? // sucursal:<id> | ruta:<id> | vendedor:<id> | global
+  createdAt DateTime @default(now())
+
+  @@index([tipo, periodo])
+}
+
+/// Auditoría de acciones críticas (ventas, pagos, cambios de precio, transferencias, cambios de estado).
+model Auditoria {
+  id        String   @id @default(cuid())
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id])
+  usuarioId String?
+  accion    String // crear | actualizar | eliminar | cambiar_estado | ...
+  entidad   String // Venta | Pago | PrecioProducto | Stock | Negocio | ...
+  entidadId String?
+  detalle   String? // JSON serializado con antes/después
+  createdAt DateTime @default(now())
+
+  @@index([entidad, entidadId])
 }

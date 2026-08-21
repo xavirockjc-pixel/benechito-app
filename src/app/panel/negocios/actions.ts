@@ -107,6 +107,30 @@ export async function registrarReposicion(formData: FormData) {
   revalidatePath("/panel/reposiciones");
 }
 
+/** Actualiza la clasificación comercial (tipo de cliente y lista de precios asignada). */
+export async function actualizarClasificacion(formData: FormData) {
+  const id = String(formData.get("id"));
+  const tipoCliente = String(formData.get("tipoCliente") ?? "").trim();
+  const listaPrecioId = String(formData.get("listaPrecioId") ?? "").trim() || null;
+  if (!id || !tipoCliente) return;
+
+  await prisma.negocio.update({
+    where: { id },
+    data: { tipoCliente, listaPrecioId },
+  });
+  await prisma.actividad.create({
+    data: {
+      negocioId: id,
+      tipo: "nota",
+      descripcion: `Clasificación actualizada: tipo "${tipoCliente}"${
+        listaPrecioId ? " con lista de precios asignada" : " (lista automática por canal)"
+      }`,
+    },
+  });
+
+  revalidatePath(`/panel/negocios/${id}`);
+}
+
 /** Elimina un negocio (y su historial en cascada). */
 export async function eliminarNegocio(formData: FormData) {
   const id = String(formData.get("id"));

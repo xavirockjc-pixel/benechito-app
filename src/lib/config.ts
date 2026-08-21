@@ -13,7 +13,7 @@ export const site = {
   salaVentas: "Sala de ventas: Manuel Montt 0860",
   coords: "37°00'45.2\"S 73°09'21.4\"W",
   mapsUrl: "https://www.google.com/maps?q=-37.012556,-73.155944",
-  web: "benechito.cl",
+  web: "benechito.com",
   instagram: "@Benechito_oficial",
   zonaCarbon: "El helado de la Zona del Carbón",
   puntosActivos: 23,

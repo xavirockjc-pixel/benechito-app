@@ -7,7 +7,9 @@ import {
   agregarNota,
   registrarReposicion,
   eliminarNegocio,
+  actualizarClasificacion,
 } from "../actions";
+import { TIPOS_CLIENTE, tipoClienteLabel, canalLabel } from "@/lib/dominio/precios";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +37,11 @@ export default async function FichaNegocio({
   if (!negocio) notFound();
   const meta = estadoMeta[negocio.estado as Estado];
   const waLink = `https://wa.me/${negocio.whatsapp.replace(/[^0-9]/g, "")}`;
+
+  const listas = await prisma.listaPrecio.findMany({
+    where: { activo: true },
+    orderBy: { nombre: "asc" },
+  });
 
   return (
     <div>
@@ -99,6 +106,50 @@ export default async function FichaNegocio({
               <Dato label="Interés en helados" valor={negocio.interesHelados ? "Sí 🍦" : "No"} />
               <Dato label="Origen" valor={negocio.origen} />
             </dl>
+          </Card>
+
+          {/* Clasificación comercial */}
+          <Card titulo="Clasificación comercial">
+            <p className="mb-3 text-sm text-choco-2">
+              El tipo de cliente y la lista de precios determinan qué precio se le aplica en pedidos y
+              POS. Si no asignas una lista, el sistema usa la del canal según el tipo.
+            </p>
+            <form
+              action={actualizarClasificacion}
+              className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end"
+            >
+              <input type="hidden" name="id" value={negocio.id} />
+              <label className="text-sm font-bold text-navy">
+                Tipo de cliente
+                <select
+                  name="tipoCliente"
+                  defaultValue={negocio.tipoCliente}
+                  className="mt-1 w-full rounded-xl border border-crema-2 bg-crema/40 px-3 py-2 font-normal text-choco outline-none focus:border-naranja"
+                >
+                  {TIPOS_CLIENTE.map((t) => (
+                    <option key={t} value={t}>{tipoClienteLabel[t]}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="text-sm font-bold text-navy">
+                Lista de precios
+                <select
+                  name="listaPrecioId"
+                  defaultValue={negocio.listaPrecioId ?? ""}
+                  className="mt-1 w-full rounded-xl border border-crema-2 bg-crema/40 px-3 py-2 font-normal text-choco outline-none focus:border-naranja"
+                >
+                  <option value="">Automática (según tipo)</option>
+                  {listas.map((l) => (
+                    <option key={l.id} value={l.id}>
+                      {l.nombre} · {canalLabel[l.canal] ?? l.canal}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button className="rounded-full bg-navy px-4 py-2 text-sm font-bold text-white transition hover:bg-navy-2">
+                Guardar
+              </button>
+            </form>
           </Card>
 
           {/* Fechas */}

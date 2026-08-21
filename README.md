@@ -18,7 +18,7 @@ npm run dev                 # http://localhost:3000
 - **Landing:** http://localhost:3000
 - **Panel:** http://localhost:3000/panel
 - **Login:** http://localhost:3000/login
-  - Usuario: `admin@benechito.cl` · Contraseña: `benechito123` (cambiar en `.env`)
+  - Usuario: `admin@benechito.com` · Contraseña: `benechito123` (cambiar en `.env`)
 
 ## Estructura
 

@@ -74,7 +74,7 @@ DATABASE_URL=postgresql://benechito:PASS@<postgres-interno>:5432/benechito?schem
 AUTH_SECRET=<cadena larga aleatoria>
 NEXT_PUBLIC_WHATSAPP=56965813188
 N8N_WEBHOOK_URL=http://<n8n-interno>:5678/webhook/nuevo-prospecto
-SEED_ADMIN_EMAIL=admin@benechito.cl
+SEED_ADMIN_EMAIL=admin@benechito.com
 SEED_ADMIN_PASSWORD=<contraseña fuerte>
 SEED_ADMIN_NOMBRE=Equipo Benechito
 ```
