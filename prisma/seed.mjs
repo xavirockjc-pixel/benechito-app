@@ -31,7 +31,18 @@ const cuchuflis = [
   { nombre: "Manjar Almendra", formato: "pack 9" },
 ].map((c) => ({ ...c, linea: "cuchufli", base: null, sku: `CCH-${slug(c.nombre)}` }));
 
-const productos = [...trufas, ...cuchuflis];
+// --- Helados (se venden por unidad; surtidos o de 1 sabor) ---
+// Nota: modelados por LÍNEA (el precio va por línea). Se pueden dividir por
+// sabor más adelante si hace falta. Precios se cargan desde el panel.
+const helados = [
+  { nombre: "Tú y Yo", formato: "unidad (pack 50)" },
+  { nombre: "Paleta de Leche", formato: "unidad (pack 50)" },
+  { nombre: "Paleta de Agua", formato: "unidad (pack 50)" },
+  { nombre: "Paleta Premium", formato: "unidad" },
+  { nombre: "Postre 500 ml", formato: "500 ml (pack 16)" },
+].map((h) => ({ ...h, linea: "helado", base: null, categoria: "Helados", sku: `HEL-${slug(h.nombre)}` }));
+
+const productos = [...trufas, ...cuchuflis, ...helados];
 
 async function main() {
   // Productos (idempotente por sku)
