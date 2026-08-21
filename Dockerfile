@@ -29,14 +29,16 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
-# Prisma: esquema, migraciones, CLI y cliente generado (para migrate deploy en el arranque)
-COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+# node_modules COMPLETO (deps): asegura que la CLI de Prisma (migrate deploy) y el
+# seed (npm run seed) tengan TODAS sus dependencias, incluidas las transitivas
+# (effect, bcryptjs, etc.) que el build autocontenido de Next no incluye.
+COPY --from=deps /app/node_modules ./node_modules
+# Cliente de Prisma ya generado en el build (el stage deps no lo tiene)
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/.bin ./node_modules/.bin
-# Dependencias que usa el seed (npm run seed) fuera del bundle de Next
-COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+
+# Prisma: esquema y migraciones (para migrate deploy en el arranque)
+COPY --from=builder /app/prisma ./prisma
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
