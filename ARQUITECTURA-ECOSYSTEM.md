@@ -306,9 +306,10 @@ Cada entregable se hace en rama, se revisa y recién luego se despliega. Ninguno
 | **E1 ✅** | **Modelo de datos común v2** | Esquema Prisma §4 + migración desde actual, sin UI | HECHO — migración aplicada, `tsc` limpio, datos intactos |
 | **E2 ✅** | Catálogo + listas de precios | Producto único, precio resuelto por cliente/canal | HECHO — panel de listas + editor de precios + `lib/dominio/precios.ts` + alta/edición de productos + clasificación de cliente (tipo + lista). Probado end-to-end en navegador y BD |
 | **E3 ✅** | Pedidos multicanal | `Pedido` con estado independiente del pago | HECHO — crear pedido (cliente+canal) → agregar líneas con precio resuelto por la lista del cliente → total → transición de estados. Probado end-to-end (Frutilla×2 @ lista = $6.000) |
-| E4 | POS + Caja + stock | Venta rápida, descuento de stock, apertura/cierre de caja | Venta descuenta stock correcto |
-| E5 | Pagos + cuenta corriente | `Venta`/`Pago` separados, saldos, estados | Abonos parciales cuadran saldo |
-| E6 | Ruta / preventa / cierre | CRM ruta, carga vehículo (transferencia), cierre de ruta | Cuadre mercadería + dinero |
+| **E4 ◐** | POS + Caja + stock | Venta rápida, descuento de stock, apertura/cierre de caja | POS HECHO (venta rápida + descuento de stock + pago). Pendiente: apertura/cierre/arqueo de caja |
+| **E5 ✅** | Pagos + cuenta corriente | `Venta`/`Pago` separados, saldos, estados | HECHO — abonos parciales cuadran saldo; cuenta corriente por cliente |
+| **E6 ◐** | Ruta / preventa / cierre | CRM ruta, carga vehículo (transferencia), cierre de ruta | Inventario multiubicación + transferencia (cargar vehículo) HECHO. Pendiente: preventa, planificación de ruta, cierre |
+| — | CRUD completo | Agregar/cambiar/eliminar en todas las entidades | HECHO — productos, clientes, listas, pedidos, ventas, pagos, ubicaciones |
 | E7 | Gestión | Producción, recetas versionadas, lotes, compras | Trazabilidad MP→producto→cliente |
 | E8 | Técnico | Activos, mantención, proyectos | Alerta de mantención vía n8n |
 | E9 | Hub + metas + IA | Dashboards calculados, agentes IA sobre BD | Números coinciden con datos reales |

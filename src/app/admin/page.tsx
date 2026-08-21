@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ESTADOS, estadoMeta, type Estado } from "@/lib/estados";
+import { fmtCLP } from "@/lib/dominio/pedidos";
 
 export const dynamic = "force-dynamic";
 
@@ -42,20 +43,67 @@ export default async function Dashboard() {
     take: 5,
   });
 
+  // --- Indicadores comerciales (calculados desde datos reales, §31) ---
+  const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+
+  const [ventasHoy, ventasMes, sumaVentas, sumaPagos, pedidosPend] = await Promise.all([
+    prisma.venta.aggregate({ _sum: { total: true }, where: { fecha: { gte: inicioHoy } } }),
+    prisma.venta.aggregate({ _sum: { total: true }, where: { fecha: { gte: inicioMes } } }),
+    prisma.venta.aggregate({ _sum: { total: true } }),
+    prisma.pago.aggregate({ _sum: { monto: true } }),
+    prisma.pedido.count({ where: { estado: { notIn: ["entregado", "finalizado"] } } }),
+  ]);
+
+  const totalHoy = Number(ventasHoy._sum.total ?? 0);
+  const totalMes = Number(ventasMes._sum.total ?? 0);
+  const porCobrar = Number(sumaVentas._sum.total ?? 0) - Number(sumaPagos._sum.monto ?? 0);
+
+  const comercial = [
+    { label: "Ventas de hoy", valor: fmtCLP(totalHoy), href: "/admin/ventas", accent: "text-slate-900" },
+    { label: "Ventas del mes", valor: fmtCLP(totalMes), href: "/admin/ventas", accent: "text-slate-900" },
+    { label: "Por cobrar", valor: fmtCLP(Math.max(0, porCobrar)), href: "/admin/ventas", accent: "text-amber-600" },
+    { label: "Pedidos pendientes", valor: String(pedidosPend), href: "/admin/pedidos", accent: "text-slate-900" },
+  ];
+
   return (
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-navy">Dashboard</h1>
-          <p className="text-sm text-choco-2">Evolución de la red Benechito</p>
+          <h1 className="text-2xl font-extrabold text-slate-900">Panel</h1>
+          <p className="text-sm text-slate-500">Operación comercial Benechito</p>
         </div>
-        <Link
-          href="/admin/negocios/nuevo"
-          className="rounded-full bg-naranja px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-naranja-2"
-        >
-          + Nuevo negocio
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/admin/pos"
+            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-105"
+          >
+            🛒 Vender
+          </Link>
+          <Link
+            href="/admin/negocios/nuevo"
+            className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-slate-700"
+          >
+            + Cliente
+          </Link>
+        </div>
       </div>
+
+      {/* Indicadores comerciales (calculados) */}
+      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+        {comercial.map((k) => (
+          <Link
+            key={k.label}
+            href={k.href}
+            className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <p className={`text-2xl font-extrabold ${k.accent}`}>{k.valor}</p>
+            <p className="mt-1 text-sm font-semibold text-slate-500">{k.label}</p>
+          </Link>
+        ))}
+      </div>
+
+      <h2 className="mt-8 mb-1 text-lg font-bold text-slate-900">Red de Puntos Benechito</h2>
 
       {/* KPIs */}
       <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
