@@ -86,6 +86,7 @@ model Producto {
   pedidoItems     PedidoItem[]
   stock           Stock[]
   movimientos     MovimientoStock[]
+  ordenesProduccion OrdenProduccion[]
 
   createdAt DateTime @default(now())
 }
@@ -190,6 +191,7 @@ model Ubicacion {
   movimientosDestino MovimientoStock[] @relation("MovDestino")
   pedidosOrigen      Pedido[]          @relation("PedidoOrigen")
   usuarios           Usuario[]         @relation("UsuarioVehiculo")
+  ordenesProduccion  OrdenProduccion[] @relation("OPDestino")
 
   @@index([sucursalId])
 }
@@ -379,5 +381,31 @@ model Preventa {
   createdAt DateTime @default(now())
 
   @@index([negocioId])
+  @@index([estado])
+}
+
+// ===========================================================================
+//  v2 — GESTIÓN: Fabricación (órdenes de producción)
+// ===========================================================================
+
+/// Orden de producción: al terminarse ingresa el producto fabricado a bodega.
+/// (Recetas, materias primas y trazabilidad de lote se amplían más adelante.)
+model OrdenProduccion {
+  id           String   @id @default(cuid())
+  producto     Producto @relation(fields: [productoId], references: [id])
+  productoId   String
+  cantidadPlan Int
+  cantidadReal Int?
+  merma        Int      @default(0)
+  // estado: planificada | en_proceso | terminada
+  estado       String   @default("planificada")
+  lote         String?
+  responsable  String?
+  notas        String?
+  ubicacionDestino   Ubicacion? @relation("OPDestino", fields: [ubicacionDestinoId], references: [id])
+  ubicacionDestinoId String?
+  createdAt    DateTime @default(now())
+  fechaTermino DateTime?
+
   @@index([estado])
 }

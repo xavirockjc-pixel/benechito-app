@@ -26,10 +26,9 @@ const modulos: Modulo[] = [
   },
   {
     titulo: "Gestión",
-    activo: false,
+    activo: true,
     items: [
-      { href: "#", label: "Producción", icon: "🏭" },
-      { href: "#", label: "Compras", icon: "📦" },
+      { href: "/admin/produccion", label: "Producción", icon: "🏭" },
     ],
   },
   {
