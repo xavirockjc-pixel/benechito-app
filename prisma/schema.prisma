@@ -57,6 +57,7 @@ model Negocio {
   // --- v2: operación comercial ---
   pedidos      Pedido[]
   ventas       Venta[]
+  preventas    Preventa[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -360,4 +361,23 @@ model Auditoria {
   createdAt DateTime @default(now())
 
   @@index([entidad, entidadId])
+}
+
+// ===========================================================================
+//  v2 — PREVENTA (contacto por WhatsApp antes de la ruta, vía n8n + Evolution)
+// ===========================================================================
+
+/// Contacto de preventa a un cliente. El resultado alimenta la planificación de ruta.
+model Preventa {
+  id        String   @id @default(cuid())
+  negocio   Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId String
+  mensaje   String?
+  // estado: enviada | pedido | visita | no_necesita | sin_respuesta
+  estado    String   @default("enviada")
+  canal     String   @default("whatsapp")
+  createdAt DateTime @default(now())
+
+  @@index([negocioId])
+  @@index([estado])
 }
