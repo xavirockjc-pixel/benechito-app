@@ -24,6 +24,9 @@ export default async function CajaPage() {
             Abrir caja
           </button>
         </form>
+        <Link href="/caja/distribucion" className="mt-3 block rounded-xl border border-slate-300 bg-white py-2.5 text-center text-sm font-bold text-slate-700 active:bg-slate-50">
+          📦 Recibir distribución
+        </Link>
       </div>
     );
   }
@@ -56,9 +59,14 @@ export default async function CajaPage() {
           <Stat label="Ventas" valor={String(nVentas)} />
           <Stat label="Fondo" valor={fmtCLP(Number(sesion.fondoInicial))} />
         </div>
-        <Link href="/caja/cierre" className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white active:brightness-110">
-          🧾 Cerrar caja
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/caja/distribucion" className="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 active:bg-slate-50">
+            📦 Distribución
+          </Link>
+          <Link href="/caja/cierre" className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white active:brightness-110">
+            🧾 Cerrar caja
+          </Link>
+        </div>
       </div>
 
       <CajaPOS productos={productos} />

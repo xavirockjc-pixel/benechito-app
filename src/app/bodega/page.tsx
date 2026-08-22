@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import MovimientoBodegaVoz from "./MovimientoBodegaVoz";
+import ArmarMixto from "./ArmarMixto";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,11 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
   const [productos, sabores, registroHoy] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
-    prisma.movimientoBodega.findMany({ where: { fecha: { gte: hoy } }, orderBy: { fecha: "desc" }, take: 100 }),
+    prisma.movimientoBodega.findMany({
+      where: { fecha: { gte: hoy }, zona: "bodega" },
+      orderBy: { fecha: "desc" },
+      take: 100,
+    }),
   ]);
 
   // Catálogo combinado para la voz y el manual: productos + sabores, id namespaced.
@@ -39,6 +44,7 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
 
   const totalEntradas = registroHoy.filter((m) => m.tipo === "entrada").reduce((s, m) => s + m.cantidad, 0);
   const totalMermas = registroHoy.filter((m) => m.tipo === "merma").reduce((s, m) => s + m.cantidad, 0);
+  const totalMixtos = registroHoy.filter((m) => m.tipo === "mixto").reduce((s, m) => s + m.cantidad, 0);
 
   return (
     <div className="space-y-5">
@@ -79,12 +85,22 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
         />
       </section>
 
+      {/* Armar mixto / surtido (mezclar sabores) */}
+      <section className="rounded-2xl border border-amber-200 bg-amber-50/50 p-4 shadow-sm">
+        <h2 className="mb-1 text-sm font-extrabold text-[#b45309]">🍬 Armar mixto / surtido</h2>
+        <p className="mb-2 text-xs text-slate-500">Saca bolsas de sabores de cámara, mézclalas y anota cuántos mixtos salieron.</p>
+        <ArmarMixto
+          productos={productos.map((p) => ({ id: p.id, nombre: p.nombre }))}
+          sabores={sabores.map((s) => ({ id: s.id, nombre: s.nombre }))}
+        />
+      </section>
+
       {/* Registro del día (lo que se movió hoy) — NO muestra el stock total (eso es privado del panel) */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-sm font-bold text-slate-900">🧾 Registro de hoy</h2>
           <span className="text-xs font-semibold text-slate-400">
-            +{totalEntradas} / −{totalMermas}
+            +{totalEntradas} / −{totalMermas}{totalMixtos > 0 ? ` · 🍬${totalMixtos}` : ""}
           </span>
         </div>
         {registroHoy.length === 0 ? (
@@ -94,8 +110,8 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
             {registroHoy.map((m) => (
               <li key={m.id} className="flex items-center justify-between py-1.5">
                 <span className="min-w-0">
-                  <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : "text-red-600"}`}>
-                    {m.tipo === "entrada" ? "📥" : "📤"} {m.tipo === "entrada" ? "+" : "−"}{m.cantidad}
+                  <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : m.tipo === "mixto" ? "text-[#b45309]" : "text-red-600"}`}>
+                    {m.tipo === "entrada" ? "📥 +" : m.tipo === "mixto" ? "🍬 " : "📤 −"}{m.cantidad}
                   </span>{" "}
                   <span className="text-slate-800">{m.nombre}</span>
                 </span>

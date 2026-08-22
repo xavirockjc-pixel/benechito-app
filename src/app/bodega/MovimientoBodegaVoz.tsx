@@ -18,6 +18,7 @@ export default function MovimientoBodegaVoz({
   hint,
   colorBoton,
   textoConfirmar,
+  zona = "bodega",
 }: {
   catalogo: Item[];
   signo: 1 | -1;
@@ -25,6 +26,7 @@ export default function MovimientoBodegaVoz({
   hint: string;
   colorBoton: string;
   textoConfirmar: string;
+  zona?: "bodega" | "sala";
 }) {
   const [cart, setCart] = useState<Record<string, number>>({});
   const porId = useMemo(() => new Map(catalogo.map((p) => [p.id, p])), [catalogo]);
@@ -78,6 +80,7 @@ export default function MovimientoBodegaVoz({
 
       {lineas.length > 0 && (
         <form action={moverStockBodega} className="rounded-xl border border-slate-200 bg-white p-3">
+          <input type="hidden" name="zona" value={zona} />
           <input type="hidden" name="items" value={JSON.stringify(itemsFirmados)} />
           <ul className="divide-y divide-slate-100">
             {lineas.map((l) => (
