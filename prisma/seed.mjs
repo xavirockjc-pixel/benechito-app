@@ -135,6 +135,14 @@ async function main() {
   });
   console.log("✔ Usuario caja: caja@benechito.com");
 
+  // Usuario bodega (para la app de producción y bodegaje /bodega)
+  await prisma.usuario.upsert({
+    where: { email: "bodega@benechito.com" },
+    update: {},
+    create: { email: "bodega@benechito.com", nombre: "Producción y Bodega", rol: "bodega", passwordHash: await bcrypt.hash("benechito123", 10) },
+  });
+  console.log("✔ Usuario bodega: bodega@benechito.com");
+
   // Negocios de ejemplo (puedes borrarlos desde el panel)
   const ejemplos = [
     { nombreContacto: "Rosa Pérez", nombreNegocio: "Almacén Doña Rosa", whatsapp: "+56 9 1111 1111", comuna: "Puente Alto", tipoNegocio: "Almacén", estado: "punto_activo", interesHelados: true },

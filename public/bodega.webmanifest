@@ -1,0 +1,16 @@
+{
+  "name": "Benechito Bodega",
+  "short_name": "Bodega",
+  "description": "Producción y bodegaje Benechito: entradas, mermas y stock",
+  "start_url": "/bodega",
+  "scope": "/bodega",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#b45309",
+  "theme_color": "#b45309",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
