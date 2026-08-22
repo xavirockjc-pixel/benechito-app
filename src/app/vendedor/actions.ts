@@ -118,6 +118,71 @@ export async function venderTerreno(formData: FormData) {
   redirect(`/vendedor/cliente/${negocioId}`);
 }
 
+/** Cliente genérico de mostrador (walk-in) para ventas sin cliente. Compartido con la caja. */
+async function clienteMostrador() {
+  let c = await prisma.negocio.findFirst({ where: { nombreNegocio: "Consumidor Final" } });
+  if (!c) {
+    c = await prisma.negocio.create({
+      data: { nombreContacto: "Consumidor Final", nombreNegocio: "Consumidor Final", whatsapp: "", comuna: "", tipoCliente: "consumidor", estado: "punto_activo", origen: "pos" },
+    });
+  }
+  return c;
+}
+
+/**
+ * Venta rápida en terreno: venta directa a público, SIN elegir un cliente y sin
+ * depender de la ruta. Queda pagada (efectivo/transferencia), se registra a nombre
+ * del vendedor y descuenta del stock de su camión (igual que la venta a cliente).
+ */
+export async function ventaRapida(formData: FormData) {
+  const modo = String(formData.get("modo") ?? "efectivo").trim(); // efectivo|transferencia
+  const raw = String(formData.get("items") ?? "[]");
+
+  let items: LineaTerreno[] = [];
+  try {
+    items = JSON.parse(raw);
+  } catch {
+    return;
+  }
+  items = items.filter((i) => i.productoId && i.cantidad > 0 && i.precioUnit >= 0);
+  if (items.length === 0) return;
+
+  const total = items.reduce((s, i) => s + i.precioUnit * i.cantidad, 0);
+  const medio = (MEDIOS_PAGO as readonly string[]).includes(modo) && modo !== "credito" ? modo : "efectivo";
+
+  const u = await usuarioActual();
+  const ubicacionId =
+    (await miVehiculoId()) ??
+    (await prisma.ubicacion.findFirst({ where: { tipo: "vehiculo" } }))?.id ??
+    (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } }))?.id ??
+    (await prisma.ubicacion.findFirst())?.id;
+  if (!ubicacionId) return;
+
+  const cliente = await clienteMostrador();
+
+  const venta = await prisma.venta.create({
+    data: {
+      negocioId: cliente.id,
+      ubicacionId,
+      vendedorId: u?.sub ?? null,
+      total,
+      estadoPago: "pagado",
+      documento: "boleta",
+      pagos: { create: { medio, monto: total } },
+    },
+  });
+
+  for (const it of items) {
+    await aplicarDelta(it.productoId, ubicacionId, -it.cantidad);
+    await prisma.movimientoStock.create({
+      data: { productoId: it.productoId, tipo: "venta", ubicacionOrigenId: ubicacionId, cantidad: it.cantidad, referencia: venta.id },
+    });
+  }
+
+  revalidatePath("/vendedor/venta-rapida");
+  redirect("/vendedor?vendido=1");
+}
+
 /** Registra un abono a una venta pendiente del cliente (cobranza en terreno). */
 export async function registrarCobro(formData: FormData) {
   const ventaId = String(formData.get("ventaId") ?? "").trim();

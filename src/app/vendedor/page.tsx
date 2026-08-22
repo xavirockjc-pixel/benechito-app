@@ -9,9 +9,9 @@ export const dynamic = "force-dynamic";
 export default async function VendedorHome({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; vendido?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, vendido } = await searchParams;
   const busca = (q ?? "").trim();
 
   const clientes = await prisma.negocio.findMany({
@@ -42,6 +42,19 @@ export default async function VendedorHome({
       <div className="mb-3">
         <MiUbicacion />
       </div>
+
+      {vendido && (
+        <p className="mb-3 rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">
+          ✓ Venta registrada
+        </p>
+      )}
+
+      <Link
+        href="/vendedor/venta-rapida"
+        className="mb-4 flex items-center justify-center gap-2 rounded-2xl bg-green-600 py-4 text-base font-extrabold text-white shadow active:brightness-95"
+      >
+        ⚡ Venta rápida (sin cliente)
+      </Link>
 
       <h1 className="text-xl font-extrabold text-slate-900">Mis clientes</h1>
 
