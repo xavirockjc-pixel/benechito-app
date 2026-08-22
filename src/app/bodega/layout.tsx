@@ -27,7 +27,17 @@ export default async function BodegaLayout({ children }: { children: React.React
           <form action={logout}><button className="text-xs font-semibold text-white/80">Salir</button></form>
         </span>
       </header>
-      <main className="flex-1 p-4">{children}</main>
+      <main className="flex-1 p-4 pb-24">{children}</main>
+
+      {/* Barra inferior (navegación) */}
+      <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md items-center justify-around border-t border-slate-200 bg-white px-2 py-2 text-xs">
+        <Link href="/bodega" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
+          <span className="text-lg">📦</span> Bodega
+        </Link>
+        <Link href="/bodega/surtidos" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
+          <span className="text-lg">🍬</span> Surtidos
+        </Link>
+      </nav>
     </div>
   );
 }

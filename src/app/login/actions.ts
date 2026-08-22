@@ -35,6 +35,7 @@ export async function login(
 
   // Destino: respeta `next` si es una zona válida; si no, la "casa" del rol.
   const zonaValida =
-    next.startsWith("/admin") || next.startsWith("/vendedor") || next.startsWith("/caja") || next.startsWith("/bodega");
+    next.startsWith("/admin") || next.startsWith("/vendedor") || next.startsWith("/caja") ||
+    next.startsWith("/bodega") || next.startsWith("/produccion");
   redirect(zonaValida ? next : homeDe(usuario.rol));
 }

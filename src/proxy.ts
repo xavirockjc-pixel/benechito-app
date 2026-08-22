@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
-import { puedeAccederAdmin, homeDe, ROLES_CAJA, ROLES_BODEGA, ROLES_FULL } from "@/lib/dominio/permisos";
+import { puedeAccederAdmin, homeDe, ROLES_CAJA, ROLES_BODEGA, ROLES_PRODUCCION, ROLES_FULL } from "@/lib/dominio/permisos";
 
 const secret = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "benechito-dev-secret-cambiar"
@@ -49,9 +49,16 @@ export async function proxy(req: NextRequest) {
     }
   }
 
-  // /bodega: solo producción/bodega (y administración). El resto, a su app.
+  // /bodega: solo bodega (y administración). El resto, a su app.
   if (path.startsWith("/bodega")) {
     if (!ROLES_BODEGA.includes(rol) && !ROLES_FULL.includes(rol)) {
+      return NextResponse.redirect(new URL(casa, req.url));
+    }
+  }
+
+  // /produccion: solo producción (y administración). El resto, a su app.
+  if (path.startsWith("/produccion")) {
+    if (!ROLES_PRODUCCION.includes(rol) && !ROLES_FULL.includes(rol)) {
       return NextResponse.redirect(new URL(casa, req.url));
     }
   }
@@ -60,5 +67,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/vendedor/:path*", "/caja/:path*", "/bodega/:path*"],
+  matcher: ["/admin/:path*", "/vendedor/:path*", "/caja/:path*", "/bodega/:path*", "/produccion/:path*"],
 };

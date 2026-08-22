@@ -3,13 +3,15 @@
 
 export const ROLES_TERRENO = ["vendedor", "chofer"]; // app /vendedor
 export const ROLES_CAJA = ["caja"]; // app /caja (cajero de la sala)
-export const ROLES_BODEGA = ["bodega", "produccion"]; // app /bodega (producción y bodegaje)
+export const ROLES_BODEGA = ["bodega"]; // app /bodega (stock y surtidos)
+export const ROLES_PRODUCCION = ["produccion"]; // app /produccion (fabricación)
 export const ROLES_FULL = ["propietario", "admin"]; // ven TODO el panel
 
 /** Adónde va cada rol al entrar (su "casa"). */
 export function homeDe(rol: string): string {
   if (ROLES_TERRENO.includes(rol)) return "/vendedor";
   if (ROLES_CAJA.includes(rol)) return "/caja";
+  if (ROLES_PRODUCCION.includes(rol)) return "/produccion";
   if (ROLES_BODEGA.includes(rol)) return "/bodega";
   return "/admin";
 }

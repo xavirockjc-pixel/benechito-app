@@ -135,13 +135,21 @@ async function main() {
   });
   console.log("✔ Usuario caja: caja@benechito.com");
 
-  // Usuario bodega (para la app de producción y bodegaje /bodega)
+  // Usuario bodega (app de bodegaje y surtidos /bodega)
   await prisma.usuario.upsert({
     where: { email: "bodega@benechito.com" },
     update: {},
-    create: { email: "bodega@benechito.com", nombre: "Producción y Bodega", rol: "bodega", passwordHash: await bcrypt.hash("benechito123", 10) },
+    create: { email: "bodega@benechito.com", nombre: "Bodega", rol: "bodega", passwordHash: await bcrypt.hash("benechito123", 10) },
   });
   console.log("✔ Usuario bodega: bodega@benechito.com");
+
+  // Usuario producción (app de fabricación /produccion)
+  await prisma.usuario.upsert({
+    where: { email: "produccion@benechito.com" },
+    update: {},
+    create: { email: "produccion@benechito.com", nombre: "Producción", rol: "produccion", passwordHash: await bcrypt.hash("benechito123", 10) },
+  });
+  console.log("✔ Usuario producción: produccion@benechito.com");
 
   // Negocios de ejemplo (puedes borrarlos desde el panel)
   const ejemplos = [
