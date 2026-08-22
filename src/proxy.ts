@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { jwtVerify } from "jose";
-import { puedeAccederAdmin, ROLES_TERRENO } from "@/lib/dominio/permisos";
+import { puedeAccederAdmin, homeDe, ROLES_CAJA, ROLES_FULL } from "@/lib/dominio/permisos";
 
 const secret = new TextEncoder().encode(
   process.env.AUTH_SECRET ?? "benechito-dev-secret-cambiar"
@@ -31,15 +31,21 @@ export async function proxy(req: NextRequest) {
   }
 
   const path = req.nextUrl.pathname;
+  const casa = homeDe(rol);
 
   if (path.startsWith("/admin")) {
-    // Terreno no entra al panel → a su app.
-    if (ROLES_TERRENO.includes(rol)) {
-      return NextResponse.redirect(new URL("/vendedor", req.url));
-    }
+    // Quien no es de administración → a su app (vendedor / caja).
+    if (casa !== "/admin") return NextResponse.redirect(new URL(casa, req.url));
     // Rol acotado sin permiso para esta sección → al dashboard.
     if (!puedeAccederAdmin(rol, path)) {
       return NextResponse.redirect(new URL("/admin", req.url));
+    }
+  }
+
+  // /caja: solo el cajero (y administración, para revisar). El resto, a su app.
+  if (path.startsWith("/caja")) {
+    if (!ROLES_CAJA.includes(rol) && !ROLES_FULL.includes(rol)) {
+      return NextResponse.redirect(new URL(casa, req.url));
     }
   }
 
@@ -47,5 +53,5 @@ export async function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/vendedor/:path*"],
+  matcher: ["/admin/:path*", "/vendedor/:path*", "/caja/:path*"],
 };

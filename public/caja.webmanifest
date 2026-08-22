@@ -1,0 +1,15 @@
+{
+  "name": "Benechito Caja",
+  "short_name": "Caja",
+  "description": "Punto de venta y caja de la sala Benechito",
+  "start_url": "/caja",
+  "scope": "/caja",
+  "display": "standalone",
+  "background_color": "#0f7a44",
+  "theme_color": "#0f7a44",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

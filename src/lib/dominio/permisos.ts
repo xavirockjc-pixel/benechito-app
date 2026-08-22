@@ -1,8 +1,16 @@
 // Permisos por rol dentro del panel (/admin). Cada rol ve/usa solo lo suyo (§35).
 // Función pura (sirve en el middleware/edge y en el layout del panel).
 
-export const ROLES_TERRENO = ["vendedor", "chofer"]; // solo la app /vendedor
+export const ROLES_TERRENO = ["vendedor", "chofer"]; // app /vendedor
+export const ROLES_CAJA = ["caja"]; // app /caja (cajero de la sala)
 export const ROLES_FULL = ["propietario", "admin"]; // ven TODO el panel
+
+/** Adónde va cada rol al entrar (su "casa"). */
+export function homeDe(rol: string): string {
+  if (ROLES_TERRENO.includes(rol)) return "/vendedor";
+  if (ROLES_CAJA.includes(rol)) return "/caja";
+  return "/admin";
+}
 
 // Prefijo de ruta → roles (además de los "full") que pueden entrar.
 // El dashboard (/admin) lo ven todos los roles de panel.

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { firmarSesion, crearCookieSesion } from "@/lib/auth";
+import { homeDe } from "@/lib/dominio/permisos";
 
 export type LoginState = { error?: string };
 
@@ -32,8 +33,8 @@ export async function login(
   });
   await crearCookieSesion(token);
 
-  // Destino: respeta `next` si es una zona válida; si no, según el rol.
-  const zonaValida = next.startsWith("/admin") || next.startsWith("/vendedor");
-  const porRol = ["vendedor", "chofer"].includes(usuario.rol) ? "/vendedor" : "/admin";
-  redirect(zonaValida ? next : porRol);
+  // Destino: respeta `next` si es una zona válida; si no, la "casa" del rol.
+  const zonaValida =
+    next.startsWith("/admin") || next.startsWith("/vendedor") || next.startsWith("/caja");
+  redirect(zonaValida ? next : homeDe(usuario.rol));
 }

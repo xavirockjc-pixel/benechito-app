@@ -161,6 +161,7 @@ model Usuario {
   ventasRegistradas Venta[]     @relation("VendedorVentas")
   auditorias        Auditoria[]
   rutas             Ruta[]      @relation("RutaVendedor")
+  sesionesCaja      SesionCaja[]
 }
 
 // ===========================================================================
@@ -201,6 +202,7 @@ model Ubicacion {
   pedidosOrigen      Pedido[]          @relation("PedidoOrigen")
   usuarios           Usuario[]         @relation("UsuarioVehiculo")
   ordenesProduccion  OrdenProduccion[] @relation("OPDestino")
+  sesionesCaja       SesionCaja[]
 
   @@index([sucursalId])
 }
@@ -291,6 +293,9 @@ model Venta {
   documento   String? // boleta | factura (integración tributaria futura)
   estadoPago  String    @default("pendiente") // pendiente | parcial | pagado | vencido
   fecha       DateTime  @default(now())
+  // Sesión de caja del POS a la que pertenece (si se vendió en la sala).
+  sesionCaja   SesionCaja? @relation(fields: [sesionCajaId], references: [id])
+  sesionCajaId String?
 
   pagos Pago[]
 
@@ -509,4 +514,42 @@ model Gasto {
   createdAt DateTime @default(now())
 
   @@index([fecha])
+}
+
+// ===========================================================================
+//  v2 — CAJA del POS (apertura / ventas del día / cierre con arqueo)
+// ===========================================================================
+
+/// Sesión de caja de la sala: se abre con un fondo, acumula ventas y se cierra
+/// contando el efectivo (arqueo). Ver §8.
+model SesionCaja {
+  id           String   @id @default(cuid())
+  ubicacion    Ubicacion @relation(fields: [ubicacionId], references: [id])
+  ubicacionId  String
+  usuario      Usuario? @relation(fields: [usuarioId], references: [id])
+  usuarioId    String?
+  estado       String   @default("abierta") // abierta | cerrada
+  fondoInicial    Decimal  @db.Decimal(12, 2)
+  efectivoContado Decimal? @db.Decimal(12, 2)
+  fechaApertura DateTime @default(now())
+  fechaCierre   DateTime?
+  notas        String?
+
+  ventas      Venta[]
+  movimientos MovimientoCaja[]
+
+  @@index([estado])
+}
+
+/// Movimiento manual de efectivo en la caja (retiro para pagar algo, ingreso extra).
+model MovimientoCaja {
+  id          String     @id @default(cuid())
+  sesion      SesionCaja @relation(fields: [sesionCajaId], references: [id], onDelete: Cascade)
+  sesionCajaId String
+  tipo        String // ingreso | egreso
+  concepto    String
+  monto       Decimal    @db.Decimal(12, 2)
+  fecha       DateTime   @default(now())
+
+  @@index([sesionCajaId])
 }
