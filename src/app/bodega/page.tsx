@@ -3,6 +3,8 @@ import MovimientoBodegaVoz from "./MovimientoBodegaVoz";
 
 export const dynamic = "force-dynamic";
 
+const fmtHora = (d: Date) => new Date(d).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+
 export default async function BodegaHome({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
   const { ok } = await searchParams;
 
@@ -19,21 +21,24 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
     );
   }
 
-  const [productos, sabores, stockProd, stockSab] = await Promise.all([
+  // Inicio del día (hora local del servidor).
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  const [productos, sabores, registroHoy] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
-    prisma.stock.findMany({ where: { ubicacionId: bodega.id }, include: { producto: { select: { nombre: true } } } }),
-    prisma.stockSabor.findMany({ where: { ubicacionId: bodega.id }, include: { sabor: { select: { nombre: true } } } }),
+    prisma.movimientoBodega.findMany({ where: { fecha: { gte: hoy } }, orderBy: { fecha: "desc" }, take: 100 }),
   ]);
 
-  // Catálogo combinado para la voz: productos + sabores, con id namespaced.
+  // Catálogo combinado para la voz y el manual: productos + sabores, id namespaced.
   const catalogo = [
     ...productos.map((p) => ({ id: `prod:${p.id}`, nombre: p.nombre })),
     ...sabores.map((s) => ({ id: `sab:${s.id}`, nombre: s.nombre })),
   ];
 
-  const enBodega = stockProd.filter((s) => s.cantidad !== 0).sort((a, b) => a.producto.nombre.localeCompare(b.producto.nombre));
-  const saboresBodega = stockSab.filter((s) => s.cantidad !== 0).sort((a, b) => a.sabor.nombre.localeCompare(b.sabor.nombre));
+  const totalEntradas = registroHoy.filter((m) => m.tipo === "entrada").reduce((s, m) => s + m.cantidad, 0);
+  const totalMermas = registroHoy.filter((m) => m.tipo === "merma").reduce((s, m) => s + m.cantidad, 0);
 
   return (
     <div className="space-y-5">
@@ -44,7 +49,7 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
 
       {ok && (
         <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">
-          ✓ Stock actualizado
+          ✓ Registrado
         </p>
       )}
 
@@ -74,38 +79,36 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
         />
       </section>
 
-      {/* Stock actual */}
+      {/* Registro del día (lo que se movió hoy) — NO muestra el stock total (eso es privado del panel) */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="mb-2 text-sm font-bold text-slate-900">📦 Stock en bodega</h2>
-        {enBodega.length === 0 && saboresBodega.length === 0 ? (
-          <p className="text-sm text-slate-500">Bodega vacía. Registra lo que entra arriba.</p>
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-slate-900">🧾 Registro de hoy</h2>
+          <span className="text-xs font-semibold text-slate-400">
+            +{totalEntradas} / −{totalMermas}
+          </span>
+        </div>
+        {registroHoy.length === 0 ? (
+          <p className="text-sm text-slate-500">Aún no registras movimientos hoy.</p>
         ) : (
-          <>
-            {enBodega.length > 0 && (
-              <ul className="divide-y divide-slate-100 text-sm">
-                {enBodega.map((s) => (
-                  <li key={s.id} className="flex justify-between py-1.5">
-                    <span className="text-slate-800">{s.producto.nombre}</span>
-                    <span className="font-bold text-slate-900">{s.cantidad}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {saboresBodega.length > 0 && (
-              <>
-                <p className="mt-3 mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">Sabores</p>
-                <ul className="grid grid-cols-2 gap-x-4 text-sm">
-                  {saboresBodega.map((s) => (
-                    <li key={s.id} className="flex justify-between py-1">
-                      <span className="text-slate-800">{s.sabor.nombre}</span>
-                      <span className="font-bold text-slate-900">{s.cantidad}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </>
+          <ul className="divide-y divide-slate-100 text-sm">
+            {registroHoy.map((m) => (
+              <li key={m.id} className="flex items-center justify-between py-1.5">
+                <span className="min-w-0">
+                  <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : "text-red-600"}`}>
+                    {m.tipo === "entrada" ? "📥" : "📤"} {m.tipo === "entrada" ? "+" : "−"}{m.cantidad}
+                  </span>{" "}
+                  <span className="text-slate-800">{m.nombre}</span>
+                </span>
+                <span className="shrink-0 text-xs text-slate-400">
+                  {m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}
+                </span>
+              </li>
+            ))}
+          </ul>
         )}
+        <p className="mt-2 text-[11px] leading-tight text-slate-400">
+          Solo ves lo registrado hoy. El stock total y la producción acumulada se ven únicamente en el panel.
+        </p>
       </section>
     </div>
   );

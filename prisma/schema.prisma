@@ -349,6 +349,22 @@ model MovimientoStock {
   @@index([productoId])
 }
 
+/// Registro diario simple de la app de Bodega (entradas y mermas, productos y sabores).
+/// Denormalizado (guarda el nombre) para mostrar el "registro del día" sin joins.
+model MovimientoBodega {
+  id        String   @id @default(cuid())
+  tipo      String // entrada | merma
+  clase     String // producto | sabor
+  refId     String // id del producto o sabor
+  nombre    String // nombre al momento del registro
+  cantidad  Int
+  usuarioId String?
+  nombreUsuario String?
+  fecha     DateTime @default(now())
+
+  @@index([fecha])
+}
+
 // ===========================================================================
 //  v2 — METAS y AUDITORÍA (Hub / seguridad)
 // ===========================================================================

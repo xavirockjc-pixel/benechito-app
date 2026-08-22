@@ -44,7 +44,7 @@ export default function MovimientoBodegaVoz({
   const sub = (id: string) => aplicar([{ productoId: id, delta: -1, nombre: "" }]);
 
   const lineas = Object.entries(cart).map(([id, cantidad]) => ({ id, nombre: porId.get(id)?.nombre ?? "", cantidad }));
-  const itemsFirmados = lineas.map((l) => ({ id: l.id, delta: l.cantidad * signo }));
+  const itemsFirmados = lineas.map((l) => ({ id: l.id, delta: l.cantidad * signo, nombre: l.nombre }));
 
   return (
     <div className="space-y-3">
@@ -54,6 +54,27 @@ export default function MovimientoBodegaVoz({
         etiqueta={etiqueta}
         hint={hint}
       />
+
+      {/* Agregar a mano (sin voz): toca un producto para sumarlo */}
+      <details className="rounded-xl border border-slate-200 bg-white p-3">
+        <summary className="cursor-pointer text-sm font-bold text-slate-700">➕ Agregar a mano</summary>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          {catalogo.map((p) => {
+            const n = cart[p.id] ?? 0;
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => add(p.id)}
+                className={`rounded-lg border p-2 text-left text-sm active:brightness-95 ${n > 0 ? "border-[#b45309] bg-amber-50" : "border-slate-200 bg-white"}`}
+              >
+                <span className="block truncate font-semibold text-slate-800">{p.nombre}</span>
+                {n > 0 && <span className="text-xs font-bold text-[#b45309]">× {n}</span>}
+              </button>
+            );
+          })}
+        </div>
+      </details>
 
       {lineas.length > 0 && (
         <form action={moverStockBodega} className="rounded-xl border border-slate-200 bg-white p-3">
