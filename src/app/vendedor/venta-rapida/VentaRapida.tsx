@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { ventaRapida } from "../actions";
+import ControlVoz from "../ControlVoz";
+import type { CambioVoz } from "@/lib/dominio/voz";
 
 type Prod = { id: string; nombre: string; formato: string | null; precio: number };
 
@@ -15,6 +17,16 @@ export default function VentaRapida({ productos }: { productos: Prod[] }) {
       const next = { ...c };
       if (n <= 0) delete next[id];
       else next[id] = n;
+      return next;
+    });
+  const aplicarVoz = (cambios: CambioVoz[]) =>
+    setCart((c) => {
+      const next = { ...c };
+      for (const { productoId, delta } of cambios) {
+        const n = (next[productoId] ?? 0) + delta;
+        if (n <= 0) delete next[productoId];
+        else next[productoId] = n;
+      }
       return next;
     });
 
@@ -32,6 +44,8 @@ export default function VentaRapida({ productos }: { productos: Prod[] }) {
           No hay productos con precio para la venta directa. Cárgalos en Precios (panel), en la lista Reparto o Sala de Ventas.
         </p>
       )}
+
+      {productos.length > 0 && <ControlVoz productos={productos} onCambios={aplicarVoz} />}
 
       {/* Productos */}
       <div className="grid grid-cols-2 gap-2">

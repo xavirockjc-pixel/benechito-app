@@ -3,6 +3,8 @@
 import { useMemo, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { venderTerreno } from "../../../actions";
+import ControlVoz from "../../../ControlVoz";
+import type { CambioVoz } from "@/lib/dominio/voz";
 
 type Prod = { id: string; nombre: string; formato: string | null; precio: number };
 
@@ -23,6 +25,16 @@ export default function VenderTerreno({
       else next[id] = n;
       return next;
     });
+  const aplicarVoz = (cambios: CambioVoz[]) =>
+    setCart((c) => {
+      const next = { ...c };
+      for (const { productoId, delta } of cambios) {
+        const n = (next[productoId] ?? 0) + delta;
+        if (n <= 0) delete next[productoId];
+        else next[productoId] = n;
+      }
+      return next;
+    });
 
   const porId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
   const lineas = Object.entries(cart).map(([id, cantidad]) => {
@@ -38,6 +50,8 @@ export default function VenderTerreno({
           Este cliente no tiene productos con precio en su lista. Cárgalos en Precios (panel).
         </p>
       )}
+
+      {productos.length > 0 && <ControlVoz productos={productos} onCambios={aplicarVoz} />}
 
       {/* Productos */}
       <div className="grid grid-cols-2 gap-2">
