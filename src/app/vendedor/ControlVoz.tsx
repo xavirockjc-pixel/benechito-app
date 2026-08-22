@@ -14,9 +14,13 @@ type SpeechRec = {
 export default function ControlVoz({
   productos,
   onCambios,
+  etiqueta = "Agregar por voz",
+  hint = "Di por ejemplo: “tres trufas”, “dos paletas de leche”, “quita una trufa”.",
 }: {
   productos: ProdVoz[];
   onCambios: (cambios: CambioVoz[]) => void;
+  etiqueta?: string;
+  hint?: string;
 }) {
   const recRef = useRef<SpeechRec | null>(null);
   const [soportado, setSoportado] = useState(true);
@@ -74,14 +78,12 @@ export default function ControlVoz({
         disabled={escuchando}
         className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-base font-extrabold text-white shadow active:brightness-95 ${escuchando ? "animate-pulse bg-red-500" : "bg-[#1479c4]"}`}
       >
-        🎙️ {escuchando ? "Escuchando… habla ahora" : "Agregar por voz"}
+        🎙️ {escuchando ? "Escuchando… habla ahora" : etiqueta}
       </button>
       {dijo && <p className="mt-2 text-center text-xs text-slate-500">Escuché: “{dijo}”</p>}
       {resumen && <p className="mt-1 text-center text-sm font-bold text-green-700">{resumen}</p>}
       {!dijo && (
-        <p className="mt-2 text-center text-[11px] leading-tight text-slate-400">
-          Di por ejemplo: “tres trufas”, “dos paletas de leche”, “quita una trufa”.
-        </p>
+        <p className="mt-2 text-center text-[11px] leading-tight text-slate-400">{hint}</p>
       )}
     </div>
   );

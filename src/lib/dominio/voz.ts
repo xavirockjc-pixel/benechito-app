@@ -19,8 +19,15 @@ const NUMEROS: Record<string, number> = {
 // Palabras que indican RESTAR.
 const RESTAR = ["quita", "quitar", "quitame", "saca", "sacar", "sacame", "resta", "restar", "menos", "elimina", "eliminar", "borra", "borrar", "remueve", "remover"];
 
-// Palabras a ignorar al comparar nombres de producto.
-const RELLENO = new Set(["de", "el", "la", "los", "las", "un", "una", "unos", "unas", "y", "con", "por", "favor", "agrega", "agregar", "agregame", "suma", "sumar", "sumame", "pon", "poner", "ponme", "mas", "otra", "otro"]);
+// Palabras a ignorar al comparar nombres de producto (verbos de acción, conectores…).
+const RELLENO = new Set([
+  "de", "el", "la", "los", "las", "un", "una", "unos", "unas", "y", "con", "por", "favor", "mas", "otra", "otro",
+  "agrega", "agregar", "agregame", "suma", "sumar", "sumame", "pon", "poner", "ponme",
+  // carga al camión / recepción a bodega
+  "carga", "cargar", "cargame", "carguen", "sube", "subir", "sube", "lleva", "llevar",
+  "llego", "llegaron", "llega", "llegan", "recibi", "recibe", "recibio", "recibimos",
+  "ingresa", "ingresar", "ingreso", "entra", "entraron", "deja", "deje", "dejamos", "repon", "reponer",
+]);
 
 /** Interpreta una frase completa y devuelve los cambios al carrito. */
 export function interpretarComandoVenta(texto: string, productos: ProdVoz[]): CambioVoz[] {

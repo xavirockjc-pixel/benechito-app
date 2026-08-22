@@ -377,6 +377,32 @@ export async function cargarVehiculo(formData: FormData) {
   revalidatePath("/vendedor/camion");
 }
 
+/** Carga VARIOS productos al camión de una vez (usado por el modo voz). */
+export async function cargarVehiculoLote(formData: FormData) {
+  let items: { productoId: string; cantidad: number }[] = [];
+  try {
+    items = JSON.parse(String(formData.get("items") ?? "[]"));
+  } catch {
+    return;
+  }
+  items = items.filter((i) => i.productoId && i.cantidad > 0);
+  if (items.length === 0) return;
+
+  const vehId = await miVehiculoId();
+  const bod = await bodegaId();
+  if (!vehId || !bod) return;
+
+  for (const it of items) {
+    await aplicarDelta(it.productoId, bod, -it.cantidad);
+    await aplicarDelta(it.productoId, vehId, it.cantidad);
+    await prisma.movimientoStock.create({
+      data: { productoId: it.productoId, tipo: "transferencia", ubicacionOrigenId: bod, ubicacionDestinoId: vehId, cantidad: it.cantidad },
+    });
+  }
+
+  revalidatePath("/vendedor/camion");
+}
+
 /**
  * Devuelve a bodega TODO lo que quedó en el camión (lo que no se vendió).
  * Se suma automáticamente al stock de bodega y el camión queda en cero.

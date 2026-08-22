@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { asignarVehiculo, cargarVehiculo, devolverTodoABodega, cargarSabor } from "../actions";
+import CargarCamionVoz from "./CargarCamionVoz";
 
 export const dynamic = "force-dynamic";
 
@@ -94,6 +95,14 @@ export default async function CamionPage() {
       {/* Cargar desde bodega */}
       <section className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="mb-2 text-sm font-bold text-slate-900">Cargar desde bodega</h2>
+
+        {bodega && (
+          <div className="mb-3">
+            <CargarCamionVoz productos={productos.map((p) => ({ id: p.id, nombre: p.nombre, enBodega: bodegaDe.get(p.id) ?? 0 }))} />
+            <p className="my-2 text-center text-xs text-slate-400">— o carga uno a uno —</p>
+          </div>
+        )}
+
         <form action={cargarVehiculo} className="grid grid-cols-[1fr_auto_auto] items-end gap-2">
           <label className="text-xs font-bold text-slate-600">Producto
             <select name="productoId" required defaultValue="" className={`mt-1 ${inputCls}`}>
