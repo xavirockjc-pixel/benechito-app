@@ -92,11 +92,43 @@ export async function asignarDocumento(formData: FormData) {
   revalidatePath(`/admin/ventas/${ventaId}`);
 }
 
-/** Elimina una venta (y sus pagos en cascada). El pedido queda sin venta asociada. */
+/**
+ * Elimina/deshace una venta: REPONE el stock que había descontado, borra sus
+ * movimientos y la venta (pagos en cascada), y lo deja en auditoría. Para corregir
+ * errores o limpiar pruebas. El pedido, si existía, queda sin venta asociada.
+ */
 export async function eliminarVenta(formData: FormData) {
   const ventaId = String(formData.get("ventaId") ?? "").trim();
+  const volverALista = String(formData.get("volver") ?? "") === "lista";
   if (!ventaId) return;
+
+  const venta = await prisma.venta.findUnique({ where: { id: ventaId }, select: { id: true, total: true } });
+  if (!venta) return;
+
+  // Repone el stock que la venta había descontado (movimientos tipo "venta").
+  const movs = await prisma.movimientoStock.findMany({ where: { referencia: ventaId, tipo: "venta" } });
+  for (const m of movs) {
+    if (!m.ubicacionOrigenId) continue;
+    await prisma.stock.upsert({
+      where: { productoId_ubicacionId: { productoId: m.productoId, ubicacionId: m.ubicacionOrigenId } },
+      update: { cantidad: { increment: m.cantidad } },
+      create: { productoId: m.productoId, ubicacionId: m.ubicacionOrigenId, cantidad: m.cantidad },
+    });
+  }
+  await prisma.movimientoStock.deleteMany({ where: { referencia: ventaId } });
+
+  await prisma.auditoria.create({
+    data: {
+      accion: "eliminar",
+      entidad: "Venta",
+      entidadId: ventaId,
+      detalle: JSON.stringify({ total: Number(venta.total), lineasRepuestas: movs.length }),
+    },
+  });
+
   await prisma.venta.delete({ where: { id: ventaId } });
+
   revalidatePath("/admin/ventas");
-  redirect("/admin/ventas");
+  revalidatePath("/admin/inventario");
+  if (!volverALista) redirect("/admin/ventas");
 }

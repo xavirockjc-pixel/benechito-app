@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { estadoPagoLabel, estadoPagoColor } from "@/lib/dominio/ventas";
+import EliminarVentaBtn from "./EliminarVentaBtn";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,7 @@ export default async function VentasPage() {
                 <th className="px-4 py-3 text-right">Saldo</th>
                 <th className="px-4 py-3">Pago</th>
                 <th className="px-4 py-3 text-right">Fecha</th>
+                <th className="px-4 py-3 text-right">Acción</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -79,6 +81,7 @@ export default async function VentasPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right text-slate-500">{fmtFecha(v.fecha)}</td>
+                    <td className="px-4 py-3 text-right"><EliminarVentaBtn ventaId={v.id} /></td>
                   </tr>
                 );
               })}
