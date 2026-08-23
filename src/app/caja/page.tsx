@@ -32,21 +32,33 @@ export default async function CajaPage() {
   }
 
   // Caja abierta → resumen + POS.
-  const [lista, ventas] = await Promise.all([
-    prisma.listaPrecio.findFirst({ where: { canal: "sala" } }),
+  const salaUbic = (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } })) ?? (await prisma.ubicacion.findFirst());
+
+  const [listas, prods, precios, stockSala, ventas] = await Promise.all([
+    prisma.listaPrecio.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
+    prisma.producto.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
+    prisma.precioProducto.findMany({ where: { cantidadMinima: 1 } }),
+    salaUbic ? prisma.stock.findMany({ where: { ubicacionId: salaUbic.id } }) : Promise.resolve([]),
     prisma.venta.findMany({ where: { sesionCajaId: sesion.id }, include: { pagos: true } }),
   ]);
 
-  const precios = lista
-    ? await prisma.precioProducto.findMany({
-        where: { listaId: lista.id, cantidadMinima: 1 },
-        include: { producto: { select: { id: true, nombre: true, formato: true, activo: true } } },
-      })
-    : [];
-  const productos = precios
-    .filter((p) => p.producto.activo)
-    .map((p) => ({ id: p.producto.id, nombre: p.producto.nombre, formato: p.producto.formato, precio: Number(p.precio) }))
-    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+  // Precios por producto y lista: { productoId: { listaId: precio } }
+  const preciosDe: Record<string, Record<string, number>> = {};
+  for (const p of precios) {
+    (preciosDe[p.productoId] ??= {})[p.listaId] = Number(p.precio);
+  }
+  const stockDe = new Map(stockSala.map((s) => [s.productoId, s.cantidad]));
+
+  const productos = prods.map((p) => ({
+    id: p.id,
+    nombre: p.nombre,
+    formato: p.formato,
+    precios: preciosDe[p.id] ?? {},
+    stock: stockDe.get(p.id) ?? 0,
+  }));
+
+  const listasPOS = listas.map((l) => ({ id: l.id, nombre: l.nombre, canal: l.canal }));
+  const listaSalaId = listas.find((l) => l.canal === "sala")?.id ?? listas[0]?.id ?? "";
 
   const totalVendido = ventas.reduce((s, v) => s + Number(v.total), 0);
   const nVentas = ventas.length;
@@ -69,7 +81,7 @@ export default async function CajaPage() {
         </div>
       </div>
 
-      <CajaPOS productos={productos} />
+      <CajaPOS productos={productos} listas={listasPOS} listaInicialId={listaSalaId} />
     </div>
   );
 }

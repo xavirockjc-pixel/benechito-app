@@ -72,7 +72,9 @@ export async function venderCaja(formData: FormData) {
   items = items.filter((i) => i.productoId && i.cantidad > 0 && i.precioUnit >= 0);
   if (items.length === 0) return;
 
-  const total = items.reduce((s, i) => s + i.precioUnit * i.cantidad, 0);
+  const subtotal = items.reduce((s, i) => s + i.precioUnit * i.cantidad, 0);
+  const descuento = Math.max(0, Math.min(Number(String(formData.get("descuento") ?? "0")) || 0, subtotal));
+  const total = subtotal - descuento;
   const cliente = await clienteMostrador();
 
   const venta = await prisma.venta.create({

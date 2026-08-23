@@ -72,6 +72,10 @@ export default function VentaRapida({ productos }: { productos: Prod[] }) {
       {/* Carrito */}
       {lineas.length > 0 && (
         <div className="rounded-xl border border-slate-200 bg-white p-3">
+          <div className="mb-1 flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Venta</span>
+            <button type="button" onClick={() => setCart({})} className="text-xs font-bold text-red-500 active:brightness-95">🗑️ Vaciar</button>
+          </div>
           <ul className="divide-y divide-slate-100">
             {lineas.map((l) => (
               <li key={l.productoId} className="flex items-center justify-between py-2 text-sm">

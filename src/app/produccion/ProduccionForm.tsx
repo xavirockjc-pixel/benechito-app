@@ -23,9 +23,13 @@ export default function ProduccionForm({ sabores }: { sabores: Sabor[] }) {
   const [extras, setExtras] = useState<{ nombre: string; cantidad: number }[]>([]);
   const [nuevoNombre, setNuevoNombre] = useState("");
   const [nuevaCant, setNuevaCant] = useState("");
+  const [busca, setBusca] = useState("");
 
+  const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   const delLinea = sabores.filter((s) => s.linea === linea);
+  const delLineaVista = busca.trim() ? delLinea.filter((s) => norm(s.nombre).includes(norm(busca.trim()))) : delLinea;
   const porId = useMemo(() => new Map(delLinea.map((s) => [s.id, s])), [delLinea]);
+  const vaciar = () => { setCant({}); setExtras([]); };
 
   const setQty = (id: string, n: number) =>
     setCant((c) => {
@@ -59,7 +63,7 @@ export default function ProduccionForm({ sabores }: { sabores: Sabor[] }) {
 
       {/* Tipo */}
       <label className="block text-sm font-bold text-slate-700">Tipo de producto
-        <select value={linea} onChange={(e) => { setLinea(e.target.value); setCant({}); setExtras([]); }}
+        <select value={linea} onChange={(e) => { setLinea(e.target.value); setCant({}); setExtras([]); setBusca(""); }}
           className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#b45309]">
           {lineas.map((l) => <option key={l} value={l}>{lineaLabel[l] ?? l}</option>)}
         </select>
@@ -73,10 +77,16 @@ export default function ProduccionForm({ sabores }: { sabores: Sabor[] }) {
         hint="Di por ejemplo: “treinta frutilla, veinte pistacho”."
       />
 
-      {/* Sabores existentes de ese tipo */}
+      {/* Buscador de sabor */}
       {delLinea.length > 0 && (
+        <input value={busca} onChange={(e) => setBusca(e.target.value)} placeholder="Buscar sabor por palabra…"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-[#b45309]" />
+      )}
+
+      {/* Sabores del tipo (filtrados por el buscador) */}
+      {delLineaVista.length > 0 && (
         <div className="space-y-1">
-          {delLinea.map((s) => (
+          {delLineaVista.map((s) => (
             <label key={s.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 shadow-sm">
               <span className="min-w-0 truncate font-semibold text-slate-800">{s.nombre}</span>
               <span className="flex items-center gap-2">
@@ -113,10 +123,17 @@ export default function ProduccionForm({ sabores }: { sabores: Sabor[] }) {
         )}
       </div>
 
-      <button disabled={total === 0}
-        className="w-full rounded-xl bg-[#b45309] py-3 text-base font-extrabold text-white shadow active:brightness-95 disabled:opacity-40">
-        Registrar producción {total > 0 ? `(${total} u.)` : ""}
-      </button>
+      <div className="flex gap-2">
+        {total > 0 && (
+          <button type="button" onClick={vaciar} className="rounded-xl border-2 border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-600 active:bg-slate-50">
+            🗑️ Deshacer
+          </button>
+        )}
+        <button disabled={total === 0}
+          className="flex-1 rounded-xl bg-[#0f766e] py-3 text-base font-extrabold text-white shadow active:brightness-95 disabled:opacity-40">
+          Registrar producción {total > 0 ? `(${total} u.)` : ""}
+        </button>
+      </div>
     </form>
   );
 }
