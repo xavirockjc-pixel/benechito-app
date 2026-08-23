@@ -349,6 +349,25 @@ model MovimientoStock {
   @@index([productoId])
 }
 
+/// Agenda / pedidos agendados: algo a preparar para una fecha (apartar en bodega,
+/// mandar a mezclar o a fabricar, o una entrega). Alimenta el calendario del panel.
+model Agenda {
+  id         String   @id @default(cuid())
+  titulo     String
+  fecha      DateTime
+  tipo       String   @default("otro") // apartar | mezclar | fabricar | entrega | otro
+  estado     String   @default("pendiente") // pendiente | en_proceso | hecho | cancelado
+  negocioId  String?
+  productoId String?
+  saborId    String?
+  cantidad   Int?
+  notas      String?
+  createdAt  DateTime @default(now())
+
+  @@index([fecha])
+  @@index([estado])
+}
+
 /// Registro diario simple de las apps operativas (Bodega y Local).
 /// Denormalizado (guarda el nombre) para mostrar el "registro del día" sin joins.
 model MovimientoBodega {
