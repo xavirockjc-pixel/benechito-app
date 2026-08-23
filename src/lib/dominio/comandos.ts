@@ -8,7 +8,31 @@ export type ItemCat = { clase: "producto" | "sabor"; id: string; nombre: string;
 export type Comando =
   | { intent: "orden"; clase: "producto" | "sabor"; refId: string; nombre: string; cantidad: number }
   | { intent: "agenda"; tipo: string; clase?: "producto" | "sabor"; refId?: string; nombre?: string; cantidad?: number; fecha: string; titulo: string }
+  | { intent: "navegar"; ruta: string; label: string }
   | { intent: "desconocido"; texto: string };
+
+// Módulos del panel a los que el asistente puede ir por voz. Cada uno con sus
+// palabras (sinónimos, sin tilde) que lo activan.
+const MODULOS: { ruta: string; label: string; palabras: string[] }[] = [
+  { ruta: "/admin/dashboard", label: "Tablero", palabras: ["tablero", "dashboard", "resumen", "indicadores"] },
+  { ruta: "/admin/agenda", label: "Agenda", palabras: ["agenda", "calendario", "agendados"] },
+  { ruta: "/admin/pos", label: "Punto de venta", palabras: ["punto de venta", "pos", "caja", "vender", "venta rapida"] },
+  { ruta: "/admin/negocios", label: "Clientes", palabras: ["clientes", "cliente", "negocios", "negocio", "crm"] },
+  { ruta: "/admin/productos", label: "Catálogo", palabras: ["catalogo", "productos", "producto"] },
+  { ruta: "/admin/precios", label: "Precios", palabras: ["precios", "precio", "listas de precios", "lista de precios"] },
+  { ruta: "/admin/pedidos", label: "Pedidos", palabras: ["pedidos", "pedido"] },
+  { ruta: "/admin/preventa", label: "Preventa", palabras: ["preventa", "preventas"] },
+  { ruta: "/admin/rutas", label: "Rutas", palabras: ["rutas", "ruta"] },
+  { ruta: "/admin/inventario", label: "Inventario", palabras: ["inventario", "stock", "bodega", "ubicaciones"] },
+  { ruta: "/admin/ventas", label: "Ventas", palabras: ["ventas", "venta"] },
+  { ruta: "/admin/reposiciones", label: "Reposiciones", palabras: ["reposiciones", "reposicion", "reponer"] },
+  { ruta: "/admin/produccion", label: "Producción", palabras: ["produccion", "fabricacion", "ordenes de produccion"] },
+  { ruta: "/admin/sabores", label: "Sabores", palabras: ["sabores", "sabor"] },
+  { ruta: "/admin/finanzas", label: "Finanzas", palabras: ["finanzas", "cobrar", "cuentas por cobrar", "gastos", "plata", "deudas"] },
+  { ruta: "/admin/usuarios", label: "Usuarios", palabras: ["usuarios", "usuario", "personas", "equipo"] },
+];
+
+const VERBOS_NAV = ["abre", "abrir", "ir", "ve", "anda", "andate", "vamos", "muestra", "mostrar", "muestrame", "ver", "veamos", "entra", "entrar", "llevame", "lleva", "ir a", "ve a", "abre la", "abre el"];
 
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
 
@@ -128,13 +152,36 @@ function ymd(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/** Detecta un comando de navegación ("abre precios", "ve a inventario"). */
+function detectarNavegacion(frase: string, words: string[]): Comando | null {
+  const tieneVerboNav = words.some((w) => VERBOS_NAV.includes(w));
+  // Solo navega si hay un verbo de navegación (evita chocar con acciones de crear).
+  if (!tieneVerboNav) return null;
+  // El módulo con la palabra más larga que aparezca en la frase gana (más específico).
+  let mejor: { ruta: string; label: string; len: number } | null = null;
+  for (const m of MODULOS) {
+    for (const p of m.palabras) {
+      if (frase.includes(p) && (!mejor || p.length > mejor.len)) mejor = { ruta: m.ruta, label: m.label, len: p.length };
+    }
+  }
+  if (!mejor) return null;
+  return { intent: "navegar", ruta: mejor.ruta, label: mejor.label };
+}
+
 /** Interpreta la frase dictada y devuelve una acción estructurada. */
 export function interpretarComando(texto: string, catalogo: ItemCat[]): Comando {
-  const words = norm(texto).split(" ").filter(Boolean);
+  const frase = norm(texto);
+  const words = frase.split(" ").filter(Boolean);
   if (words.length === 0) return { intent: "desconocido", texto };
 
   const esAgenda = words.some((w) => PALABRAS_AGENDA.includes(w));
   const esOrden = !esAgenda && words.some((w) => PALABRAS_ORDEN.includes(w));
+
+  // Navegación primero (solo si hay verbo de ir/abrir y no es una orden/agenda).
+  if (!esAgenda && !esOrden) {
+    const nav = detectarNavegacion(frase, words);
+    if (nav) return nav;
+  }
 
   const cant = extraerCantidad(words);
   const restantesTokens = words.filter((_, i) => !cant?.usados.has(i));

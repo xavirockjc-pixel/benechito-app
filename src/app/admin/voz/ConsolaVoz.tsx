@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { interpretarComando, type Comando, type ItemCat } from "@/lib/dominio/comandos";
 import { ejecutarComando } from "./actions";
@@ -76,6 +77,16 @@ export default function ConsolaVoz({ catalogo }: { catalogo: ItemCat[] }) {
           <p className="font-bold">No entendí el comando 🤔</p>
           <p className="mt-1">Prueba: <span className="font-mono">“orden de producción cien frutilla”</span> o <span className="font-mono">“agenda fabricar cincuenta paletas para el viernes”</span>.</p>
         </div>
+      )}
+
+      {cmd && cmd.intent === "navegar" && (
+        <PreviewCard color="blue">
+          <p className="text-xs font-bold uppercase tracking-wide text-blue-700">Ir a</p>
+          <p className="mt-1 text-lg font-extrabold text-slate-900">{cmd.label}</p>
+          <Link href={cmd.ruta} className="mt-3 block rounded-xl bg-slate-900 py-3 text-center text-base font-extrabold text-white active:brightness-110">
+            ➡️ Abrir {cmd.label}
+          </Link>
+        </PreviewCard>
       )}
 
       {cmd && cmd.intent === "orden" && (

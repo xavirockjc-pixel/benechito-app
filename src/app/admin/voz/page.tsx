@@ -30,15 +30,19 @@ export default async function VozPage({ searchParams }: { searchParams: Promise<
 
       <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
         <p className="mb-2 font-bold text-slate-900">Comandos que entiende hoy</p>
+        <p className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">Ir a cualquier módulo</p>
+        <ul className="mb-3 space-y-1">
+          <li>➡️ <span className="font-mono text-xs">“abre precios”</span>, <span className="font-mono text-xs">“ve a inventario”</span>, <span className="font-mono text-xs">“muéstrame finanzas”</span></li>
+          <li>➡️ Clientes, catálogo, pedidos, preventa, rutas, ventas, reposiciones, sabores, agenda, producción…</li>
+        </ul>
+        <p className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">Crear</p>
         <ul className="space-y-1">
           <li>🏭 <span className="font-mono text-xs">“orden de producción cien frutilla”</span> → crea la orden</li>
-          <li>🏭 <span className="font-mono text-xs">“produce cincuenta paletas de leche”</span></li>
           <li>📅 <span className="font-mono text-xs">“agenda fabricar doscientos trufas para el viernes”</span></li>
-          <li>📅 <span className="font-mono text-xs">“agenda entrega dos surtido mañana”</span></li>
           <li>📅 <span className="font-mono text-xs">“apartar cinco postres el 25”</span></li>
         </ul>
         <p className="mt-3 text-xs text-slate-400">
-          Es la versión de comandos (gratis). Cuando quieras el asistente que entiende lenguaje libre (“todo en general”), pasamos al de IA.
+          Con voz llegas a <b>todos</b> los módulos. Para <b>modificar todo</b> hablando libre (cambiar precios, editar finanzas, etc.) se necesita el asistente con IA.
         </p>
       </div>
     </div>
