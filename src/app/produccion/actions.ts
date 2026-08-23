@@ -61,3 +61,81 @@ export async function registrarProduccion(formData: FormData) {
   revalidatePath("/produccion");
   redirect("/produccion?ok=1");
 }
+
+/**
+ * El fabricante CUMPLE una orden de producción: registra la cantidad real (y merma),
+ * la marca terminada e ingresa lo producido a bodega (sabor→StockSabor, producto→Stock).
+ * Queda también en el registro del turno.
+ */
+export async function cumplirOrden(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  const cantidadReal = Number(String(formData.get("cantidadReal") ?? "").trim());
+  const mermaRaw = Number(String(formData.get("merma") ?? "0").trim());
+  const merma = Number.isFinite(mermaRaw) ? Math.max(0, mermaRaw) : 0;
+  if (!id || !Number.isFinite(cantidadReal) || cantidadReal < 0) return;
+
+  const op = await prisma.ordenProduccion.findUnique({
+    where: { id },
+    include: { producto: { select: { nombre: true } }, sabor: { select: { nombre: true, linea: true } } },
+  });
+  if (!op || op.estado === "terminada") return;
+
+  const bod = await bodegaId();
+  const u = await usuarioActual();
+
+  await prisma.ordenProduccion.update({
+    where: { id },
+    data: { cantidadReal, merma, estado: "terminada", fechaTermino: new Date(), ubicacionDestinoId: bod ?? null, responsable: op.responsable ?? u?.nombre ?? null },
+  });
+
+  if (bod && cantidadReal > 0) {
+    if (op.saborId) {
+      await prisma.stockSabor.upsert({
+        where: { saborId_ubicacionId: { saborId: op.saborId, ubicacionId: bod } },
+        update: { cantidad: { increment: cantidadReal } },
+        create: { saborId: op.saborId, ubicacionId: bod, cantidad: cantidadReal },
+      });
+    } else if (op.productoId) {
+      await prisma.stock.upsert({
+        where: { productoId_ubicacionId: { productoId: op.productoId, ubicacionId: bod } },
+        update: { cantidad: { increment: cantidadReal } },
+        create: { productoId: op.productoId, ubicacionId: bod, cantidad: cantidadReal },
+      });
+      await prisma.movimientoStock.create({
+        data: { productoId: op.productoId, tipo: "produccion", ubicacionDestinoId: bod, cantidad: cantidadReal, referencia: op.id },
+      });
+    }
+    const nombre = op.saborId ? `${op.sabor?.nombre ?? ""} (${op.sabor?.linea ?? ""})` : op.producto?.nombre ?? "Producto";
+    await prisma.movimientoBodega.create({
+      data: {
+        zona: "produccion", ubicacionId: bod, tipo: "entrada", clase: op.saborId ? "sabor" : "producto",
+        refId: op.saborId ?? op.productoId ?? id, nombre, cantidad: cantidadReal,
+        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+      },
+    });
+  }
+
+  revalidatePath("/produccion");
+  redirect("/produccion?ok=1");
+}
+
+/** El fabricante ENVÍA el reporte del turno: deja constancia (auditoría) de lo producido hoy. */
+export async function enviarReporteTurno() {
+  const u = await usuarioActual();
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+
+  const movs = await prisma.movimientoBodega.findMany({ where: { fecha: { gte: hoy }, zona: "produccion" } });
+  const total = movs.reduce((s, m) => s + m.cantidad, 0);
+  const detalle = JSON.stringify({
+    total,
+    items: movs.map((m) => ({ nombre: m.nombre, cantidad: m.cantidad })),
+  });
+
+  await prisma.auditoria.create({
+    data: { usuarioId: u?.sub ?? null, accion: "reporte_turno", entidad: "Produccion", detalle },
+  });
+
+  revalidatePath("/produccion");
+  redirect("/produccion?reporte=1");
+}
