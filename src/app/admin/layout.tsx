@@ -14,6 +14,7 @@ const modulos: Modulo[] = [
     activo: true,
     items: [
       { href: "/admin", label: "Panel", icon: "📊" },
+      { href: "/admin/dashboard", label: "Tablero", icon: "📈" },
       { href: "/admin/pos", label: "Punto de venta", icon: "🛒" },
       { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
       { href: "/admin/productos", label: "Catálogo", icon: "🍫" },
