@@ -112,6 +112,14 @@ export default async function ClienteRuta({
         </Link>
       </div>
 
+      {/* Agendar entrega para hoy/mañana */}
+      <Link
+        href={`/vendedor/agenda?cliente=${cliente.id}`}
+        className="mt-3 flex items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#1479c4] py-3 text-sm font-extrabold text-[#1479c4] active:bg-blue-50"
+      >
+        📅 Agendar entrega / pedido
+      </Link>
+
       {/* Actividad reciente */}
       {cliente.actividades.length > 0 && (
         <div className="mt-5">
