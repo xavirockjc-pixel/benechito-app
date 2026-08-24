@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import MovimientoBodegaVoz from "./MovimientoBodegaVoz";
+import RetirosDepto from "@/app/_shared/RetirosDepto";
 
 export const dynamic = "force-dynamic";
 
@@ -122,6 +123,8 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
           Solo ves lo del día. Los totales y las ventas del mes se ven únicamente en el panel.
         </p>
       </section>
+
+      <RetirosDepto destino="bodega" acento="#b45309" />
     </div>
   );
 }

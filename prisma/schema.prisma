@@ -355,17 +355,22 @@ model Agenda {
   id         String   @id @default(cuid())
   titulo     String
   fecha      DateTime
-  tipo       String   @default("otro") // apartar | mezclar | fabricar | entrega | otro
+  tipo       String   @default("otro") // apartar | mezclar | fabricar | entrega | express | visita | retiro | otro
   estado     String   @default("pendiente") // pendiente | en_proceso | hecho | cancelado
   negocioId  String?
   productoId String?
   saborId    String?
   cantidad   Int?
   notas      String?
+  // Despacho de pedidos de retiro: a qué departamento se manda y por qué canal entró.
+  destino    String? // local | bodega | reparto | central
+  canal      String? // whatsapp | facebook | instagram | manual
+  contacto   String? // nombre/teléfono libre del cliente cuando no está en la base
   createdAt  DateTime @default(now())
 
   @@index([fecha])
   @@index([estado])
+  @@index([destino])
 }
 
 /// Registro diario simple de las apps operativas (Bodega y Local).

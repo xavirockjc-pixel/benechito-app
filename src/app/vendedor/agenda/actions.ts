@@ -3,41 +3,34 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-
-/** Devuelve una fecha (Date) a las 12:00 para "hoy", "mañana" o un ISO yyyy-mm-dd. */
-function fechaDesde(valor: string): Date {
-  const hoy = new Date();
-  hoy.setHours(12, 0, 0, 0);
-  if (valor === "hoy" || !valor) return hoy;
-  if (valor === "manana") {
-    const m = new Date(hoy);
-    m.setDate(m.getDate() + 1);
-    return m;
-  }
-  const [y, mo, d] = valor.split("-").map(Number);
-  if (y && mo && d) return new Date(y, mo - 1, d, 12, 0, 0, 0);
-  return hoy;
-}
+import { fechaDesde } from "@/lib/dominio/agenda";
 
 /**
- * Agenda una entrega/pedido para un cliente (hoy o mañana). Queda registrada para
- * después cargar y llevar. tipo = "entrega" (normal) o "express" (delivery exprés).
+ * Agenda una entrega / próxima visita / pedido exprés para un cliente.
+ * tipo = "entrega" (hoy o mañana), "visita" (próxima visita con fecha + pedido que
+ * reservan) o "express" (delivery exprés de hoy). Queda registrada para después
+ * cargar y llevar, y alimenta la preventa/planificación de la central.
  */
 export async function agendarEntrega(formData: FormData) {
   const negocioId = String(formData.get("negocioId") ?? "").trim();
-  const cuando = String(formData.get("cuando") ?? "hoy").trim();
+  const cuando = String(formData.get("cuando") ?? "hoy").trim(); // hoy | manana | otra
+  const fechaOtra = String(formData.get("fechaOtra") ?? "").trim();
   const notas = String(formData.get("notas") ?? "").trim();
   const cantidad = Number(String(formData.get("cantidad") ?? "").trim());
-  const tipo = String(formData.get("tipo") ?? "entrega").trim() === "express" ? "express" : "entrega";
+  const tipoRaw = String(formData.get("tipo") ?? "entrega").trim();
+  const tipo = ["entrega", "visita", "express"].includes(tipoRaw) ? tipoRaw : "entrega";
   if (!negocioId) return;
 
+  const fecha = cuando === "otra" && fechaOtra ? fechaDesde(fechaOtra) : fechaDesde(cuando);
+
   const negocio = await prisma.negocio.findUnique({ where: { id: negocioId }, select: { nombreNegocio: true } });
-  const titulo = negocio?.nombreNegocio ?? "Entrega";
+  const nombre = negocio?.nombreNegocio ?? "Cliente";
+  const prefijo = tipo === "express" ? "🛵 Exprés · " : tipo === "visita" ? "🗓️ Visita · " : "";
 
   await prisma.agenda.create({
     data: {
-      titulo: tipo === "express" ? `🛵 Exprés · ${titulo}` : titulo,
-      fecha: fechaDesde(cuando),
+      titulo: `${prefijo}${nombre}`,
+      fecha,
       tipo,
       estado: "pendiente",
       negocioId,
@@ -46,15 +39,14 @@ export async function agendarEntrega(formData: FormData) {
     },
   });
 
+  const que =
+    tipo === "express" ? "Pedido exprés agendado" : tipo === "visita" ? "Próxima visita con reserva" : "Entrega agendada";
   await prisma.actividad.create({
-    data: {
-      negocioId,
-      tipo: "contacto",
-      descripcion: tipo === "express" ? `Pedido exprés agendado${notas ? ": " + notas : ""}` : `Entrega agendada${notas ? ": " + notas : ""}`,
-    },
+    data: { negocioId, tipo: "contacto", descripcion: `${que}${notas ? ": " + notas : ""}` },
   });
 
   revalidatePath("/vendedor/agenda");
+  revalidatePath("/admin/preventa");
   redirect("/vendedor/agenda?ok=1");
 }
 
@@ -74,7 +66,7 @@ export async function marcarContactado(formData: FormData) {
  */
 export async function avanzarAgendado(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
-  const a = String(formData.get("a") ?? "").trim(); // en_proceso | hecho | cancelado
+  const a = String(formData.get("a") ?? "").trim();
   if (!id || !["en_proceso", "hecho", "cancelado", "pendiente"].includes(a)) return;
   await prisma.agenda.update({ where: { id }, data: { estado: a } });
   revalidatePath("/vendedor/agenda");

@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { abrirCaja, sesionAbierta } from "./actions";
 import CajaPOS from "./CajaPOS";
+import RetirosDepto from "@/app/_shared/RetirosDepto";
 
 export const dynamic = "force-dynamic";
 
@@ -82,6 +83,8 @@ export default async function CajaPage() {
       </div>
 
       <CajaPOS productos={productos} listas={listasPOS} listaInicialId={listaSalaId} />
+
+      <RetirosDepto destino="local" acento="#0f7a44" />
     </div>
   );
 }

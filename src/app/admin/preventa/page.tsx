@@ -13,7 +13,10 @@ const fmtHora = (d: Date) =>
   new Date(d).toLocaleString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export default async function PreventaPage() {
-  const [clientes, preventas, n8nOk] = await Promise.all([
+  const inicioHoy = new Date();
+  inicioHoy.setHours(0, 0, 0, 0);
+
+  const [clientes, preventas, agendasTerreno, n8nOk] = await Promise.all([
     prisma.negocio.findMany({
       where: { whatsapp: { not: "" } },
       orderBy: { nombreNegocio: "asc" },
@@ -24,8 +27,22 @@ export default async function PreventaPage() {
       take: 40,
       include: { negocio: { select: { nombreNegocio: true } } },
     }),
+    // Reservas / visitas / entregas agendadas por los vendedores en terreno.
+    prisma.agenda.findMany({
+      where: { tipo: { in: ["visita", "entrega", "express"] }, fecha: { gte: inicioHoy }, estado: { in: ["pendiente", "en_proceso"] } },
+      orderBy: [{ fecha: "asc" }, { createdAt: "asc" }],
+      take: 60,
+    }),
     Promise.resolve(Boolean(process.env.N8N_PREVENTA_WEBHOOK_URL)),
   ]);
+
+  const tipoTerreno: Record<string, { l: string; c: string }> = {
+    visita: { l: "🗓️ Visita", c: "text-violet-700 bg-violet-50" },
+    entrega: { l: "📅 Entrega", c: "text-blue-700 bg-blue-50" },
+    express: { l: "🛵 Exprés", c: "text-orange-700 bg-orange-50" },
+  };
+  const fmtDia = (d: Date) =>
+    new Date(d).toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" });
 
   return (
     <div>
@@ -72,6 +89,33 @@ export default async function PreventaPage() {
           Enviar preventa
         </button>
       </form>
+
+      {/* Reservas y visitas agendadas por los vendedores en terreno */}
+      <h2 className="mt-8 mb-1 text-lg font-bold text-slate-900">Reservas y visitas de terreno</h2>
+      <p className="mb-3 text-xs text-slate-500">Lo que los vendedores agendaron en ruta (próximas visitas con reserva, entregas y exprés).</p>
+      {agendasTerreno.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+          Sin reservas ni visitas agendadas por ahora.
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {agendasTerreno.map((a) => {
+            const t = tipoTerreno[a.tipo] ?? { l: a.tipo, c: "text-slate-600 bg-slate-100" };
+            return (
+              <div key={a.id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+                <div className="min-w-0">
+                  <p className="truncate font-semibold text-slate-900">{a.titulo}</p>
+                  {a.notas && <p className="truncate text-xs text-slate-500">📦 {a.notas}</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="whitespace-nowrap text-xs font-semibold text-slate-500">{fmtDia(a.fecha)}</span>
+                  <span className={`rounded-md px-2 py-1 text-xs font-bold ${t.c}`}>{t.l}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Resultados */}
       <h2 className="mt-8 mb-3 text-lg font-bold text-slate-900">Preventas recientes</h2>

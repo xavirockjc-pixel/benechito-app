@@ -14,7 +14,8 @@ export default function AgendarForm({ clientes, clienteInicial }: { clientes: Cl
   const [sel, setSel] = useState<Cliente | null>(
     clienteInicial ? clientes.find((c) => c.id === clienteInicial) ?? null : null,
   );
-  const [tipo, setTipo] = useState<"entrega" | "express">("entrega");
+  const [tipo, setTipo] = useState<"entrega" | "visita" | "express">("entrega");
+  const [cuando, setCuando] = useState<"hoy" | "manana" | "otra">("hoy");
 
   const filtrados = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -28,21 +29,28 @@ export default function AgendarForm({ clientes, clienteInicial }: { clientes: Cl
     <form action={agendarEntrega} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
       <input type="hidden" name="tipo" value={tipo} />
 
-      {/* Tipo: entrega normal o exprés (delivery) */}
-      <div className="mb-3 grid grid-cols-2 gap-2">
+      {/* Tipo: entrega, próxima visita o exprés (delivery) */}
+      <div className="mb-3 grid grid-cols-3 gap-2">
         <button
           type="button"
-          onClick={() => setTipo("entrega")}
-          className={`rounded-xl py-2.5 text-sm font-bold ${tipo === "entrega" ? "bg-[#1479c4] text-white" : "bg-slate-100 text-slate-600"}`}
+          onClick={() => { setTipo("entrega"); if (cuando === "otra") setCuando("hoy"); }}
+          className={`rounded-xl py-2.5 text-xs font-bold ${tipo === "entrega" ? "bg-[#1479c4] text-white" : "bg-slate-100 text-slate-600"}`}
         >
           📅 Entrega
         </button>
         <button
           type="button"
-          onClick={() => setTipo("express")}
-          className={`rounded-xl py-2.5 text-sm font-bold ${tipo === "express" ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-600"}`}
+          onClick={() => { setTipo("visita"); setCuando("otra"); }}
+          className={`rounded-xl py-2.5 text-xs font-bold ${tipo === "visita" ? "bg-violet-600 text-white" : "bg-slate-100 text-slate-600"}`}
         >
-          🛵 Pedido exprés
+          🗓️ Visita
+        </button>
+        <button
+          type="button"
+          onClick={() => { setTipo("express"); setCuando("hoy"); }}
+          className={`rounded-xl py-2.5 text-xs font-bold ${tipo === "express" ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-600"}`}
+        >
+          🛵 Exprés
         </button>
       </div>
 
@@ -89,18 +97,33 @@ export default function AgendarForm({ clientes, clienteInicial }: { clientes: Cl
       <input type="hidden" name="negocioId" value={sel?.id ?? ""} />
 
       {/* Cuándo */}
+      <input type="hidden" name="cuando" value={cuando} />
       <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">Cuándo</label>
-      <div className="mb-3 grid grid-cols-2 gap-2">
-        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-bold text-slate-700 has-[:checked]:border-[#1479c4] has-[:checked]:bg-blue-50 has-[:checked]:text-[#1479c4]">
-          <input type="radio" name="cuando" value="hoy" defaultChecked className="accent-[#1479c4]" /> Hoy
-        </label>
-        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-slate-200 py-2.5 text-sm font-bold text-slate-700 has-[:checked]:border-[#1479c4] has-[:checked]:bg-blue-50 has-[:checked]:text-[#1479c4]">
-          <input type="radio" name="cuando" value="manana" className="accent-[#1479c4]" /> Mañana
-        </label>
+      <div className="mb-3 grid grid-cols-3 gap-2">
+        {([["hoy", "Hoy"], ["manana", "Mañana"], ["otra", "Otra fecha"]] as const).map(([v, l]) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setCuando(v)}
+            className={`rounded-xl border py-2.5 text-sm font-bold ${cuando === v ? "border-[#1479c4] bg-blue-50 text-[#1479c4]" : "border-slate-200 text-slate-600"}`}
+          >
+            {l}
+          </button>
+        ))}
       </div>
+      {cuando === "otra" && (
+        <input
+          type="date"
+          name="fechaOtra"
+          required
+          className="mb-3 w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 outline-none focus:border-[#1479c4]"
+        />
+      )}
 
-      {/* Qué llevar */}
-      <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">Qué llevar</label>
+      {/* Qué llevar / reservar */}
+      <label className="mb-1 block text-xs font-bold uppercase tracking-wide text-slate-400">
+        {tipo === "visita" ? "Qué reservan (pedido)" : "Qué llevar"}
+      </label>
       <textarea
         name="notas"
         rows={2}
@@ -118,9 +141,9 @@ export default function AgendarForm({ clientes, clienteInicial }: { clientes: Cl
 
       <button
         disabled={!sel}
-        className={`w-full rounded-2xl py-4 text-base font-extrabold text-white shadow active:brightness-95 ${tipo === "express" ? "bg-orange-500" : "bg-[#1479c4]"} disabled:opacity-40`}
+        className={`w-full rounded-2xl py-4 text-base font-extrabold text-white shadow active:brightness-95 disabled:opacity-40 ${tipo === "express" ? "bg-orange-500" : tipo === "visita" ? "bg-violet-600" : "bg-[#1479c4]"}`}
       >
-        {tipo === "express" ? "🛵 Registrar pedido exprés" : "📅 Agendar entrega"}
+        {tipo === "express" ? "🛵 Registrar pedido exprés" : tipo === "visita" ? "🗓️ Agendar visita" : "📅 Agendar entrega"}
       </button>
     </form>
   );
