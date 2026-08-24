@@ -8,6 +8,7 @@ import { despacharRetiro, avanzarRetiro, eliminarRetiro } from "@/app/_shared/re
 export const dynamic = "force-dynamic";
 
 export default async function RetirosCentral() {
+  const buzonOk = Boolean(process.env.RETIROS_WEBHOOK_TOKEN);
   const desde = new Date();
   desde.setDate(desde.getDate() - 1);
   desde.setHours(0, 0, 0, 0);
@@ -32,6 +33,18 @@ export default async function RetirosCentral() {
         Los pedidos que entran por WhatsApp, Facebook o Instagram caen aquí. Despáchalos a Local,
         Bodega o Reparto y a ese departamento le aparece en su app.
       </p>
+
+      {buzonOk ? (
+        <p className="mt-3 rounded-xl border border-green-200 bg-green-50 p-3 text-xs text-green-700">
+          🤖 <b>Buzón automático activo.</b> Cuando tu n8n reciba un mensaje, apunta al webhook{" "}
+          <code className="rounded bg-white px-1 py-0.5">POST /api/retiros/entrante</code> y el pedido cae aquí solo.
+        </p>
+      ) : (
+        <p className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+          ⚙️ El buzón automático aún no está activo. Define <code>RETIROS_WEBHOOK_TOKEN</code> en el entorno (EasyPanel)
+          para que n8n pueda dejar pedidos solo. Mientras tanto, captúralos aquí a mano. 👇
+        </p>
+      )}
 
       <div className="mt-5">
         <CapturarRetiro clientes={clientes.map((c) => ({ id: c.id, nombreNegocio: c.nombreNegocio, comuna: c.comuna }))} />
