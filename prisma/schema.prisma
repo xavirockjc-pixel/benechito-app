@@ -91,6 +91,7 @@ model Producto {
   stock           Stock[]
   movimientos     MovimientoStock[]
   ordenesProduccion OrdenProduccion[]
+  recetaItems     RecetaItem[]
 
   createdAt DateTime @default(now())
 }
@@ -525,6 +526,7 @@ model Sabor {
   stock             StockSabor[]
   reposicionItems   ReposicionItem[]
   ordenesProduccion OrdenProduccion[]
+  recetaItems       RecetaItem[]
 
   @@index([linea])
 }
@@ -541,6 +543,66 @@ model StockSabor {
 
   @@unique([saborId, ubicacionId])
   @@index([ubicacionId])
+}
+
+// ===========================================================================
+//  v2 — MATERIAS PRIMAS Y MATERIALES (insumos que se consumen al fabricar)
+// ===========================================================================
+
+/// Insumo en existencia: materia prima (chocolate, azúcar…) o material/envase
+/// (cajas, envoltorios, etiquetas). Se consume al fabricar (por receta o a mano).
+model MateriaPrima {
+  id          String   @id @default(cuid())
+  nombre      String
+  categoria   String   @default("insumo") // insumo | material
+  unidad      String   @default("unidad") // kg | g | l | ml | unidad
+  stock       Float    @default(0)
+  stockMinimo Float    @default(0)
+  costo       Decimal? @db.Decimal(12, 2) // costo por unidad (solo lo ve la central)
+  activo      Boolean  @default(true)
+
+  movimientos MovimientoMateria[]
+  recetaItems RecetaItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoria])
+}
+
+/// Cada movimiento de un insumo (auditable): entrada (compra/recepción),
+/// consumo (al fabricar), merma o ajuste. Denormaliza el usuario para el registro.
+model MovimientoMateria {
+  id             String       @id @default(cuid())
+  materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id], onDelete: Cascade)
+  materiaPrimaId String
+  tipo           String // entrada | consumo | merma | ajuste
+  cantidad       Float
+  motivo         String?
+  referencia     String? // id de orden de producción / producción
+  usuarioId      String?
+  nombreUsuario  String?
+  fecha          DateTime     @default(now())
+
+  @@index([materiaPrimaId])
+  @@index([fecha])
+}
+
+/// Receta (lista de materiales): cuánto de un insumo lleva UNA unidad de un
+/// producto (pack) o de un sabor. Al fabricar N, se descuenta cantidad × N.
+model RecetaItem {
+  id             String       @id @default(cuid())
+  producto       Producto?    @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  productoId     String?
+  sabor          Sabor?       @relation(fields: [saborId], references: [id], onDelete: Cascade)
+  saborId        String?
+  materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id], onDelete: Cascade)
+  materiaPrimaId String
+  cantidad       Float // cantidad de insumo por 1 unidad producida
+
+  @@index([productoId])
+  @@index([saborId])
+  @@index([materiaPrimaId])
 }
 
 // ===========================================================================

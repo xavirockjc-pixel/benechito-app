@@ -27,7 +27,17 @@ export default async function ProduccionLayout({ children }: { children: React.R
           <form action={logout}><button className="text-xs font-semibold text-white/80">Salir</button></form>
         </span>
       </header>
-      <main className="flex-1 p-4">{children}</main>
+      <main className="flex-1 p-4 pb-24">{children}</main>
+
+      {/* Barra inferior (navegación) */}
+      <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md items-center justify-around border-t border-slate-200 bg-white px-2 py-2 text-xs">
+        <Link href="/produccion" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
+          <span className="text-lg">🏭</span> Producción
+        </Link>
+        <Link href="/produccion/insumos" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
+          <span className="text-lg">🧪</span> Insumos
+        </Link>
+      </nav>
     </div>
   );
 }

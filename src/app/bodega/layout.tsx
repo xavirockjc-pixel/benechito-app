@@ -37,6 +37,9 @@ export default async function BodegaLayout({ children }: { children: React.React
         <Link href="/bodega/surtidos" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
           <span className="text-lg">🍬</span> Surtidos
         </Link>
+        <Link href="/bodega/insumos" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
+          <span className="text-lg">🧪</span> Insumos
+        </Link>
       </nav>
     </div>
   );

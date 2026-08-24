@@ -16,6 +16,30 @@ async function bodegaId(): Promise<string | null> {
   return b?.id ?? null;
 }
 
+/**
+ * Descuenta automáticamente las materias primas según la receta del producto/sabor
+ * fabricado: por cada insumo de la receta descuenta (cantidad por unidad × unidades).
+ * Si el producto/sabor no tiene receta, no hace nada (ahí se usa el consumo manual).
+ */
+async function consumirPorReceta(clase: "producto" | "sabor", refId: string, unidades: number, referencia: string) {
+  if (unidades <= 0) return;
+  const receta = await prisma.recetaItem.findMany({
+    where: clase === "sabor" ? { saborId: refId } : { productoId: refId },
+    include: { materiaPrima: { select: { nombre: true } } },
+  });
+  for (const r of receta) {
+    const usar = r.cantidad * unidades;
+    if (usar <= 0) continue;
+    await prisma.materiaPrima.update({ where: { id: r.materiaPrimaId }, data: { stock: { decrement: usar } } });
+    await prisma.movimientoMateria.create({
+      data: {
+        materiaPrimaId: r.materiaPrimaId, tipo: "consumo", cantidad: usar,
+        motivo: `Receta · ${unidades} u.`, referencia,
+      },
+    });
+  }
+}
+
 type ItemProd = { saborId?: string; nombre: string; cantidad: number };
 
 /**
@@ -56,6 +80,8 @@ export async function registrarProduccion(formData: FormData) {
         usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
       },
     });
+    // Descuenta materias primas según la receta del sabor (si tiene).
+    await consumirPorReceta("sabor", saborId, it.cantidad, "produccion");
   }
 
   revalidatePath("/produccion");
@@ -113,6 +139,9 @@ export async function cumplirOrden(formData: FormData) {
         usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
       },
     });
+    // Descuenta materias primas según la receta (si el producto/sabor tiene).
+    if (op.saborId) await consumirPorReceta("sabor", op.saborId, cantidadReal, op.id);
+    else if (op.productoId) await consumirPorReceta("producto", op.productoId, cantidadReal, op.id);
   }
 
   revalidatePath("/produccion");
