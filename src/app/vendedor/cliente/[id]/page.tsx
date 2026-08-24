@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { tipoClienteLabel } from "@/lib/dominio/precios";
 import GuardarUbicacionAqui from "../../GuardarUbicacionAqui";
+import { registrarDeuda } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -119,6 +120,22 @@ export default async function ClienteRuta({
       >
         📅 Agendar entrega / pedido
       </Link>
+
+      {/* Registrar deuda directa (saldo anterior / cargo) */}
+      <details className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <summary className="cursor-pointer text-sm font-extrabold text-slate-700">➕ Registrar deuda (saldo anterior)</summary>
+        <form action={registrarDeuda} className="mt-3 space-y-2">
+          <input type="hidden" name="negocioId" value={cliente.id} />
+          <input type="hidden" name="volver" value={`/vendedor/cliente/${cliente.id}`} />
+          <label className="block text-xs font-bold text-slate-600">Monto que debe
+            <input name="monto" inputMode="numeric" required placeholder="Ej: 50000" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]" />
+          </label>
+          <label className="block text-xs font-bold text-slate-600">Concepto (opcional)
+            <input name="motivo" placeholder="Ej: Deuda de antes / pedido pasado" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]" />
+          </label>
+          <button className="w-full rounded-xl bg-red-500 py-3 text-sm font-extrabold text-white active:brightness-95">Registrar deuda</button>
+        </form>
+      </details>
 
       {/* Actividad reciente */}
       {cliente.actividades.length > 0 && (

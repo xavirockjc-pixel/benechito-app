@@ -183,6 +183,44 @@ export async function ventaRapida(formData: FormData) {
   redirect("/vendedor?vendido=1");
 }
 
+/**
+ * Registra una DEUDA directa a la cuenta del cliente (sin vender productos):
+ * saldo inicial "de antes", un cargo puntual, etc. Crea una venta pendiente por
+ * el monto, que suma al saldo y luego se cobra con el flujo normal de abonos.
+ */
+export async function registrarDeuda(formData: FormData) {
+  const negocioId = String(formData.get("negocioId") ?? "").trim();
+  const monto = Number(String(formData.get("monto") ?? "").trim().replace(/[^0-9.]/g, ""));
+  const motivo = String(formData.get("motivo") ?? "").trim() || "Deuda anterior";
+  const volver = String(formData.get("volver") ?? "").trim();
+  if (!negocioId || !Number.isFinite(monto) || monto <= 0) return;
+
+  const ubicacionId =
+    (await miVehiculoId()) ??
+    (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } }))?.id ??
+    (await prisma.ubicacion.findFirst())?.id;
+  if (!ubicacionId) return;
+
+  const u = await usuarioActual();
+  await prisma.venta.create({
+    data: {
+      negocioId,
+      ubicacionId,
+      vendedorId: u?.sub ?? null,
+      total: monto,
+      estadoPago: "pendiente",
+      documento: "deuda",
+    },
+  });
+  await prisma.actividad.create({
+    data: { negocioId, tipo: "contacto", descripcion: `Deuda registrada: $${monto.toLocaleString("es-CL")} (${motivo})` },
+  });
+
+  revalidatePath(`/vendedor/cliente/${negocioId}`);
+  revalidatePath(`/admin/negocios/${negocioId}`);
+  if (volver) redirect(volver);
+}
+
 /** Registra un abono a una venta pendiente del cliente (cobranza en terreno). */
 export async function registrarCobro(formData: FormData) {
   const ventaId = String(formData.get("ventaId") ?? "").trim();

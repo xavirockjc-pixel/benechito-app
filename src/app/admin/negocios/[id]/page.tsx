@@ -9,6 +9,7 @@ import {
   eliminarNegocio,
   actualizarClasificacion,
 } from "../actions";
+import { registrarDeuda } from "@/app/vendedor/actions";
 import { TIPOS_CLIENTE, tipoClienteLabel, canalLabel } from "@/lib/dominio/precios";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 
@@ -166,6 +167,19 @@ export default async function FichaNegocio({
                 </div>
               </div>
             )}
+
+            {/* Registrar deuda directa (saldo anterior / cargo a cuenta) */}
+            <form action={registrarDeuda} className="mt-4 flex flex-wrap items-end gap-2 border-t border-crema pt-4">
+              <input type="hidden" name="negocioId" value={negocio.id} />
+              <input type="hidden" name="volver" value={`/admin/negocios/${negocio.id}`} />
+              <label className="text-xs font-bold text-choco-2">Monto que debe
+                <input name="monto" inputMode="numeric" required placeholder="Ej: 50000" className="mt-1 w-32 rounded-lg border border-crema bg-white px-2 py-2 text-sm" />
+              </label>
+              <label className="flex-1 text-xs font-bold text-choco-2">Concepto
+                <input name="motivo" placeholder="Ej: Saldo anterior" className="mt-1 w-full rounded-lg border border-crema bg-white px-2 py-2 text-sm" />
+              </label>
+              <button className="rounded-lg bg-rojo px-4 py-2 text-sm font-bold text-white">➕ Registrar deuda</button>
+            </form>
           </Card>
 
           {/* Clasificación comercial */}
