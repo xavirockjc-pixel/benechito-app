@@ -18,6 +18,7 @@ export const unidadLabel: Record<string, string> = {
 
 export const tipoMovMateriaLabel: Record<string, string> = {
   entrada: "Entrada",
+  salida: "Salida",
   consumo: "Consumo",
   merma: "Merma",
   ajuste: "Ajuste",
