@@ -36,12 +36,17 @@ export default function VenderTerreno({
       return next;
     });
 
+  const [modo, setModo] = useState("efectivo");
+  const [abono, setAbono] = useState("");
+
   const porId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
   const lineas = Object.entries(cart).map(([id, cantidad]) => {
     const p = porId.get(id)!;
     return { productoId: id, nombre: p.nombre, cantidad, precioUnit: p.precio };
   });
   const total = lineas.reduce((s, l) => s + l.precioUnit * l.cantidad, 0);
+  const abonoNum = Math.min(Math.max(Number(abono.replace(/[^0-9]/g, "")) || 0, 0), total);
+  const restante = total - abonoNum;
 
   return (
     <div className="space-y-3">
@@ -106,16 +111,43 @@ export default function VenderTerreno({
       <form action={venderTerreno} className="sticky bottom-20 space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
         <input type="hidden" name="negocioId" value={negocioId} />
         <input type="hidden" name="items" value={JSON.stringify(lineas)} />
-        <select name="modo" defaultValue="efectivo" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800">
+        <select name="modo" value={modo} onChange={(e) => setModo(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800">
           <option value="efectivo">Pago: Efectivo</option>
           <option value="transferencia">Pago: Transferencia</option>
+          <option value="abono">Abono: paga una parte, queda debiendo</option>
           <option value="credito">Dejar a crédito (fiado)</option>
         </select>
+
+        {modo === "abono" && (
+          <div className="rounded-lg bg-amber-50 p-2.5">
+            <label className="block text-xs font-bold text-slate-600">Monto que paga ahora
+              <input
+                name="abono"
+                inputMode="numeric"
+                value={abono}
+                onChange={(e) => setAbono(e.target.value)}
+                placeholder="Ej: 20000"
+                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-amber-500"
+              />
+            </label>
+            <select name="medioAbono" defaultValue="efectivo" className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800">
+              <option value="efectivo">Con efectivo</option>
+              <option value="transferencia">Con transferencia</option>
+            </select>
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <span className="font-semibold text-slate-600">Queda debiendo</span>
+              <span className="font-extrabold text-red-600">{fmtCLP(restante)}</span>
+            </div>
+          </div>
+        )}
+
         <button
           disabled={lineas.length === 0}
           className="w-full rounded-xl bg-green-600 py-3 text-base font-extrabold text-white shadow active:brightness-95 disabled:opacity-40"
         >
-          Confirmar venta {total > 0 ? fmtCLP(total) : ""}
+          {modo === "abono"
+            ? `Cobrar ${fmtCLP(abonoNum)} y dejar ${fmtCLP(restante)} de deuda`
+            : `Confirmar venta ${total > 0 ? fmtCLP(total) : ""}`}
         </button>
       </form>
     </div>

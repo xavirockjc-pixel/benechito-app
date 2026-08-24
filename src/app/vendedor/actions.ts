@@ -78,17 +78,40 @@ export async function venderTerreno(formData: FormData) {
     (await prisma.ubicacion.findFirst())?.id;
   if (!ubicacionId) return;
 
+  const esAbono = modo === "abono";
   const aCredito = modo === "credito";
+
+  // Abono: paga una parte ahora y queda debiendo el resto (venta parcial).
+  let abono = Number(String(formData.get("abono") ?? "").replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(abono) || abono < 0) abono = 0;
+  abono = Math.min(abono, total);
+  const medioAbonoRaw = String(formData.get("medioAbono") ?? "efectivo");
+  const medioAbono = (MEDIOS_PAGO as readonly string[]).includes(medioAbonoRaw) && medioAbonoRaw !== "credito" ? medioAbonoRaw : "efectivo";
   const medio = (MEDIOS_PAGO as readonly string[]).includes(modo) ? modo : "efectivo";
 
+  let estadoPago: string;
+  let pagos: { create: { medio: string; monto: number } } | undefined;
+  if (esAbono) {
+    estadoPago = estadoPagoDe(total, abono); // pendiente | parcial | pagado
+    pagos = abono > 0 ? { create: { medio: medioAbono, monto: abono } } : undefined;
+  } else if (aCredito) {
+    estadoPago = "pendiente";
+    pagos = undefined;
+  } else {
+    estadoPago = "pagado";
+    pagos = { create: { medio, monto: total } };
+  }
+
+  const u = await usuarioActual();
   const venta = await prisma.venta.create({
     data: {
       negocioId,
       ubicacionId,
+      vendedorId: u?.sub ?? null,
       total,
-      estadoPago: aCredito ? "pendiente" : "pagado",
+      estadoPago,
       documento: "boleta",
-      ...(aCredito ? {} : { pagos: { create: { medio, monto: total } } }),
+      ...(pagos ? { pagos } : {}),
     },
   });
 
@@ -106,12 +129,13 @@ export async function venderTerreno(formData: FormData) {
     });
   }
 
+  const descripcion = esAbono
+    ? `Venta por $${total.toLocaleString("es-CL")}: abonó $${abono.toLocaleString("es-CL")}, debe $${(total - abono).toLocaleString("es-CL")}`
+    : aCredito
+      ? `Venta a crédito por $${total.toLocaleString("es-CL")}`
+      : `Venta por $${total.toLocaleString("es-CL")} (${medio})`;
   await prisma.actividad.create({
-    data: {
-      negocioId,
-      tipo: "venta",
-      descripcion: aCredito ? `Venta a crédito por $${total}` : `Venta por $${total} (${medio})`,
-    },
+    data: { negocioId, tipo: "venta", descripcion },
   });
 
   revalidatePath(`/vendedor/cliente/${negocioId}`);
