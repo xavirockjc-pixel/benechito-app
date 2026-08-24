@@ -25,6 +25,14 @@ export default async function POSPage() {
     }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
+  const clientes = (
+    await prisma.negocio.findMany({
+      where: { nombreNegocio: { not: "Consumidor Final" } },
+      orderBy: { nombreNegocio: "asc" },
+      select: { id: true, nombreNegocio: true, comuna: true },
+    })
+  ).map((c) => ({ id: c.id, nombreNegocio: c.nombreNegocio, comuna: c.comuna ?? "" }));
+
   return (
     <div>
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -43,7 +51,7 @@ export default async function POSPage() {
       </div>
 
       <div className="mt-6">
-        <Caja productos={productos} />
+        <Caja productos={productos} clientes={clientes} />
       </div>
     </div>
   );

@@ -2,13 +2,23 @@
 
 import { useMemo, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
-import { MEDIOS_PAGO, medioPagoLabel } from "@/lib/dominio/ventas";
 import { venderPOS } from "./actions";
 
 type Prod = { id: string; nombre: string; formato: string | null; precio: number };
+type Cliente = { id: string; nombreNegocio: string; comuna: string };
 
-export default function Caja({ productos }: { productos: Prod[] }) {
+export default function Caja({ productos, clientes = [] }: { productos: Prod[]; clientes?: Cliente[] }) {
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [q, setQ] = useState("");
+  const [modo, setModo] = useState("efectivo");
+  const [abono, setAbono] = useState("");
+
+  const clientesFiltrados = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    if (!t) return [];
+    return clientes.filter((c) => c.nombreNegocio.toLowerCase().includes(t) || (c.comuna ?? "").toLowerCase().includes(t)).slice(0, 6);
+  }, [q, clientes]);
 
   const add = (id: string) => setCart((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 }));
   const sub = (id: string) =>
@@ -33,6 +43,8 @@ export default function Caja({ productos }: { productos: Prod[] }) {
     return { productoId: id, nombre: p.nombre, cantidad, precioUnit: p.precio };
   });
   const total = lineas.reduce((s, l) => s + l.precioUnit * l.cantidad, 0);
+  const abonoNum = Math.min(Math.max(Number(abono.replace(/[^0-9]/g, "")) || 0, 0), total);
+  const restante = total - abonoNum;
 
   return (
     <div className="grid gap-5 lg:grid-cols-[1fr_360px]">
@@ -63,6 +75,36 @@ export default function Caja({ productos }: { productos: Prod[] }) {
       <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm lg:sticky lg:top-4 lg:self-start">
         <h2 className="mb-3 text-lg font-bold text-slate-900">Venta</h2>
 
+        {/* Cliente (para poder dejar deuda / abono) */}
+        <div className="mb-3">
+          {cliente ? (
+            <div className="flex items-center justify-between rounded-lg bg-slate-50 p-2.5">
+              <span className="min-w-0 truncate text-sm font-bold text-slate-800">🏪 {cliente.nombreNegocio}</span>
+              <button type="button" onClick={() => { setCliente(null); if (modo === "abono" || modo === "credito") setModo("efectivo"); }} className="shrink-0 text-xs font-semibold text-slate-500">quitar</button>
+            </div>
+          ) : (
+            <>
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Cliente (opcional, para dejar deuda)…"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-500"
+              />
+              {clientesFiltrados.length > 0 && (
+                <div className="mt-1 space-y-1">
+                  {clientesFiltrados.map((c) => (
+                    <button key={c.id} type="button" onClick={() => { setCliente(c); setQ(""); }} className="flex w-full items-center justify-between rounded-lg border border-slate-200 px-3 py-1.5 text-left text-sm hover:bg-slate-50">
+                      <span className="truncate font-semibold text-slate-800">{c.nombreNegocio}</span>
+                      <span className="ml-2 shrink-0 text-xs text-slate-400">{c.comuna}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <p className="mt-1 text-[11px] text-slate-400">Sin cliente = mostrador (pago al contado).</p>
+            </>
+          )}
+        </div>
+
         {lineas.length === 0 ? (
           <p className="text-sm text-slate-500">Toca un producto para agregarlo.</p>
         ) : (
@@ -91,18 +133,44 @@ export default function Caja({ productos }: { productos: Prod[] }) {
 
         <form action={venderPOS} className="mt-4 space-y-2">
           <input type="hidden" name="items" value={JSON.stringify(lineas)} />
+          <input type="hidden" name="negocioId" value={cliente?.id ?? ""} />
           <select
-            name="medio"
-            defaultValue="efectivo"
+            name="modo"
+            value={modo}
+            onChange={(e) => setModo(e.target.value)}
             className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none focus:border-slate-500"
           >
-            {MEDIOS_PAGO.map((m) => <option key={m} value={m}>{medioPagoLabel[m]}</option>)}
+            <option value="efectivo">Pago: Efectivo</option>
+            <option value="transferencia">Pago: Transferencia</option>
+            <option value="abono" disabled={!cliente}>Abono: paga una parte, queda debiendo{!cliente ? " (elige cliente)" : ""}</option>
+            <option value="credito" disabled={!cliente}>Crédito (fiado){!cliente ? " (elige cliente)" : ""}</option>
           </select>
+
+          {modo === "abono" && cliente && (
+            <div className="rounded-lg bg-amber-50 p-2.5">
+              <label className="block text-xs font-bold text-slate-600">Monto que paga ahora
+                <input name="abono" inputMode="numeric" value={abono} onChange={(e) => setAbono(e.target.value)} placeholder="Ej: 20000" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none focus:border-amber-500" />
+              </label>
+              <select name="medioAbono" defaultValue="efectivo" className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800">
+                <option value="efectivo">Con efectivo</option>
+                <option value="transferencia">Con transferencia</option>
+              </select>
+              <div className="mt-2 flex items-center justify-between text-sm">
+                <span className="font-semibold text-slate-600">Queda debiendo</span>
+                <span className="font-extrabold text-red-600">{fmtCLP(restante)}</span>
+              </div>
+            </div>
+          )}
+
           <button
             disabled={lineas.length === 0}
             className="w-full rounded-lg bg-green-600 px-4 py-3 font-bold text-white shadow-sm transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Cobrar {total > 0 ? fmtCLP(total) : ""}
+            {modo === "abono" && cliente
+              ? `Cobrar ${fmtCLP(abonoNum)} · deuda ${fmtCLP(restante)}`
+              : modo === "credito" && cliente
+                ? `Dejar a crédito ${total > 0 ? fmtCLP(total) : ""}`
+                : `Cobrar ${total > 0 ? fmtCLP(total) : ""}`}
           </button>
         </form>
       </div>

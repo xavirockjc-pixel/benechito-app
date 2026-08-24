@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { MEDIOS_PAGO } from "@/lib/dominio/ventas";
+import { MEDIOS_PAGO, estadoPagoDe } from "@/lib/dominio/ventas";
 
 type LineaPOS = { productoId: string; cantidad: number; precioUnit: number };
 
@@ -31,9 +31,9 @@ async function clienteMostrador() {
  * de la sala de ventas. Recibe las líneas como JSON en el campo `items`.
  */
 export async function venderPOS(formData: FormData) {
-  const medio = String(formData.get("medio") ?? "efectivo").trim();
+  const modo = String(formData.get("modo") ?? formData.get("medio") ?? "efectivo").trim(); // efectivo|transferencia|credito|abono
+  const negocioIdSel = String(formData.get("negocioId") ?? "").trim();
   const raw = String(formData.get("items") ?? "[]");
-  if (!(MEDIOS_PAGO as readonly string[]).includes(medio)) return;
 
   let items: LineaPOS[] = [];
   try {
@@ -51,16 +51,45 @@ export async function venderPOS(formData: FormData) {
     (await prisma.ubicacion.findFirst());
   if (!ubicacion) return;
 
-  const cliente = await clienteMostrador();
+  // Cliente: el elegido, o "Consumidor Final" (mostrador). Crédito/abono requieren
+  // un cliente real; con mostrador se fuerza pago al contado.
+  const cliente = negocioIdSel
+    ? (await prisma.negocio.findUnique({ where: { id: negocioIdSel } })) ?? (await clienteMostrador())
+    : await clienteMostrador();
+  const clienteReal = Boolean(negocioIdSel) && cliente.nombreNegocio !== "Consumidor Final";
+
+  // Abono: paga una parte ahora, el resto queda de deuda.
+  let abono = Number(String(formData.get("abono") ?? "").replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(abono) || abono < 0) abono = 0;
+  abono = Math.min(abono, total);
+  const medioAbonoRaw = String(formData.get("medioAbono") ?? "efectivo");
+  const medioAbono = (MEDIOS_PAGO as readonly string[]).includes(medioAbonoRaw) && medioAbonoRaw !== "credito" ? medioAbonoRaw : "efectivo";
+
+  const esAbono = modo === "abono" && clienteReal;
+  const aCredito = modo === "credito" && clienteReal;
+  const medio = (MEDIOS_PAGO as readonly string[]).includes(modo) ? modo : "efectivo";
+
+  let estadoPago: string;
+  let pagos: { create: { medio: string; monto: number } } | undefined;
+  if (esAbono) {
+    estadoPago = estadoPagoDe(total, abono);
+    pagos = abono > 0 ? { create: { medio: medioAbono, monto: abono } } : undefined;
+  } else if (aCredito) {
+    estadoPago = "pendiente";
+    pagos = undefined;
+  } else {
+    estadoPago = "pagado";
+    pagos = { create: { medio, monto: total } };
+  }
 
   const venta = await prisma.venta.create({
     data: {
       negocioId: cliente.id,
       ubicacionId: ubicacion.id,
       total,
-      estadoPago: "pagado",
+      estadoPago,
       documento: "boleta",
-      pagos: { create: { medio, monto: total } },
+      ...(pagos ? { pagos } : {}),
     },
   });
 
