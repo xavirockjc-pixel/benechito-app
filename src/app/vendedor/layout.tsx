@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { usuarioActual } from "@/lib/auth";
+import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
 import RegistrarSW from "./RegistrarSW";
 
@@ -18,6 +19,7 @@ export default async function VendedorLayout({
   children: React.ReactNode;
 }) {
   const usuario = await usuarioActual();
+  const rubro = await rubroActivo();
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-50">
@@ -28,7 +30,7 @@ export default async function VendedorLayout({
         <Link href="/vendedor" className="flex items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/20 text-sm font-extrabold">B</span>
           <span className="font-display text-base font-extrabold leading-tight">
-            Benechito <span className="font-normal text-white/80">Vendedor</span>
+            Benechito <span className="font-normal text-white/80">{rubro.labels.vendedor}</span>
           </span>
         </Link>
         <form action={logout}>

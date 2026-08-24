@@ -172,6 +172,8 @@ model Usuario {
 model Empresa {
   id         String     @id @default(cuid())
   nombre     String
+  // Plantilla por rubro: renombra áreas y activa/oculta módulos (mismo motor).
+  rubro      String     @default("fabrica") // fabrica | panaderia | comida_rapida | restaurante
   sucursales Sucursal[]
   createdAt  DateTime   @default(now())
 }

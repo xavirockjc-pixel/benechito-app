@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { usuarioActual } from "@/lib/auth";
+import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
 
 export const metadata: Metadata = {
@@ -11,6 +12,7 @@ export const viewport: Viewport = { themeColor: "#0f7a44" };
 
 export default async function CajaLayout({ children }: { children: React.ReactNode }) {
   const usuario = await usuarioActual();
+  const rubro = await rubroActivo();
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col bg-slate-50">
@@ -18,7 +20,7 @@ export default async function CajaLayout({ children }: { children: React.ReactNo
         <span className="flex items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/20 text-sm font-extrabold">B</span>
           <span className="font-display text-base font-extrabold">
-            Benechito <span className="font-normal text-white/80">· Caja</span>
+            Benechito <span className="font-normal text-white/80">· {rubro.labels.caja}</span>
           </span>
         </span>
         <span className="flex items-center gap-3">

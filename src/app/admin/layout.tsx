@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { usuarioActual } from "@/lib/auth";
 import { puedeAccederAdmin, ROLES_FULL } from "@/lib/dominio/permisos";
+import { rubroActivo } from "@/lib/dominio/empresa";
+import type { Etiquetas } from "@/lib/dominio/rubros";
 import { logout } from "./actions";
 
 // Sistema de administración organizado por módulos (ver ARQUITECTURA-ECOSYSTEM.md).
@@ -8,60 +10,56 @@ import { logout } from "./actions";
 type Item = { href: string; label: string; icon: string };
 type Modulo = { titulo: string; activo: boolean; items: Item[] };
 
-const modulos: Modulo[] = [
-  {
-    titulo: "Comercial",
-    activo: true,
-    items: [
-      { href: "/admin", label: "Panel", icon: "📊" },
-      { href: "/admin/dashboard", label: "Tablero", icon: "📈" },
-      { href: "/admin/voz", label: "Asistente voz", icon: "🎙️" },
-      { href: "/admin/agenda", label: "Agenda", icon: "📅" },
-      { href: "/admin/pos", label: "Punto de venta", icon: "🛒" },
-      { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
-      { href: "/admin/productos", label: "Catálogo", icon: "🍫" },
-      { href: "/admin/precios", label: "Precios", icon: "🏷️" },
-      { href: "/admin/pedidos", label: "Pedidos", icon: "🧾" },
-      { href: "/admin/preventa", label: "Preventa", icon: "📲" },
-      { href: "/admin/retiros", label: "Retiros", icon: "🧾" },
-      { href: "/admin/rutas", label: "Rutas", icon: "🗺️" },
-      { href: "/admin/ventas", label: "Ventas", icon: "💵" },
-      { href: "/admin/inventario", label: "Inventario", icon: "📦" },
-      { href: "/admin/reposiciones", label: "Reposiciones", icon: "🔄" },
-    ],
-  },
-  {
-    titulo: "Gestión",
-    activo: true,
-    items: [
-      { href: "/admin/produccion", label: "Producción", icon: "🏭" },
-      { href: "/admin/materias", label: "Materias primas", icon: "🧪" },
-      { href: "/admin/sabores", label: "Sabores", icon: "🍫" },
-    ],
-  },
-  {
-    titulo: "Finanzas",
-    activo: true,
-    items: [
-      { href: "/admin/finanzas", label: "Finanzas", icon: "💰" },
-    ],
-  },
-  {
-    titulo: "Técnico",
-    activo: false,
-    items: [
-      { href: "#", label: "Activos", icon: "🛠️" },
-      { href: "#", label: "Mantención", icon: "🔧" },
-    ],
-  },
-  {
-    titulo: "Sistema",
-    activo: true,
-    items: [
-      { href: "/admin/usuarios", label: "Usuarios", icon: "👥" },
-    ],
-  },
-];
+// El menú se construye con las etiquetas del rubro activo (plantilla).
+function construirModulos(L: Etiquetas): Modulo[] {
+  return [
+    {
+      titulo: "Comercial",
+      activo: true,
+      items: [
+        { href: "/admin", label: "Panel", icon: "📊" },
+        { href: "/admin/dashboard", label: "Tablero", icon: "📈" },
+        { href: "/admin/voz", label: "Asistente voz", icon: "🎙️" },
+        { href: "/admin/agenda", label: "Agenda", icon: "📅" },
+        { href: "/admin/pos", label: L.pos, icon: "🛒" },
+        { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
+        { href: "/admin/productos", label: "Catálogo", icon: "🍫" },
+        { href: "/admin/precios", label: "Precios", icon: "🏷️" },
+        { href: "/admin/pedidos", label: "Pedidos", icon: "🧾" },
+        { href: "/admin/preventa", label: "Preventa", icon: "📲" },
+        { href: "/admin/retiros", label: L.retiros, icon: "🧾" },
+        { href: "/admin/rutas", label: L.rutas, icon: "🗺️" },
+        { href: "/admin/ventas", label: "Ventas", icon: "💵" },
+        { href: "/admin/inventario", label: "Inventario", icon: "📦" },
+        { href: "/admin/reposiciones", label: L.reposiciones, icon: "🔄" },
+      ],
+    },
+    {
+      titulo: "Gestión",
+      activo: true,
+      items: [
+        { href: "/admin/produccion", label: L.produccion, icon: "🏭" },
+        { href: "/admin/materias", label: L.materias, icon: "🧪" },
+        { href: "/admin/sabores", label: L.sabores, icon: "🍫" },
+      ],
+    },
+    {
+      titulo: "Finanzas",
+      activo: true,
+      items: [
+        { href: "/admin/finanzas", label: "Finanzas", icon: "💰" },
+      ],
+    },
+    {
+      titulo: "Sistema",
+      activo: true,
+      items: [
+        { href: "/admin/rubro", label: "Rubro", icon: "🧩" },
+        { href: "/admin/usuarios", label: "Usuarios", icon: "👥" },
+      ],
+    },
+  ];
+}
 
 export default async function AdminLayout({
   children,
@@ -72,13 +70,20 @@ export default async function AdminLayout({
   const rol = usuario?.rol ?? "";
   const esFull = ROLES_FULL.includes(rol);
 
-  // Filtra el menú según el rol: los roles acotados solo ven lo suyo.
+  // Menú según la plantilla del rubro activo (renombra áreas y oculta módulos).
+  const rubro = await rubroActivo();
+  const modulos = construirModulos(rubro.labels);
+  const ocultos = new Set(rubro.ocultar);
+
+  // Filtra el menú según el rol y el rubro.
   const modulosVisibles = modulos
     .map((m) => ({
       ...m,
-      items: esFull ? m.items : m.items.filter((n) => n.href !== "#" && puedeAccederAdmin(rol, n.href)),
+      items: m.items.filter(
+        (n) => n.href !== "#" && !ocultos.has(n.href) && (esFull || puedeAccederAdmin(rol, n.href)),
+      ),
     }))
-    .filter((m) => esFull || m.items.length > 0);
+    .filter((m) => m.items.length > 0);
   const itemsMovilVisibles = modulosVisibles.filter((m) => m.activo).flatMap((m) => m.items);
 
   return (

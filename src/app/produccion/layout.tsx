@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
 import { usuarioActual } from "@/lib/auth";
+import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
 
 export const metadata: Metadata = {
@@ -12,6 +13,7 @@ export const viewport: Viewport = { themeColor: "#0f766e" };
 
 export default async function ProduccionLayout({ children }: { children: React.ReactNode }) {
   const usuario = await usuarioActual();
+  const rubro = await rubroActivo();
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-50">
@@ -19,7 +21,7 @@ export default async function ProduccionLayout({ children }: { children: React.R
         <Link href="/produccion" className="flex items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/20 text-sm font-extrabold">B</span>
           <span className="font-display text-base font-extrabold leading-tight">
-            Benechito <span className="font-normal text-white/80">Producción</span>
+            Benechito <span className="font-normal text-white/80">{rubro.labels.produccion}</span>
           </span>
         </Link>
         <span className="flex items-center gap-3">
@@ -32,7 +34,7 @@ export default async function ProduccionLayout({ children }: { children: React.R
       {/* Barra inferior (navegación) */}
       <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md items-center justify-around border-t border-slate-200 bg-white px-2 py-2 text-xs">
         <Link href="/produccion" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
-          <span className="text-lg">🏭</span> Producción
+          <span className="text-lg">🏭</span> {rubro.labels.produccion}
         </Link>
         <Link href="/produccion/insumos" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
           <span className="text-lg">🧪</span> Insumos
