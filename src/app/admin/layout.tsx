@@ -31,7 +31,6 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/rutas", label: L.rutas, icon: "🗺️" },
         { href: "/admin/ventas", label: "Ventas", icon: "💵" },
         { href: "/admin/inventario", label: "Inventario", icon: "📦" },
-        { href: "/admin/reposiciones", label: L.reposiciones, icon: "🔄" },
       ],
     },
     {
@@ -55,7 +54,6 @@ function construirModulos(L: Etiquetas): Modulo[] {
       titulo: "Sistema",
       activo: true,
       items: [
-        { href: "/admin/rubro", label: "Rubro", icon: "🧩" },
         { href: "/admin/usuarios", label: "Usuarios", icon: "👥" },
       ],
     },
