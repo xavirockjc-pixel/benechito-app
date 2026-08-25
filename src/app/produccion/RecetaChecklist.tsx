@@ -5,7 +5,7 @@ import { fmtCant, unidadLabel, categoriaIcono } from "@/lib/dominio/materias";
 import { lineaLabel, LINEAS_PRODUCCION } from "@/lib/dominio/produccion";
 import { confirmarMezcla } from "./actions";
 
-type BaseItem = { id: string; nombre: string; unidad: string; cantidad: number };
+type BaseItem = { id: string; nombre: string; unidad: string; cantidad: number; grupo: string | null };
 type Mat = { id: string; nombre: string; unidad: string; categoria: string };
 type Agregado = { key: number; materiaPrimaId: string; nombre: string; unidad: string; cantidad: string };
 
@@ -37,6 +37,13 @@ export default function RecetaChecklist({
 
   const n = Math.max(0, Number(cantidad.replace(/[^0-9]/g, "")) || 0);
   const base = useMemo(() => (linea ? basePorLinea[linea] ?? [] : []), [linea, basePorLinea]);
+  // Insumos fijos (se tiquean) vs grupos de elección (se elige uno).
+  const fijos = base.filter((b) => !b.grupo);
+  const grupos = useMemo(() => {
+    const m = new Map<string, BaseItem[]>();
+    for (const b of base) if (b.grupo) { if (!m.has(b.grupo)) m.set(b.grupo, []); m.get(b.grupo)!.push(b); }
+    return [...m.entries()];
+  }, [base]);
   const estaBloqueada = !!linea && bloqueada(linea);
   const guia = linea && !estaBloqueada ? guiaPorLinea[linea] : undefined;
   const pasos = (guia?.pasos ?? "").split("\n").map((s) => s.trim()).filter(Boolean);
@@ -100,7 +107,7 @@ export default function RecetaChecklist({
           <input type="hidden" name="linea" value={linea} />
           <input type="hidden" name="sabor" value={sabor} />
           <input type="hidden" name="formato" value={formato} />
-          <input type="hidden" name="total" value={base.length} />
+          <input type="hidden" name="total" value={fijos.length + grupos.length} />
           <input type="hidden" name="agregados" value={agregadosJSON} />
 
           {/* Segmento 1 — Insumos base (marca lo que echaste) */}
@@ -113,17 +120,33 @@ export default function RecetaChecklist({
                 Este tipo no tiene receta base. Cárgala en la central (Materias primas → Recetas → Receta base por tipo).
               </p>
             ) : (
-              <ul className="space-y-1">
-                {base.map((it) => (
-                  <li key={it.id}>
-                    <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 has-[:checked]:border-teal-400 has-[:checked]:bg-teal-50">
-                      <input type="checkbox" name="marcado" value={it.id} defaultChecked className="h-5 w-5 accent-[#0f766e]" />
-                      <span className="flex-1 text-sm font-semibold text-slate-800">{it.nombre}</span>
-                      <span className="text-sm font-bold text-teal-700">{n > 0 ? fmtCant(it.cantidad * n, it.unidad) : `${fmtCant(it.cantidad, it.unidad)}/u`}</span>
+              <>
+                {/* Fijos: se tiquean */}
+                <ul className="space-y-1">
+                  {fijos.map((it) => (
+                    <li key={it.id}>
+                      <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 has-[:checked]:border-teal-400 has-[:checked]:bg-teal-50">
+                        <input type="checkbox" name="marcado" value={it.id} defaultChecked className="h-5 w-5 accent-[#0f766e]" />
+                        <span className="flex-1 text-sm font-semibold text-slate-800">{it.nombre}</span>
+                        <span className="text-sm font-bold text-teal-700">{n > 0 ? fmtCant(it.cantidad * n, it.unidad) : `${fmtCant(it.cantidad, it.unidad)}/u`}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+                {/* Grupos: elegir uno (desplegable) */}
+                {grupos.map(([g, items]) => (
+                  <div key={g} className="mt-2">
+                    <label className="text-xs font-bold text-slate-600">{g} <span className="font-normal text-slate-400">(elige uno)</span>
+                      <select name="marcado" defaultValue="" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800">
+                        <option value="">— elegir {g.toLowerCase()} —</option>
+                        {items.map((it) => (
+                          <option key={it.id} value={it.id}>{it.nombre} · {n > 0 ? fmtCant(it.cantidad * n, it.unidad) : `${fmtCant(it.cantidad, it.unidad)}/u`}</option>
+                        ))}
+                      </select>
                     </label>
-                  </li>
+                  </div>
                 ))}
-              </ul>
+              </>
             )}
             {n === 0 && base.length > 0 && (
               <p className="mt-1 text-[11px] text-amber-600">Escribe cuántas unidades arriba para calcular las cantidades exactas.</p>

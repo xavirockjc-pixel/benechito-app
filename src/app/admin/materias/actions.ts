@@ -126,13 +126,14 @@ export async function agregarRecetaItem(formData: FormData) {
   const linea = String(formData.get("linea") ?? "").trim() || null;
   const nuevoInsumo = String(formData.get("nuevoInsumo") ?? "").trim();
   const nuevaUnidad = String(formData.get("nuevaUnidad") ?? "unidad").trim();
+  const grupo = String(formData.get("grupo") ?? "").trim() || null;
   const cantidad = num(formData.get("cantidad"));
   let materiaPrimaId = String(formData.get("materiaPrimaId") ?? "").trim();
 
   if (!materiaPrimaId && nuevoInsumo) materiaPrimaId = await insumoIdOCrear(nuevoInsumo, nuevaUnidad);
   if ((!productoId && !saborId && !linea) || !materiaPrimaId || !Number.isFinite(cantidad) || cantidad <= 0) return;
 
-  await prisma.recetaItem.create({ data: { productoId, saborId, linea, materiaPrimaId, cantidad } });
+  await prisma.recetaItem.create({ data: { productoId, saborId, linea, grupo, materiaPrimaId, cantidad } });
 
   const dest = linea ? `linea=${linea}` : productoId ? `producto=${productoId}` : `sabor=${saborId}`;
   revalidatePath("/admin/materias/recetas");

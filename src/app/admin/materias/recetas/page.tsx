@@ -157,6 +157,7 @@ export default async function RecetasPage({
                   <b className="text-slate-900">{fmtCant(r.cantidad, r.materiaPrima.unidad)}</b>{" "}
                   <span className="text-slate-600">de {r.materiaPrima.nombre}</span>
                   <span className="text-xs text-slate-400"> · por unidad</span>
+                  {r.grupo && <span className="ml-2 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-[#1479c4]">grupo: {r.grupo}</span>}
                 </span>
                 <form action={quitarRecetaItem}>
                   <input type="hidden" name="id" value={r.id} />
@@ -194,12 +195,19 @@ export default async function RecetasPage({
               </select>
             </label>
             <label className="text-xs font-semibold text-slate-500">
+              Grupo <span className="font-normal text-slate-400">(opcional)</span>
+              <input name="grupo" placeholder="Ej: Fruto" className="mt-0.5 w-28 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+            </label>
+            <label className="text-xs font-semibold text-slate-500">
               Cantidad por unidad
               <input name="cantidad" inputMode="decimal" required placeholder="ej: 8" className="mt-0.5 w-28 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
             </label>
             <button className="rounded-lg bg-[#1479c4] px-4 py-2 text-sm font-extrabold text-white active:brightness-110">Agregar</button>
           </form>
-          <p className="mt-1 text-[11px] text-slate-400">Elige un insumo existente <b>o</b> escribe uno nuevo (se crea solo en la base).</p>
+          <p className="mt-1 text-[11px] text-slate-400">
+            Elige un insumo existente <b>o</b> escribe uno nuevo (se crea solo). Usa el mismo <b>Grupo</b> (ej: “Fruto”) en varios
+            insumos (almendra, avellana…) para que en Producción salga un <b>desplegable para elegir uno</b>.
+          </p>
 
           {/* Guía: video + paso a paso */}
           <form action={guardarGuiaReceta} className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">

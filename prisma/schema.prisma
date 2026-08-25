@@ -631,6 +631,9 @@ model RecetaItem {
   // Receta BASE por tipo/línea (trufa, postre, cuchufli…): común a todos los sabores
   // de ese tipo. Los agregados (esencia, color, decorado…) se pesan aparte al producir.
   linea          String?
+  // Grupo de elección: insumos con el mismo grupo son ALTERNATIVAS (se elige uno al
+  // producir, ej: grupo "Fruto" → almendra o avellana). Sin grupo = fijo (se tiquea).
+  grupo          String?
   materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id], onDelete: Cascade)
   materiaPrimaId String
   cantidad       Float // cantidad de insumo por 1 unidad producida

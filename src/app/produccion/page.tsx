@@ -60,10 +60,10 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   const totalHoy = registroHoy.reduce((s, m) => s + m.cantidad, 0);
 
   // Receta base agrupada por tipo/línea (común a todos los sabores de ese tipo).
-  const basePorLinea: Record<string, { id: string; nombre: string; unidad: string; cantidad: number }[]> = {};
+  const basePorLinea: Record<string, { id: string; nombre: string; unidad: string; cantidad: number; grupo: string | null }[]> = {};
   for (const ri of recetaItems) {
     if (!ri.linea) continue;
-    (basePorLinea[ri.linea] ??= []).push({ id: ri.id, nombre: ri.materiaPrima.nombre, unidad: ri.materiaPrima.unidad, cantidad: ri.cantidad });
+    (basePorLinea[ri.linea] ??= []).push({ id: ri.id, nombre: ri.materiaPrima.nombre, unidad: ri.materiaPrima.unidad, cantidad: ri.cantidad, grupo: ri.grupo });
   }
   // Guía (video + paso a paso) por tipo.
   const guiaPorLinea: Record<string, { videoUrl: string | null; pasos: string | null }> = {};
