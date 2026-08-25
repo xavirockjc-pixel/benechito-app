@@ -1,5 +1,6 @@
 // Campos compartidos por el alta y la edición de productos.
 import type { Producto } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
 const LINEAS = [
   { value: "trufa", label: "Trufas" },
@@ -16,7 +17,9 @@ const LINEAS = [
 const inputCls =
   "mt-1 w-full rounded-xl border border-crema-2 bg-crema/40 px-3 py-2.5 font-normal text-choco outline-none focus:border-naranja focus:ring-2 focus:ring-naranja/30";
 
-export function CamposProducto({ p }: { p?: Producto }) {
+export async function CamposProducto({ p }: { p?: Producto }) {
+  const formatosDb = await prisma.formato.findMany({ where: { activo: true }, orderBy: { nombre: "asc" }, select: { nombre: true } });
+  const formatos = [...new Set(formatosDb.map((f) => f.nombre))];
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       <label className="text-sm font-bold text-navy">
@@ -44,7 +47,8 @@ export function CamposProducto({ p }: { p?: Producto }) {
 
       <label className="text-sm font-bold text-navy">
         Formato / presentación
-        <input name="formato" placeholder="pack 3, 1.5 L, unidad…" defaultValue={p?.formato ?? ""} className={inputCls} />
+        <input name="formato" list="formatos-lista" placeholder="pack 3, 1.5 L, unidad…" defaultValue={p?.formato ?? ""} className={inputCls} />
+        <datalist id="formatos-lista">{formatos.map((f) => <option key={f} value={f} />)}</datalist>
       </label>
 
       <label className="text-sm font-bold text-navy">

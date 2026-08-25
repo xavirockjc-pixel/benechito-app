@@ -563,6 +563,31 @@ model ParadaRuta {
 
 /// Sabor de un producto (trufa, cuchuflí, helado…). NO tiene precio: los sabores
 /// se usan para producción y para reponer los Puntos (reposición por sabor).
+/// Tipo de producto (cuchuflí, trufa, paletas de agua, postres 500ml…) dentro de una
+/// sección (dulce/helado). Lista administrable, interconecta sabores y formatos.
+model Tipo {
+  id        String   @id @default(cuid())
+  codigo    String   @unique // = Sabor.linea (código simple)
+  nombre    String
+  seccion   String   @default("helado") // dulce | helado | ...
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([seccion])
+}
+
+/// Formato/presentación (pack 9, bandeja 50, 500ml, 1 L, vaso…). Puede ser general
+/// o de un tipo. Se usa en el catálogo de productos.
+model Formato {
+  id        String   @id @default(cuid())
+  nombre    String
+  linea     String? // tipo al que pertenece (opcional = general)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([linea])
+}
+
 model Sabor {
   id        String   @id @default(cuid())
   nombre    String
