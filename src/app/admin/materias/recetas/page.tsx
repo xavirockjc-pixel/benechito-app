@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { empresaActual } from "@/lib/dominio/empresa";
 import { fmtCant, unidadLabel, categoriaIcono } from "@/lib/dominio/materias";
 import { LINEAS_PRODUCCION, lineaLabel } from "@/lib/dominio/produccion";
-import { agregarRecetaItem, quitarRecetaItem, guardarSeguridadRecetas, guardarGuiaReceta, guardarBaseRef, crearMedida, eliminarMedida, precargarMedidas, precargarRecetaEjemplo } from "../actions";
+import { agregarRecetaItem, quitarRecetaItem, guardarClaveTipo, guardarGuiaReceta, guardarBaseRef, crearMedida, eliminarMedida, precargarMedidas, precargarRecetaEjemplo } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -13,8 +12,8 @@ export default async function RecetasPage({
   searchParams: Promise<{ producto?: string; sabor?: string; linea?: string; seg?: string }>;
 }) {
   const { producto, sabor, linea, seg } = await searchParams;
-  const empresa = await empresaActual();
-  const secretas = new Set((empresa.recetasSecretas ?? "").split(",").map((s) => s.trim()).filter(Boolean));
+  const clavesTipo = await prisma.claveReceta.findMany();
+  const claveDe = new Map(clavesTipo.map((c) => [c.linea, c.clave]));
 
   const [productos, sabores, materiales] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),
@@ -72,29 +71,22 @@ export default async function RecetasPage({
         al producir pones cuántos litros/kg y sale solo. Lo demás (salsa, decorado…) se pesa aparte.
       </p>
 
-      {seg && <p className="mt-3 rounded-xl bg-green-100 px-4 py-2 text-center text-sm font-bold text-green-700">✓ Seguridad de recetas guardada</p>}
+      {seg && <p className="mt-3 rounded-xl bg-green-100 px-4 py-2 text-center text-sm font-bold text-green-700">✓ Clave guardada</p>}
 
-      {/* Seguridad: clave + tipos secretos (bajo llave) */}
+      {/* Seguridad: una clave POR TIPO (cada operario abre solo el suyo) */}
       <details className="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
-        <summary className="cursor-pointer text-sm font-bold text-amber-800">🔒 Secreto de recetas (clave y tipos protegidos)</summary>
-        <form action={guardarSeguridadRecetas} className="mt-3 space-y-3">
-          <label className="block text-xs font-bold text-slate-600">Clave de recetas
-            <input name="recetaClave" defaultValue={empresa.recetaClave ?? ""} placeholder="Ej: 4821" className="mt-1 w-40 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-          </label>
-          <div>
-            <p className="mb-1 text-xs font-bold text-slate-600">Tipos bajo llave (solo se ven con la clave)</p>
-            <div className="flex flex-wrap gap-2">
-              {LINEAS_PRODUCCION.map((l) => (
-                <label key={l} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50">
-                  <input type="checkbox" name="secreta" value={l} defaultChecked={secretas.has(l)} className="h-4 w-4 accent-amber-500" />
-                  {lineaLabel[l]}
-                </label>
-              ))}
-            </div>
-          </div>
-          <button className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white active:brightness-110">Guardar seguridad</button>
-          <p className="text-[11px] text-slate-500">Los tipos marcados salen 🔒 en Producción; el operario necesita la clave para verlos.</p>
-        </form>
+        <summary className="cursor-pointer text-sm font-bold text-amber-800">🔒 Claves por tipo (proteger recetas)</summary>
+        <p className="mb-2 mt-2 text-xs text-slate-500">Pon una clave a cada tipo que quieras proteger. En Producción, ese tipo sale 🔒 y solo se abre con su clave. Deja vacío para dejarlo abierto.</p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {LINEAS_PRODUCCION.map((l) => (
+            <form key={l} action={guardarClaveTipo} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white p-2">
+              <input type="hidden" name="linea" value={l} />
+              <span className="w-28 shrink-0 truncate text-xs font-bold text-slate-700">{lineaLabel[l]}</span>
+              <input name="clave" type="text" defaultValue={claveDe.get(l) ?? ""} placeholder="sin clave" className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+              <button className="shrink-0 rounded-lg bg-amber-600 px-2 py-1.5 text-xs font-bold text-white">Guardar</button>
+            </form>
+          ))}
+        </div>
       </details>
 
       {/* Precargar receta de ejemplo (editable) */}

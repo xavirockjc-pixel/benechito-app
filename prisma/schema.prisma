@@ -416,6 +416,7 @@ model ControlCalidad {
   baseUnidad    String? // l | kg
   itemsMarcados Int      @default(0) // insumos marcados como echados
   itemsTotal    Int      @default(0) // insumos de la receta
+  lote          String? // lote de fabricación (fecha + turno + correlativo)
   observaciones String?
   usuarioId     String?
   nombreUsuario String?
@@ -685,6 +686,14 @@ model RecetaItem {
   @@index([saborId])
   @@index([linea])
   @@index([materiaPrimaId])
+}
+
+/// Clave de receta POR TIPO: cada tipo (línea) puede tener su propia clave, para que
+/// solo los operarios con esa clave desbloqueen esa receta.
+model ClaveReceta {
+  id     String @id @default(cuid())
+  linea  String @unique
+  clave  String
 }
 
 /// Medida/recipiente para medir la base al producir (balde, depósito, máquina 30/60 L).

@@ -7,12 +7,16 @@ import { usuarioActual } from "@/lib/auth";
 import { empresaActual } from "@/lib/dominio/empresa";
 import { CATEGORIAS, UNIDADES } from "@/lib/dominio/materias";
 
-/** Guarda la clave de recetas y qué tipos quedan bajo llave (secretos). */
-export async function guardarSeguridadRecetas(formData: FormData) {
-  const clave = String(formData.get("recetaClave") ?? "").trim() || null;
-  const secretas = (formData.getAll("secreta") as string[]).filter(Boolean).join(",") || null;
-  const e = await empresaActual();
-  await prisma.empresa.update({ where: { id: e.id }, data: { recetaClave: clave, recetasSecretas: secretas } });
+/** Guarda (o quita) la clave de un tipo. Sin clave = tipo abierto. */
+export async function guardarClaveTipo(formData: FormData) {
+  const linea = String(formData.get("linea") ?? "").trim();
+  const clave = String(formData.get("clave") ?? "").trim();
+  if (!linea) return;
+  if (!clave) {
+    await prisma.claveReceta.deleteMany({ where: { linea } });
+  } else {
+    await prisma.claveReceta.upsert({ where: { linea }, update: { clave }, create: { linea, clave } });
+  }
   revalidatePath("/admin/materias/recetas");
   revalidatePath("/produccion");
   redirect("/admin/materias/recetas?seg=1");

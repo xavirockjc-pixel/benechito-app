@@ -25,6 +25,8 @@ export default function RecetaChecklist({
   baseRefPorLinea = {},
   medidas = [],
   lineasBloqueadas = [],
+  onDesbloquear,
+  claveIncorrecta = false,
 }: {
   basePorLinea: Record<string, BaseItem[]>;
   materiales: Mat[];
@@ -32,6 +34,8 @@ export default function RecetaChecklist({
   baseRefPorLinea?: Record<string, { baseRef: number; baseUnidad: string }>;
   medidas?: Medida[];
   lineasBloqueadas?: string[];
+  onDesbloquear?: (formData: FormData) => void;
+  claveIncorrecta?: boolean;
 }) {
   const bloqueada = (l: string) => lineasBloqueadas.includes(l);
   const [linea, setLinea] = useState("");
@@ -107,9 +111,17 @@ export default function RecetaChecklist({
       </div>
 
       {estaBloqueada && (
-        <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-center text-sm font-semibold text-amber-700">
-          🔒 Receta protegida. Ingresa la clave arriba para poder verla.
-        </p>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+          <p className="mb-2 text-center text-sm font-semibold text-amber-700">🔒 Receta protegida. Ingresa la clave de este tipo.</p>
+          {claveIncorrecta && <p className="mb-2 text-center text-xs font-bold text-red-600">Clave incorrecta</p>}
+          {onDesbloquear && (
+            <form action={onDesbloquear} className="flex items-center gap-2">
+              <input type="hidden" name="linea" value={linea} />
+              <input name="clave" type="password" inputMode="numeric" placeholder={`Clave de ${lineaLabel[linea] ?? linea}`} className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+              <button className="shrink-0 rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white">Desbloquear</button>
+            </form>
+          )}
+        </div>
       )}
 
       {/* Guía: video + paso a paso */}

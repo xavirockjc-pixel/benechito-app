@@ -6,19 +6,23 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
 
-/** Desbloquea las recetas protegidas si la clave coincide (cookie por 8 horas). */
+/** Desbloquea UN tipo si su clave coincide (cookie con la lista de tipos abiertos, 8h). */
 export async function desbloquearRecetas(formData: FormData) {
   const clave = String(formData.get("clave") ?? "").trim();
-  const e = await prisma.empresa.findFirst();
-  if (e?.recetaClave && clave && clave === e.recetaClave) {
+  const linea = String(formData.get("linea") ?? "").trim();
+  if (!linea) redirect("/produccion");
+  const cr = await prisma.claveReceta.findUnique({ where: { linea } });
+  if (cr && clave && clave === cr.clave) {
     const c = await cookies();
-    c.set("recetas_ok", "1", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 8 });
+    const actual = (c.get("recetas_ok")?.value ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+    if (!actual.includes(linea)) actual.push(linea);
+    c.set("recetas_ok", actual.join(","), { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 8 });
     redirect("/produccion?desbloqueo=1");
   }
   redirect("/produccion?desbloqueo=0");
 }
 
-/** Vuelve a bloquear las recetas protegidas (borra el permiso). */
+/** Vuelve a bloquear todas las recetas protegidas (borra el permiso). */
 export async function bloquearRecetas() {
   const c = await cookies();
   c.delete("recetas_ok");
@@ -68,12 +72,19 @@ export async function confirmarMezcla(formData: FormData) {
   const u = await usuarioActual();
   const nombre = [sabor, linea].filter(Boolean).join(" · ") || "Mezcla";
 
+  // Lote de fabricación: fecha + turno + correlativo del día.
+  const hoy0 = new Date(); hoy0.setHours(0, 0, 0, 0);
+  const seq = (await prisma.controlCalidad.count({ where: { fecha: { gte: hoy0 } } })) + 1;
+  const yy = hoy0.getFullYear(); const mm = String(hoy0.getMonth() + 1).padStart(2, "0"); const dd = String(hoy0.getDate()).padStart(2, "0");
+  const turnoIni = turno ? turno.charAt(0).toUpperCase() : "L";
+  const lote = `${yy}${mm}${dd}-${turnoIni}-${String(seq).padStart(2, "0")}`;
+
   // Registro de control de calidad (historial de la central).
   const control = await prisma.controlCalidad.create({
     data: {
       turno, operarios, clase: "linea", refId: linea, nombre, cantidad: unidades,
       base: baseOk ? base : null, baseUnidad: baseOk ? baseUnidad : null,
-      itemsMarcados: marcados.length, itemsTotal: total, observaciones,
+      itemsMarcados: marcados.length, itemsTotal: total, lote, observaciones,
       usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
     },
   });
