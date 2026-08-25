@@ -82,6 +82,20 @@ export function CamposProducto({ p }: { p?: Producto }) {
         />
         Producto activo
       </label>
+
+      <label className="flex items-start gap-3 self-end pb-2 text-sm font-semibold text-navy sm:col-span-2">
+        <input
+          type="checkbox"
+          name="soloLocal"
+          value="si"
+          defaultChecked={p ? p.soloLocal : false}
+          className="mt-0.5 h-5 w-5 accent-naranja"
+        />
+        <span>
+          Solo local <span className="font-normal text-choco-2">— vive únicamente en el local (Sala de Ventas) y la central.
+          Se oculta de bodega, rutas y vendedor (ej: bebidas, snacks).</span>
+        </span>
+      </label>
     </div>
   );
 }

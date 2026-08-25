@@ -198,6 +198,7 @@ export async function crearProductoDistribucion(formData: FormData) {
         categoria: tipo || "Distribución",
         formato: formato || null,
         tipo: "reventa",
+        soloLocal: true,
         activo: true,
       },
     });

@@ -82,6 +82,9 @@ model Producto {
   tipo         String  @default("propio")
   costo        Decimal? @db.Decimal(12, 2) // costo de compra (para reventa: margen)
   activo       Boolean @default(true)
+  // Solo local: producto que vive únicamente en el local (Sala de Ventas) y la
+  // central. Se oculta de bodega, rutas y vendedor (ej: bebidas, snacks de reventa).
+  soloLocal    Boolean @default(false)
 
   instalaciones   PuntoProducto[]
   reposicionItems ReposicionItem[]

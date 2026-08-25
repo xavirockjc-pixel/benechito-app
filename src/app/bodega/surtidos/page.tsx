@@ -9,7 +9,7 @@ const lineaLabel: Record<string, string> = {
 
 export default async function SurtidosPage() {
   const [productos, sabores] = await Promise.all([
-    prisma.producto.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
+    prisma.producto.findMany({ where: { activo: true, soloLocal: false }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
   ]);
 

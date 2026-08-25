@@ -21,12 +21,12 @@ export default async function VenderPage({
   const precios = listaId
     ? await prisma.precioProducto.findMany({
         where: { listaId, cantidadMinima: 1 },
-        include: { producto: { select: { id: true, nombre: true, formato: true, activo: true } } },
+        include: { producto: { select: { id: true, nombre: true, formato: true, activo: true, soloLocal: true } } },
       })
     : [];
 
   const productos = precios
-    .filter((p) => p.producto.activo)
+    .filter((p) => p.producto.activo && !p.producto.soloLocal)
     .map((p) => ({ id: p.producto.id, nombre: p.producto.nombre, formato: p.producto.formato, precio: Number(p.precio) }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 

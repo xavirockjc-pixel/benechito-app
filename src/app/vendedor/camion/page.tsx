@@ -45,7 +45,7 @@ export default async function CamionPage() {
 
   // Con vehículo → stock actual + cargar + devolver
   const [productos, stockCamion, stockBodega, sabores, saborCamion] = await Promise.all([
-    prisma.producto.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
+    prisma.producto.findMany({ where: { activo: true, soloLocal: false }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.stock.findMany({ where: { ubicacionId: vehiculo.id }, include: { producto: { select: { nombre: true } } } }),
     bodega ? prisma.stock.findMany({ where: { ubicacionId: bodega.id } }) : Promise.resolve([]),
     prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),

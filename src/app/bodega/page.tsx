@@ -25,7 +25,7 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
   hoy.setHours(0, 0, 0, 0);
 
   const [productos, sabores, stockProd, stockSab, registroHoy] = await Promise.all([
-    prisma.producto.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
+    prisma.producto.findMany({ where: { activo: true, soloLocal: false }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.stock.findMany({ where: { ubicacionId: bodega.id }, include: { producto: { select: { nombre: true } } } }),
     prisma.stockSabor.findMany({ where: { ubicacionId: bodega.id }, include: { sabor: { select: { nombre: true } } } }),
