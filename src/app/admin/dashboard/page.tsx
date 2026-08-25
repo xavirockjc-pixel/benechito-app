@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
+import { CANALES_VENTA, canalVentaLabel, canalVentaColor } from "@/lib/dominio/ventas";
 
 export const dynamic = "force-dynamic";
 
@@ -52,9 +53,14 @@ export default async function DashboardMovimientos({ searchParams }: { searchPar
   const ticket = nVentas > 0 ? totalVendido / nVentas : 0;
   let efectivo = 0, otros = 0;
   for (const v of ventas) for (const p of v.pagos) { if (p.medio === "efectivo") efectivo += Number(p.monto); else otros += Number(p.monto); }
-  const ventaSala = ventas.filter((v) => v.ubicacion?.tipo === "sala").reduce((s, v) => s + Number(v.total), 0);
-  const ventaRuta = ventas.filter((v) => v.ubicacion?.tipo === "vehiculo").reduce((s, v) => s + Number(v.total), 0);
   const porCobrar = Math.max(0, Number(ventasTodas._sum.total ?? 0) - Number(pagosTodos._sum.monto ?? 0));
+
+  // Desglose por canal (local / terreno / directa)
+  const canalData = CANALES_VENTA.map((c) => {
+    const arr = ventas.filter((v) => v.canal === c);
+    const tot = arr.reduce((s, v) => s + Number(v.total), 0);
+    return { c, tot, n: arr.length, pct: totalVendido > 0 ? Math.round((tot / totalVendido) * 100) : 0 };
+  });
 
   // Movimientos de bodega/producción
   const sumMov = (zona: string, tipo: string) => movAgg.find((m) => m.zona === zona && m.tipo === tipo)?._sum.cantidad ?? 0;
@@ -113,9 +119,31 @@ export default async function DashboardMovimientos({ searchParams }: { searchPar
         <Card label="Por cobrar (total)" valor={fmtCLP(porCobrar)} accent="text-amber-600" />
         <Card label="Efectivo" valor={fmtCLP(efectivo)} />
         <Card label="Otros medios" valor={fmtCLP(otros)} />
-        <Card label="En sala" valor={fmtCLP(ventaSala)} />
-        <Card label="En ruta" valor={fmtCLP(ventaRuta)} />
       </div>
+
+      {/* Ventas por canal (desglose) */}
+      <h2 className="mt-6 mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">🧭 Ventas por canal</h2>
+      <div className="grid gap-3 sm:grid-cols-3">
+        {canalData.map(({ c, tot, n, pct }) => {
+          const col = canalVentaColor[c];
+          return (
+            <div key={c} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wide" style={{ color: col.color }}>{canalVentaLabel[c]}</span>
+                <span className="rounded-md px-2 py-0.5 text-xs font-bold" style={{ color: col.color, backgroundColor: col.bg }}>{pct}%</span>
+              </div>
+              <p className="mt-1 text-2xl font-extrabold text-slate-900">{fmtCLP(tot)}</p>
+              <p className="text-xs text-slate-500">{n} venta(s)</p>
+              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: col.color }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="mt-2 text-xs text-slate-400">
+        Local = caja/sala · Terreno = vendedor en ruta · Directa = venta directa de administración.
+      </p>
 
       {/* Fabricación + Bodega + Entregas */}
       <div className="mt-6 grid gap-6 lg:grid-cols-3">

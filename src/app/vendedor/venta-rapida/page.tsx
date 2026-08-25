@@ -23,25 +23,33 @@ export default async function VentaRapidaPage() {
   const precios = lista
     ? await prisma.precioProducto.findMany({
         where: { listaId: lista.id, cantidadMinima: 1 },
-        include: { producto: { select: { id: true, nombre: true, formato: true, activo: true } } },
+        include: { producto: { select: { id: true, nombre: true, formato: true, activo: true, soloLocal: true } } },
       })
     : [];
 
   const productos = precios
-    .filter((p) => p.producto.activo)
+    .filter((p) => p.producto.activo && !p.producto.soloLocal)
     .map((p) => ({ id: p.producto.id, nombre: p.producto.nombre, formato: p.producto.formato, precio: Number(p.precio) }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+  const clientes = (
+    await prisma.negocio.findMany({
+      where: { nombreNegocio: { not: "Consumidor Final" } },
+      orderBy: { nombreNegocio: "asc" },
+      select: { id: true, nombreNegocio: true, comuna: true },
+    })
+  ).map((c) => ({ id: c.id, nombreNegocio: c.nombreNegocio, comuna: c.comuna ?? "" }));
 
   return (
     <div>
       <Link href="/vendedor" className="text-sm font-semibold text-[#1479c4]">← Clientes</Link>
       <h1 className="mt-1 text-xl font-extrabold text-slate-900">⚡ Venta rápida</h1>
       <p className="text-xs text-slate-500">
-        Venta directa a público, sin elegir cliente. {lista ? `Precios: ${lista.nombre}` : ""}
+        Venta directa a público. Sin cliente = contado; con cliente puedes abonar o fiar. {lista ? `Precios: ${lista.nombre}` : ""}
       </p>
 
       <div className="mt-3">
-        <VentaRapida productos={productos} />
+        <VentaRapida productos={productos} clientes={clientes} />
       </div>
     </div>
   );

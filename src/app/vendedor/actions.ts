@@ -155,12 +155,13 @@ async function clienteMostrador() {
 }
 
 /**
- * Venta rápida en terreno: venta directa a público, SIN elegir un cliente y sin
- * depender de la ruta. Queda pagada (efectivo/transferencia), se registra a nombre
- * del vendedor y descuenta del stock de su camión (igual que la venta a cliente).
+ * Venta rápida en terreno: venta directa a público. Puede ir SIN cliente (contado)
+ * o, si se elige un cliente, permite pago, abono (paga una parte, queda debiendo) o
+ * fiado (crédito). Se registra a nombre del vendedor y descuenta del camión.
  */
 export async function ventaRapida(formData: FormData) {
-  const modo = String(formData.get("modo") ?? "efectivo").trim(); // efectivo|transferencia
+  const modo = String(formData.get("modo") ?? "efectivo").trim(); // efectivo|transferencia|abono|credito
+  const negocioIdSel = String(formData.get("negocioId") ?? "").trim();
   const raw = String(formData.get("items") ?? "[]");
 
   let items: LineaTerreno[] = [];
@@ -173,7 +174,6 @@ export async function ventaRapida(formData: FormData) {
   if (items.length === 0) return;
 
   const total = items.reduce((s, i) => s + i.precioUnit * i.cantidad, 0);
-  const medio = (MEDIOS_PAGO as readonly string[]).includes(modo) && modo !== "credito" ? modo : "efectivo";
 
   const u = await usuarioActual();
   const ubicacionId =
@@ -183,7 +183,35 @@ export async function ventaRapida(formData: FormData) {
     (await prisma.ubicacion.findFirst())?.id;
   if (!ubicacionId) return;
 
-  const cliente = await clienteMostrador();
+  // Cliente elegido (para abono/fiado) o mostrador (contado).
+  const cliente = negocioIdSel
+    ? (await prisma.negocio.findUnique({ where: { id: negocioIdSel } })) ?? (await clienteMostrador())
+    : await clienteMostrador();
+  const clienteReal = Boolean(negocioIdSel) && cliente.nombreNegocio !== "Consumidor Final";
+
+  // Abono: paga una parte ahora, el resto queda de deuda.
+  let abono = Number(String(formData.get("abono") ?? "").replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(abono) || abono < 0) abono = 0;
+  abono = Math.min(abono, total);
+  const medioAbonoRaw = String(formData.get("medioAbono") ?? "efectivo");
+  const medioAbono = (MEDIOS_PAGO as readonly string[]).includes(medioAbonoRaw) && medioAbonoRaw !== "credito" ? medioAbonoRaw : "efectivo";
+
+  const esAbono = modo === "abono" && clienteReal;
+  const aCredito = modo === "credito" && clienteReal;
+  const medio = (MEDIOS_PAGO as readonly string[]).includes(modo) && modo !== "credito" ? modo : "efectivo";
+
+  let estadoPago: string;
+  let pagos: { create: { medio: string; monto: number } } | undefined;
+  if (esAbono) {
+    estadoPago = estadoPagoDe(total, abono);
+    pagos = abono > 0 ? { create: { medio: medioAbono, monto: abono } } : undefined;
+  } else if (aCredito) {
+    estadoPago = "pendiente";
+    pagos = undefined;
+  } else {
+    estadoPago = "pagado";
+    pagos = { create: { medio, monto: total } };
+  }
 
   const venta = await prisma.venta.create({
     data: {
@@ -191,12 +219,21 @@ export async function ventaRapida(formData: FormData) {
       ubicacionId,
       vendedorId: u?.sub ?? null,
       total,
-      estadoPago: "pagado",
+      estadoPago,
       documento: "boleta",
       canal: "terreno",
-      pagos: { create: { medio, monto: total } },
+      ...(pagos ? { pagos } : {}),
     },
   });
+
+  if (clienteReal) {
+    const desc = esAbono
+      ? `Venta rápida $${total.toLocaleString("es-CL")}: abonó $${abono.toLocaleString("es-CL")}, debe $${(total - abono).toLocaleString("es-CL")}`
+      : aCredito
+        ? `Venta rápida a crédito por $${total.toLocaleString("es-CL")}`
+        : `Venta rápida por $${total.toLocaleString("es-CL")}`;
+    await prisma.actividad.create({ data: { negocioId: cliente.id, tipo: "venta", descripcion: desc } });
+  }
 
   for (const it of items) {
     await aplicarDelta(it.productoId, ubicacionId, -it.cantidad);

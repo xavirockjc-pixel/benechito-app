@@ -7,9 +7,20 @@ import ControlVoz from "../ControlVoz";
 import type { CambioVoz } from "@/lib/dominio/voz";
 
 type Prod = { id: string; nombre: string; formato: string | null; precio: number };
+type Cliente = { id: string; nombreNegocio: string; comuna: string };
 
-export default function VentaRapida({ productos }: { productos: Prod[] }) {
+export default function VentaRapida({ productos, clientes = [] }: { productos: Prod[]; clientes?: Cliente[] }) {
   const [cart, setCart] = useState<Record<string, number>>({});
+  const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [q, setQ] = useState("");
+  const [modo, setModo] = useState("efectivo");
+  const [abono, setAbono] = useState("");
+
+  const clientesFiltrados = useMemo(() => {
+    const t = q.trim().toLowerCase();
+    if (!t) return [];
+    return clientes.filter((c) => c.nombreNegocio.toLowerCase().includes(t) || (c.comuna ?? "").toLowerCase().includes(t)).slice(0, 6);
+  }, [q, clientes]);
   const add = (id: string) => setCart((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 }));
   const sub = (id: string) =>
     setCart((c) => {
@@ -36,6 +47,8 @@ export default function VentaRapida({ productos }: { productos: Prod[] }) {
     return { productoId: id, nombre: p.nombre, cantidad, precioUnit: p.precio };
   });
   const total = lineas.reduce((s, l) => s + l.precioUnit * l.cantidad, 0);
+  const abonoNum = Math.min(Math.max(Number(abono.replace(/[^0-9]/g, "")) || 0, 0), total);
+  const restante = total - abonoNum;
 
   return (
     <div className="space-y-3">
@@ -99,15 +112,67 @@ export default function VentaRapida({ productos }: { productos: Prod[] }) {
       {/* Cobro */}
       <form action={ventaRapida} className="sticky bottom-20 space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
         <input type="hidden" name="items" value={JSON.stringify(lineas)} />
-        <select name="modo" defaultValue="efectivo" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800">
+        <input type="hidden" name="negocioId" value={cliente?.id ?? ""} />
+
+        {/* Cliente opcional (para abono / fiado) */}
+        {cliente ? (
+          <div className="flex items-center justify-between rounded-lg bg-slate-50 p-2.5">
+            <span className="min-w-0 truncate text-sm font-bold text-slate-800">🏪 {cliente.nombreNegocio}</span>
+            <button type="button" onClick={() => { setCliente(null); if (modo === "abono" || modo === "credito") setModo("efectivo"); }} className="shrink-0 text-xs font-semibold text-slate-500">quitar</button>
+          </div>
+        ) : (
+          <>
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Cliente (opcional, para abono o fiado)…"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#1479c4]"
+            />
+            {clientesFiltrados.length > 0 && (
+              <div className="space-y-1">
+                {clientesFiltrados.map((c) => (
+                  <button key={c.id} type="button" onClick={() => { setCliente(c); setQ(""); }} className="flex w-full items-center justify-between rounded-lg border border-slate-200 px-3 py-1.5 text-left text-sm active:bg-slate-50">
+                    <span className="truncate font-semibold text-slate-800">{c.nombreNegocio}</span>
+                    <span className="ml-2 shrink-0 text-xs text-slate-400">{c.comuna}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        <select name="modo" value={modo} onChange={(e) => setModo(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800">
           <option value="efectivo">Pago: Efectivo</option>
           <option value="transferencia">Pago: Transferencia</option>
+          <option value="abono" disabled={!cliente}>Abono: paga una parte{!cliente ? " (elige cliente)" : ""}</option>
+          <option value="credito" disabled={!cliente}>Fiado (crédito){!cliente ? " (elige cliente)" : ""}</option>
         </select>
+
+        {modo === "abono" && cliente && (
+          <div className="rounded-lg bg-amber-50 p-2.5">
+            <label className="block text-xs font-bold text-slate-600">Monto que paga ahora
+              <input name="abono" inputMode="numeric" value={abono} onChange={(e) => setAbono(e.target.value)} placeholder="Ej: 5000" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-amber-500" />
+            </label>
+            <select name="medioAbono" defaultValue="efectivo" className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800">
+              <option value="efectivo">Con efectivo</option>
+              <option value="transferencia">Con transferencia</option>
+            </select>
+            <div className="mt-2 flex items-center justify-between text-sm">
+              <span className="font-semibold text-slate-600">Queda debiendo</span>
+              <span className="font-extrabold text-red-600">{fmtCLP(restante)}</span>
+            </div>
+          </div>
+        )}
+
         <button
           disabled={lineas.length === 0}
           className="w-full rounded-xl bg-green-600 py-3 text-base font-extrabold text-white shadow active:brightness-95 disabled:opacity-40"
         >
-          Registrar venta {total > 0 ? fmtCLP(total) : ""}
+          {modo === "abono" && cliente
+            ? `Cobrar ${fmtCLP(abonoNum)} · deuda ${fmtCLP(restante)}`
+            : modo === "credito" && cliente
+              ? `Fiar ${total > 0 ? fmtCLP(total) : ""}`
+              : `Registrar venta ${total > 0 ? fmtCLP(total) : ""}`}
         </button>
       </form>
     </div>
