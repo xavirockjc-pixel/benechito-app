@@ -631,6 +631,7 @@ model MateriaPrima {
   id          String   @id @default(cuid())
   nombre      String
   categoria   String   @default("insumo") // insumo | material
+  subtipo     String   @default("otro") // esencia | colorante | base | otro
   unidad      String   @default("unidad") // kg | g | l | ml | unidad
   stock       Float    @default(0)
   stockMinimo Float    @default(0)

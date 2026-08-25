@@ -57,8 +57,8 @@ export async function confirmarMezcla(formData: FormData) {
   const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
   const marcados = (formData.getAll("marcado") as string[]).map((s) => String(s)).filter(Boolean);
 
-  // Sabores del lote: [{ nombre, porcion, agregados:[{materiaPrimaId?, nombre?, unidad?, cantidad}] }]
-  type Ag = { materiaPrimaId?: string; nombre?: string; unidad?: string; cantidad: number };
+  // Sabores del lote: [{ nombre, porcion, agregados:[{rol?, materiaPrimaId?, nombre?, unidad?, cantidad}] }]
+  type Ag = { rol?: string; materiaPrimaId?: string; nombre?: string; unidad?: string; cantidad: number };
   type SaborLote = { nombre: string; porcion?: number; agregados: Ag[] };
   let sabores: SaborLote[] = [];
   try { sabores = JSON.parse(String(formData.get("sabores") ?? "[]")); } catch { sabores = []; }
@@ -128,7 +128,9 @@ export async function confirmarMezcla(formData: FormData) {
         if (ex) { mpId = ex.id; nombreInsumo = ex.nombre; unidad = ex.unidad; }
         else {
           const un = UNID.includes(ag.unidad ?? "") ? ag.unidad! : "g";
-          const nv = await prisma.materiaPrima.create({ data: { nombre: ag.nombre.trim(), unidad: un } });
+          const ROL_SUBTIPO: Record<string, string> = { esencia: "esencia", color: "colorante", preparado: "preparado", salsa: "salsa", topping: "topping" };
+          const subtipo = ROL_SUBTIPO[ag.rol ?? ""] ?? "otro";
+          const nv = await prisma.materiaPrima.create({ data: { nombre: ag.nombre.trim(), unidad: un, subtipo } });
           mpId = nv.id; nombreInsumo = nv.nombre; unidad = nv.unidad;
         }
       } else continue;

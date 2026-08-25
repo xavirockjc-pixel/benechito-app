@@ -1,23 +1,62 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { fmtCant, unidadLabel, categoriaIcono } from "@/lib/dominio/materias";
+import { fmtCant } from "@/lib/dominio/materias";
 import { lineaLabel, LINEAS_PRODUCCION } from "@/lib/dominio/produccion";
 import { confirmarMezcla } from "./actions";
 
 type BaseItem = { id: string; nombre: string; unidad: string; cantidad: number; grupo: string | null };
-type Mat = { id: string; nombre: string; unidad: string; categoria: string };
+type Mat = { id: string; nombre: string; unidad: string; categoria: string; subtipo?: string };
 type Guia = { videoUrl: string | null; pasos: string | null };
 type Medida = { id: string; nombre: string; litros: number };
-type Rol = "esencia" | "color" | "otro";
-type Agregado = { key: number; rol: Rol; materiaPrimaId: string; nombre: string; unidad: string; cantidad: string };
+type Rol = "esencia" | "color" | "preparado" | "salsa" | "topping" | "otro";
+type Agregado = { key: number; rol: Rol; nombre: string; unidad: string; cantidad: string };
 type SaborLote = { key: number; nombre: string; porcion: string; medidaId: string; agregados: Agregado[] };
 
-const ROL_INFO: Record<Rol, { label: string; icono: string; color: string; ph: string }> = {
-  esencia: { label: "Esencia / saborizante", icono: "🧴", color: "#b45309", ph: "ej: 1,5" },
-  color: { label: "Colorante", icono: "🎨", color: "#be185d", ph: "ej: 3" },
-  otro: { label: "Otro insumo", icono: "🧂", color: "#475569", ph: "grs" },
+const ROL_INFO: Record<Rol, { label: string; icono: string; color: string; ph: string; subtipo: string }> = {
+  esencia: { label: "Esencia / saborizante", icono: "🧴", color: "#b45309", ph: "ej: 1,5", subtipo: "esencia" },
+  color: { label: "Colorante", icono: "🎨", color: "#be185d", ph: "ej: 3", subtipo: "colorante" },
+  preparado: { label: "Preparado / arco", icono: "🌈", color: "#7c3aed", ph: "grs", subtipo: "preparado" },
+  salsa: { label: "Salsa", icono: "🍫", color: "#92400e", ph: "grs", subtipo: "salsa" },
+  topping: { label: "Topping / especias", icono: "🍪", color: "#0f766e", ph: "grs", subtipo: "topping" },
+  otro: { label: "Otro insumo", icono: "🧂", color: "#475569", ph: "grs", subtipo: "otro" },
 };
+
+// Sugerencias de ejemplo (aparecen desde ya; al usarlas quedan guardadas con su subtipo).
+const SUG_DEFAULT: Record<Rol, string[]> = {
+  esencia: ["Vainilla", "Frutilla", "Plátano", "Chocolate", "Manjar", "Menta", "Piña", "Mango"],
+  color: ["Amarillo huevo", "Rojo", "Verde manzana", "Verde menta", "Azul", "Café", "Rosado"],
+  preparado: ["Arco iris", "Preparado chocolate"],
+  salsa: ["Salsa de chocolate", "Salsa de manjar", "Salsa de frutilla"],
+  topping: ["Galleta", "Chips de chocolate", "Chocolate picado", "Frutas", "Frutos secos", "Almendras", "Maní"],
+  otro: [],
+};
+
+// Roles base (sabor) para todos; salsa/topping sólo en productos con agregados aparte.
+const ROLES_BASE: Rol[] = ["esencia", "color", "preparado"];
+const CON_EXTRAS = new Set(["paletas_premium", "postres_500", "cassatas", "trufas", "cuchufli"]);
+const rolesDe = (linea: string): Rol[] => [...ROLES_BASE, ...(CON_EXTRAS.has(linea) ? (["salsa", "topping"] as Rol[]) : []), "otro"];
+
+/** Mini botón de voz que dicta un solo texto (nombre del insumo) en es-CL. */
+function MicNombre({ onTexto }: { onTexto: (t: string) => void }) {
+  const [on, setOn] = useState(false);
+  const [ok, setOk] = useState(true);
+  const escuchar = () => {
+    const w = window as unknown as { SpeechRecognition?: new () => any; webkitSpeechRecognition?: new () => any };
+    const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!Ctor) { setOk(false); return; }
+    const rec = new Ctor();
+    rec.lang = "es-CL"; rec.interimResults = false; rec.continuous = false; rec.maxAlternatives = 1;
+    rec.onresult = (e: { results: { 0: { 0: { transcript: string } } } }) => onTexto(String(e.results[0][0].transcript || "").trim());
+    rec.onerror = () => setOn(false); rec.onend = () => setOn(false);
+    try { rec.start(); setOn(true); } catch { setOn(false); }
+  };
+  if (!ok) return null;
+  return (
+    <button type="button" onClick={escuchar} title="Dictar por voz"
+      className={`shrink-0 rounded-lg px-2 py-1.5 text-sm ${on ? "animate-pulse bg-red-500 text-white" : "bg-slate-100 text-slate-600"}`}>🎙️</button>
+  );
+}
 
 /**
  * Control de calidad: tipo + base (litros/kg/medida). La receta base se descuenta
@@ -74,7 +113,7 @@ export default function RecetaChecklist({
   const addSabor = () => setSabores((s) => [...s, { key: Date.now() + s.length, nombre: "", porcion: "", medidaId: "l", agregados: [] }]);
   const setSabor = (key: number, patch: Partial<SaborLote>) => setSabores((s) => s.map((x) => (x.key === key ? { ...x, ...patch } : x)));
   const delSabor = (key: number) => setSabores((s) => s.filter((x) => x.key !== key));
-  const addAg = (sk: number, rol: Rol) => setSabor(sk, { agregados: [...(sabores.find((s) => s.key === sk)?.agregados ?? []), { key: Date.now(), rol, materiaPrimaId: "", nombre: "", unidad: "g", cantidad: "" }] });
+  const addAg = (sk: number, rol: Rol) => setSabor(sk, { agregados: [...(sabores.find((s) => s.key === sk)?.agregados ?? []), { key: Date.now(), rol, nombre: "", unidad: "g", cantidad: "" }] });
   const setAg = (sk: number, ak: number, patch: Partial<Agregado>) => {
     const s = sabores.find((x) => x.key === sk); if (!s) return;
     setSabor(sk, { agregados: s.agregados.map((a) => (a.key === ak ? { ...a, ...patch } : a)) });
@@ -83,7 +122,6 @@ export default function RecetaChecklist({
     const s = sabores.find((x) => x.key === sk); if (!s) return;
     setSabor(sk, { agregados: s.agregados.filter((a) => a.key !== ak) });
   };
-  const esNuevo = (a: Agregado) => !a.materiaPrimaId || a.materiaPrimaId === "__nuevo__";
   const litrosDe = (s: SaborLote) => {
     const c = Math.max(0, Number(s.porcion.replace(",", ".").replace(/[^0-9.]/g, "")) || 0);
     const m = medidas.find((x) => x.id === s.medidaId);
@@ -94,13 +132,32 @@ export default function RecetaChecklist({
       nombre: s.nombre.trim(),
       porcion: litrosDe(s),
       agregados: s.agregados
-        .filter((a) => ((a.materiaPrimaId && a.materiaPrimaId !== "__nuevo__") || a.nombre.trim()) && Number(a.cantidad.replace(",", ".")) > 0)
-        .map((a) => ({ rol: a.rol, materiaPrimaId: esNuevo(a) ? undefined : a.materiaPrimaId, nombre: esNuevo(a) ? a.nombre.trim() || undefined : undefined, unidad: a.unidad, cantidad: Number(a.cantidad.replace(",", ".")) })),
+        .filter((a) => a.nombre.trim() && Number(a.cantidad.replace(",", ".")) > 0)
+        .map((a) => ({ rol: a.rol, nombre: a.nombre.trim(), unidad: a.unidad, cantidad: Number(a.cantidad.replace(",", ".")) })),
     })),
   );
 
+  // Sugerencias por rol = ejemplos + los que ya existen con ese subtipo.
+  // (Nunca salen azúcar/leche en esencia/color/salsa/topping.)
+  const ESPECIALES = new Set(["esencia", "colorante", "preparado", "salsa", "topping"]);
+  const porSubtipo = (st: string) => materiales.filter((m) => m.subtipo === st).map((m) => m.nombre);
+  const sugPorRol: Record<Rol, string[]> = {
+    esencia: [...SUG_DEFAULT.esencia, ...porSubtipo("esencia")],
+    color: [...SUG_DEFAULT.color, ...porSubtipo("colorante")],
+    preparado: [...SUG_DEFAULT.preparado, ...porSubtipo("preparado")],
+    salsa: [...SUG_DEFAULT.salsa, ...porSubtipo("salsa")],
+    topping: [...SUG_DEFAULT.topping, ...porSubtipo("topping")],
+    otro: materiales.filter((m) => !ESPECIALES.has(m.subtipo ?? "otro")).map((m) => m.nombre),
+  };
+  const ROLES: Rol[] = ["esencia", "color", "preparado", "salsa", "topping", "otro"];
+
   return (
     <div className="space-y-3">
+      {/* Sugerencias por rol (esencias, colores, preparados, salsas, toppings…) para escribir/dictar */}
+      {ROLES.map((r) => (
+        <datalist key={r} id={`sug-${r}`}>{[...new Set(sugPorRol[r])].map((n) => <option key={n} value={n} />)}</datalist>
+      ))}
+
       {/* Qué se produce */}
       <div className="grid grid-cols-2 gap-2">
         <select value={linea} onChange={(e) => setLinea(e.target.value)} className="col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800">
@@ -224,26 +281,27 @@ export default function RecetaChecklist({
                               <button type="button" onClick={() => delAg(s.key, a.key)} className="text-xs font-semibold text-red-500">✕ quitar</button>
                             </div>
                             <div className="flex items-center gap-2">
-                              <select value={a.materiaPrimaId} onChange={(e) => setAg(s.key, a.key, { materiaPrimaId: e.target.value })} className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm">
-                                <option value="">— elige {info.label.toLowerCase()} —</option>
-                                {materiales.map((m) => <option key={m.id} value={m.id}>{categoriaIcono[m.categoria]} {m.nombre}</option>)}
-                                <option value="__nuevo__">➕ crear nuevo</option>
-                              </select>
-                              <input value={a.cantidad} onChange={(e) => setAg(s.key, a.key, { cantidad: e.target.value })} inputMode="decimal" placeholder={info.ph} className="w-16 rounded-lg border border-slate-300 px-2 py-1.5 text-center text-sm" />
+                              <input value={a.nombre} onChange={(e) => setAg(s.key, a.key, { nombre: e.target.value })} list={`sug-${a.rol}`}
+                                placeholder={`Escribe la ${info.label.toLowerCase()}…`} className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm" />
+                              <MicNombre onTexto={(t) => setAg(s.key, a.key, { nombre: t })} />
+                              <input value={a.cantidad} onChange={(e) => setAg(s.key, a.key, { cantidad: e.target.value })} inputMode="decimal" placeholder={info.ph} className="w-14 rounded-lg border border-slate-300 px-1 py-1.5 text-center text-sm" />
                               <select value={a.unidad} onChange={(e) => setAg(s.key, a.key, { unidad: e.target.value })} className="w-14 rounded-lg border border-slate-300 bg-white px-1 py-1.5 text-xs">
                                 <option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option><option value="l">L</option><option value="unidad">u.</option>
                               </select>
                             </div>
-                            {a.materiaPrimaId === "__nuevo__" && (
-                              <input value={a.nombre} onChange={(e) => setAg(s.key, a.key, { nombre: e.target.value })} placeholder={`Nombre del ${info.label.toLowerCase()} nuevo`} className="mt-1 w-full rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-sm" />
-                            )}
                           </div>
                         );
                       })}
                       <div className="flex flex-wrap gap-1.5">
-                        <button type="button" onClick={() => addAg(s.key, "esencia")} className="rounded bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-700">🧴 + Esencia</button>
-                        <button type="button" onClick={() => addAg(s.key, "color")} className="rounded bg-pink-100 px-2 py-1 text-[11px] font-bold text-pink-700">🎨 + Color</button>
-                        <button type="button" onClick={() => addAg(s.key, "otro")} className="rounded bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600">🧂 + Otro insumo</button>
+                        {rolesDe(linea).map((r) => {
+                          const info = ROL_INFO[r];
+                          return (
+                            <button key={r} type="button" onClick={() => addAg(s.key, r)}
+                              className="rounded px-2 py-1 text-[11px] font-bold" style={{ backgroundColor: `${info.color}1a`, color: info.color }}>
+                              {info.icono} + {info.label.split(" ")[0]}
+                            </button>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>

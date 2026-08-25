@@ -51,7 +51,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
       include: { materiaPrima: { select: { nombre: true, unidad: true } } },
     }),
     prisma.movimientoBodega.findMany({ where: { fecha: { gte: hoy }, zona: "produccion" }, orderBy: { fecha: "desc" }, take: 100 }),
-    prisma.materiaPrima.findMany({ where: { activo: true }, orderBy: [{ categoria: "asc" }, { nombre: "asc" }], select: { id: true, nombre: true, unidad: true, categoria: true } }),
+    prisma.materiaPrima.findMany({ where: { activo: true }, orderBy: [{ categoria: "asc" }, { nombre: "asc" }], select: { id: true, nombre: true, unidad: true, categoria: true, subtipo: true } }),
     prisma.recetaGuia.findMany({ where: { linea: { not: null } }, select: { linea: true, videoUrl: true, pasos: true } }),
     prisma.medida.findMany({ where: { activo: true }, orderBy: { litros: "asc" }, select: { id: true, nombre: true, litros: true } }),
     prisma.recetaBase.findMany({ select: { linea: true, baseRef: true, baseUnidad: true } }),
