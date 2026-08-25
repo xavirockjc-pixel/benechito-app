@@ -396,7 +396,9 @@ model ControlCalidad {
   clase         String? // producto | sabor
   refId         String?
   nombre        String // qué se mezcló/produjo
-  cantidad      Int      @default(0) // unidades a producir
+  cantidad      Int      @default(0) // unidades que salieron
+  base          Float? // litros o kg de base preparada (escala la receta base)
+  baseUnidad    String? // l | kg
   itemsMarcados Int      @default(0) // insumos marcados como echados
   itemsTotal    Int      @default(0) // insumos de la receta
   observaciones String?

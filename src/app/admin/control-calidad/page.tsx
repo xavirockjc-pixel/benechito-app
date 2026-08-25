@@ -38,7 +38,11 @@ export default async function ControlCalidadPage() {
               <div key={r.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-extrabold text-slate-900">{r.nombre} <span className="font-normal text-slate-500">· {r.cantidad} u.</span></p>
+                    <p className="font-extrabold text-slate-900">
+                      {r.nombre}
+                      {r.base ? <span className="font-normal text-teal-700"> · {r.base} {r.baseUnidad ?? ""} de base</span> : null}
+                      {r.cantidad > 0 ? <span className="font-normal text-slate-500"> · {r.cantidad} u.</span> : null}
+                    </p>
                     <p className="text-xs text-slate-500">
                       📅 {fmtFecha(r.fecha)}
                       {r.turno ? ` · Turno ${turnoLabel[r.turno] ?? r.turno}` : ""}

@@ -63,8 +63,8 @@ export default async function RecetasPage({
       <Link href="/admin/materias" className="text-sm font-semibold text-[#1479c4]">← Materias primas</Link>
       <h1 className="mt-1 text-2xl font-extrabold text-slate-900">📋 Recetas (lista de materiales)</h1>
       <p className="text-sm text-slate-500">
-        La <b>receta base</b> va por <b>tipo</b> (común a todos los sabores). Lo demás (esencia, color, decorado…)
-        se pesa aparte al producir. Cantidad = por <b>una unidad</b>.
+        La <b>receta base</b> va por <b>tipo</b> (común a todos los sabores) y se define <b>por litro/kg de base</b>:
+        al producir pones cuántos litros/kg y sale solo. Lo demás (salsa, decorado…) se pesa aparte.
       </p>
 
       {seg && <p className="mt-3 rounded-xl bg-green-100 px-4 py-2 text-center text-sm font-bold text-green-700">✓ Seguridad de recetas guardada</p>}
@@ -156,7 +156,7 @@ export default async function RecetasPage({
                 <span className="min-w-0 truncate text-sm">
                   <b className="text-slate-900">{fmtCant(r.cantidad, r.materiaPrima.unidad)}</b>{" "}
                   <span className="text-slate-600">de {r.materiaPrima.nombre}</span>
-                  <span className="text-xs text-slate-400"> · por unidad</span>
+                  <span className="text-xs text-slate-400"> · {target.clase === "linea" ? "por L/kg de base" : "por unidad"}</span>
                   {r.grupo && <span className="ml-2 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-[#1479c4]">grupo: {r.grupo}</span>}
                 </span>
                 <form action={quitarRecetaItem}>
@@ -199,8 +199,8 @@ export default async function RecetasPage({
               <input name="grupo" placeholder="Ej: Fruto" className="mt-0.5 w-28 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
             </label>
             <label className="text-xs font-semibold text-slate-500">
-              Cantidad por unidad
-              <input name="cantidad" inputMode="decimal" required placeholder="ej: 8" className="mt-0.5 w-28 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+              {target.clase === "linea" ? "Cantidad por 1 L/kg de base" : "Cantidad por unidad"}
+              <input name="cantidad" inputMode="decimal" required placeholder="ej: 0.5" className="mt-0.5 w-28 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
             </label>
             <button className="rounded-lg bg-[#1479c4] px-4 py-2 text-sm font-extrabold text-white active:brightness-110">Agregar</button>
           </form>

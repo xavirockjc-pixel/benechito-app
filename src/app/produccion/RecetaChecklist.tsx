@@ -33,9 +33,12 @@ export default function RecetaChecklist({
   const [sabor, setSabor] = useState("");
   const [formato, setFormato] = useState("");
   const [cantidad, setCantidad] = useState("");
+  const [baseCant, setBaseCant] = useState("");
+  const [baseUnidad, setBaseUnidad] = useState("l");
   const [agregados, setAgregados] = useState<Agregado[]>([]);
 
   const n = Math.max(0, Number(cantidad.replace(/[^0-9]/g, "")) || 0);
+  const baseNum = Math.max(0, Number(baseCant.replace(",", ".").replace(/[^0-9.]/g, "")) || 0);
   const base = useMemo(() => (linea ? basePorLinea[linea] ?? [] : []), [linea, basePorLinea]);
   // Insumos fijos (se tiquean) vs grupos de elección (se elige uno).
   const fijos = base.filter((b) => !b.grupo);
@@ -74,8 +77,18 @@ export default function RecetaChecklist({
           {LINEAS_PRODUCCION.map((l) => <option key={l} value={l}>{lineaLabel[l]}{bloqueada(l) ? " 🔒" : ""}</option>)}
         </select>
         <input value={sabor} onChange={(e) => setSabor(e.target.value)} placeholder="Sabor (ej: vainilla oreo)" className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800" />
-        <input value={cantidad} onChange={(e) => setCantidad(e.target.value)} inputMode="numeric" placeholder="¿Cuántas unidades?" className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800" />
-        <input value={formato} onChange={(e) => setFormato(e.target.value)} placeholder="Formato (opcional)" className="col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800" />
+        <input value={formato} onChange={(e) => setFormato(e.target.value)} placeholder="Formato (opcional)" className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800" />
+        {/* Base en litros/kg (escala los insumos base) */}
+        <div className="col-span-2 flex items-center gap-2 rounded-lg border-2 border-teal-200 bg-teal-50/50 px-3 py-2">
+          <span className="text-xs font-bold text-teal-800">Base:</span>
+          <input value={baseCant} onChange={(e) => setBaseCant(e.target.value)} inputMode="decimal" placeholder="cantidad" className="w-24 rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm" />
+          <select value={baseUnidad} onChange={(e) => setBaseUnidad(e.target.value)} className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm">
+            <option value="l">litros</option>
+            <option value="kg">kg</option>
+          </select>
+          <span className="ml-auto text-[11px] text-slate-500">de base</span>
+        </div>
+        <input value={cantidad} onChange={(e) => setCantidad(e.target.value)} inputMode="numeric" placeholder="Unidades que salieron (opcional)" className="col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800" />
       </div>
 
       {estaBloqueada && (
@@ -104,6 +117,8 @@ export default function RecetaChecklist({
       {mostrarForm && (
         <form action={confirmarMezcla} className="space-y-3 rounded-xl border-2 border-teal-200 bg-white p-3">
           <input type="hidden" name="cantidad" value={n} />
+          <input type="hidden" name="base" value={baseNum} />
+          <input type="hidden" name="baseUnidad" value={baseUnidad} />
           <input type="hidden" name="linea" value={linea} />
           <input type="hidden" name="sabor" value={sabor} />
           <input type="hidden" name="formato" value={formato} />
@@ -113,7 +128,7 @@ export default function RecetaChecklist({
           {/* Segmento 1 — Insumos base (marca lo que echaste) */}
           <div>
             <p className="mb-1 text-xs font-bold uppercase tracking-wide text-teal-700">
-              1) Insumos base · {lineaLabel[linea]} {n > 0 ? `· ${n} u.` : ""} — marca lo que echaste
+              1) Insumos base · {lineaLabel[linea]} {baseNum > 0 ? `· ${baseNum} ${baseUnidad} de base` : ""} — marca lo que echaste
             </p>
             {base.length === 0 ? (
               <p className="rounded-lg border border-dashed border-slate-300 p-3 text-center text-xs text-slate-400">
@@ -128,7 +143,7 @@ export default function RecetaChecklist({
                       <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 has-[:checked]:border-teal-400 has-[:checked]:bg-teal-50">
                         <input type="checkbox" name="marcado" value={it.id} defaultChecked className="h-5 w-5 accent-[#0f766e]" />
                         <span className="flex-1 text-sm font-semibold text-slate-800">{it.nombre}</span>
-                        <span className="text-sm font-bold text-teal-700">{n > 0 ? fmtCant(it.cantidad * n, it.unidad) : `${fmtCant(it.cantidad, it.unidad)}/u`}</span>
+                        <span className="text-sm font-bold text-teal-700">{baseNum > 0 ? fmtCant(it.cantidad * baseNum, it.unidad) : `${fmtCant(it.cantidad, it.unidad)}/${baseUnidad}`}</span>
                       </label>
                     </li>
                   ))}
@@ -140,7 +155,7 @@ export default function RecetaChecklist({
                       <select name="marcado" defaultValue="" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800">
                         <option value="">— elegir {g.toLowerCase()} —</option>
                         {items.map((it) => (
-                          <option key={it.id} value={it.id}>{it.nombre} · {n > 0 ? fmtCant(it.cantidad * n, it.unidad) : `${fmtCant(it.cantidad, it.unidad)}/u`}</option>
+                          <option key={it.id} value={it.id}>{it.nombre} · {baseNum > 0 ? fmtCant(it.cantidad * baseNum, it.unidad) : `${fmtCant(it.cantidad, it.unidad)}/${baseUnidad}`}</option>
                         ))}
                       </select>
                     </label>
@@ -148,8 +163,8 @@ export default function RecetaChecklist({
                 ))}
               </>
             )}
-            {n === 0 && base.length > 0 && (
-              <p className="mt-1 text-[11px] text-amber-600">Escribe cuántas unidades arriba para calcular las cantidades exactas.</p>
+            {baseNum === 0 && base.length > 0 && (
+              <p className="mt-1 text-[11px] text-amber-600">Pon la <b>base (litros/kg)</b> arriba para calcular cuánto sale de cada insumo.</p>
             )}
           </div>
 
@@ -210,7 +225,7 @@ export default function RecetaChecklist({
             <textarea name="observaciones" rows={2} placeholder="Notas de calidad, incidencias…" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
           </label>
 
-          <button disabled={n === 0} className="w-full rounded-xl bg-[#0f766e] py-3 text-base font-extrabold text-white active:brightness-95 disabled:opacity-40">
+          <button disabled={base.length > 0 && baseNum === 0} className="w-full rounded-xl bg-[#0f766e] py-3 text-base font-extrabold text-white active:brightness-95 disabled:opacity-40">
             ✓ Confirmar mezcla y descontar insumos
           </button>
         </form>

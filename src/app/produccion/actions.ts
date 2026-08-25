@@ -43,7 +43,9 @@ async function bodegaId(): Promise<string | null> {
  * porque el descuento va únicamente por aquí (no automático al registrar producción).
  */
 export async function confirmarMezcla(formData: FormData) {
-  const unidades = Number(String(formData.get("cantidad") ?? "").trim());
+  const unidades = Number(String(formData.get("cantidad") ?? "0").trim()) || 0; // unidades que salieron (opcional)
+  const base = Number(String(formData.get("base") ?? "").trim().replace(",", ".")); // litros/kg de base
+  const baseUnidad = String(formData.get("baseUnidad") ?? "l").trim() === "kg" ? "kg" : "l";
   const linea = String(formData.get("linea") ?? "").trim() || null;
   const sabor = String(formData.get("sabor") ?? "").trim() || null;
   const formato = String(formData.get("formato") ?? "").trim() || null;
@@ -58,8 +60,10 @@ export async function confirmarMezcla(formData: FormData) {
   try { agregados = JSON.parse(String(formData.get("agregados") ?? "[]")); } catch { agregados = []; }
   agregados = agregados.filter((a) => (a.materiaPrimaId || a.nombre) && Number.isFinite(a.cantidad) && a.cantidad > 0);
 
-  if (!Number.isFinite(unidades) || unidades <= 0) return;
+  const baseOk = Number.isFinite(base) && base > 0;
   if (marcados.length === 0 && agregados.length === 0) return;
+  // Los insumos base necesitan la base en litros/kg para escalar.
+  if (marcados.length > 0 && !baseOk) return;
 
   const u = await usuarioActual();
   const nombre = [sabor, linea].filter(Boolean).join(" · ") || "Mezcla";
@@ -68,22 +72,23 @@ export async function confirmarMezcla(formData: FormData) {
   const control = await prisma.controlCalidad.create({
     data: {
       turno, operarios, clase: "linea", refId: linea, nombre, cantidad: unidades,
+      base: baseOk ? base : null, baseUnidad: baseOk ? baseUnidad : null,
       itemsMarcados: marcados.length, itemsTotal: total, observaciones,
       usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
     },
   });
 
-  // Receta base: descuenta (cantidad por unidad × unidades) los insumos marcados.
-  if (marcados.length > 0) {
+  // Receta base: descuenta (cantidad por L/kg de base × litros/kg de base) lo marcado.
+  if (marcados.length > 0 && baseOk) {
     const items = await prisma.recetaItem.findMany({ where: { id: { in: marcados } } });
     for (const it of items) {
-      const usar = it.cantidad * unidades;
+      const usar = it.cantidad * base;
       if (usar <= 0) continue;
       await prisma.materiaPrima.update({ where: { id: it.materiaPrimaId }, data: { stock: { decrement: usar } } });
       await prisma.movimientoMateria.create({
         data: {
           materiaPrimaId: it.materiaPrimaId, tipo: "consumo", cantidad: usar,
-          motivo: `Base · ${nombre} · ${unidades} u.`,
+          motivo: `Base · ${nombre} · ${base} ${baseUnidad}`,
           usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
         },
       });
