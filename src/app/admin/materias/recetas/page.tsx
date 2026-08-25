@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { empresaActual } from "@/lib/dominio/empresa";
 import { fmtCant, unidadLabel, categoriaIcono } from "@/lib/dominio/materias";
 import { LINEAS_PRODUCCION, lineaLabel } from "@/lib/dominio/produccion";
-import { agregarRecetaItem, quitarRecetaItem, guardarSeguridadRecetas } from "../actions";
+import { agregarRecetaItem, quitarRecetaItem, guardarSeguridadRecetas, guardarGuiaReceta } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +51,12 @@ export default async function RecetasPage({
     : [];
 
   const costoUnidad = receta.reduce((s, r) => s + (r.materiaPrima.costo != null ? Number(r.materiaPrima.costo) * r.cantidad : 0), 0);
+
+  const guia = target
+    ? await prisma.recetaGuia.findFirst({
+        where: target.clase === "linea" ? { linea: target.id } : target.clase === "producto" ? { productoId: target.id } : { saborId: target.id },
+      })
+    : null;
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -182,6 +188,23 @@ export default async function RecetasPage({
               <input name="cantidad" inputMode="decimal" required placeholder="ej: 8" className="mt-0.5 w-28 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
             </label>
             <button className="rounded-lg bg-[#1479c4] px-4 py-2 text-sm font-extrabold text-white active:brightness-110">Agregar</button>
+          </form>
+
+          {/* Guía: video + paso a paso */}
+          <form action={guardarGuiaReceta} className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            {target.clase === "linea"
+              ? <input type="hidden" name="linea" value={target.id} />
+              : target.clase === "producto"
+                ? <input type="hidden" name="productoId" value={target.id} />
+                : <input type="hidden" name="saborId" value={target.id} />}
+            <p className="mb-2 text-sm font-bold text-slate-700">🎬 Guía (video + paso a paso)</p>
+            <label className="block text-xs font-bold text-slate-600">Link de video
+              <input name="videoUrl" type="url" defaultValue={guia?.videoUrl ?? ""} placeholder="https://youtu.be/…" className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+            </label>
+            <label className="mt-2 block text-xs font-bold text-slate-600">Paso a paso <span className="font-normal text-slate-400">(un paso por línea)</span>
+              <textarea name="pasos" rows={6} defaultValue={guia?.pasos ?? ""} placeholder={"1. Derretir la cobertura\n2. Mezclar con la base\n3. …"} className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+            </label>
+            <button className="mt-3 rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white active:brightness-110">Guardar guía</button>
           </form>
         </div>
       )}

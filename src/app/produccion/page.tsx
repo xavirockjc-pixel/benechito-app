@@ -37,7 +37,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
-  const [sabores, ordenes, agendaFab, recetaItems, registroHoy, materiales] = await Promise.all([
+  const [sabores, ordenes, agendaFab, recetaItems, registroHoy, materiales, guias] = await Promise.all([
     prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.ordenProduccion.findMany({
       where: { estado: { in: ["planificada", "en_proceso"] } },
@@ -55,6 +55,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
     }),
     prisma.movimientoBodega.findMany({ where: { fecha: { gte: hoy }, zona: "produccion" }, orderBy: { fecha: "desc" }, take: 100 }),
     prisma.materiaPrima.findMany({ where: { activo: true }, orderBy: [{ categoria: "asc" }, { nombre: "asc" }], select: { id: true, nombre: true, unidad: true, categoria: true } }),
+    prisma.recetaGuia.findMany({ where: { linea: { not: null } }, select: { linea: true, videoUrl: true, pasos: true } }),
   ]);
 
   const totalHoy = registroHoy.reduce((s, m) => s + m.cantidad, 0);
@@ -65,8 +66,12 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
     if (!ri.linea) continue;
     (basePorLinea[ri.linea] ??= []).push({ id: ri.id, nombre: ri.materiaPrima.nombre, unidad: ri.materiaPrima.unidad, cantidad: ri.cantidad });
   }
-  // Protege el secreto: no envía al cliente los insumos de tipos bloqueados.
-  for (const l of lineasBloqueadas) delete basePorLinea[l];
+  // Guía (video + paso a paso) por tipo.
+  const guiaPorLinea: Record<string, { videoUrl: string | null; pasos: string | null }> = {};
+  for (const g of guias) if (g.linea) guiaPorLinea[g.linea] = { videoUrl: g.videoUrl, pasos: g.pasos };
+
+  // Protege el secreto: no envía al cliente los insumos ni la guía de tipos bloqueados.
+  for (const l of lineasBloqueadas) { delete basePorLinea[l]; delete guiaPorLinea[l]; }
 
   return (
     <div className="space-y-5">
@@ -156,7 +161,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
           </div>
         )}
 
-        <RecetaChecklist basePorLinea={basePorLinea} materiales={materiales} lineasBloqueadas={lineasBloqueadas} />
+        <RecetaChecklist basePorLinea={basePorLinea} materiales={materiales} guiaPorLinea={guiaPorLinea} lineasBloqueadas={lineasBloqueadas} />
       </section>
 
       {/* 3 — Anota lo que hiciste (voz o escrito) */}

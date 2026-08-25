@@ -125,6 +125,29 @@ export async function agregarRecetaItem(formData: FormData) {
   redirect(`/admin/materias/recetas?${dest}`);
 }
 
+/** Guarda la guía de una receta (link de video + paso a paso) por tipo/producto/sabor. */
+export async function guardarGuiaReceta(formData: FormData) {
+  const linea = String(formData.get("linea") ?? "").trim() || null;
+  const productoId = String(formData.get("productoId") ?? "").trim() || null;
+  const saborId = String(formData.get("saborId") ?? "").trim() || null;
+  const videoUrl = String(formData.get("videoUrl") ?? "").trim() || null;
+  const pasos = String(formData.get("pasos") ?? "").trim() || null;
+  if (!linea && !productoId && !saborId) return;
+
+  const where = linea ? { linea } : productoId ? { productoId } : { saborId };
+  const existe = await prisma.recetaGuia.findFirst({ where });
+  if (existe) {
+    await prisma.recetaGuia.update({ where: { id: existe.id }, data: { videoUrl, pasos } });
+  } else {
+    await prisma.recetaGuia.create({ data: { linea, productoId, saborId, videoUrl, pasos } });
+  }
+
+  const dest = linea ? `linea=${linea}` : productoId ? `producto=${productoId}` : `sabor=${saborId}`;
+  revalidatePath("/admin/materias/recetas");
+  revalidatePath("/produccion");
+  redirect(`/admin/materias/recetas?${dest}`);
+}
+
 /** Quita un insumo de una receta. */
 export async function quitarRecetaItem(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();

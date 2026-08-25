@@ -641,6 +641,23 @@ model RecetaItem {
   @@index([materiaPrimaId])
 }
 
+/// Guía de una receta: link de video y paso a paso, complementario a la receta.
+/// Se asocia a una receta base por tipo (linea) o a un producto/sabor puntual.
+model RecetaGuia {
+  id         String   @id @default(cuid())
+  linea      String? // receta base por tipo
+  productoId String?
+  saborId    String?
+  videoUrl   String?
+  pasos      String? // pasos separados por salto de línea
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([linea])
+  @@index([productoId])
+  @@index([saborId])
+}
+
 /// Agregado usado al producir (esencia, color, salsa, decorado, relleno, frutos,
 /// galleta…): se pesa y se descuenta. Guarda el sabor/formato y las unidades para
 /// ver el rendimiento ("cuánto rinde cada agregado").

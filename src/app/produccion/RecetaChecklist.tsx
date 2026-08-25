@@ -15,13 +15,17 @@ type Agregado = { key: number; materiaPrimaId: string; cantidad: string };
  * y una lista de AGREGADOS que se pesan aparte (esencia, color, decorado, galleta…),
  * se descuentan tal cual y quedan con su rendimiento.
  */
+type Guia = { videoUrl: string | null; pasos: string | null };
+
 export default function RecetaChecklist({
   basePorLinea,
   materiales,
+  guiaPorLinea = {},
   lineasBloqueadas = [],
 }: {
   basePorLinea: Record<string, BaseItem[]>;
   materiales: Mat[];
+  guiaPorLinea?: Record<string, Guia>;
   lineasBloqueadas?: string[];
 }) {
   const bloqueada = (l: string) => lineasBloqueadas.includes(l);
@@ -34,6 +38,8 @@ export default function RecetaChecklist({
   const n = Math.max(0, Number(cantidad.replace(/[^0-9]/g, "")) || 0);
   const base = useMemo(() => (linea ? basePorLinea[linea] ?? [] : []), [linea, basePorLinea]);
   const estaBloqueada = !!linea && bloqueada(linea);
+  const guia = linea && !estaBloqueada ? guiaPorLinea[linea] : undefined;
+  const pasos = (guia?.pasos ?? "").split("\n").map((s) => s.trim()).filter(Boolean);
 
   const addAgregado = () => setAgregados((a) => [...a, { key: Date.now() + a.length, materiaPrimaId: "", cantidad: "" }]);
   const setAg = (key: number, patch: Partial<Agregado>) => setAgregados((a) => a.map((x) => (x.key === key ? { ...x, ...patch } : x)));
@@ -63,6 +69,23 @@ export default function RecetaChecklist({
         <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-center text-sm font-semibold text-amber-700">
           🔒 Receta protegida. Ingresa la clave arriba para poder verla.
         </p>
+      )}
+
+      {/* Guía: video + paso a paso */}
+      {linea && !estaBloqueada && (guia?.videoUrl || pasos.length > 0) && (
+        <div className="rounded-xl border border-slate-200 bg-white p-3">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">🎬 Guía de la receta</p>
+          {guia?.videoUrl && (
+            <a href={guia.videoUrl} target="_blank" rel="noopener noreferrer" className="mb-2 inline-flex items-center gap-2 rounded-lg bg-red-600 px-3 py-2 text-sm font-bold text-white active:brightness-95">
+              ▶ Ver video
+            </a>
+          )}
+          {pasos.length > 0 && (
+            <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm text-slate-700">
+              {pasos.map((p, i) => <li key={i}>{p.replace(/^\s*\d+[.)-]\s*/, "")}</li>)}
+            </ol>
+          )}
+        </div>
       )}
 
       {listo && (
