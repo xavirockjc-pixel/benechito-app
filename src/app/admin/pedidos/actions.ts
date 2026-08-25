@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { listaParaCliente, resolverPrecio } from "@/lib/dominio/precios";
+import { listaParaCliente, resolverPrecio, listaIdPorTipo } from "@/lib/dominio/precios";
 import { esEstadoPedido } from "@/lib/dominio/pedidos";
 
 /** Cliente genérico de mostrador (walk-in), para pedidos sin cliente. */
@@ -25,6 +25,7 @@ async function clienteMostrador() {
 export async function crearPedido(formData: FormData) {
   const negocioIdSel = String(formData.get("negocioId") ?? "").trim();
   const canal = String(formData.get("canal") ?? "").trim();
+  const tipoCliente = String(formData.get("tipoCliente") ?? "").trim();
   const tipoEntrega = String(formData.get("tipoEntrega") ?? "").trim() || null; // local|retiro|delivery
   const destinoRaw = String(formData.get("destino") ?? "").trim();
   const destino = ["bodega", "local", "reparto"].includes(destinoRaw) ? destinoRaw : null;
@@ -35,8 +36,13 @@ export async function crearPedido(formData: FormData) {
     ? (await prisma.negocio.findUnique({ where: { id: negocioIdSel } })) ?? (await clienteMostrador())
     : await clienteMostrador();
 
+  // Lista de precios: la del cliente si existe; si no, la del tipo de cliente elegido.
+  const listaPrecioId = negocioIdSel
+    ? await listaParaCliente(cliente.id)
+    : (tipoCliente ? await listaIdPorTipo(tipoCliente) : null);
+
   const pedido = await prisma.pedido.create({
-    data: { negocioId: cliente.id, canal, tipoEntrega, destino, notas, estado: "solicitud" },
+    data: { negocioId: cliente.id, canal, tipoEntrega, destino, notas, listaPrecioId, estado: "solicitud" },
   });
 
   // Si es retiro o delivery y hay destino, lo despacha al área (aparece en su app).
@@ -70,10 +76,16 @@ export async function agregarItem(formData: FormData) {
   const pedido = await prisma.pedido.findUnique({ where: { id: pedidoId } });
   if (!pedido) return;
 
-  // Precio según la lista del cliente (0 si el producto no tiene precio en su lista).
-  const listaId = await listaParaCliente(pedido.negocioId);
-  const precio = listaId ? await resolverPrecio(productoId, listaId, cantidad) : null;
-  const precioUnit = precio ?? 0;
+  // Precio manual si se indicó; si no, según la lista del pedido (por tipo) o del cliente.
+  const manual = Number(String(formData.get("precioUnit") ?? "").trim().replace(/[^0-9.]/g, ""));
+  let precioUnit: number;
+  if (Number.isFinite(manual) && manual > 0) {
+    precioUnit = manual;
+  } else {
+    const listaId = pedido.listaPrecioId ?? (await listaParaCliente(pedido.negocioId));
+    const precio = listaId ? await resolverPrecio(productoId, listaId, cantidad) : null;
+    precioUnit = precio != null ? Number(precio) : 0;
+  }
 
   const existente = await prisma.pedidoItem.findFirst({ where: { pedidoId, productoId } });
   if (existente) {

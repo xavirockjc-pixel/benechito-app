@@ -90,6 +90,13 @@ export async function listaParaCliente(negocioId: string): Promise<string | null
   return lista?.id ?? null;
 }
 
+/** Lista de precios que corresponde a un TIPO de cliente (sin cliente concreto). */
+export async function listaIdPorTipo(tipoCliente: string): Promise<string | null> {
+  const canal = canalPorTipoCliente[tipoCliente] ?? "sala";
+  const lista = await prisma.listaPrecio.findFirst({ where: { canal, activo: true }, select: { id: true } });
+  return lista?.id ?? null;
+}
+
 /**
  * Resuelve el precio unitario de un producto en una lista, considerando tramos por
  * cantidad (cantidadMinima). Elige el mejor tramo aplicable a la cantidad dada.

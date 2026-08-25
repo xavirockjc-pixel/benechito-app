@@ -9,7 +9,8 @@ import {
   fmtCLP,
 } from "@/lib/dominio/pedidos";
 import { listaParaCliente, tipoClienteLabel } from "@/lib/dominio/precios";
-import { agregarItem, quitarItem, cambiarEstadoPedido, eliminarPedido } from "../actions";
+import { quitarItem, cambiarEstadoPedido, eliminarPedido } from "../actions";
+import PedidoItemForm from "../PedidoItemForm";
 import { generarVenta } from "../../ventas/actions";
 
 export const dynamic = "force-dynamic";
@@ -151,38 +152,10 @@ export default async function FichaPedido({
         <div>
           <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="mb-3 text-lg font-bold text-slate-900">Agregar producto</h2>
-            <form action={agregarItem} className="space-y-3">
-              <input type="hidden" name="pedidoId" value={pedido.id} />
-              <label className="block text-sm font-bold text-slate-700">
-                Producto
-                <select name="productoId" required defaultValue="" className={`mt-1 ${inputCls}`}>
-                  <option value="">Selecciona…</option>
-                  {productos.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nombre}{p.formato ? ` · ${p.formato}` : ""}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm font-bold text-slate-700">
-                Cantidad
-                <input
-                  type="number"
-                  name="cantidad"
-                  min="1"
-                  step="1"
-                  defaultValue="1"
-                  inputMode="numeric"
-                  className={`mt-1 ${inputCls}`}
-                />
-              </label>
-              <button className="w-full rounded-lg bg-naranja px-4 py-2 text-sm font-bold text-white transition hover:brightness-105">
-                Agregar
-              </button>
-              <p className="text-xs text-slate-400">
-                El precio se toma de la lista <strong>{lista?.nombre ?? "automática"}</strong> del cliente.
-              </p>
-            </form>
+            <PedidoItemForm pedidoId={pedido.id} productos={productos.map((p) => ({ id: p.id, nombre: p.nombre, formato: p.formato }))} inputCls={inputCls} />
+            <p className="mt-2 text-xs text-slate-400">
+              El precio sale de la lista <strong>{lista?.nombre ?? "automática"}</strong>, o pones uno manual.
+            </p>
           </section>
 
           {/* Venta asociada */}

@@ -271,6 +271,8 @@ model Pedido {
   // Cómo se entrega y a qué área se despacha (centraliza con retiros/reparto).
   tipoEntrega       String? // local | retiro | delivery
   destino           String? // bodega | local | reparto
+  // Lista de precios elegida (por tipo de cliente) para resolver los precios.
+  listaPrecioId     String?
   ubicacionOrigen   Ubicacion? @relation("PedidoOrigen", fields: [ubicacionOrigenId], references: [id])
   ubicacionOrigenId String?
   notas             String?

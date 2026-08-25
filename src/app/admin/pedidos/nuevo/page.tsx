@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { CANALES_PEDIDO, canalPedidoLabel, ENTREGAS_PEDIDO, entregaPedidoLabel } from "@/lib/dominio/pedidos";
-import { tipoClienteLabel } from "@/lib/dominio/precios";
+import { tipoClienteLabel, TIPOS_CLIENTE } from "@/lib/dominio/precios";
 import { crearPedido } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -30,7 +30,14 @@ export default async function NuevoPedido() {
         className="mt-5 max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
       >
         <label className="block text-sm font-bold text-slate-700">
-          Cliente <span className="font-normal text-slate-400">(opcional)</span>
+          Tipo de cliente <span className="font-normal text-slate-400">(fija los precios)</span>
+          <select name="tipoCliente" defaultValue="consumidor" className={inputCls}>
+            {TIPOS_CLIENTE.map((t) => <option key={t} value={t}>{tipoClienteLabel[t] ?? t}</option>)}
+          </select>
+        </label>
+
+        <label className="mt-4 block text-sm font-bold text-slate-700">
+          Cliente <span className="font-normal text-slate-400">(opcional — si es de la base, usa sus precios)</span>
           <select name="negocioId" defaultValue="" className={inputCls}>
             <option value="">— sin cliente (mostrador) —</option>
             {clientes.map((c) => (
