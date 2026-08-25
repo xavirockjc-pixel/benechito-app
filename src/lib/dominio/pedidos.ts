@@ -38,21 +38,38 @@ export function esEstadoPedido(v: string): v is EstadoPedido {
 
 /** Canales por los que puede entrar un pedido. */
 export const CANALES_PEDIDO = [
-  "sala",
   "whatsapp",
-  "web",
+  "online",
+  "llamada",
+  "agenda",
+  "instagram",
+  "facebook",
+  "sala",
   "vendedor",
   "preventa",
   "distribuidor",
 ] as const;
 
 export const canalPedidoLabel: Record<string, string> = {
-  sala: "Sala de ventas",
   whatsapp: "WhatsApp",
-  web: "Web",
+  online: "Online / Web",
+  llamada: "Llamada",
+  agenda: "Agenda",
+  instagram: "Instagram",
+  facebook: "Facebook",
+  sala: "Sala de ventas",
   vendedor: "Vendedor",
   preventa: "Preventa",
   distribuidor: "Distribuidor",
+  web: "Online / Web",
+};
+
+/** Cómo se entrega el pedido y a qué área se despacha. */
+export const ENTREGAS_PEDIDO = ["local", "retiro", "delivery"] as const;
+export const entregaPedidoLabel: Record<string, string> = {
+  local: "🛒 En local",
+  retiro: "🏭 Retiro",
+  delivery: "🛵 Delivery / reparto",
 };
 
 /** Formatea un monto en pesos chilenos (sin decimales). */

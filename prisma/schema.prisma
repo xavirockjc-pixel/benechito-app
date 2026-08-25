@@ -263,8 +263,11 @@ model Pedido {
   id                String     @id @default(cuid())
   negocio           Negocio    @relation(fields: [negocioId], references: [id])
   negocioId         String
-  canal             String // web | whatsapp | sala | vendedor | preventa | distribuidor
+  canal             String // whatsapp | online | llamada | agenda | sala | vendedor | preventa | distribuidor
   estado            String     @default("solicitud") // solicitud|confirmado|preparacion|listo|entregado|finalizado
+  // Cómo se entrega y a qué área se despacha (centraliza con retiros/reparto).
+  tipoEntrega       String? // local | retiro | delivery
+  destino           String? // bodega | local | reparto
   ubicacionOrigen   Ubicacion? @relation("PedidoOrigen", fields: [ubicacionOrigenId], references: [id])
   ubicacionOrigenId String?
   notas             String?

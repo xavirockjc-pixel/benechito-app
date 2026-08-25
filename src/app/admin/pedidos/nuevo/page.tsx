@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { CANALES_PEDIDO, canalPedidoLabel } from "@/lib/dominio/pedidos";
+import { CANALES_PEDIDO, canalPedidoLabel, ENTREGAS_PEDIDO, entregaPedidoLabel } from "@/lib/dominio/pedidos";
 import { tipoClienteLabel } from "@/lib/dominio/precios";
 import { crearPedido } from "../actions";
 
@@ -30,9 +30,9 @@ export default async function NuevoPedido() {
         className="mt-5 max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
       >
         <label className="block text-sm font-bold text-slate-700">
-          Cliente *
-          <select name="negocioId" required defaultValue="" className={inputCls}>
-            <option value="">Selecciona…</option>
+          Cliente <span className="font-normal text-slate-400">(opcional)</span>
+          <select name="negocioId" defaultValue="" className={inputCls}>
+            <option value="">— sin cliente (mostrador) —</option>
             {clientes.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.nombreNegocio ?? c.nombreContacto} · {tipoClienteLabel[c.tipoCliente] ?? c.tipoCliente}
@@ -50,6 +50,24 @@ export default async function NuevoPedido() {
             ))}
           </select>
         </label>
+
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <label className="block text-sm font-bold text-slate-700">
+            Entrega
+            <select name="tipoEntrega" defaultValue="local" className={inputCls}>
+              {ENTREGAS_PEDIDO.map((e) => <option key={e} value={e}>{entregaPedidoLabel[e]}</option>)}
+            </select>
+          </label>
+          <label className="block text-sm font-bold text-slate-700">
+            Despachar a <span className="font-normal text-slate-400">(retiro/delivery)</span>
+            <select name="destino" defaultValue="" className={inputCls}>
+              <option value="">— no despachar —</option>
+              <option value="bodega">📦 Bodega</option>
+              <option value="local">🏪 Local</option>
+              <option value="reparto">🛵 Reparto</option>
+            </select>
+          </label>
+        </div>
 
         <label className="mt-4 block text-sm font-bold text-slate-700">
           Notas

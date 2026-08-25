@@ -6,18 +6,57 @@ import { prisma } from "@/lib/prisma";
 import { listaParaCliente, resolverPrecio } from "@/lib/dominio/precios";
 import { esEstadoPedido } from "@/lib/dominio/pedidos";
 
-/** Crea un pedido (cabecera) y redirige a su ficha para agregar las líneas. */
+/** Cliente genérico de mostrador (walk-in), para pedidos sin cliente. */
+async function clienteMostrador() {
+  let c = await prisma.negocio.findFirst({ where: { nombreNegocio: "Consumidor Final" } });
+  if (!c) {
+    c = await prisma.negocio.create({
+      data: { nombreContacto: "Consumidor Final", nombreNegocio: "Consumidor Final", whatsapp: "", comuna: "", tipoCliente: "consumidor", estado: "punto_activo", origen: "pos" },
+    });
+  }
+  return c;
+}
+
+/**
+ * Crea un pedido (cabecera). El cliente es OPCIONAL (si no se elige, va a mostrador).
+ * Según cómo se entregue (retiro/delivery) se despacha al área (bodega/local/reparto)
+ * creando el despacho centralizado, y luego redirige a la ficha para agregar líneas.
+ */
 export async function crearPedido(formData: FormData) {
-  const negocioId = String(formData.get("negocioId") ?? "").trim();
+  const negocioIdSel = String(formData.get("negocioId") ?? "").trim();
   const canal = String(formData.get("canal") ?? "").trim();
+  const tipoEntrega = String(formData.get("tipoEntrega") ?? "").trim() || null; // local|retiro|delivery
+  const destinoRaw = String(formData.get("destino") ?? "").trim();
+  const destino = ["bodega", "local", "reparto"].includes(destinoRaw) ? destinoRaw : null;
   const notas = String(formData.get("notas") ?? "").trim() || null;
-  if (!negocioId || !canal) return;
+  if (!canal) return;
+
+  const cliente = negocioIdSel
+    ? (await prisma.negocio.findUnique({ where: { id: negocioIdSel } })) ?? (await clienteMostrador())
+    : await clienteMostrador();
 
   const pedido = await prisma.pedido.create({
-    data: { negocioId, canal, notas, estado: "solicitud" },
+    data: { negocioId: cliente.id, canal, tipoEntrega, destino, notas, estado: "solicitud" },
   });
 
+  // Si es retiro o delivery y hay destino, lo despacha al área (aparece en su app).
+  if ((tipoEntrega === "retiro" || tipoEntrega === "delivery") && destino) {
+    await prisma.agenda.create({
+      data: {
+        titulo: `🧾 Pedido · ${cliente.nombreNegocio}`,
+        fecha: new Date(),
+        tipo: "retiro",
+        estado: "pendiente",
+        negocioId: cliente.id,
+        canal,
+        destino,
+        notas: notas ?? `Pedido ${tipoEntrega}`,
+      },
+    });
+  }
+
   revalidatePath("/admin/pedidos");
+  revalidatePath("/admin/retiros");
   redirect(`/admin/pedidos/${pedido.id}`);
 }
 
