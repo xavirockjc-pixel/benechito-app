@@ -41,6 +41,15 @@ export const canalVentaColor: Record<string, { color: string; bg: string }> = {
   directa: { color: "#b45309", bg: "#fbf0e0" },
 };
 
+/** Tipos/etiquetas de venta (delivery, exprés ruta, extra a pedido…). */
+export const ETIQUETAS_VENTA = ["", "delivery", "expres_ruta", "extra", "otro"] as const;
+export const etiquetaVentaLabel: Record<string, string> = {
+  delivery: "🛵 Delivery",
+  expres_ruta: "⚡ Exprés ruta",
+  extra: "➕ Extra a pedido",
+  otro: "Otro",
+};
+
 export function estadoPagoDe(total: number, pagado: number): "pendiente" | "parcial" | "pagado" {
   if (total > 0 && pagado >= total) return "pagado";
   if (pagado > 0) return "parcial";

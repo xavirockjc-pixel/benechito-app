@@ -300,6 +300,8 @@ model Venta {
   estadoPago  String    @default("pendiente") // pendiente | parcial | pagado | vencido
   // Canal de venta, para separar y llevar historial aparte por área.
   canal       String    @default("directa") // local | terreno | directa
+  // Etiqueta libre del tipo de venta (delivery, exprés ruta, extra a pedido…).
+  etiqueta    String?
   fecha       DateTime  @default(now())
   // Sesión de caja del POS a la que pertenece (si se vendió en la sala).
   sesionCaja   SesionCaja? @relation(fields: [sesionCajaId], references: [id])

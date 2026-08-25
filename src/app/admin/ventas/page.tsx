@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
-import { estadoPagoLabel, estadoPagoColor, CANALES_VENTA, canalVentaLabel, canalVentaColor } from "@/lib/dominio/ventas";
+import { estadoPagoLabel, estadoPagoColor, CANALES_VENTA, canalVentaLabel, canalVentaColor, etiquetaVentaLabel } from "@/lib/dominio/ventas";
 import EliminarVentaBtn from "./EliminarVentaBtn";
 
 export const dynamic = "force-dynamic";
@@ -100,6 +100,7 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
                       <Link href={`/admin/ventas/${v.id}`} className="font-semibold text-slate-900 hover:text-naranja">
                         {v.negocio.nombreNegocio ?? v.negocio.nombreContacto}
                       </Link>
+                      {v.etiqueta && <span className="ml-2 text-xs font-semibold text-slate-400">{etiquetaVentaLabel[v.etiqueta] ?? v.etiqueta}</span>}
                     </td>
                     <td className="px-4 py-3">
                       <span className="rounded-md px-2 py-1 text-xs font-bold" style={{ color: canalVentaColor[v.canal]?.color, backgroundColor: canalVentaColor[v.canal]?.bg }}>

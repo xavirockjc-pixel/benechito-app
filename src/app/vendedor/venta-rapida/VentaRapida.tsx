@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
+import { ETIQUETAS_VENTA, etiquetaVentaLabel } from "@/lib/dominio/ventas";
 import { ventaRapida } from "../actions";
 import ControlVoz from "../ControlVoz";
 import type { CambioVoz } from "@/lib/dominio/voz";
@@ -114,6 +115,14 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
         <input type="hidden" name="items" value={JSON.stringify(lineas)} />
         <input type="hidden" name="negocioId" value={cliente?.id ?? ""} />
 
+        {/* Tipo de venta (etiqueta para historial) */}
+        <select name="etiqueta" defaultValue="" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+          <option value="">Tipo de venta: Normal</option>
+          {ETIQUETAS_VENTA.filter((e) => e).map((e) => (
+            <option key={e} value={e}>Tipo: {etiquetaVentaLabel[e]}</option>
+          ))}
+        </select>
+
         {/* Cliente opcional (para abono / fiado) */}
         {cliente ? (
           <div className="flex items-center justify-between rounded-lg bg-slate-50 p-2.5">
@@ -138,17 +147,24 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
                 ))}
               </div>
             )}
+            {(modo === "abono" || modo === "credito") && (
+              <input
+                name="nombreLibre"
+                placeholder="…o escribe un nombre (para fiar/abonar sin registrarlo)"
+                className="w-full rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-slate-800 outline-none focus:border-amber-500"
+              />
+            )}
           </>
         )}
 
         <select name="modo" value={modo} onChange={(e) => setModo(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800">
           <option value="efectivo">Pago: Efectivo</option>
           <option value="transferencia">Pago: Transferencia</option>
-          <option value="abono" disabled={!cliente}>Abono: paga una parte{!cliente ? " (elige cliente)" : ""}</option>
-          <option value="credito" disabled={!cliente}>Fiado (crédito){!cliente ? " (elige cliente)" : ""}</option>
+          <option value="abono">Abono: paga una parte, queda debiendo</option>
+          <option value="credito">Fiado (crédito)</option>
         </select>
 
-        {modo === "abono" && cliente && (
+        {modo === "abono" && (
           <div className="rounded-lg bg-amber-50 p-2.5">
             <label className="block text-xs font-bold text-slate-600">Monto que paga ahora
               <input name="abono" inputMode="numeric" value={abono} onChange={(e) => setAbono(e.target.value)} placeholder="Ej: 5000" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-amber-500" />
@@ -168,9 +184,9 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
           disabled={lineas.length === 0}
           className="w-full rounded-xl bg-green-600 py-3 text-base font-extrabold text-white shadow active:brightness-95 disabled:opacity-40"
         >
-          {modo === "abono" && cliente
+          {modo === "abono"
             ? `Cobrar ${fmtCLP(abonoNum)} · deuda ${fmtCLP(restante)}`
-            : modo === "credito" && cliente
+            : modo === "credito"
               ? `Fiar ${total > 0 ? fmtCLP(total) : ""}`
               : `Registrar venta ${total > 0 ? fmtCLP(total) : ""}`}
         </button>

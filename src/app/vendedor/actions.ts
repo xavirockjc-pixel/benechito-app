@@ -183,11 +183,23 @@ export async function ventaRapida(formData: FormData) {
     (await prisma.ubicacion.findFirst())?.id;
   if (!ubicacionId) return;
 
-  // Cliente elegido (para abono/fiado) o mostrador (contado).
-  const cliente = negocioIdSel
-    ? (await prisma.negocio.findUnique({ where: { id: negocioIdSel } })) ?? (await clienteMostrador())
-    : await clienteMostrador();
-  const clienteReal = Boolean(negocioIdSel) && cliente.nombreNegocio !== "Consumidor Final";
+  const modoDeuda = modo === "abono" || modo === "credito";
+  const nombreLibre = String(formData.get("nombreLibre") ?? "").trim();
+  const etiqueta = String(formData.get("etiqueta") ?? "").trim() || null;
+
+  // Cliente: registrado, o uno rápido con el nombre escrito (para poder fiar/abonar
+  // aunque no esté ingresado), o mostrador (contado).
+  let cliente;
+  if (negocioIdSel) {
+    cliente = (await prisma.negocio.findUnique({ where: { id: negocioIdSel } })) ?? (await clienteMostrador());
+  } else if (modoDeuda && nombreLibre) {
+    cliente = await prisma.negocio.create({
+      data: { nombreContacto: nombreLibre, nombreNegocio: nombreLibre, whatsapp: "", comuna: "", tipoCliente: "consumidor", estado: "punto_activo", origen: "pos" },
+    });
+  } else {
+    cliente = await clienteMostrador();
+  }
+  const clienteReal = cliente.nombreNegocio !== "Consumidor Final";
 
   // Abono: paga una parte ahora, el resto queda de deuda.
   let abono = Number(String(formData.get("abono") ?? "").replace(/[^0-9.]/g, ""));
@@ -222,6 +234,7 @@ export async function ventaRapida(formData: FormData) {
       estadoPago,
       documento: "boleta",
       canal: "terreno",
+      etiqueta,
       ...(pagos ? { pagos } : {}),
     },
   });
