@@ -87,6 +87,8 @@ model Producto {
   // Solo local: producto que vive únicamente en el local (Sala de Ventas) y la
   // central. Se oculta de bodega, rutas y vendedor (ej: bebidas, snacks de reventa).
   soloLocal    Boolean @default(false)
+  // Foto / presentación del producto (URL) — para el botón "Ver".
+  fotoUrl      String?
 
   instalaciones   PuntoProducto[]
   reposicionItems ReposicionItem[]

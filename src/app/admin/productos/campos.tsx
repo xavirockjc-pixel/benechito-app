@@ -72,6 +72,11 @@ export function CamposProducto({ p }: { p?: Producto }) {
         <input name="codigoBarras" defaultValue={p?.codigoBarras ?? ""} className={inputCls} />
       </label>
 
+      <label className="text-sm font-bold text-navy sm:col-span-2">
+        Foto / presentación <span className="font-normal text-choco-2">(link de imagen, para el botón “Ver”)</span>
+        <input name="fotoUrl" type="url" placeholder="https://…" defaultValue={p?.fotoUrl ?? ""} className={inputCls} />
+      </label>
+
       <label className="flex items-center gap-3 self-end pb-2 text-sm font-semibold text-navy">
         <input
           type="checkbox"
