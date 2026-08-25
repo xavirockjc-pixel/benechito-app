@@ -140,11 +140,12 @@ export async function actualizarClasificacion(formData: FormData) {
   const id = String(formData.get("id"));
   const tipoCliente = String(formData.get("tipoCliente") ?? "").trim();
   const listaPrecioId = String(formData.get("listaPrecioId") ?? "").trim() || null;
+  const compra = String(formData.get("compra") ?? "").trim() || null;
   if (!id || !tipoCliente) return;
 
   await prisma.negocio.update({
     where: { id },
-    data: { tipoCliente, listaPrecioId },
+    data: { tipoCliente, listaPrecioId, compra },
   });
   await prisma.actividad.create({
     data: {

@@ -1,28 +1,22 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { ESTADOS, estadoMeta, esEstado, type Estado } from "@/lib/estados";
+import { TIPOS_CLIENTE, tipoClienteLabel, compraLabel } from "@/lib/dominio/precios";
 
 export const dynamic = "force-dynamic";
 
 export default async function NegociosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ estado?: string; q?: string }>;
+  searchParams: Promise<{ tipo?: string; q?: string }>;
 }) {
-  const { estado, q } = await searchParams;
-  const filtroEstado = estado && esEstado(estado) ? estado : undefined;
+  const { tipo, q } = await searchParams;
+  const filtroTipo = tipo && (TIPOS_CLIENTE as readonly string[]).includes(tipo) ? tipo : undefined;
 
   const negocios = await prisma.negocio.findMany({
     where: {
-      estado: filtroEstado,
+      tipoCliente: filtroTipo,
       ...(q
-        ? {
-            OR: [
-              { nombreNegocio: { contains: q } },
-              { nombreContacto: { contains: q } },
-              { comuna: { contains: q } },
-            ],
-          }
+        ? { OR: [{ nombreNegocio: { contains: q, mode: "insensitive" } }, { nombreContacto: { contains: q, mode: "insensitive" } }, { comuna: { contains: q, mode: "insensitive" } }] }
         : {}),
     },
     orderBy: { createdAt: "desc" },
@@ -31,84 +25,42 @@ export default async function NegociosPage({
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold text-navy">Negocios</h1>
-        <Link
-          href="/admin/negocios/nuevo"
-          className="rounded-full bg-naranja px-4 py-2 text-sm font-bold text-white shadow-md transition hover:bg-naranja-2"
-        >
-          + Nuevo
-        </Link>
+        <h1 className="text-2xl font-extrabold text-slate-900">Clientes</h1>
+        <Link href="/admin/negocios/nuevo" className="rounded-full bg-[#1479c4] px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-110">+ Nuevo</Link>
       </div>
 
-      {/* Buscador */}
       <form className="mt-4" action="/admin/negocios">
-        {filtroEstado && <input type="hidden" name="estado" value={filtroEstado} />}
-        <input
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Buscar por negocio, contacto o comuna…"
-          className="w-full rounded-xl border border-crema-2 bg-white px-4 py-2.5 text-sm outline-none focus:border-naranja focus:ring-2 focus:ring-naranja/30"
-        />
+        {filtroTipo && <input type="hidden" name="tipo" value={filtroTipo} />}
+        <input name="q" defaultValue={q ?? ""} placeholder="Buscar por nombre, contacto o comuna…" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:border-[#1479c4]" />
       </form>
 
-      {/* Filtros por estado */}
+      {/* Filtros por tipo de cliente */}
       <div className="mt-4 flex flex-wrap gap-2">
-        <Link
-          href="/admin/negocios"
-          className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${
-            !filtroEstado ? "bg-navy text-white ring-navy" : "bg-white text-navy ring-crema-2"
-          }`}
-        >
-          Todos
-        </Link>
-        {ESTADOS.map((e) => (
-          <Link
-            key={e}
-            href={`/admin/negocios?estado=${e}`}
-            className="rounded-full px-3 py-1 text-xs font-bold ring-1"
-            style={
-              filtroEstado === e
-                ? { color: "#fff", backgroundColor: estadoMeta[e].color, borderColor: estadoMeta[e].color }
-                : { color: estadoMeta[e].color, backgroundColor: estadoMeta[e].bg, borderColor: "transparent" }
-            }
-          >
-            {estadoMeta[e].label}
+        <Link href="/admin/negocios" className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${!filtroTipo ? "bg-slate-900 text-white ring-slate-900" : "bg-white text-slate-700 ring-slate-200"}`}>Todos</Link>
+        {TIPOS_CLIENTE.map((t) => (
+          <Link key={t} href={`/admin/negocios?tipo=${t}`} className={`rounded-full px-3 py-1 text-xs font-bold ring-1 ${filtroTipo === t ? "bg-[#1479c4] text-white ring-[#1479c4]" : "bg-white text-slate-600 ring-slate-200"}`}>
+            {tipoClienteLabel[t] ?? t}
           </Link>
         ))}
       </div>
 
       {/* Lista */}
-      <div className="mt-5 overflow-hidden rounded-2xl bg-white ring-1 ring-crema-2">
-        {negocios.length === 0 && (
-          <p className="p-6 text-center text-sm text-choco-2">
-            No hay negocios{filtroEstado ? " en este estado" : ""}.
-          </p>
-        )}
+      <div className="mt-5 overflow-hidden rounded-2xl bg-white ring-1 ring-slate-200">
+        {negocios.length === 0 && <p className="p-6 text-center text-sm text-slate-500">No hay clientes{filtroTipo ? " de este tipo" : ""}.</p>}
         {negocios.map((n) => (
-          <Link
-            key={n.id}
-            href={`/admin/negocios/${n.id}`}
-            className="flex items-center justify-between gap-3 border-b border-crema-2 px-4 py-3 last:border-0 hover:bg-crema/40"
-          >
+          <Link key={n.id} href={`/admin/negocios/${n.id}`} className="flex items-center justify-between gap-3 border-b border-slate-100 px-4 py-3 last:border-0 hover:bg-slate-50">
             <div className="min-w-0">
-              <p className="truncate font-semibold text-navy">{n.nombreNegocio}</p>
-              <p className="truncate text-xs text-choco-2">
-                {n.nombreContacto} · {n.comuna} · {n.whatsapp}
-              </p>
+              <p className="truncate font-semibold text-slate-900">{n.nombreNegocio}</p>
+              <p className="truncate text-xs text-slate-500">{n.nombreContacto} · {n.comuna} · {n.whatsapp}</p>
             </div>
-            <span
-              className="shrink-0 rounded-lg px-2 py-1 text-xs font-bold"
-              style={{
-                color: estadoMeta[n.estado as Estado]?.color,
-                backgroundColor: estadoMeta[n.estado as Estado]?.bg,
-              }}
-            >
-              {estadoMeta[n.estado as Estado]?.label ?? n.estado}
-            </span>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {n.compra && <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">{compraLabel[n.compra] ?? n.compra}</span>}
+              <span className="rounded-lg bg-blue-50 px-2 py-1 text-xs font-bold text-[#1479c4]">{tipoClienteLabel[n.tipoCliente] ?? n.tipoCliente}</span>
+            </div>
           </Link>
         ))}
       </div>
-      <p className="mt-3 text-sm text-choco-2">{negocios.length} negocio(s)</p>
+      <p className="mt-3 text-sm text-slate-500">{negocios.length} cliente(s)</p>
     </div>
   );
 }

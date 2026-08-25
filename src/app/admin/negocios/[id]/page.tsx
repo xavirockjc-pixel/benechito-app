@@ -10,7 +10,7 @@ import {
   actualizarClasificacion,
 } from "../actions";
 import { registrarDeuda } from "@/app/vendedor/actions";
-import { TIPOS_CLIENTE, tipoClienteLabel, canalLabel } from "@/lib/dominio/precios";
+import { TIPOS_CLIENTE, tipoClienteLabel, canalLabel, COMPRA_TIPOS, compraLabel } from "@/lib/dominio/precios";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 
 export const dynamic = "force-dynamic";
@@ -182,6 +182,42 @@ export default async function FichaNegocio({
             </form>
           </Card>
 
+          {/* Historial de compras */}
+          <Card titulo="Historial de compras">
+            {negocio.ventas.length === 0 ? (
+              <p className="text-sm text-choco-2">Aún no tiene compras registradas.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="text-left text-xs uppercase tracking-wide text-choco-2">
+                    <tr>
+                      <th className="py-1.5">Fecha</th>
+                      <th className="py-1.5 text-right">Monto</th>
+                      <th className="py-1.5 text-right">Pagado</th>
+                      <th className="py-1.5 text-right">Saldo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...negocio.ventas]
+                      .sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())
+                      .map((v) => {
+                        const pagado = v.pagos.reduce((s, p) => s + Number(p.monto), 0);
+                        const saldo = Number(v.total) - pagado;
+                        return (
+                          <tr key={v.id} className="border-t border-crema-2">
+                            <td className="py-1.5 text-choco">{fmt(v.fecha)}</td>
+                            <td className="py-1.5 text-right font-semibold text-navy">{fmtCLP(Number(v.total))}</td>
+                            <td className="py-1.5 text-right text-choco-2">{fmtCLP(pagado)}</td>
+                            <td className={`py-1.5 text-right font-semibold ${saldo > 0 ? "text-rojo" : "text-verde"}`}>{fmtCLP(saldo)}</td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </Card>
+
           {/* Clasificación comercial */}
           <Card titulo="Clasificación comercial">
             <p className="mb-3 text-sm text-choco-2">
@@ -206,6 +242,17 @@ export default async function FichaNegocio({
                 </select>
               </label>
               <label className="text-sm font-bold text-navy">
+                Qué compra
+                <select
+                  name="compra"
+                  defaultValue={negocio.compra ?? ""}
+                  className="mt-1 w-full rounded-xl border border-crema-2 bg-crema/40 px-3 py-2 font-normal text-choco outline-none focus:border-naranja"
+                >
+                  <option value="">— sin definir —</option>
+                  {COMPRA_TIPOS.map((c) => <option key={c} value={c}>{compraLabel[c]}</option>)}
+                </select>
+              </label>
+              <label className="text-sm font-bold text-navy sm:col-span-2">
                 Lista de precios
                 <select
                   name="listaPrecioId"

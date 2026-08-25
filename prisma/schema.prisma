@@ -38,7 +38,9 @@ model Negocio {
   origen            String       @default("landing") // landing | manual | otro
   // --- v2: clasificación comercial ---
   // tipoCliente determina la lista de precios cuando listaPrecioId es null.
-  tipoCliente       String       @default("prospecto") // consumidor|negocio|punto_benechito|revendedor|distribuidor|supermercado|prospecto
+  tipoCliente       String       @default("prospecto") // ruta|distribuidor|revendedor|mayorista|negocio_retiro|local_recurrente|consumidor|prospecto
+  // Qué compra este cliente: dulce | helado | ambos
+  compra            String?
   listaPrecio       ListaPrecio? @relation(fields: [listaPrecioId], references: [id])
   listaPrecioId     String?
   vendedor          Usuario?     @relation("VendedorClientes", fields: [vendedorId], references: [id])

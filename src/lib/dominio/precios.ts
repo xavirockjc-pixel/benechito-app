@@ -7,35 +7,54 @@ import { Prisma } from "@prisma/client";
 
 /** Canal por defecto según el tipo de cliente (cuando el cliente no tiene lista asignada). */
 export const canalPorTipoCliente: Record<string, string> = {
+  ruta: "reparto",
+  distribuidor: "distribuidor",
+  revendedor: "revendedor",
+  mayorista: "distribuidor",
+  negocio_retiro: "negocio",
+  local_recurrente: "sala",
   consumidor: "sala",
+  prospecto: "sala",
+  // compatibilidad
   negocio: "negocio",
   punto_benechito: "punto",
-  revendedor: "revendedor",
-  distribuidor: "distribuidor",
   supermercado: "supermercado",
-  prospecto: "sala",
 };
 
 /** Tipos de cliente (orden para UI). */
 export const TIPOS_CLIENTE = [
-  "consumidor",
-  "negocio",
-  "punto_benechito",
-  "revendedor",
+  "ruta",
   "distribuidor",
-  "supermercado",
+  "revendedor",
+  "mayorista",
+  "negocio_retiro",
+  "local_recurrente",
+  "consumidor",
   "prospecto",
 ] as const;
 
 /** Etiquetas legibles de tipos de cliente (para UI). */
 export const tipoClienteLabel: Record<string, string> = {
+  ruta: "Ruta",
+  distribuidor: "Distribuidor",
+  revendedor: "Revendedor",
+  mayorista: "Mayorista (tacheros)",
+  negocio_retiro: "Negocio retiro",
+  local_recurrente: "Local recurrente",
   consumidor: "Consumidor final",
+  prospecto: "Prospecto",
+  // compatibilidad con datos antiguos
   negocio: "Negocio",
   punto_benechito: "Punto Benechito",
-  revendedor: "Revendedor",
-  distribuidor: "Distribuidor",
   supermercado: "Supermercado",
-  prospecto: "Prospecto",
+};
+
+/** Qué compra el cliente. */
+export const COMPRA_TIPOS = ["dulce", "helado", "ambos"] as const;
+export const compraLabel: Record<string, string> = {
+  dulce: "🍫 Dulces",
+  helado: "🍦 Helados",
+  ambos: "🍫🍦 Ambos",
 };
 
 /** Etiquetas legibles de canales (para UI). */
