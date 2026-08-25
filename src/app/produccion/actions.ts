@@ -51,26 +51,27 @@ export async function confirmarMezcla(formData: FormData) {
   const base = Number(String(formData.get("base") ?? "").trim().replace(",", ".")); // litros/kg de base
   const baseUnidad = String(formData.get("baseUnidad") ?? "l").trim() === "kg" ? "kg" : "l";
   const linea = String(formData.get("linea") ?? "").trim() || null;
-  const sabor = String(formData.get("sabor") ?? "").trim() || null;
-  const formato = String(formData.get("formato") ?? "").trim() || null;
   const total = Number(String(formData.get("total") ?? "0").trim()) || 0;
   const turno = String(formData.get("turno") ?? "").trim() || null;
   const operarios = String(formData.get("operarios") ?? "").trim() || null;
   const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
   const marcados = (formData.getAll("marcado") as string[]).map((s) => String(s)).filter(Boolean);
 
-  // Agregados pesados: [{ materiaPrimaId? , nombre?, unidad?, cantidad }] — cantidad = total usado.
-  let agregados: { materiaPrimaId?: string; nombre?: string; unidad?: string; cantidad: number }[] = [];
-  try { agregados = JSON.parse(String(formData.get("agregados") ?? "[]")); } catch { agregados = []; }
-  agregados = agregados.filter((a) => (a.materiaPrimaId || a.nombre) && Number.isFinite(a.cantidad) && a.cantidad > 0);
+  // Sabores del lote: [{ nombre, porcion, agregados:[{materiaPrimaId?, nombre?, unidad?, cantidad}] }]
+  type Ag = { materiaPrimaId?: string; nombre?: string; unidad?: string; cantidad: number };
+  type SaborLote = { nombre: string; porcion?: number; agregados: Ag[] };
+  let sabores: SaborLote[] = [];
+  try { sabores = JSON.parse(String(formData.get("sabores") ?? "[]")); } catch { sabores = []; }
+  sabores = (sabores ?? []).filter((s) => s && s.nombre);
+  const totalAgregados = sabores.reduce((a, s) => a + (s.agregados?.length ?? 0), 0);
 
   const baseOk = Number.isFinite(base) && base > 0;
-  if (marcados.length === 0 && agregados.length === 0) return;
-  // Los insumos base necesitan la base en litros/kg para escalar.
+  if (marcados.length === 0 && totalAgregados === 0) return;
   if (marcados.length > 0 && !baseOk) return;
 
   const u = await usuarioActual();
-  const nombre = [sabor, linea].filter(Boolean).join(" · ") || "Mezcla";
+  const nombreSabores = sabores.map((s) => s.nombre).join(", ");
+  const nombre = (nombreSabores ? `${nombreSabores} · ` : "") + (linea ?? "Mezcla");
 
   // Lote de fabricación: fecha + turno + correlativo del día.
   const hoy0 = new Date(); hoy0.setHours(0, 0, 0, 0);
@@ -109,42 +110,46 @@ export async function confirmarMezcla(formData: FormData) {
     }
   }
 
-  // Agregados: descuenta el peso usado (tal cual) y guarda el rendimiento.
-  // Si el insumo no existe, se crea solo en la base.
+  // Sabores del lote: por cada sabor, descuenta sus agregados (esencia, color…).
+  // Si el insumo no existe, se crea solo en la base. Cada uso queda con su sabor.
   const UNID = ["kg", "g", "l", "ml", "unidad"];
-  for (const ag of agregados) {
-    let mpId = ag.materiaPrimaId ?? "";
-    let nombreInsumo = "";
-    let unidad = "unidad";
-    if (mpId) {
-      const mp = await prisma.materiaPrima.findUnique({ where: { id: mpId }, select: { nombre: true, unidad: true } });
-      if (!mp) continue;
-      nombreInsumo = mp.nombre; unidad = mp.unidad;
-    } else if (ag.nombre) {
-      const ex = await prisma.materiaPrima.findFirst({ where: { nombre: { equals: ag.nombre.trim(), mode: "insensitive" } } });
-      if (ex) { mpId = ex.id; nombreInsumo = ex.nombre; unidad = ex.unidad; }
-      else {
-        const un = UNID.includes(ag.unidad ?? "") ? ag.unidad! : "unidad";
-        const nv = await prisma.materiaPrima.create({ data: { nombre: ag.nombre.trim(), unidad: un } });
-        mpId = nv.id; nombreInsumo = nv.nombre; unidad = nv.unidad;
-      }
-    } else continue;
+  for (const s of sabores) {
+    for (const ag of s.agregados ?? []) {
+      if (!Number.isFinite(ag.cantidad) || ag.cantidad <= 0) continue;
+      let mpId = ag.materiaPrimaId ?? "";
+      let nombreInsumo = "";
+      let unidad = "g";
+      if (mpId) {
+        const mp = await prisma.materiaPrima.findUnique({ where: { id: mpId }, select: { nombre: true, unidad: true } });
+        if (!mp) continue;
+        nombreInsumo = mp.nombre; unidad = mp.unidad;
+      } else if (ag.nombre) {
+        const ex = await prisma.materiaPrima.findFirst({ where: { nombre: { equals: ag.nombre.trim(), mode: "insensitive" } } });
+        if (ex) { mpId = ex.id; nombreInsumo = ex.nombre; unidad = ex.unidad; }
+        else {
+          const un = UNID.includes(ag.unidad ?? "") ? ag.unidad! : "g";
+          const nv = await prisma.materiaPrima.create({ data: { nombre: ag.nombre.trim(), unidad: un } });
+          mpId = nv.id; nombreInsumo = nv.nombre; unidad = nv.unidad;
+        }
+      } else continue;
 
-    await prisma.materiaPrima.update({ where: { id: mpId }, data: { stock: { decrement: ag.cantidad } } });
-    await prisma.movimientoMateria.create({
-      data: {
-        materiaPrimaId: mpId, tipo: "consumo", cantidad: ag.cantidad,
-        motivo: `Agregado · ${nombre} · ${unidades} u.`,
-        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
-      },
-    });
-    await prisma.agregadoUso.create({
-      data: {
-        controlId: control.id, materiaPrimaId: mpId, nombreInsumo, unidad,
-        cantidad: ag.cantidad, linea, sabor, formato, unidadesProducidas: unidades,
-        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
-      },
-    });
+      await prisma.materiaPrima.update({ where: { id: mpId }, data: { stock: { decrement: ag.cantidad } } });
+      await prisma.movimientoMateria.create({
+        data: {
+          materiaPrimaId: mpId, tipo: "consumo", cantidad: ag.cantidad,
+          motivo: `${s.nombre} · ${linea ?? ""} (lote ${lote})`,
+          usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+        },
+      });
+      await prisma.agregadoUso.create({
+        data: {
+          controlId: control.id, materiaPrimaId: mpId, nombreInsumo, unidad,
+          cantidad: ag.cantidad, linea, sabor: s.nombre, formato: null,
+          unidadesProducidas: Math.round(s.porcion ?? 0),
+          usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+        },
+      });
+    }
   }
 
   revalidatePath("/produccion");
