@@ -25,6 +25,8 @@ model Negocio {
   comuna            String
   ciudad            String?
   sector            String? // zona/sector para agrupar la ruta (si no, usa la comuna)
+  rut               String? // para facturar (cliente que compra con factura)
+  razonSocial       String? // razón social para la factura
   tipoNegocio       String?
   direccion         String?
   // Ubicación GPS (capturada en terreno por el vendedor)
@@ -313,6 +315,9 @@ model Venta {
   canal       String    @default("directa") // local | terreno | directa
   // Etiqueta libre del tipo de venta (delivery, exprés ruta, extra a pedido…).
   etiqueta    String?
+  // Facturación: si esta venta requiere factura y si ya se emitió.
+  facturada   Boolean   @default(false)
+  folioFactura String?
   fecha       DateTime  @default(now())
   // Sesión de caja del POS a la que pertenece (si se vendió en la sala).
   sesionCaja   SesionCaja? @relation(fields: [sesionCajaId], references: [id])

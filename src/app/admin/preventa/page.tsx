@@ -12,15 +12,16 @@ export const dynamic = "force-dynamic";
 const fmtHora = (d: Date) =>
   new Date(d).toLocaleString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
-export default async function PreventaPage() {
+export default async function PreventaPage({ searchParams }: { searchParams: Promise<{ sector?: string }> }) {
+  const { sector } = await searchParams;
   const inicioHoy = new Date();
   inicioHoy.setHours(0, 0, 0, 0);
 
-  const [clientes, preventas, agendasTerreno, n8nOk] = await Promise.all([
+  const [clientesAll, preventas, agendasTerreno, n8nOk] = await Promise.all([
     prisma.negocio.findMany({
       where: { whatsapp: { not: "" } },
       orderBy: { nombreNegocio: "asc" },
-      select: { id: true, nombreNegocio: true, comuna: true, whatsapp: true },
+      select: { id: true, nombreNegocio: true, comuna: true, whatsapp: true, sector: true },
     }),
     prisma.preventa.findMany({
       orderBy: { createdAt: "desc" },
@@ -35,6 +36,10 @@ export default async function PreventaPage() {
     }),
     Promise.resolve(Boolean(process.env.N8N_PREVENTA_WEBHOOK_URL)),
   ]);
+
+  // Filtro por sector (usa sector; si no, comuna).
+  const sectores = [...new Set(clientesAll.map((c) => c.sector || c.comuna).filter(Boolean))].sort() as string[];
+  const clientes = sector ? clientesAll.filter((c) => (c.sector || c.comuna) === sector) : clientesAll;
 
   const tipoTerreno: Record<string, { l: string; c: string }> = {
     visita: { l: "🗓️ Visita", c: "text-violet-700 bg-violet-50" },
@@ -71,7 +76,15 @@ export default async function PreventaPage() {
           />
         </label>
 
-        <p className="mt-4 mb-2 text-sm font-bold text-slate-700">Clientes a contactar ({clientes.length})</p>
+        <p className="mt-4 mb-1 text-sm font-bold text-slate-700">Clientes a contactar ({clientes.length})</p>
+        {sectores.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            <a href="/admin/preventa" className={`rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ${!sector ? "bg-slate-900 text-white ring-slate-900" : "bg-white text-slate-600 ring-slate-200"}`}>Todos</a>
+            {sectores.map((s) => (
+              <a key={s} href={`/admin/preventa?sector=${encodeURIComponent(s)}`} className={`rounded-full px-2.5 py-0.5 text-xs font-bold ring-1 ${sector === s ? "bg-[#1479c4] text-white ring-[#1479c4]" : "bg-white text-slate-600 ring-slate-200"}`}>🗺️ {s}</a>
+            ))}
+          </div>
+        )}
         <div className="max-h-72 space-y-1 overflow-y-auto rounded-lg border border-slate-200 p-2">
           {clientes.length === 0 && <p className="p-3 text-sm text-slate-500">No hay clientes con WhatsApp.</p>}
           {clientes.map((c) => (
