@@ -111,6 +111,7 @@ export async function venderTerreno(formData: FormData) {
       total,
       estadoPago,
       documento: "boleta",
+      canal: "terreno",
       ...(pagos ? { pagos } : {}),
     },
   });
@@ -192,6 +193,7 @@ export async function ventaRapida(formData: FormData) {
       total,
       estadoPago: "pagado",
       documento: "boleta",
+      canal: "terreno",
       pagos: { create: { medio, monto: total } },
     },
   });

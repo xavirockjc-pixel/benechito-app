@@ -298,6 +298,8 @@ model Venta {
   total       Decimal   @db.Decimal(12, 2)
   documento   String? // boleta | factura (integración tributaria futura)
   estadoPago  String    @default("pendiente") // pendiente | parcial | pagado | vencido
+  // Canal de venta, para separar y llevar historial aparte por área.
+  canal       String    @default("directa") // local | terreno | directa
   fecha       DateTime  @default(now())
   // Sesión de caja del POS a la que pertenece (si se vendió en la sala).
   sesionCaja   SesionCaja? @relation(fields: [sesionCajaId], references: [id])

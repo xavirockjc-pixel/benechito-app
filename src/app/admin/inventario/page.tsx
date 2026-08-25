@@ -1,7 +1,54 @@
 import Link from "next/link";
+import type { Producto, Ubicacion } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { TIPOS_MOVIMIENTO, tipoMovimientoLabel } from "@/lib/dominio/inventario";
 import { registrarMovimiento } from "./actions";
+
+/** Tabla de stock (producto × ubicación) para una sección del inventario. */
+function TablaStock({
+  titulo, productos, ubicaciones, cant, vacio,
+}: {
+  titulo: string;
+  productos: Producto[];
+  ubicaciones: Ubicacion[];
+  cant: Map<string, number>;
+  vacio?: string;
+}) {
+  return (
+    <section className="mt-6">
+      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">{titulo} ({productos.length})</h2>
+      {productos.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400">
+          {vacio ?? "Sin productos."}
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <table className="w-full text-sm">
+            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+              <tr>
+                <th className="px-4 py-3">Producto</th>
+                {ubicaciones.map((u) => <th key={u.id} className="px-4 py-3 text-right">{u.nombre}</th>)}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {productos.map((p) => (
+                <tr key={p.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-2 font-semibold text-slate-800">{p.nombre}</td>
+                  {ubicaciones.map((u) => {
+                    const c = cant.get(`${p.id}:${u.id}`) ?? 0;
+                    return (
+                      <td key={u.id} className={`px-4 py-2 text-right ${c > 0 ? "text-slate-900" : "text-slate-300"}`}>{c}</td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
 
 export const dynamic = "force-dynamic";
 
@@ -48,33 +95,21 @@ export default async function InventarioPage() {
           No hay ubicaciones. Crea al menos una en <Link href="/admin/inventario/ubicaciones" className="text-naranja">Ubicaciones</Link>.
         </p>
       ) : (
-        <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200 bg-white">
-          <table className="w-full text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
-              <tr>
-                <th className="px-4 py-3">Producto</th>
-                {ubicaciones.map((u) => (
-                  <th key={u.id} className="px-4 py-3 text-right">{u.nombre}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {productos.map((p) => (
-                <tr key={p.id} className="hover:bg-slate-50">
-                  <td className="px-4 py-2 font-semibold text-slate-800">{p.nombre}</td>
-                  {ubicaciones.map((u) => {
-                    const c = cant.get(`${p.id}:${u.id}`) ?? 0;
-                    return (
-                      <td key={u.id} className={`px-4 py-2 text-right ${c > 0 ? "text-slate-900" : "text-slate-300"}`}>
-                        {c}
-                      </td>
-                    );
-                  })}
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <TablaStock
+            titulo="🏭 Fábrica y producción"
+            productos={productos.filter((p) => !p.soloLocal)}
+            ubicaciones={ubicaciones}
+            cant={cant}
+          />
+          <TablaStock
+            titulo="🛒 Solo local (Sala de Ventas)"
+            productos={productos.filter((p) => p.soloLocal)}
+            ubicaciones={ubicaciones}
+            cant={cant}
+            vacio="No hay productos exclusivos del local."
+          />
+        </>
       )}
 
       {/* Registrar movimiento */}

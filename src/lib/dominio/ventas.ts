@@ -28,6 +28,19 @@ export const estadoPagoColor: Record<string, { color: string; bg: string }> = {
 };
 
 /** Deriva el estado de pago a partir del total y lo abonado. */
+/** Canales de venta, para separar y llevar historial por área. */
+export const CANALES_VENTA = ["local", "terreno", "directa"] as const;
+export const canalVentaLabel: Record<string, string> = {
+  local: "Local / Sala",
+  terreno: "Vendedor / Terreno",
+  directa: "Venta directa",
+};
+export const canalVentaColor: Record<string, { color: string; bg: string }> = {
+  local: { color: "#0f7a44", bg: "#e5f2ea" },
+  terreno: { color: "#1479c4", bg: "#e6f1fb" },
+  directa: { color: "#b45309", bg: "#fbf0e0" },
+};
+
 export function estadoPagoDe(total: number, pagado: number): "pendiente" | "parcial" | "pagado" {
   if (total > 0 && pagado >= total) return "pagado";
   if (pagado > 0) return "parcial";

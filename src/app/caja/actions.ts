@@ -85,6 +85,7 @@ export async function venderCaja(formData: FormData) {
       total,
       estadoPago: "pagado",
       documento: "boleta",
+      canal: "local",
       pagos: { create: { medio, monto: total } },
     },
   });

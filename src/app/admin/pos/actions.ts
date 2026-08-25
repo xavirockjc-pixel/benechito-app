@@ -89,6 +89,7 @@ export async function venderPOS(formData: FormData) {
       total,
       estadoPago,
       documento: "boleta",
+      canal: "directa",
       ...(pagos ? { pagos } : {}),
     },
   });
