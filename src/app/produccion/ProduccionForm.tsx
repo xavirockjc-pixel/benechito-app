@@ -1,10 +1,41 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { LINEAS_PRODUCCION, lineaLabel } from "@/lib/dominio/produccion";
 import { registrarProduccion } from "./actions";
 
 type Fila = { key: number; nombre: string; cantidad: string };
+
+type SpeechRec = {
+  lang: string; interimResults: boolean; continuous: boolean; maxAlternatives: number;
+  start: () => void; stop: () => void;
+  onresult: ((e: { results: { 0: { 0: { transcript: string } } } }) => void) | null;
+  onerror: (() => void) | null; onend: (() => void) | null;
+};
+
+const NUMS: Record<string, number> = {
+  cero: 0, un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8, nueve: 9,
+  diez: 10, once: 11, doce: 12, docena: 12, quince: 15, veinte: 20, treinta: 30, cuarenta: 40, cincuenta: 50, cien: 100,
+};
+
+/** Extrae pares (cantidad, sabor) de una frase: "treinta frutilla, veinte pistacho". */
+function parsearProduccion(texto: string): { nombre: string; cantidad: number }[] {
+  const partes = texto.toLowerCase().split(/,| y /);
+  const out: { nombre: string; cantidad: number }[] = [];
+  for (const parte of partes) {
+    const toks = parte.trim().replace(/[.]/g, "").split(/\s+/).filter(Boolean);
+    let cant = 0;
+    const resto: string[] = [];
+    for (const t of toks) {
+      if (/^\d+$/.test(t)) { cant = parseInt(t, 10); continue; }
+      if (NUMS[t] != null && cant === 0) { cant = NUMS[t]; continue; }
+      resto.push(t);
+    }
+    const nombre = resto.join(" ").trim();
+    if (nombre && cant > 0) out.push({ nombre, cantidad: cant });
+  }
+  return out;
+}
 
 /**
  * Anota lo que se produjo: eliges el TIPO y agregas líneas "sabor + cuántos".
@@ -13,10 +44,37 @@ type Fila = { key: number; nombre: string; cantidad: string };
 export default function ProduccionForm() {
   const [linea, setLinea] = useState<string>(LINEAS_PRODUCCION[0]);
   const [filas, setFilas] = useState<Fila[]>([{ key: 1, nombre: "", cantidad: "" }]);
+  const recRef = useRef<SpeechRec | null>(null);
+  const [soportado, setSoportado] = useState(true);
+  const [escuchando, setEscuchando] = useState(false);
+
+  useEffect(() => {
+    const w = window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec };
+    const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!Ctor) { setSoportado(false); return; }
+    const rec = new Ctor();
+    rec.lang = "es-CL"; rec.interimResults = false; rec.continuous = false; rec.maxAlternatives = 1;
+    recRef.current = rec;
+  }, []);
 
   const setFila = (key: number, patch: Partial<Fila>) => setFilas((f) => f.map((x) => (x.key === key ? { ...x, ...patch } : x)));
   const addFila = () => setFilas((f) => [...f, { key: Date.now() + f.length, nombre: "", cantidad: "" }]);
   const delFila = (key: number) => setFilas((f) => (f.length > 1 ? f.filter((x) => x.key !== key) : f));
+
+  const escuchar = () => {
+    const rec = recRef.current;
+    if (!rec || escuchando) return;
+    rec.onresult = (e) => {
+      const items = parsearProduccion(e.results[0][0].transcript);
+      if (items.length) setFilas((f) => {
+        const limpias = f.filter((x) => x.nombre.trim() || x.cantidad.trim());
+        return [...limpias, ...items.map((it, i) => ({ key: Date.now() + i, nombre: it.nombre, cantidad: String(it.cantidad) }))];
+      });
+    };
+    rec.onerror = () => setEscuchando(false);
+    rec.onend = () => setEscuchando(false);
+    try { rec.start(); setEscuchando(true); } catch { setEscuchando(false); }
+  };
 
   const items = filas
     .map((f) => ({ nombre: f.nombre.trim(), cantidad: Number(f.cantidad.replace(/[^0-9]/g, "")) || 0 }))
@@ -34,6 +92,13 @@ export default function ProduccionForm() {
           {LINEAS_PRODUCCION.map((l) => <option key={l} value={l}>{lineaLabel[l] ?? l}</option>)}
         </select>
       </label>
+
+      {soportado && (
+        <button type="button" onClick={escuchar} disabled={escuchando}
+          className={`flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-extrabold text-white ${escuchando ? "animate-pulse bg-red-500" : "bg-[#0f766e]"}`}>
+          🎙️ {escuchando ? "Escuchando… habla" : "Dictar (ej: “treinta frutilla, veinte pistacho”)"}
+        </button>
+      )}
 
       <div className="space-y-2">
         {filas.map((f) => (
