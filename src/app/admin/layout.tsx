@@ -40,6 +40,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/produccion", label: L.produccion, icon: "🏭" },
         { href: "/admin/materias", label: L.materias, icon: "🧪" },
+        { href: "/admin/control-calidad", label: "Control calidad y turnos", icon: "✅" },
         { href: "/admin/sabores", label: L.sabores, icon: "🍫" },
       ],
     },

@@ -383,6 +383,26 @@ model Agenda {
   @@index([destino])
 }
 
+/// Control de calidad de una mezcla/producción: qué se hizo, cuántos salieron, qué
+/// insumos de la receta se marcaron, turno, operarios y observaciones. Historial en la central.
+model ControlCalidad {
+  id            String   @id @default(cuid())
+  fecha         DateTime @default(now())
+  turno         String? // manana | tarde | noche | libre
+  operarios     String? // nombres de quienes participaron (libre)
+  clase         String? // producto | sabor
+  refId         String?
+  nombre        String // qué se mezcló/produjo
+  cantidad      Int      @default(0) // unidades a producir
+  itemsMarcados Int      @default(0) // insumos marcados como echados
+  itemsTotal    Int      @default(0) // insumos de la receta
+  observaciones String?
+  usuarioId     String?
+  nombreUsuario String?
+
+  @@index([fecha])
+}
+
 /// Registro diario simple de las apps operativas (Bodega y Local).
 /// Denormalizado (guarda el nombre) para mostrar el "registro del día" sin joins.
 model MovimientoBodega {

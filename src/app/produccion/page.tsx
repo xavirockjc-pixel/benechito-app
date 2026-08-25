@@ -1,5 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import ProduccionForm from "./ProduccionForm";
+import RecetaChecklist from "./RecetaChecklist";
+import { fechaCorta } from "@/lib/dominio/agenda";
 import { cumplirOrden, enviarReporteTurno } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -7,8 +9,10 @@ export const dynamic = "force-dynamic";
 const fmtHora = (d: Date) => new Date(d).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
 const lineaLabel: Record<string, string> = { trufa: "Trufas", cuchufli: "Cuchuflís", helado: "Helados", paleta: "Paletas", postre: "Postres" };
 
-export default async function ProduccionHome({ searchParams }: { searchParams: Promise<{ ok?: string; reporte?: string }> }) {
-  const { ok, reporte } = await searchParams;
+type Receta = { clase: "producto" | "sabor"; id: string; nombre: string; items: { id: string; nombre: string; unidad: string; cantidad: number }[] };
+
+export default async function ProduccionHome({ searchParams }: { searchParams: Promise<{ ok?: string; reporte?: string; mezcla?: string }> }) {
+  const { ok, reporte, mezcla } = await searchParams;
 
   const bodega = await prisma.ubicacion.findFirst({ where: { tipo: "bodega" } });
   if (!bodega) {
@@ -25,32 +29,75 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
-  const [sabores, ordenes, registroHoy] = await Promise.all([
+  const [sabores, ordenes, agendaFab, recetaItems, registroHoy] = await Promise.all([
     prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.ordenProduccion.findMany({
       where: { estado: { in: ["planificada", "en_proceso"] } },
       include: { producto: { select: { nombre: true } }, sabor: { select: { nombre: true, linea: true } } },
       orderBy: { createdAt: "asc" },
     }),
+    prisma.agenda.findMany({
+      where: { tipo: { in: ["fabricar", "mezclar"] }, estado: { in: ["pendiente", "en_proceso"] } },
+      orderBy: [{ fecha: "asc" }, { createdAt: "asc" }],
+      take: 20,
+    }),
+    prisma.recetaItem.findMany({
+      include: {
+        materiaPrima: { select: { nombre: true, unidad: true } },
+        producto: { select: { nombre: true } },
+        sabor: { select: { nombre: true, linea: true } },
+      },
+    }),
     prisma.movimientoBodega.findMany({ where: { fecha: { gte: hoy }, zona: "produccion" }, orderBy: { fecha: "desc" }, take: 100 }),
   ]);
 
   const totalHoy = registroHoy.reduce((s, m) => s + m.cantidad, 0);
 
+  // Agrupa las recetas por producto/sabor para el checklist de control de calidad.
+  const recetaMap = new Map<string, Receta>();
+  for (const ri of recetaItems) {
+    const clase = ri.saborId ? "sabor" : ri.productoId ? "producto" : null;
+    if (!clase) continue;
+    const id = (ri.saborId ?? ri.productoId)!;
+    const nombre = ri.saborId
+      ? `${ri.sabor?.nombre ?? ""} · ${lineaLabel[ri.sabor?.linea ?? ""] ?? ri.sabor?.linea ?? ""}`
+      : ri.producto?.nombre ?? "Producto";
+    const key = `${clase}:${id}`;
+    if (!recetaMap.has(key)) recetaMap.set(key, { clase, id, nombre, items: [] });
+    recetaMap.get(key)!.items.push({ id: ri.id, nombre: ri.materiaPrima.nombre, unidad: ri.materiaPrima.unidad, cantidad: ri.cantidad });
+  }
+  const recetas = [...recetaMap.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
+
   return (
     <div className="space-y-5">
       <div>
         <h1 className="text-xl font-extrabold text-slate-900">🏭 Producción</h1>
-        <p className="text-xs text-slate-500">Cumple las órdenes o anota lo que fabricaste por tu cuenta.</p>
+        <p className="text-xs text-slate-500">Mira qué toca hacer, controla la receta y anota lo que salió.</p>
       </div>
 
       {ok && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Producción registrada</p>}
+      {mezcla && <p className="rounded-xl bg-teal-100 px-4 py-3 text-center text-sm font-bold text-teal-700">✓ Mezcla confirmada · insumos descontados</p>}
       {reporte && <p className="rounded-xl bg-teal-100 px-4 py-3 text-center text-sm font-bold text-teal-700">✓ Reporte del turno enviado</p>}
 
-      {/* Órdenes que le enviaron */}
-      {ordenes.length > 0 && (
-        <section className="rounded-2xl border border-teal-300 bg-white p-4 shadow-sm">
-          <h2 className="mb-2 text-sm font-extrabold text-teal-800">📋 Órdenes pendientes ({ordenes.length})</h2>
+      {/* 1 — ¿Qué produciré hoy? (órdenes + agendados) */}
+      <section className="rounded-2xl border-2 border-teal-300 bg-white p-4 shadow-sm">
+        <h2 className="mb-2 text-base font-extrabold text-teal-800">📋 ¿Qué produciré hoy?</h2>
+        {ordenes.length === 0 && agendaFab.length === 0 && (
+          <p className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400">
+            No hay órdenes ni agendados. Puedes producir libre más abajo.
+          </p>
+        )}
+        {agendaFab.length > 0 && (
+          <ul className="mb-2 space-y-1">
+            {agendaFab.map((a) => (
+              <li key={a.id} className="flex items-center justify-between rounded-lg bg-teal-50 px-3 py-2 text-sm">
+                <span className="min-w-0 truncate font-semibold text-slate-800">🗓️ {a.titulo}{a.notas ? ` — ${a.notas}` : ""}</span>
+                <span className="ml-2 shrink-0 text-xs font-bold text-teal-700">{fechaCorta(a.fecha)}{a.cantidad ? ` · ${a.cantidad}` : ""}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {ordenes.length > 0 && (
           <ul className="space-y-2">
             {ordenes.map((o) => {
               const nombre = o.saborId
@@ -79,12 +126,20 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
               );
             })}
           </ul>
-        </section>
-      )}
+        )}
+      </section>
 
-      {/* Producción libre (sin orden) */}
+      {/* 2 — Control de calidad (receta) */}
       <section className="rounded-2xl border border-teal-200 bg-teal-50/40 p-4 shadow-sm">
-        <h2 className="mb-2 text-sm font-extrabold text-teal-800">➕ Producción sin orden</h2>
+        <h2 className="mb-1 text-sm font-extrabold text-teal-800">🧪 Control de calidad — receta</h2>
+        <p className="mb-2 text-xs text-slate-500">Elige la mezcla, marca lo que echaste y se descuenta solo de los insumos.</p>
+        <RecetaChecklist recetas={recetas} />
+      </section>
+
+      {/* 3 — Anota lo que hiciste (voz o escrito) */}
+      <section className="rounded-2xl border border-teal-200 bg-white p-4 shadow-sm">
+        <h2 className="mb-1 text-sm font-extrabold text-teal-800">✍️ Anota lo que hiciste</h2>
+        <p className="mb-2 text-xs text-slate-500">Cuántos salieron por tipo o sabor — por voz o escrito.</p>
         <ProduccionForm sabores={sabores.map((s) => ({ id: s.id, nombre: s.nombre, linea: s.linea }))} />
       </section>
 

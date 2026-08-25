@@ -17,27 +17,55 @@ async function bodegaId(): Promise<string | null> {
 }
 
 /**
- * Descuenta automáticamente las materias primas según la receta del producto/sabor
- * fabricado: por cada insumo de la receta descuenta (cantidad por unidad × unidades).
- * Si el producto/sabor no tiene receta, no hace nada (ahí se usa el consumo manual).
+ * Control de calidad: confirma la mezcla tiqueando los insumos de la receta que se
+ * echaron. Descuenta de la base de insumos SOLO los tiqueados (cantidad de la receta
+ * × unidades a producir) y deja el consumo registrado. Evita descontar dos veces
+ * porque el descuento va únicamente por aquí (no automático al registrar producción).
  */
-async function consumirPorReceta(clase: "producto" | "sabor", refId: string, unidades: number, referencia: string) {
-  if (unidades <= 0) return;
-  const receta = await prisma.recetaItem.findMany({
-    where: clase === "sabor" ? { saborId: refId } : { productoId: refId },
+export async function confirmarMezcla(formData: FormData) {
+  const unidades = Number(String(formData.get("cantidad") ?? "").trim());
+  const marcados = (formData.getAll("marcado") as string[]).map((s) => String(s)).filter(Boolean);
+  const total = Number(String(formData.get("total") ?? "0").trim()) || 0;
+  const nombre = String(formData.get("nombre") ?? "Mezcla").trim() || "Mezcla";
+  const clase = String(formData.get("clase") ?? "").trim() || null;
+  const refId = String(formData.get("refId") ?? "").trim() || null;
+  const turno = String(formData.get("turno") ?? "").trim() || null;
+  const operarios = String(formData.get("operarios") ?? "").trim() || null;
+  const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
+  if (!Number.isFinite(unidades) || unidades <= 0 || marcados.length === 0) return;
+
+  const u = await usuarioActual();
+  const items = await prisma.recetaItem.findMany({
+    where: { id: { in: marcados } },
     include: { materiaPrima: { select: { nombre: true } } },
   });
-  for (const r of receta) {
-    const usar = r.cantidad * unidades;
+
+  for (const it of items) {
+    const usar = it.cantidad * unidades;
     if (usar <= 0) continue;
-    await prisma.materiaPrima.update({ where: { id: r.materiaPrimaId }, data: { stock: { decrement: usar } } });
+    await prisma.materiaPrima.update({ where: { id: it.materiaPrimaId }, data: { stock: { decrement: usar } } });
     await prisma.movimientoMateria.create({
       data: {
-        materiaPrimaId: r.materiaPrimaId, tipo: "consumo", cantidad: usar,
-        motivo: `Receta · ${unidades} u.`, referencia,
+        materiaPrimaId: it.materiaPrimaId, tipo: "consumo", cantidad: usar,
+        motivo: `Control de calidad · ${nombre} · ${unidades} u.`,
+        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
       },
     });
   }
+
+  // Registro de control de calidad (historial de la central).
+  await prisma.controlCalidad.create({
+    data: {
+      turno, operarios, clase, refId, nombre, cantidad: unidades,
+      itemsMarcados: items.length, itemsTotal: total, observaciones,
+      usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+    },
+  });
+
+  revalidatePath("/produccion");
+  revalidatePath("/admin/materias");
+  revalidatePath("/admin/control-calidad");
+  redirect("/produccion?mezcla=1");
 }
 
 type ItemProd = { saborId?: string; nombre: string; cantidad: number };
@@ -80,8 +108,6 @@ export async function registrarProduccion(formData: FormData) {
         usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
       },
     });
-    // Descuenta materias primas según la receta del sabor (si tiene).
-    await consumirPorReceta("sabor", saborId, it.cantidad, "produccion");
   }
 
   revalidatePath("/produccion");
@@ -139,9 +165,6 @@ export async function cumplirOrden(formData: FormData) {
         usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
       },
     });
-    // Descuenta materias primas según la receta (si el producto/sabor tiene).
-    if (op.saborId) await consumirPorReceta("sabor", op.saborId, cantidadReal, op.id);
-    else if (op.productoId) await consumirPorReceta("producto", op.productoId, cantidadReal, op.id);
   }
 
   revalidatePath("/produccion");
