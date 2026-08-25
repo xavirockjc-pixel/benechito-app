@@ -193,9 +193,12 @@ export async function ventaRapida(formData: FormData) {
   if (negocioIdSel) {
     cliente = (await prisma.negocio.findUnique({ where: { id: negocioIdSel } })) ?? (await clienteMostrador());
   } else if (modoDeuda && nombreLibre) {
-    cliente = await prisma.negocio.create({
-      data: { nombreContacto: nombreLibre, nombreNegocio: nombreLibre, whatsapp: "", comuna: "", tipoCliente: "consumidor", estado: "punto_activo", origen: "pos" },
-    });
+    // Busca un cliente con ese nombre (no duplicar); si no existe, lo crea.
+    cliente =
+      (await prisma.negocio.findFirst({ where: { nombreNegocio: { equals: nombreLibre, mode: "insensitive" } } })) ??
+      (await prisma.negocio.create({
+        data: { nombreContacto: nombreLibre, nombreNegocio: nombreLibre, whatsapp: "", comuna: "", tipoCliente: "consumidor", estado: "punto_activo", origen: "pos" },
+      }));
   } else {
     cliente = await clienteMostrador();
   }
