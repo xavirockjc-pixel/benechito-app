@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { estadoRutaLabel, estadoRutaColor, ESTADOS_RUTA, estadoParadaLabel, estadoParadaColor } from "@/lib/dominio/ruta";
-import { asignarVendedor, agregarParada, quitarParada, cambiarEstadoRuta, eliminarRuta } from "../actions";
+import { asignarVendedor, agregarParada, quitarParada, cambiarEstadoRuta, eliminarRuta, agregarSector, agregarRezagados } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -20,13 +20,17 @@ export default async function FichaRuta({ params }: { params: Promise<{ id: stri
   });
   if (!ruta) notFound();
 
-  const [vendedores, clientes] = await Promise.all([
+  const hoyDate = new Date();
+  const [vendedores, clientes, rezagadosN] = await Promise.all([
     prisma.usuario.findMany({ where: { rol: { in: ["vendedor", "chofer"] }, activo: true }, orderBy: { nombre: "asc" } }),
-    prisma.negocio.findMany({ orderBy: { nombreNegocio: "asc" }, select: { id: true, nombreNegocio: true } }),
+    prisma.negocio.findMany({ orderBy: { nombreNegocio: "asc" }, select: { id: true, nombreNegocio: true, comuna: true, sector: true } }),
+    prisma.negocio.count({ where: { estado: { in: ["punto_activo", "reposicion"] }, proximaReposicion: { lte: hoyDate } } }),
   ]);
 
   const enRuta = new Set(ruta.paradas.map((p) => p.negocioId));
   const disponibles = clientes.filter((c) => !enRuta.has(c.id));
+  // Sectores disponibles (usa sector; si no, la comuna).
+  const sectores = [...new Set(clientes.map((c) => c.sector || c.comuna).filter(Boolean))].sort() as string[];
   const c = estadoRutaColor[ruta.estado];
   const hechas = ruta.paradas.filter((p) => p.estado !== "pendiente").length;
 
@@ -94,14 +98,35 @@ export default async function FichaRuta({ params }: { params: Promise<{ id: stri
         {ruta.paradas.length === 0 && <p className="text-sm text-slate-500">Sin paradas. Agrega clientes abajo.</p>}
       </div>
 
-      {/* Agregar parada */}
+      {/* Agregar por SECTOR (todos los de ese sector) */}
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <form action={agregarSector} className="flex items-end gap-2 rounded-xl border border-slate-200 bg-white p-3">
+          <input type="hidden" name="rutaId" value={ruta.id} />
+          <label className="flex-1 text-xs font-bold text-slate-600">🗺️ Agregar todo un sector
+            <select name="sector" defaultValue="" className={`mt-1 block w-full ${inputCls}`}>
+              <option value="">Elegir sector…</option>
+              {sectores.map((s) => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </label>
+          <button className="rounded-lg bg-[#1479c4] px-4 py-2 text-sm font-bold text-white">Agregar</button>
+        </form>
+
+        {/* Rezagados */}
+        <form action={agregarRezagados} className="flex items-center justify-between gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <input type="hidden" name="rutaId" value={ruta.id} />
+          <span className="text-sm font-bold text-amber-800">⏳ Rezagados <span className="font-normal">({rezagadosN})</span><br /><span className="text-[11px] font-normal text-amber-700">con reposición vencida</span></span>
+          <button disabled={rezagadosN === 0} className="shrink-0 rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white disabled:opacity-40">Agregar todos</button>
+        </form>
+      </div>
+
+      {/* Agregar un cliente puntual */}
       {disponibles.length > 0 && (
         <form action={agregarParada} className="mt-3 flex items-end gap-2">
           <input type="hidden" name="rutaId" value={ruta.id} />
-          <label className="text-xs font-bold text-slate-600">Agregar cliente
+          <label className="text-xs font-bold text-slate-600">Agregar un cliente
             <select name="negocioId" defaultValue="" className={`mt-1 block ${inputCls}`}>
               <option value="">Selecciona…</option>
-              {disponibles.map((c) => <option key={c.id} value={c.id}>{c.nombreNegocio}</option>)}
+              {disponibles.map((c) => <option key={c.id} value={c.id}>{c.nombreNegocio} · {c.sector || c.comuna}</option>)}
             </select>
           </label>
           <button className="rounded-lg bg-[#1479c4] px-4 py-2 text-sm font-bold text-white">Agregar</button>

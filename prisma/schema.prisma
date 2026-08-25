@@ -24,6 +24,7 @@ model Negocio {
   whatsapp          String
   comuna            String
   ciudad            String?
+  sector            String? // zona/sector para agrupar la ruta (si no, usa la comuna)
   tipoNegocio       String?
   direccion         String?
   // Ubicación GPS (capturada en terreno por el vendedor)

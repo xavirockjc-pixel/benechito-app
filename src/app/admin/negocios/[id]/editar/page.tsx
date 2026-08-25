@@ -43,6 +43,9 @@ export default async function EditarNegocio({
           <label className="text-sm font-bold text-navy">Ciudad
             <input name="ciudad" defaultValue={n.ciudad ?? ""} className={inputCls} />
           </label>
+          <label className="text-sm font-bold text-navy">Sector <span className="font-normal text-choco-2">(para la ruta)</span>
+            <input name="sector" defaultValue={n.sector ?? ""} placeholder="Ej: Centro, Norte…" className={inputCls} />
+          </label>
           <label className="text-sm font-bold text-navy">Dirección
             <input name="direccion" defaultValue={n.direccion ?? ""} className={inputCls} />
           </label>

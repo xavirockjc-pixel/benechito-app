@@ -52,6 +52,45 @@ export async function agregarParada(formData: FormData) {
   revalidatePath(`/admin/rutas/${rutaId}`);
 }
 
+/** Agrega VARIOS negocios a la ruta de una vez (por sector o rezagados). */
+async function agregarVarios(rutaId: string, ids: string[]) {
+  if (!rutaId || ids.length === 0) return;
+  let max = (await prisma.paradaRuta.aggregate({ where: { rutaId }, _max: { orden: true } }))._max.orden ?? -1;
+  for (const negocioId of ids) {
+    max += 1;
+    await prisma.paradaRuta.upsert({
+      where: { rutaId_negocioId: { rutaId, negocioId } },
+      update: {},
+      create: { rutaId, negocioId, orden: max },
+    });
+  }
+  revalidatePath(`/admin/rutas/${rutaId}`);
+}
+
+/** Agrega todos los clientes de un sector (o comuna) a la ruta. */
+export async function agregarSector(formData: FormData) {
+  const rutaId = val(formData, "rutaId");
+  const sector = val(formData, "sector");
+  if (!rutaId || !sector) return;
+  const clientes = await prisma.negocio.findMany({
+    where: { OR: [{ sector }, { AND: [{ sector: null }, { comuna: sector }] }] },
+    select: { id: true },
+  });
+  await agregarVarios(rutaId, clientes.map((c) => c.id));
+}
+
+/** Agrega los REZAGADOS (con próxima reposición vencida) a la ruta. */
+export async function agregarRezagados(formData: FormData) {
+  const rutaId = val(formData, "rutaId");
+  if (!rutaId) return;
+  const hoy = new Date();
+  const clientes = await prisma.negocio.findMany({
+    where: { estado: { in: ["punto_activo", "reposicion"] }, proximaReposicion: { lte: hoy } },
+    select: { id: true },
+  });
+  await agregarVarios(rutaId, clientes.map((c) => c.id));
+}
+
 /** Quita una parada de la ruta. */
 export async function quitarParada(formData: FormData) {
   const paradaId = val(formData, "paradaId");
