@@ -19,3 +19,22 @@ export const estadoOPColor: Record<string, { color: string; bg: string }> = {
 export function esEstadoOP(v: string): v is EstadoOP {
   return (ESTADOS_OP as readonly string[]).includes(v);
 }
+
+// Tipos/líneas de producción, para la receta base y los agregados.
+export const LINEAS_PRODUCCION = ["trufa", "cuchufli", "helado", "paleta", "postre", "proteico"] as const;
+
+export const lineaLabel: Record<string, string> = {
+  trufa: "Trufas",
+  cuchufli: "Cuchuflís",
+  helado: "Helados",
+  paleta: "Paletas",
+  postre: "Postres",
+  proteico: "Proteicos",
+};
+
+export const turnoLabel: Record<string, string> = {
+  manana: "Mañana",
+  tarde: "Tarde",
+  noche: "Noche",
+  libre: "Libre",
+};

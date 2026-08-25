@@ -9,8 +9,6 @@ export const dynamic = "force-dynamic";
 const fmtHora = (d: Date) => new Date(d).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
 const lineaLabel: Record<string, string> = { trufa: "Trufas", cuchufli: "Cuchuflís", helado: "Helados", paleta: "Paletas", postre: "Postres" };
 
-type Receta = { clase: "producto" | "sabor"; id: string; nombre: string; items: { id: string; nombre: string; unidad: string; cantidad: number }[] };
-
 export default async function ProduccionHome({ searchParams }: { searchParams: Promise<{ ok?: string; reporte?: string; mezcla?: string }> }) {
   const { ok, reporte, mezcla } = await searchParams;
 
@@ -29,7 +27,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
-  const [sabores, ordenes, agendaFab, recetaItems, registroHoy] = await Promise.all([
+  const [sabores, ordenes, agendaFab, recetaItems, registroHoy, materiales] = await Promise.all([
     prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.ordenProduccion.findMany({
       where: { estado: { in: ["planificada", "en_proceso"] } },
@@ -42,31 +40,21 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
       take: 20,
     }),
     prisma.recetaItem.findMany({
-      include: {
-        materiaPrima: { select: { nombre: true, unidad: true } },
-        producto: { select: { nombre: true } },
-        sabor: { select: { nombre: true, linea: true } },
-      },
+      where: { linea: { not: null } },
+      include: { materiaPrima: { select: { nombre: true, unidad: true } } },
     }),
     prisma.movimientoBodega.findMany({ where: { fecha: { gte: hoy }, zona: "produccion" }, orderBy: { fecha: "desc" }, take: 100 }),
+    prisma.materiaPrima.findMany({ where: { activo: true }, orderBy: [{ categoria: "asc" }, { nombre: "asc" }], select: { id: true, nombre: true, unidad: true, categoria: true } }),
   ]);
 
   const totalHoy = registroHoy.reduce((s, m) => s + m.cantidad, 0);
 
-  // Agrupa las recetas por producto/sabor para el checklist de control de calidad.
-  const recetaMap = new Map<string, Receta>();
+  // Receta base agrupada por tipo/línea (común a todos los sabores de ese tipo).
+  const basePorLinea: Record<string, { id: string; nombre: string; unidad: string; cantidad: number }[]> = {};
   for (const ri of recetaItems) {
-    const clase = ri.saborId ? "sabor" : ri.productoId ? "producto" : null;
-    if (!clase) continue;
-    const id = (ri.saborId ?? ri.productoId)!;
-    const nombre = ri.saborId
-      ? `${ri.sabor?.nombre ?? ""} · ${lineaLabel[ri.sabor?.linea ?? ""] ?? ri.sabor?.linea ?? ""}`
-      : ri.producto?.nombre ?? "Producto";
-    const key = `${clase}:${id}`;
-    if (!recetaMap.has(key)) recetaMap.set(key, { clase, id, nombre, items: [] });
-    recetaMap.get(key)!.items.push({ id: ri.id, nombre: ri.materiaPrima.nombre, unidad: ri.materiaPrima.unidad, cantidad: ri.cantidad });
+    if (!ri.linea) continue;
+    (basePorLinea[ri.linea] ??= []).push({ id: ri.id, nombre: ri.materiaPrima.nombre, unidad: ri.materiaPrima.unidad, cantidad: ri.cantidad });
   }
-  const recetas = [...recetaMap.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   return (
     <div className="space-y-5">
@@ -132,8 +120,8 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
       {/* 2 — Control de calidad (receta) */}
       <section className="rounded-2xl border border-teal-200 bg-teal-50/40 p-4 shadow-sm">
         <h2 className="mb-1 text-sm font-extrabold text-teal-800">🧪 Control de calidad — receta</h2>
-        <p className="mb-2 text-xs text-slate-500">Elige la mezcla, marca lo que echaste y se descuenta solo de los insumos.</p>
-        <RecetaChecklist recetas={recetas} />
+        <p className="mb-2 text-xs text-slate-500">Receta base por tipo + agregados pesados. Marca lo que echaste y se descuenta solo.</p>
+        <RecetaChecklist basePorLinea={basePorLinea} materiales={materiales} />
       </section>
 
       {/* 3 — Anota lo que hiciste (voz o escrito) */}

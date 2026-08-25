@@ -97,17 +97,18 @@ export async function desactivarMateria(formData: FormData) {
 //  Recetas (lista de materiales por producto/sabor)
 // ===========================================================================
 
-/** Agrega un insumo a la receta de un producto o sabor. */
+/** Agrega un insumo a la receta base (por tipo/línea) o de un producto/sabor. */
 export async function agregarRecetaItem(formData: FormData) {
   const productoId = String(formData.get("productoId") ?? "").trim() || null;
   const saborId = String(formData.get("saborId") ?? "").trim() || null;
+  const linea = String(formData.get("linea") ?? "").trim() || null;
   const materiaPrimaId = String(formData.get("materiaPrimaId") ?? "").trim();
   const cantidad = num(formData.get("cantidad"));
-  if ((!productoId && !saborId) || !materiaPrimaId || !Number.isFinite(cantidad) || cantidad <= 0) return;
+  if ((!productoId && !saborId && !linea) || !materiaPrimaId || !Number.isFinite(cantidad) || cantidad <= 0) return;
 
-  await prisma.recetaItem.create({ data: { productoId, saborId, materiaPrimaId, cantidad } });
+  await prisma.recetaItem.create({ data: { productoId, saborId, linea, materiaPrimaId, cantidad } });
 
-  const dest = productoId ? `producto=${productoId}` : `sabor=${saborId}`;
+  const dest = linea ? `linea=${linea}` : productoId ? `producto=${productoId}` : `sabor=${saborId}`;
   revalidatePath("/admin/materias/recetas");
   redirect(`/admin/materias/recetas?${dest}`);
 }

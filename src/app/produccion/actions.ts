@@ -24,43 +24,72 @@ async function bodegaId(): Promise<string | null> {
  */
 export async function confirmarMezcla(formData: FormData) {
   const unidades = Number(String(formData.get("cantidad") ?? "").trim());
-  const marcados = (formData.getAll("marcado") as string[]).map((s) => String(s)).filter(Boolean);
+  const linea = String(formData.get("linea") ?? "").trim() || null;
+  const sabor = String(formData.get("sabor") ?? "").trim() || null;
+  const formato = String(formData.get("formato") ?? "").trim() || null;
   const total = Number(String(formData.get("total") ?? "0").trim()) || 0;
-  const nombre = String(formData.get("nombre") ?? "Mezcla").trim() || "Mezcla";
-  const clase = String(formData.get("clase") ?? "").trim() || null;
-  const refId = String(formData.get("refId") ?? "").trim() || null;
   const turno = String(formData.get("turno") ?? "").trim() || null;
   const operarios = String(formData.get("operarios") ?? "").trim() || null;
   const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
-  if (!Number.isFinite(unidades) || unidades <= 0 || marcados.length === 0) return;
+  const marcados = (formData.getAll("marcado") as string[]).map((s) => String(s)).filter(Boolean);
+
+  // Agregados pesados: [{ materiaPrimaId, cantidad }] — cantidad = total usado (no por unidad).
+  let agregados: { materiaPrimaId: string; cantidad: number }[] = [];
+  try { agregados = JSON.parse(String(formData.get("agregados") ?? "[]")); } catch { agregados = []; }
+  agregados = agregados.filter((a) => a.materiaPrimaId && Number.isFinite(a.cantidad) && a.cantidad > 0);
+
+  if (!Number.isFinite(unidades) || unidades <= 0) return;
+  if (marcados.length === 0 && agregados.length === 0) return;
 
   const u = await usuarioActual();
-  const items = await prisma.recetaItem.findMany({
-    where: { id: { in: marcados } },
-    include: { materiaPrima: { select: { nombre: true } } },
+  const nombre = [sabor, linea].filter(Boolean).join(" · ") || "Mezcla";
+
+  // Registro de control de calidad (historial de la central).
+  const control = await prisma.controlCalidad.create({
+    data: {
+      turno, operarios, clase: "linea", refId: linea, nombre, cantidad: unidades,
+      itemsMarcados: marcados.length, itemsTotal: total, observaciones,
+      usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+    },
   });
 
-  for (const it of items) {
-    const usar = it.cantidad * unidades;
-    if (usar <= 0) continue;
-    await prisma.materiaPrima.update({ where: { id: it.materiaPrimaId }, data: { stock: { decrement: usar } } });
+  // Receta base: descuenta (cantidad por unidad × unidades) los insumos marcados.
+  if (marcados.length > 0) {
+    const items = await prisma.recetaItem.findMany({ where: { id: { in: marcados } } });
+    for (const it of items) {
+      const usar = it.cantidad * unidades;
+      if (usar <= 0) continue;
+      await prisma.materiaPrima.update({ where: { id: it.materiaPrimaId }, data: { stock: { decrement: usar } } });
+      await prisma.movimientoMateria.create({
+        data: {
+          materiaPrimaId: it.materiaPrimaId, tipo: "consumo", cantidad: usar,
+          motivo: `Base · ${nombre} · ${unidades} u.`,
+          usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+        },
+      });
+    }
+  }
+
+  // Agregados: descuenta el peso usado (tal cual) y guarda el rendimiento.
+  for (const ag of agregados) {
+    const mp = await prisma.materiaPrima.findUnique({ where: { id: ag.materiaPrimaId }, select: { nombre: true, unidad: true } });
+    if (!mp) continue;
+    await prisma.materiaPrima.update({ where: { id: ag.materiaPrimaId }, data: { stock: { decrement: ag.cantidad } } });
     await prisma.movimientoMateria.create({
       data: {
-        materiaPrimaId: it.materiaPrimaId, tipo: "consumo", cantidad: usar,
-        motivo: `Control de calidad · ${nombre} · ${unidades} u.`,
+        materiaPrimaId: ag.materiaPrimaId, tipo: "consumo", cantidad: ag.cantidad,
+        motivo: `Agregado · ${nombre} · ${unidades} u.`,
+        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+      },
+    });
+    await prisma.agregadoUso.create({
+      data: {
+        controlId: control.id, materiaPrimaId: ag.materiaPrimaId, nombreInsumo: mp.nombre, unidad: mp.unidad,
+        cantidad: ag.cantidad, linea, sabor, formato, unidadesProducidas: unidades,
         usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
       },
     });
   }
-
-  // Registro de control de calidad (historial de la central).
-  await prisma.controlCalidad.create({
-    data: {
-      turno, operarios, clase, refId, nombre, cantidad: unidades,
-      itemsMarcados: items.length, itemsTotal: total, observaciones,
-      usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
-    },
-  });
 
   revalidatePath("/produccion");
   revalidatePath("/admin/materias");

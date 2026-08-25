@@ -625,12 +625,38 @@ model RecetaItem {
   productoId     String?
   sabor          Sabor?       @relation(fields: [saborId], references: [id], onDelete: Cascade)
   saborId        String?
+  // Receta BASE por tipo/línea (trufa, postre, cuchufli…): común a todos los sabores
+  // de ese tipo. Los agregados (esencia, color, decorado…) se pesan aparte al producir.
+  linea          String?
   materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id], onDelete: Cascade)
   materiaPrimaId String
   cantidad       Float // cantidad de insumo por 1 unidad producida
 
   @@index([productoId])
   @@index([saborId])
+  @@index([linea])
+  @@index([materiaPrimaId])
+}
+
+/// Agregado usado al producir (esencia, color, salsa, decorado, relleno, frutos,
+/// galleta…): se pesa y se descuenta. Guarda el sabor/formato y las unidades para
+/// ver el rendimiento ("cuánto rinde cada agregado").
+model AgregadoUso {
+  id                 String   @id @default(cuid())
+  fecha              DateTime @default(now())
+  controlId          String? // opcional: control de calidad al que pertenece
+  materiaPrimaId     String
+  nombreInsumo       String
+  unidad             String
+  cantidad           Float // cuánto se usó (pesado)
+  linea              String?
+  sabor              String?
+  formato            String?
+  unidadesProducidas Int      @default(0)
+  usuarioId          String?
+  nombreUsuario      String?
+
+  @@index([fecha])
   @@index([materiaPrimaId])
 }
 
