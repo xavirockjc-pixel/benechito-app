@@ -566,7 +566,8 @@ model ParadaRuta {
 model Sabor {
   id        String   @id @default(cuid())
   nombre    String
-  linea     String   // trufa | cuchufli | helado | ...
+  seccion   String?  // dulce | helado (agrupación mayor)
+  linea     String   // tipo: cuchufli | trufa | paletas_agua | postres_500 | ...
   activo    Boolean  @default(true)
   createdAt DateTime @default(now())
 
