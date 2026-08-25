@@ -45,6 +45,7 @@ export default function RecetaChecklist({
   const setAg = (key: number, patch: Partial<Agregado>) => setAgregados((a) => a.map((x) => (x.key === key ? { ...x, ...patch } : x)));
   const delAg = (key: number) => setAgregados((a) => a.filter((x) => x.key !== key));
 
+  const mostrarForm = !!linea && !estaBloqueada;
   const esNuevo = (a: Agregado) => !a.materiaPrimaId || a.materiaPrimaId === "__nuevo__";
   const agregadosJSON = JSON.stringify(
     agregados
@@ -56,7 +57,6 @@ export default function RecetaChecklist({
         cantidad: Number(a.cantidad.replace(",", ".")),
       })),
   );
-  const listo = !!linea && n > 0 && !estaBloqueada;
 
   return (
     <div className="space-y-3">
@@ -94,7 +94,7 @@ export default function RecetaChecklist({
         </div>
       )}
 
-      {listo && (
+      {mostrarForm && (
         <form action={confirmarMezcla} className="space-y-3 rounded-xl border-2 border-teal-200 bg-white p-3">
           <input type="hidden" name="cantidad" value={n} />
           <input type="hidden" name="linea" value={linea} />
@@ -103,9 +103,11 @@ export default function RecetaChecklist({
           <input type="hidden" name="total" value={base.length} />
           <input type="hidden" name="agregados" value={agregadosJSON} />
 
-          {/* Receta base (checklist) */}
+          {/* Segmento 1 — Insumos base (marca lo que echaste) */}
           <div>
-            <p className="mb-1 text-xs font-bold uppercase tracking-wide text-teal-700">Receta base · {lineaLabel[linea]} · {n} u.</p>
+            <p className="mb-1 text-xs font-bold uppercase tracking-wide text-teal-700">
+              1) Insumos base · {lineaLabel[linea]} {n > 0 ? `· ${n} u.` : ""} — marca lo que echaste
+            </p>
             {base.length === 0 ? (
               <p className="rounded-lg border border-dashed border-slate-300 p-3 text-center text-xs text-slate-400">
                 Este tipo no tiene receta base. Cárgala en la central (Materias primas → Recetas → Receta base por tipo).
@@ -117,22 +119,25 @@ export default function RecetaChecklist({
                     <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 has-[:checked]:border-teal-400 has-[:checked]:bg-teal-50">
                       <input type="checkbox" name="marcado" value={it.id} defaultChecked className="h-5 w-5 accent-[#0f766e]" />
                       <span className="flex-1 text-sm font-semibold text-slate-800">{it.nombre}</span>
-                      <span className="text-sm font-bold text-teal-700">{fmtCant(it.cantidad * n, it.unidad)}</span>
+                      <span className="text-sm font-bold text-teal-700">{n > 0 ? fmtCant(it.cantidad * n, it.unidad) : `${fmtCant(it.cantidad, it.unidad)}/u`}</span>
                     </label>
                   </li>
                 ))}
               </ul>
             )}
+            {n === 0 && base.length > 0 && (
+              <p className="mt-1 text-[11px] text-amber-600">Escribe cuántas unidades arriba para calcular las cantidades exactas.</p>
+            )}
           </div>
 
-          {/* Agregados (se pesan aparte) */}
-          <div>
+          {/* Segmento 2 — Otros agregados (salsas, especias… se pesan aparte) */}
+          <div className="rounded-lg bg-amber-50/60 p-2">
             <div className="mb-1 flex items-center justify-between">
-              <p className="text-xs font-bold uppercase tracking-wide text-amber-700">Agregados (se pesan)</p>
+              <p className="text-xs font-bold uppercase tracking-wide text-amber-700">2) Otros agregados (salsas, especias…) — se pesan</p>
               <button type="button" onClick={addAgregado} className="rounded-lg bg-amber-500 px-3 py-1 text-xs font-bold text-white">+ Agregado</button>
             </div>
             {agregados.length === 0 ? (
-              <p className="text-[11px] text-slate-400">Ej: esencia, color, salsa, decorado, relleno, frutos, galleta… Agrega los que uses y su peso.</p>
+              <p className="text-[11px] text-slate-500">Solo para los que llevan agregados aparte (salsa, especias, decorado, relleno, frutos…). Agrega los que uses y su peso.</p>
             ) : (
               <div className="space-y-2">
                 {agregados.map((a) => {
@@ -182,7 +187,7 @@ export default function RecetaChecklist({
             <textarea name="observaciones" rows={2} placeholder="Notas de calidad, incidencias…" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
           </label>
 
-          <button className="w-full rounded-xl bg-[#0f766e] py-3 text-base font-extrabold text-white active:brightness-95">
+          <button disabled={n === 0} className="w-full rounded-xl bg-[#0f766e] py-3 text-base font-extrabold text-white active:brightness-95 disabled:opacity-40">
             ✓ Confirmar mezcla y descontar insumos
           </button>
         </form>
