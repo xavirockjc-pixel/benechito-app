@@ -195,6 +195,35 @@ export async function precargarMedidas() {
   revalidatePath("/admin/materias/recetas");
 }
 
+/**
+ * Precarga la receta base de ejemplo (Tú y Yo / Paletas de leche) para 120 L:
+ * azúcar 19 kg, leche 12 kg, estabilizante neutro 300 g, edulcorante 45 g.
+ * Crea los insumos si no existen. Todo queda editable. No duplica si ya está.
+ */
+export async function precargarRecetaEjemplo() {
+  const insumos: { nombre: string; unidad: string; cant: number }[] = [
+    { nombre: "Azúcar", unidad: "kg", cant: 19 },
+    { nombre: "Leche", unidad: "kg", cant: 12 },
+    { nombre: "Estabilizante neutro paletas", unidad: "g", cant: 300 },
+    { nombre: "Edulcorante", unidad: "g", cant: 45 },
+  ];
+  // Tú y Yo y Paletas de leche comparten esta base (líneas de producción).
+  for (const linea of ["tuyyo", "paletas"]) {
+    await prisma.recetaBase.upsert({
+      where: { linea },
+      update: { baseRef: 120, baseUnidad: "l" },
+      create: { linea, baseRef: 120, baseUnidad: "l" },
+    });
+    for (const it of insumos) {
+      const mpId = await insumoIdOCrear(it.nombre, it.unidad);
+      const ex = await prisma.recetaItem.findFirst({ where: { linea, materiaPrimaId: mpId } });
+      if (!ex) await prisma.recetaItem.create({ data: { linea, materiaPrimaId: mpId, cantidad: it.cant } });
+    }
+  }
+  revalidatePath("/admin/materias/recetas");
+  redirect("/admin/materias/recetas?linea=tuyyo");
+}
+
 /** Guarda el lote de referencia de la receta base de un tipo (para cuántos L/kg). */
 export async function guardarBaseRef(formData: FormData) {
   const linea = String(formData.get("linea") ?? "").trim();

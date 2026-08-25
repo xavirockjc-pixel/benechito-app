@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { empresaActual } from "@/lib/dominio/empresa";
 import { fmtCant, unidadLabel, categoriaIcono } from "@/lib/dominio/materias";
 import { LINEAS_PRODUCCION, lineaLabel } from "@/lib/dominio/produccion";
-import { agregarRecetaItem, quitarRecetaItem, guardarSeguridadRecetas, guardarGuiaReceta, guardarBaseRef, crearMedida, eliminarMedida, precargarMedidas } from "../actions";
+import { agregarRecetaItem, quitarRecetaItem, guardarSeguridadRecetas, guardarGuiaReceta, guardarBaseRef, crearMedida, eliminarMedida, precargarMedidas, precargarRecetaEjemplo } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -96,6 +96,12 @@ export default async function RecetasPage({
           <p className="text-[11px] text-slate-500">Los tipos marcados salen 🔒 en Producción; el operario necesita la clave para verlos.</p>
         </form>
       </details>
+
+      {/* Precargar receta de ejemplo (editable) */}
+      <form action={precargarRecetaEjemplo} className="mt-4 flex items-center justify-between gap-2 rounded-xl border border-teal-200 bg-teal-50/50 p-3">
+        <span className="text-xs text-teal-800">¿Quieres una receta de ejemplo lista? Carga <b>Tú y Yo / Paletas de leche</b> (120 L). Queda editable.</span>
+        <button className="shrink-0 rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-bold text-white">⚡ Cargar ejemplo</button>
+      </form>
 
       {/* Medidas / recipientes (balde, máquina 30/60 L…) */}
       <details className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
