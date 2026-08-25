@@ -687,6 +687,27 @@ model RecetaItem {
   @@index([materiaPrimaId])
 }
 
+/// Medida/recipiente para medir la base al producir (balde, depósito, máquina 30/60 L).
+/// Guarda cuántos litros equivale, para calcular la base sin hacer cuentas.
+model Medida {
+  id        String   @id @default(cuid())
+  nombre    String
+  litros    Float // capacidad en litros (o kg) de esta medida
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+/// Lote de referencia de la receta base de un tipo: define para cuántos litros/kg
+/// están puestas las cantidades. Al producir se escala (producido / referencia).
+model RecetaBase {
+  id         String   @id @default(cuid())
+  linea      String   @unique // tipo
+  baseRef    Float    @default(1) // ej: 120 (litros de referencia)
+  baseUnidad String   @default("l") // l | kg
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+}
+
 /// Guía de una receta: link de video y paso a paso, complementario a la receta.
 /// Se asocia a una receta base por tipo (linea) o a un producto/sabor puntual.
 model RecetaGuia {

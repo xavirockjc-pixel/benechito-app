@@ -16,16 +16,21 @@ type Agregado = { key: number; materiaPrimaId: string; nombre: string; unidad: s
  * se descuentan tal cual y quedan con su rendimiento.
  */
 type Guia = { videoUrl: string | null; pasos: string | null };
+type Medida = { id: string; nombre: string; litros: number };
 
 export default function RecetaChecklist({
   basePorLinea,
   materiales,
   guiaPorLinea = {},
+  baseRefPorLinea = {},
+  medidas = [],
   lineasBloqueadas = [],
 }: {
   basePorLinea: Record<string, BaseItem[]>;
   materiales: Mat[];
   guiaPorLinea?: Record<string, Guia>;
+  baseRefPorLinea?: Record<string, { baseRef: number; baseUnidad: string }>;
+  medidas?: Medida[];
   lineasBloqueadas?: string[];
 }) {
   const bloqueada = (l: string) => lineasBloqueadas.includes(l);
@@ -34,11 +39,16 @@ export default function RecetaChecklist({
   const [formato, setFormato] = useState("");
   const [cantidad, setCantidad] = useState("");
   const [baseCant, setBaseCant] = useState("");
-  const [baseUnidad, setBaseUnidad] = useState("l");
+  const [medidaId, setMedidaId] = useState("l"); // "l" | "kg" | id de una medida
   const [agregados, setAgregados] = useState<Agregado[]>([]);
 
   const n = Math.max(0, Number(cantidad.replace(/[^0-9]/g, "")) || 0);
-  const baseNum = Math.max(0, Number(baseCant.replace(",", ".").replace(/[^0-9.]/g, "")) || 0);
+  const cantBase = Math.max(0, Number(baseCant.replace(",", ".").replace(/[^0-9.]/g, "")) || 0);
+  const medidaSel = medidas.find((m) => m.id === medidaId);
+  const baseNum = medidaSel ? cantBase * medidaSel.litros : cantBase; // total en litros/kg
+  const baseUnidad = medidaSel ? "l" : medidaId; // contenedor = litros
+  const baseRef = (linea && baseRefPorLinea[linea]?.baseRef) || 1;
+  const factor = baseNum / baseRef; // cuántas veces el lote de referencia
   const base = useMemo(() => (linea ? basePorLinea[linea] ?? [] : []), [linea, basePorLinea]);
   // Insumos fijos (se tiquean) vs grupos de elección (se elige uno).
   const fijos = base.filter((b) => !b.grupo);
@@ -78,15 +88,20 @@ export default function RecetaChecklist({
         </select>
         <input value={sabor} onChange={(e) => setSabor(e.target.value)} placeholder="Sabor (ej: vainilla oreo)" className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800" />
         <input value={formato} onChange={(e) => setFormato(e.target.value)} placeholder="Formato (opcional)" className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800" />
-        {/* Base en litros/kg (escala los insumos base) */}
-        <div className="col-span-2 flex items-center gap-2 rounded-lg border-2 border-teal-200 bg-teal-50/50 px-3 py-2">
-          <span className="text-xs font-bold text-teal-800">Base:</span>
-          <input value={baseCant} onChange={(e) => setBaseCant(e.target.value)} inputMode="decimal" placeholder="cantidad" className="w-24 rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm" />
-          <select value={baseUnidad} onChange={(e) => setBaseUnidad(e.target.value)} className="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm">
-            <option value="l">litros</option>
-            <option value="kg">kg</option>
-          </select>
-          <span className="ml-auto text-[11px] text-slate-500">de base</span>
+        {/* Base: cantidad × medida (litros/kg directo o balde/máquina) */}
+        <div className="col-span-2 rounded-lg border-2 border-teal-200 bg-teal-50/50 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-teal-800">Base:</span>
+            <input value={baseCant} onChange={(e) => setBaseCant(e.target.value)} inputMode="decimal" placeholder="cuántos" className="w-20 rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm" />
+            <select value={medidaId} onChange={(e) => setMedidaId(e.target.value)} className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm">
+              <option value="l">litros</option>
+              <option value="kg">kg</option>
+              {medidas.map((m) => <option key={m.id} value={m.id}>{m.nombre} ({m.litros} L)</option>)}
+            </select>
+          </div>
+          {baseNum > 0 && (
+            <p className="mt-1 text-[11px] text-teal-700">= <b>{baseNum}</b> {baseUnidad} de base{baseRef > 1 ? ` · ${factor.toFixed(2).replace(/\.?0+$/, "")}× el lote de ${baseRef}` : ""}</p>
+          )}
         </div>
         <input value={cantidad} onChange={(e) => setCantidad(e.target.value)} inputMode="numeric" placeholder="Unidades que salieron (opcional)" className="col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800" />
       </div>
@@ -143,7 +158,7 @@ export default function RecetaChecklist({
                       <label className="flex items-center gap-3 rounded-lg border border-slate-200 px-3 py-2 has-[:checked]:border-teal-400 has-[:checked]:bg-teal-50">
                         <input type="checkbox" name="marcado" value={it.id} defaultChecked className="h-5 w-5 accent-[#0f766e]" />
                         <span className="flex-1 text-sm font-semibold text-slate-800">{it.nombre}</span>
-                        <span className="text-sm font-bold text-teal-700">{baseNum > 0 ? fmtCant(it.cantidad * baseNum, it.unidad) : `${fmtCant(it.cantidad, it.unidad)}/${baseUnidad}`}</span>
+                        <span className="text-sm font-bold text-teal-700">{baseNum > 0 ? fmtCant(it.cantidad * factor, it.unidad) : fmtCant(it.cantidad, it.unidad)}</span>
                       </label>
                     </li>
                   ))}
@@ -155,7 +170,7 @@ export default function RecetaChecklist({
                       <select name="marcado" defaultValue="" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800">
                         <option value="">— elegir {g.toLowerCase()} —</option>
                         {items.map((it) => (
-                          <option key={it.id} value={it.id}>{it.nombre} · {baseNum > 0 ? fmtCant(it.cantidad * baseNum, it.unidad) : `${fmtCant(it.cantidad, it.unidad)}/${baseUnidad}`}</option>
+                          <option key={it.id} value={it.id}>{it.nombre} · {baseNum > 0 ? fmtCant(it.cantidad * factor, it.unidad) : fmtCant(it.cantidad, it.unidad)}</option>
                         ))}
                       </select>
                     </label>

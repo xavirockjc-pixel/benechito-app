@@ -37,7 +37,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
-  const [ordenes, agendaFab, recetaItems, registroHoy, materiales, guias] = await Promise.all([
+  const [ordenes, agendaFab, recetaItems, registroHoy, materiales, guias, medidas, recetaBases] = await Promise.all([
     prisma.ordenProduccion.findMany({
       where: { estado: { in: ["planificada", "en_proceso"] } },
       include: { producto: { select: { nombre: true } }, sabor: { select: { nombre: true, linea: true } } },
@@ -55,6 +55,8 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
     prisma.movimientoBodega.findMany({ where: { fecha: { gte: hoy }, zona: "produccion" }, orderBy: { fecha: "desc" }, take: 100 }),
     prisma.materiaPrima.findMany({ where: { activo: true }, orderBy: [{ categoria: "asc" }, { nombre: "asc" }], select: { id: true, nombre: true, unidad: true, categoria: true } }),
     prisma.recetaGuia.findMany({ where: { linea: { not: null } }, select: { linea: true, videoUrl: true, pasos: true } }),
+    prisma.medida.findMany({ where: { activo: true }, orderBy: { litros: "asc" }, select: { id: true, nombre: true, litros: true } }),
+    prisma.recetaBase.findMany({ select: { linea: true, baseRef: true, baseUnidad: true } }),
   ]);
 
   const totalHoy = registroHoy.reduce((s, m) => s + m.cantidad, 0);
@@ -68,6 +70,10 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   // Guía (video + paso a paso) por tipo.
   const guiaPorLinea: Record<string, { videoUrl: string | null; pasos: string | null }> = {};
   for (const g of guias) if (g.linea) guiaPorLinea[g.linea] = { videoUrl: g.videoUrl, pasos: g.pasos };
+
+  // Lote de referencia por tipo (para escalar).
+  const baseRefPorLinea: Record<string, { baseRef: number; baseUnidad: string }> = {};
+  for (const b of recetaBases) baseRefPorLinea[b.linea] = { baseRef: b.baseRef, baseUnidad: b.baseUnidad };
 
   // Protege el secreto: no envía al cliente los insumos ni la guía de tipos bloqueados.
   for (const l of lineasBloqueadas) { delete basePorLinea[l]; delete guiaPorLinea[l]; }
@@ -160,7 +166,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
           </div>
         )}
 
-        <RecetaChecklist basePorLinea={basePorLinea} materiales={materiales} guiaPorLinea={guiaPorLinea} lineasBloqueadas={lineasBloqueadas} />
+        <RecetaChecklist basePorLinea={basePorLinea} materiales={materiales} guiaPorLinea={guiaPorLinea} baseRefPorLinea={baseRefPorLinea} medidas={medidas} lineasBloqueadas={lineasBloqueadas} />
       </section>
 
       {/* 3 — Anota lo que hiciste (voz o escrito) */}

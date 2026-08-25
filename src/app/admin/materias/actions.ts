@@ -163,6 +163,53 @@ export async function guardarGuiaReceta(formData: FormData) {
   redirect(`/admin/materias/recetas?${dest}`);
 }
 
+/** Crea una medida/recipiente (balde, máquina 60L…) con su equivalencia en litros/kg. */
+export async function crearMedida(formData: FormData) {
+  const nombre = String(formData.get("nombre") ?? "").trim();
+  const litros = Number(String(formData.get("litros") ?? "").trim().replace(",", "."));
+  if (!nombre || !Number.isFinite(litros) || litros <= 0) return;
+  await prisma.medida.create({ data: { nombre, litros } });
+  revalidatePath("/admin/materias/recetas");
+}
+
+/** Elimina una medida. */
+export async function eliminarMedida(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  await prisma.medida.delete({ where: { id } });
+  revalidatePath("/admin/materias/recetas");
+}
+
+/** Precarga medidas típicas (una vez). */
+export async function precargarMedidas() {
+  const base = [
+    { nombre: "Balde", litros: 19 },
+    { nombre: "Depósito", litros: 20 },
+    { nombre: "Máquina chica (30 L)", litros: 30 },
+    { nombre: "Máquina grande (60 L)", litros: 60 },
+  ];
+  for (const m of base) {
+    const ex = await prisma.medida.findFirst({ where: { nombre: m.nombre } });
+    if (!ex) await prisma.medida.create({ data: m });
+  }
+  revalidatePath("/admin/materias/recetas");
+}
+
+/** Guarda el lote de referencia de la receta base de un tipo (para cuántos L/kg). */
+export async function guardarBaseRef(formData: FormData) {
+  const linea = String(formData.get("linea") ?? "").trim();
+  const baseRef = Number(String(formData.get("baseRef") ?? "").trim().replace(",", "."));
+  const baseUnidad = String(formData.get("baseUnidad") ?? "l").trim() === "kg" ? "kg" : "l";
+  if (!linea || !Number.isFinite(baseRef) || baseRef <= 0) return;
+  await prisma.recetaBase.upsert({
+    where: { linea },
+    update: { baseRef, baseUnidad },
+    create: { linea, baseRef, baseUnidad },
+  });
+  revalidatePath("/admin/materias/recetas");
+  redirect(`/admin/materias/recetas?linea=${linea}`);
+}
+
 /** Quita un insumo de una receta. */
 export async function quitarRecetaItem(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();

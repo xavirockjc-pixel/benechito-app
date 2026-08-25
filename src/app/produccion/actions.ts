@@ -78,11 +78,14 @@ export async function confirmarMezcla(formData: FormData) {
     },
   });
 
-  // Receta base: descuenta (cantidad por L/kg de base × litros/kg de base) lo marcado.
+  // Receta base: escala por el lote de referencia (producido / referencia).
+  // Si no hay referencia, la cantidad se toma "por 1 L/kg" (baseRef = 1).
   if (marcados.length > 0 && baseOk) {
+    const ref = linea ? await prisma.recetaBase.findUnique({ where: { linea } }) : null;
+    const baseRef = ref && ref.baseRef > 0 ? ref.baseRef : 1;
     const items = await prisma.recetaItem.findMany({ where: { id: { in: marcados } } });
     for (const it of items) {
-      const usar = it.cantidad * base;
+      const usar = it.cantidad * (base / baseRef);
       if (usar <= 0) continue;
       await prisma.materiaPrima.update({ where: { id: it.materiaPrimaId }, data: { stock: { decrement: usar } } });
       await prisma.movimientoMateria.create({

@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { empresaActual } from "@/lib/dominio/empresa";
 import { fmtCant, unidadLabel, categoriaIcono } from "@/lib/dominio/materias";
 import { LINEAS_PRODUCCION, lineaLabel } from "@/lib/dominio/produccion";
-import { agregarRecetaItem, quitarRecetaItem, guardarSeguridadRecetas, guardarGuiaReceta } from "../actions";
+import { agregarRecetaItem, quitarRecetaItem, guardarSeguridadRecetas, guardarGuiaReceta, guardarBaseRef, crearMedida, eliminarMedida, precargarMedidas } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +52,11 @@ export default async function RecetasPage({
 
   const costoUnidad = receta.reduce((s, r) => s + (r.materiaPrima.costo != null ? Number(r.materiaPrima.costo) * r.cantidad : 0), 0);
 
+  const medidas = await prisma.medida.findMany({ where: { activo: true }, orderBy: { litros: "asc" } });
+  const recetaBase = target?.clase === "linea" ? await prisma.recetaBase.findUnique({ where: { linea: target.id } }) : null;
+  const baseRef = recetaBase?.baseRef ?? 1;
+  const baseUnidadRef = recetaBase?.baseUnidad ?? "l";
+
   const guia = target
     ? await prisma.recetaGuia.findFirst({
         where: target.clase === "linea" ? { linea: target.id } : target.clase === "producto" ? { productoId: target.id } : { saborId: target.id },
@@ -92,6 +97,27 @@ export default async function RecetasPage({
         </form>
       </details>
 
+      {/* Medidas / recipientes (balde, máquina 30/60 L…) */}
+      <details className="mt-4 rounded-xl border border-slate-200 bg-white p-3">
+        <summary className="cursor-pointer text-sm font-bold text-slate-700">📐 Medidas (balde, depósito, máquina…)</summary>
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {medidas.map((m) => (
+            <span key={m.id} className="inline-flex items-center gap-1 rounded-full bg-slate-100 py-1 pl-3 pr-1 text-sm text-slate-700">
+              {m.nombre} · {m.litros} L
+              <form action={eliminarMedida} className="inline"><input type="hidden" name="id" value={m.id} /><button className="grid h-5 w-5 place-items-center rounded-full bg-slate-200 text-xs text-slate-500 hover:bg-red-500 hover:text-white">✕</button></form>
+            </span>
+          ))}
+          {medidas.length === 0 && (
+            <form action={precargarMedidas}><button className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white">⚡ Precargar (balde, máquina 30/60L)</button></form>
+          )}
+        </div>
+        <form action={crearMedida} className="mt-2 flex items-end gap-2">
+          <input name="nombre" placeholder="Nombre (ej: Máquina 60L)" className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+          <input name="litros" inputMode="decimal" placeholder="Litros" className="w-20 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+          <button className="rounded-lg bg-slate-700 px-3 py-1.5 text-xs font-bold text-white">Agregar</button>
+        </form>
+      </details>
+
       {/* Receta base por tipo (son 5-6). Todo lo que cambia por sabor va en Agregados. */}
       <form action="/admin/materias/recetas" className="mt-4 rounded-xl border-2 border-[#1479c4] bg-blue-50/40 p-3 shadow-sm">
         <label className="text-xs font-bold uppercase tracking-wide text-[#1479c4]">⭐ Receta base por tipo</label>
@@ -120,10 +146,25 @@ export default async function RecetasPage({
             )}
           </div>
 
+          {/* Lote de referencia (para cuántos L/kg está la receta) */}
+          {target.clase === "linea" && (
+            <form action={guardarBaseRef} className="mt-3 flex flex-wrap items-end gap-2 rounded-xl border-2 border-teal-200 bg-teal-50/50 p-3">
+              <input type="hidden" name="linea" value={target.id} />
+              <span className="text-sm font-bold text-teal-800">📐 Esta receta es para un lote de:</span>
+              <input name="baseRef" inputMode="decimal" defaultValue={recetaBase?.baseRef ?? ""} placeholder="Ej: 120" className="w-24 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+              <select name="baseUnidad" defaultValue={baseUnidadRef} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
+                <option value="l">litros</option>
+                <option value="kg">kg</option>
+              </select>
+              <button className="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-bold text-white">Guardar lote</button>
+              <p className="w-full text-[11px] text-slate-500">Carga las cantidades <b>para ese lote</b> (ej: azúcar 19 kg para 120 L). Al producir, el sistema escala según los litros/kg que hagas.</p>
+            </form>
+          )}
+
           <div className="mt-3 space-y-2">
             {receta.length === 0 && (
               <p className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400">
-                Sin insumos en la receta. Agrégalos abajo. (Sin receta, el consumo se hace a mano.)
+                Sin insumos en la receta. Agrégalos abajo.
               </p>
             )}
             {receta.map((r) => (
@@ -131,7 +172,7 @@ export default async function RecetasPage({
                 <span className="min-w-0 truncate text-sm">
                   <b className="text-slate-900">{fmtCant(r.cantidad, r.materiaPrima.unidad)}</b>{" "}
                   <span className="text-slate-600">de {r.materiaPrima.nombre}</span>
-                  <span className="text-xs text-slate-400"> · {target.clase === "linea" ? "por L/kg de base" : "por unidad"}</span>
+                  <span className="text-xs text-slate-400"> · {target.clase === "linea" ? `para ${baseRef} ${baseUnidadRef}` : "por unidad"}</span>
                   {r.grupo && <span className="ml-2 rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold text-[#1479c4]">grupo: {r.grupo}</span>}
                 </span>
                 <form action={quitarRecetaItem}>
@@ -174,8 +215,8 @@ export default async function RecetasPage({
               <input name="grupo" placeholder="Ej: Fruto" className="mt-0.5 w-28 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
             </label>
             <label className="text-xs font-semibold text-slate-500">
-              {target.clase === "linea" ? "Cantidad por 1 L/kg de base" : "Cantidad por unidad"}
-              <input name="cantidad" inputMode="decimal" required placeholder="ej: 0.5" className="mt-0.5 w-28 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+              {target.clase === "linea" ? `Cantidad para ${baseRef} ${baseUnidadRef}` : "Cantidad por unidad"}
+              <input name="cantidad" inputMode="decimal" required placeholder="ej: 19" className="mt-0.5 w-28 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
             </label>
             <button className="rounded-lg bg-[#1479c4] px-4 py-2 text-sm font-extrabold text-white active:brightness-110">Agregar</button>
           </form>
