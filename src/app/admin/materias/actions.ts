@@ -109,13 +109,27 @@ export async function desactivarMateria(formData: FormData) {
 //  Recetas (lista de materiales por producto/sabor)
 // ===========================================================================
 
-/** Agrega un insumo a la receta base (por tipo/línea) o de un producto/sabor. */
+/** Busca un insumo por nombre; si no existe, lo crea. Devuelve su id. */
+async function insumoIdOCrear(nombre: string, unidad: string): Promise<string> {
+  const ex = await prisma.materiaPrima.findFirst({ where: { nombre: { equals: nombre, mode: "insensitive" } } });
+  if (ex) return ex.id;
+  const u = (UNIDADES as readonly string[]).includes(unidad) ? unidad : "unidad";
+  const nuevo = await prisma.materiaPrima.create({ data: { nombre, unidad: u } });
+  return nuevo.id;
+}
+
+/** Agrega un insumo a la receta base (por tipo/línea) o de un producto/sabor.
+ *  Si se escribe un insumo nuevo, se crea solo en la base. */
 export async function agregarRecetaItem(formData: FormData) {
   const productoId = String(formData.get("productoId") ?? "").trim() || null;
   const saborId = String(formData.get("saborId") ?? "").trim() || null;
   const linea = String(formData.get("linea") ?? "").trim() || null;
-  const materiaPrimaId = String(formData.get("materiaPrimaId") ?? "").trim();
+  const nuevoInsumo = String(formData.get("nuevoInsumo") ?? "").trim();
+  const nuevaUnidad = String(formData.get("nuevaUnidad") ?? "unidad").trim();
   const cantidad = num(formData.get("cantidad"));
+  let materiaPrimaId = String(formData.get("materiaPrimaId") ?? "").trim();
+
+  if (!materiaPrimaId && nuevoInsumo) materiaPrimaId = await insumoIdOCrear(nuevoInsumo, nuevaUnidad);
   if ((!productoId && !saborId && !linea) || !materiaPrimaId || !Number.isFinite(cantidad) || cantidad <= 0) return;
 
   await prisma.recetaItem.create({ data: { productoId, saborId, linea, materiaPrimaId, cantidad } });

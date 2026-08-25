@@ -7,7 +7,7 @@ import { confirmarMezcla } from "./actions";
 
 type BaseItem = { id: string; nombre: string; unidad: string; cantidad: number };
 type Mat = { id: string; nombre: string; unidad: string; categoria: string };
-type Agregado = { key: number; materiaPrimaId: string; cantidad: string };
+type Agregado = { key: number; materiaPrimaId: string; nombre: string; unidad: string; cantidad: string };
 
 /**
  * Mezcla / control de calidad: eliges tipo (línea) + sabor + cuántas unidades.
@@ -41,14 +41,20 @@ export default function RecetaChecklist({
   const guia = linea && !estaBloqueada ? guiaPorLinea[linea] : undefined;
   const pasos = (guia?.pasos ?? "").split("\n").map((s) => s.trim()).filter(Boolean);
 
-  const addAgregado = () => setAgregados((a) => [...a, { key: Date.now() + a.length, materiaPrimaId: "", cantidad: "" }]);
+  const addAgregado = () => setAgregados((a) => [...a, { key: Date.now() + a.length, materiaPrimaId: "", nombre: "", unidad: "kg", cantidad: "" }]);
   const setAg = (key: number, patch: Partial<Agregado>) => setAgregados((a) => a.map((x) => (x.key === key ? { ...x, ...patch } : x)));
   const delAg = (key: number) => setAgregados((a) => a.filter((x) => x.key !== key));
 
+  const esNuevo = (a: Agregado) => !a.materiaPrimaId || a.materiaPrimaId === "__nuevo__";
   const agregadosJSON = JSON.stringify(
     agregados
-      .filter((a) => a.materiaPrimaId && Number(a.cantidad.replace(",", ".")) > 0)
-      .map((a) => ({ materiaPrimaId: a.materiaPrimaId, cantidad: Number(a.cantidad.replace(",", ".")) })),
+      .filter((a) => ((a.materiaPrimaId && a.materiaPrimaId !== "__nuevo__") || a.nombre.trim()) && Number(a.cantidad.replace(",", ".")) > 0)
+      .map((a) => ({
+        materiaPrimaId: esNuevo(a) ? undefined : a.materiaPrimaId,
+        nombre: esNuevo(a) ? a.nombre.trim() || undefined : undefined,
+        unidad: a.unidad,
+        cantidad: Number(a.cantidad.replace(",", ".")),
+      })),
   );
   const listo = !!linea && n > 0 && !estaBloqueada;
 
@@ -131,14 +137,26 @@ export default function RecetaChecklist({
               <div className="space-y-2">
                 {agregados.map((a) => {
                   const mat = materiales.find((m) => m.id === a.materiaPrimaId);
+                  const nuevo = esNuevo(a);
                   return (
-                    <div key={a.key} className="flex items-center gap-2">
-                      <select value={a.materiaPrimaId} onChange={(e) => setAg(a.key, { materiaPrimaId: e.target.value })} className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-2 text-sm">
-                        <option value="">— insumo —</option>
-                        {materiales.map((m) => <option key={m.id} value={m.id}>{categoriaIcono[m.categoria]} {m.nombre}</option>)}
-                      </select>
-                      <input value={a.cantidad} onChange={(e) => setAg(a.key, { cantidad: e.target.value })} inputMode="decimal" placeholder={mat ? unidadLabel[mat.unidad] ?? mat.unidad : "peso"} className="w-20 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
-                      <button type="button" onClick={() => delAg(a.key)} className="shrink-0 text-xs font-semibold text-red-500">✕</button>
+                    <div key={a.key} className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <select value={a.materiaPrimaId} onChange={(e) => setAg(a.key, { materiaPrimaId: e.target.value })} className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-2 text-sm">
+                          <option value="">— insumo —</option>
+                          {materiales.map((m) => <option key={m.id} value={m.id}>{categoriaIcono[m.categoria]} {m.nombre}</option>)}
+                          <option value="__nuevo__">➕ insumo nuevo</option>
+                        </select>
+                        <input value={a.cantidad} onChange={(e) => setAg(a.key, { cantidad: e.target.value })} inputMode="decimal" placeholder={mat ? unidadLabel[mat.unidad] ?? mat.unidad : nuevo ? unidadLabel[a.unidad] ?? a.unidad : "peso"} className="w-20 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+                        <button type="button" onClick={() => delAg(a.key)} className="shrink-0 text-xs font-semibold text-red-500">✕</button>
+                      </div>
+                      {a.materiaPrimaId === "__nuevo__" && (
+                        <div className="flex items-center gap-2 pl-1">
+                          <input value={a.nombre} onChange={(e) => setAg(a.key, { nombre: e.target.value })} placeholder="Nombre del insumo nuevo" className="min-w-0 flex-1 rounded-lg border border-amber-300 bg-amber-50 px-2 py-2 text-sm" />
+                          <select value={a.unidad} onChange={(e) => setAg(a.key, { unidad: e.target.value })} className="w-20 rounded-lg border border-slate-300 px-2 py-2 text-sm">
+                            <option value="kg">kg</option><option value="g">g</option><option value="l">L</option><option value="ml">ml</option><option value="unidad">u.</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
                   );
                 })}

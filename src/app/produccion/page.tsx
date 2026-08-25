@@ -37,8 +37,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
-  const [sabores, ordenes, agendaFab, recetaItems, registroHoy, materiales, guias] = await Promise.all([
-    prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
+  const [ordenes, agendaFab, recetaItems, registroHoy, materiales, guias] = await Promise.all([
     prisma.ordenProduccion.findMany({
       where: { estado: { in: ["planificada", "en_proceso"] } },
       include: { producto: { select: { nombre: true } }, sabor: { select: { nombre: true, linea: true } } },
@@ -167,8 +166,8 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
       {/* 3 — Anota lo que hiciste (voz o escrito) */}
       <section className="rounded-2xl border border-teal-200 bg-white p-4 shadow-sm">
         <h2 className="mb-1 text-sm font-extrabold text-teal-800">✍️ Anota lo que hiciste</h2>
-        <p className="mb-2 text-xs text-slate-500">Cuántos salieron por tipo o sabor — por voz o escrito.</p>
-        <ProduccionForm sabores={sabores.map((s) => ({ id: s.id, nombre: s.nombre, linea: s.linea }))} />
+        <p className="mb-2 text-xs text-slate-500">Cuántos salieron por tipo y sabor.</p>
+        <ProduccionForm />
       </section>
 
       {/* Reporte del turno */}

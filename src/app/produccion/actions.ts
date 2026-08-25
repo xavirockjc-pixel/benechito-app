@@ -53,10 +53,10 @@ export async function confirmarMezcla(formData: FormData) {
   const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
   const marcados = (formData.getAll("marcado") as string[]).map((s) => String(s)).filter(Boolean);
 
-  // Agregados pesados: [{ materiaPrimaId, cantidad }] — cantidad = total usado (no por unidad).
-  let agregados: { materiaPrimaId: string; cantidad: number }[] = [];
+  // Agregados pesados: [{ materiaPrimaId? , nombre?, unidad?, cantidad }] — cantidad = total usado.
+  let agregados: { materiaPrimaId?: string; nombre?: string; unidad?: string; cantidad: number }[] = [];
   try { agregados = JSON.parse(String(formData.get("agregados") ?? "[]")); } catch { agregados = []; }
-  agregados = agregados.filter((a) => a.materiaPrimaId && Number.isFinite(a.cantidad) && a.cantidad > 0);
+  agregados = agregados.filter((a) => (a.materiaPrimaId || a.nombre) && Number.isFinite(a.cantidad) && a.cantidad > 0);
 
   if (!Number.isFinite(unidades) || unidades <= 0) return;
   if (marcados.length === 0 && agregados.length === 0) return;
@@ -91,20 +91,37 @@ export async function confirmarMezcla(formData: FormData) {
   }
 
   // Agregados: descuenta el peso usado (tal cual) y guarda el rendimiento.
+  // Si el insumo no existe, se crea solo en la base.
+  const UNID = ["kg", "g", "l", "ml", "unidad"];
   for (const ag of agregados) {
-    const mp = await prisma.materiaPrima.findUnique({ where: { id: ag.materiaPrimaId }, select: { nombre: true, unidad: true } });
-    if (!mp) continue;
-    await prisma.materiaPrima.update({ where: { id: ag.materiaPrimaId }, data: { stock: { decrement: ag.cantidad } } });
+    let mpId = ag.materiaPrimaId ?? "";
+    let nombreInsumo = "";
+    let unidad = "unidad";
+    if (mpId) {
+      const mp = await prisma.materiaPrima.findUnique({ where: { id: mpId }, select: { nombre: true, unidad: true } });
+      if (!mp) continue;
+      nombreInsumo = mp.nombre; unidad = mp.unidad;
+    } else if (ag.nombre) {
+      const ex = await prisma.materiaPrima.findFirst({ where: { nombre: { equals: ag.nombre.trim(), mode: "insensitive" } } });
+      if (ex) { mpId = ex.id; nombreInsumo = ex.nombre; unidad = ex.unidad; }
+      else {
+        const un = UNID.includes(ag.unidad ?? "") ? ag.unidad! : "unidad";
+        const nv = await prisma.materiaPrima.create({ data: { nombre: ag.nombre.trim(), unidad: un } });
+        mpId = nv.id; nombreInsumo = nv.nombre; unidad = nv.unidad;
+      }
+    } else continue;
+
+    await prisma.materiaPrima.update({ where: { id: mpId }, data: { stock: { decrement: ag.cantidad } } });
     await prisma.movimientoMateria.create({
       data: {
-        materiaPrimaId: ag.materiaPrimaId, tipo: "consumo", cantidad: ag.cantidad,
+        materiaPrimaId: mpId, tipo: "consumo", cantidad: ag.cantidad,
         motivo: `Agregado · ${nombre} · ${unidades} u.`,
         usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
       },
     });
     await prisma.agregadoUso.create({
       data: {
-        controlId: control.id, materiaPrimaId: ag.materiaPrimaId, nombreInsumo: mp.nombre, unidad: mp.unidad,
+        controlId: control.id, materiaPrimaId: mpId, nombreInsumo, unidad,
         cantidad: ag.cantidad, linea, sabor, formato, unidadesProducidas: unidades,
         usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
       },

@@ -175,12 +175,22 @@ export default async function RecetasPage({
                 ? <input type="hidden" name="productoId" value={target.id} />
                 : <input type="hidden" name="saborId" value={target.id} />}
             <label className="min-w-[10rem] flex-1 text-xs font-semibold text-slate-500">
-              Insumo
-              <select name="materiaPrimaId" required className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm">
-                <option value="">— elegir insumo —</option>
+              Insumo existente
+              <select name="materiaPrimaId" className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm">
+                <option value="">— elegir —</option>
                 {materiales.map((mm) => (
                   <option key={mm.id} value={mm.id}>{categoriaIcono[mm.categoria]} {mm.nombre} ({unidadLabel[mm.unidad] ?? mm.unidad})</option>
                 ))}
+              </select>
+            </label>
+            <label className="text-xs font-semibold text-slate-500">
+              …o insumo nuevo
+              <input name="nuevoInsumo" placeholder="Nombre nuevo" className="mt-0.5 w-36 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+            </label>
+            <label className="text-xs font-semibold text-slate-500">
+              Unidad
+              <select name="nuevaUnidad" defaultValue="unidad" className="mt-0.5 w-20 rounded-lg border border-slate-300 px-2 py-2 text-sm">
+                <option value="kg">kg</option><option value="g">g</option><option value="l">L</option><option value="ml">ml</option><option value="unidad">u.</option>
               </select>
             </label>
             <label className="text-xs font-semibold text-slate-500">
@@ -189,6 +199,7 @@ export default async function RecetasPage({
             </label>
             <button className="rounded-lg bg-[#1479c4] px-4 py-2 text-sm font-extrabold text-white active:brightness-110">Agregar</button>
           </form>
+          <p className="mt-1 text-[11px] text-slate-400">Elige un insumo existente <b>o</b> escribe uno nuevo (se crea solo en la base).</p>
 
           {/* Guía: video + paso a paso */}
           <form action={guardarGuiaReceta} className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
