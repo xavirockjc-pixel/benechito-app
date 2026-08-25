@@ -7,6 +7,15 @@ export const dynamic = "force-dynamic";
 const fmtFecha = (d: Date) =>
   new Date(d).toLocaleString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
+function StatCard({ label, valor, color }: { label: string; valor: string; color: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+      <p className="text-2xl font-extrabold" style={{ color }}>{valor}</p>
+      <p className="mt-1 text-xs font-semibold text-slate-500">{label}</p>
+    </div>
+  );
+}
+
 export default async function ControlCalidadPage() {
   const [registros, agregados] = await Promise.all([
     prisma.controlCalidad.findMany({ orderBy: { fecha: "desc" }, take: 120 }),
@@ -19,12 +28,76 @@ export default async function ControlCalidadPage() {
     agsPorControl.get(a.controlId)!.push(a);
   }
 
+  // --- Resumen tipo dashboard ---
+  const totalUnidades = registros.reduce((s, r) => s + r.cantidad, 0);
+  const completas = registros.filter((r) => r.itemsTotal > 0 && r.itemsMarcados >= r.itemsTotal).length;
+  const porTurno = ["manana", "tarde", "noche"].map((t) => ({ t, n: registros.filter((r) => r.turno === t).length }));
+  const turnoColor: Record<string, string> = { manana: "#e0921a", tarde: "#1479c4", noche: "#6d28d9" };
+  // Top agregados por consumo (suma por insumo).
+  const agMap = new Map<string, { unidad: string; total: number }>();
+  for (const a of agregados) {
+    const cur = agMap.get(a.nombreInsumo) ?? { unidad: a.unidad, total: 0 };
+    cur.total += a.cantidad;
+    agMap.set(a.nombreInsumo, cur);
+  }
+  const topAgregados = [...agMap.entries()].map(([nombre, v]) => ({ nombre, ...v })).sort((a, b) => b.total - a.total).slice(0, 6);
+  const maxAg = Math.max(1, ...topAgregados.map((a) => a.total));
+
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="text-2xl font-extrabold text-slate-900">🧪 Control de calidad y turnos</h1>
       <p className="text-sm text-slate-500">
-        Historial de las mezclas: qué se hizo, cuántos, qué insumos se marcaron, turno, operarios y observaciones.
+        Resumen de las mezclas: qué se hizo, turnos, operarios, agregados y rendimiento.
       </p>
+
+      {/* Tarjetas resumen */}
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <StatCard label="Mezclas" valor={String(registros.length)} color="#0f766e" />
+        <StatCard label="Unidades" valor={String(totalUnidades)} color="#1479c4" />
+        <StatCard label="Recetas completas" valor={`${completas}/${registros.length}`} color="#16a34a" />
+        <StatCard label="Agregados usados" valor={String(agMap.size)} color="#b45309" />
+      </div>
+
+      {/* Mezclas por turno + top agregados */}
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Mezclas por turno</p>
+          <div className="space-y-1.5">
+            {porTurno.map(({ t, n }) => {
+              const max = Math.max(1, ...porTurno.map((x) => x.n));
+              return (
+                <div key={t} className="flex items-center gap-2">
+                  <span className="w-16 text-xs font-semibold text-slate-600">{turnoLabel[t] ?? t}</span>
+                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-full rounded-full" style={{ width: `${(n / max) * 100}%`, backgroundColor: turnoColor[t] }} />
+                  </div>
+                  <span className="w-6 text-right text-sm font-bold text-slate-800">{n}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Agregados más usados</p>
+          {topAgregados.length === 0 ? (
+            <p className="text-xs text-slate-400">Aún sin agregados.</p>
+          ) : (
+            <div className="space-y-1.5">
+              {topAgregados.map((a) => (
+                <div key={a.nombre} className="flex items-center gap-2">
+                  <span className="w-24 truncate text-xs font-semibold text-slate-600">{a.nombre}</span>
+                  <div className="h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                    <div className="h-full rounded-full bg-[#b45309]" style={{ width: `${(a.total / maxAg) * 100}%` }} />
+                  </div>
+                  <span className="w-14 text-right text-xs font-bold text-[#b45309]">{fmtCant(a.total, a.unidad)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <h2 className="mb-2 mt-6 text-sm font-bold uppercase tracking-wide text-slate-500">Historial</h2>
 
       {registros.length === 0 ? (
         <p className="mt-6 rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
