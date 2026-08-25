@@ -4,7 +4,19 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
+import { empresaActual } from "@/lib/dominio/empresa";
 import { CATEGORIAS, UNIDADES } from "@/lib/dominio/materias";
+
+/** Guarda la clave de recetas y qué tipos quedan bajo llave (secretos). */
+export async function guardarSeguridadRecetas(formData: FormData) {
+  const clave = String(formData.get("recetaClave") ?? "").trim() || null;
+  const secretas = (formData.getAll("secreta") as string[]).filter(Boolean).join(",") || null;
+  const e = await empresaActual();
+  await prisma.empresa.update({ where: { id: e.id }, data: { recetaClave: clave, recetasSecretas: secretas } });
+  revalidatePath("/admin/materias/recetas");
+  revalidatePath("/produccion");
+  redirect("/admin/materias/recetas?seg=1");
+}
 
 const num = (v: FormDataEntryValue | null) => Number(String(v ?? "").trim().replace(",", "."));
 

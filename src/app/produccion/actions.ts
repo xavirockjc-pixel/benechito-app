@@ -2,8 +2,28 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
+
+/** Desbloquea las recetas protegidas si la clave coincide (cookie por 8 horas). */
+export async function desbloquearRecetas(formData: FormData) {
+  const clave = String(formData.get("clave") ?? "").trim();
+  const e = await prisma.empresa.findFirst();
+  if (e?.recetaClave && clave && clave === e.recetaClave) {
+    const c = await cookies();
+    c.set("recetas_ok", "1", { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 8 });
+    redirect("/produccion?desbloqueo=1");
+  }
+  redirect("/produccion?desbloqueo=0");
+}
+
+/** Vuelve a bloquear las recetas protegidas (borra el permiso). */
+export async function bloquearRecetas() {
+  const c = await cookies();
+  c.delete("recetas_ok");
+  redirect("/produccion");
+}
 
 /** Cierra la sesión. */
 export async function logout() {

@@ -177,6 +177,9 @@ model Empresa {
   nombre     String
   // Plantilla por rubro: renombra áreas y activa/oculta módulos (mismo motor).
   rubro      String     @default("fabrica") // fabrica | panaderia | comida_rapida | restaurante
+  // Secreto de recetas: clave para ver las recetas protegidas + tipos secretos (CSV de líneas).
+  recetaClave      String?
+  recetasSecretas  String? // "trufa,helado" — tipos cuya receta queda bajo llave
   sucursales Sucursal[]
   createdAt  DateTime   @default(now())
 }

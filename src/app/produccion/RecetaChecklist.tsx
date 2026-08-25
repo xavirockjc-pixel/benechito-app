@@ -18,10 +18,13 @@ type Agregado = { key: number; materiaPrimaId: string; cantidad: string };
 export default function RecetaChecklist({
   basePorLinea,
   materiales,
+  lineasBloqueadas = [],
 }: {
   basePorLinea: Record<string, BaseItem[]>;
   materiales: Mat[];
+  lineasBloqueadas?: string[];
 }) {
+  const bloqueada = (l: string) => lineasBloqueadas.includes(l);
   const [linea, setLinea] = useState("");
   const [sabor, setSabor] = useState("");
   const [formato, setFormato] = useState("");
@@ -30,6 +33,7 @@ export default function RecetaChecklist({
 
   const n = Math.max(0, Number(cantidad.replace(/[^0-9]/g, "")) || 0);
   const base = useMemo(() => (linea ? basePorLinea[linea] ?? [] : []), [linea, basePorLinea]);
+  const estaBloqueada = !!linea && bloqueada(linea);
 
   const addAgregado = () => setAgregados((a) => [...a, { key: Date.now() + a.length, materiaPrimaId: "", cantidad: "" }]);
   const setAg = (key: number, patch: Partial<Agregado>) => setAgregados((a) => a.map((x) => (x.key === key ? { ...x, ...patch } : x)));
@@ -40,7 +44,7 @@ export default function RecetaChecklist({
       .filter((a) => a.materiaPrimaId && Number(a.cantidad.replace(",", ".")) > 0)
       .map((a) => ({ materiaPrimaId: a.materiaPrimaId, cantidad: Number(a.cantidad.replace(",", ".")) })),
   );
-  const listo = !!linea && n > 0;
+  const listo = !!linea && n > 0 && !estaBloqueada;
 
   return (
     <div className="space-y-3">
@@ -48,12 +52,18 @@ export default function RecetaChecklist({
       <div className="grid grid-cols-2 gap-2">
         <select value={linea} onChange={(e) => setLinea(e.target.value)} className="col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800">
           <option value="">¿Qué tipo produces?</option>
-          {LINEAS_PRODUCCION.map((l) => <option key={l} value={l}>{lineaLabel[l]}</option>)}
+          {LINEAS_PRODUCCION.map((l) => <option key={l} value={l}>{lineaLabel[l]}{bloqueada(l) ? " 🔒" : ""}</option>)}
         </select>
         <input value={sabor} onChange={(e) => setSabor(e.target.value)} placeholder="Sabor (ej: vainilla oreo)" className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800" />
         <input value={cantidad} onChange={(e) => setCantidad(e.target.value)} inputMode="numeric" placeholder="¿Cuántas unidades?" className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800" />
         <input value={formato} onChange={(e) => setFormato(e.target.value)} placeholder="Formato (opcional)" className="col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800" />
       </div>
+
+      {estaBloqueada && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-center text-sm font-semibold text-amber-700">
+          🔒 Receta protegida. Ingresa la clave arriba para poder verla.
+        </p>
+      )}
 
       {listo && (
         <form action={confirmarMezcla} className="space-y-3 rounded-xl border-2 border-teal-200 bg-white p-3">

@@ -1,16 +1,26 @@
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import ProduccionForm from "./ProduccionForm";
 import RecetaChecklist from "./RecetaChecklist";
 import { fechaCorta } from "@/lib/dominio/agenda";
-import { cumplirOrden, enviarReporteTurno } from "./actions";
+import { lineaLabel as lineaLbl } from "@/lib/dominio/produccion";
+import { empresaActual } from "@/lib/dominio/empresa";
+import { cumplirOrden, enviarReporteTurno, desbloquearRecetas, bloquearRecetas } from "./actions";
 
 export const dynamic = "force-dynamic";
 
 const fmtHora = (d: Date) => new Date(d).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
 const lineaLabel: Record<string, string> = { trufa: "Trufas", cuchufli: "Cuchuflís", helado: "Helados", paleta: "Paletas", postre: "Postres" };
 
-export default async function ProduccionHome({ searchParams }: { searchParams: Promise<{ ok?: string; reporte?: string; mezcla?: string }> }) {
-  const { ok, reporte, mezcla } = await searchParams;
+export default async function ProduccionHome({ searchParams }: { searchParams: Promise<{ ok?: string; reporte?: string; mezcla?: string; desbloqueo?: string }> }) {
+  const { ok, reporte, mezcla, desbloqueo } = await searchParams;
+  const empresa = await empresaActual();
+  const secretas = new Set((empresa.recetasSecretas ?? "").split(",").map((s) => s.trim()).filter(Boolean));
+  const hayClave = Boolean(empresa.recetaClave);
+  const cookieStore = await cookies();
+  const desbloqueado = cookieStore.get("recetas_ok")?.value === "1";
+  // Tipos bloqueados = secretos y aún sin desbloquear.
+  const lineasBloqueadas = [...secretas].filter(() => !desbloqueado);
 
   const bodega = await prisma.ubicacion.findFirst({ where: { tipo: "bodega" } });
   if (!bodega) {
@@ -55,6 +65,8 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
     if (!ri.linea) continue;
     (basePorLinea[ri.linea] ??= []).push({ id: ri.id, nombre: ri.materiaPrima.nombre, unidad: ri.materiaPrima.unidad, cantidad: ri.cantidad });
   }
+  // Protege el secreto: no envía al cliente los insumos de tipos bloqueados.
+  for (const l of lineasBloqueadas) delete basePorLinea[l];
 
   return (
     <div className="space-y-5">
@@ -121,7 +133,30 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
       <section className="rounded-2xl border border-teal-200 bg-teal-50/40 p-4 shadow-sm">
         <h2 className="mb-1 text-sm font-extrabold text-teal-800">🧪 Control de calidad — receta</h2>
         <p className="mb-2 text-xs text-slate-500">Receta base por tipo + agregados pesados. Marca lo que echaste y se descuenta solo.</p>
-        <RecetaChecklist basePorLinea={basePorLinea} materiales={materiales} />
+
+        {/* Recetas protegidas: desbloqueo con clave */}
+        {hayClave && secretas.size > 0 && (
+          <div className="mb-3">
+            {desbloqueo === "0" && <p className="mb-2 rounded-lg bg-red-100 px-3 py-2 text-center text-xs font-bold text-red-700">Clave incorrecta</p>}
+            {desbloqueado ? (
+              <div className="flex items-center justify-between rounded-lg bg-green-50 px-3 py-2 text-xs">
+                <span className="font-semibold text-green-700">🔓 Recetas protegidas desbloqueadas</span>
+                <form action={bloquearRecetas}><button className="font-semibold text-slate-500">bloquear</button></form>
+              </div>
+            ) : (
+              <form action={desbloquearRecetas} className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2">
+                <span className="text-sm">🔒</span>
+                <input name="clave" type="password" inputMode="numeric" placeholder="Clave de recetas protegidas" className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                <button className="shrink-0 rounded-lg bg-amber-600 px-3 py-2 text-xs font-bold text-white">Desbloquear</button>
+              </form>
+            )}
+            <p className="mt-1 text-[11px] text-slate-400">
+              Protegidas: {[...secretas].map((l) => lineaLbl[l] ?? l).join(", ")}.
+            </p>
+          </div>
+        )}
+
+        <RecetaChecklist basePorLinea={basePorLinea} materiales={materiales} lineasBloqueadas={lineasBloqueadas} />
       </section>
 
       {/* 3 — Anota lo que hiciste (voz o escrito) */}

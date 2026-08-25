@@ -1,17 +1,20 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { empresaActual } from "@/lib/dominio/empresa";
 import { fmtCant, unidadLabel, categoriaIcono } from "@/lib/dominio/materias";
 import { LINEAS_PRODUCCION, lineaLabel } from "@/lib/dominio/produccion";
-import { agregarRecetaItem, quitarRecetaItem } from "../actions";
+import { agregarRecetaItem, quitarRecetaItem, guardarSeguridadRecetas } from "../actions";
 
 export const dynamic = "force-dynamic";
 
 export default async function RecetasPage({
   searchParams,
 }: {
-  searchParams: Promise<{ producto?: string; sabor?: string; linea?: string }>;
+  searchParams: Promise<{ producto?: string; sabor?: string; linea?: string; seg?: string }>;
 }) {
-  const { producto, sabor, linea } = await searchParams;
+  const { producto, sabor, linea, seg } = await searchParams;
+  const empresa = await empresaActual();
+  const secretas = new Set((empresa.recetasSecretas ?? "").split(",").map((s) => s.trim()).filter(Boolean));
 
   const [productos, sabores, materiales] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),
@@ -57,6 +60,31 @@ export default async function RecetasPage({
         La <b>receta base</b> va por <b>tipo</b> (común a todos los sabores). Lo demás (esencia, color, decorado…)
         se pesa aparte al producir. Cantidad = por <b>una unidad</b>.
       </p>
+
+      {seg && <p className="mt-3 rounded-xl bg-green-100 px-4 py-2 text-center text-sm font-bold text-green-700">✓ Seguridad de recetas guardada</p>}
+
+      {/* Seguridad: clave + tipos secretos (bajo llave) */}
+      <details className="mt-4 rounded-xl border border-amber-200 bg-amber-50/60 p-3">
+        <summary className="cursor-pointer text-sm font-bold text-amber-800">🔒 Secreto de recetas (clave y tipos protegidos)</summary>
+        <form action={guardarSeguridadRecetas} className="mt-3 space-y-3">
+          <label className="block text-xs font-bold text-slate-600">Clave de recetas
+            <input name="recetaClave" defaultValue={empresa.recetaClave ?? ""} placeholder="Ej: 4821" className="mt-1 w-40 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+          </label>
+          <div>
+            <p className="mb-1 text-xs font-bold text-slate-600">Tipos bajo llave (solo se ven con la clave)</p>
+            <div className="flex flex-wrap gap-2">
+              {LINEAS_PRODUCCION.map((l) => (
+                <label key={l} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-sm has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50">
+                  <input type="checkbox" name="secreta" value={l} defaultChecked={secretas.has(l)} className="h-4 w-4 accent-amber-500" />
+                  {lineaLabel[l]}
+                </label>
+              ))}
+            </div>
+          </div>
+          <button className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white active:brightness-110">Guardar seguridad</button>
+          <p className="text-[11px] text-slate-500">Los tipos marcados salen 🔒 en Producción; el operario necesita la clave para verlos.</p>
+        </form>
+      </details>
 
       {/* Elegir: receta base por tipo (recomendado), o producto/sabor puntual */}
       <form action="/admin/materias/recetas" className="mt-4 rounded-xl border-2 border-[#1479c4] bg-blue-50/40 p-3 shadow-sm">
