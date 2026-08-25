@@ -9,8 +9,15 @@ type BaseItem = { id: string; nombre: string; unidad: string; cantidad: number; 
 type Mat = { id: string; nombre: string; unidad: string; categoria: string };
 type Guia = { videoUrl: string | null; pasos: string | null };
 type Medida = { id: string; nombre: string; litros: number };
-type Agregado = { key: number; materiaPrimaId: string; nombre: string; unidad: string; cantidad: string };
+type Rol = "esencia" | "color" | "otro";
+type Agregado = { key: number; rol: Rol; materiaPrimaId: string; nombre: string; unidad: string; cantidad: string };
 type SaborLote = { key: number; nombre: string; porcion: string; medidaId: string; agregados: Agregado[] };
+
+const ROL_INFO: Record<Rol, { label: string; icono: string; color: string; ph: string }> = {
+  esencia: { label: "Esencia / saborizante", icono: "🧴", color: "#b45309", ph: "ej: 1,5" },
+  color: { label: "Colorante", icono: "🎨", color: "#be185d", ph: "ej: 3" },
+  otro: { label: "Otro insumo", icono: "🧂", color: "#475569", ph: "grs" },
+};
 
 /**
  * Control de calidad: tipo + base (litros/kg/medida). La receta base se descuenta
@@ -67,7 +74,7 @@ export default function RecetaChecklist({
   const addSabor = () => setSabores((s) => [...s, { key: Date.now() + s.length, nombre: "", porcion: "", medidaId: "l", agregados: [] }]);
   const setSabor = (key: number, patch: Partial<SaborLote>) => setSabores((s) => s.map((x) => (x.key === key ? { ...x, ...patch } : x)));
   const delSabor = (key: number) => setSabores((s) => s.filter((x) => x.key !== key));
-  const addAg = (sk: number) => setSabor(sk, { agregados: [...(sabores.find((s) => s.key === sk)?.agregados ?? []), { key: Date.now(), materiaPrimaId: "", nombre: "", unidad: "g", cantidad: "" }] });
+  const addAg = (sk: number, rol: Rol) => setSabor(sk, { agregados: [...(sabores.find((s) => s.key === sk)?.agregados ?? []), { key: Date.now(), rol, materiaPrimaId: "", nombre: "", unidad: "g", cantidad: "" }] });
   const setAg = (sk: number, ak: number, patch: Partial<Agregado>) => {
     const s = sabores.find((x) => x.key === sk); if (!s) return;
     setSabor(sk, { agregados: s.agregados.map((a) => (a.key === ak ? { ...a, ...patch } : a)) });
@@ -88,7 +95,7 @@ export default function RecetaChecklist({
       porcion: litrosDe(s),
       agregados: s.agregados
         .filter((a) => ((a.materiaPrimaId && a.materiaPrimaId !== "__nuevo__") || a.nombre.trim()) && Number(a.cantidad.replace(",", ".")) > 0)
-        .map((a) => ({ materiaPrimaId: esNuevo(a) ? undefined : a.materiaPrimaId, nombre: esNuevo(a) ? a.nombre.trim() || undefined : undefined, unidad: a.unidad, cantidad: Number(a.cantidad.replace(",", ".")) })),
+        .map((a) => ({ rol: a.rol, materiaPrimaId: esNuevo(a) ? undefined : a.materiaPrimaId, nombre: esNuevo(a) ? a.nombre.trim() || undefined : undefined, unidad: a.unidad, cantidad: Number(a.cantidad.replace(",", ".")) })),
     })),
   );
 
@@ -192,7 +199,7 @@ export default function RecetaChecklist({
               <button type="button" onClick={addSabor} className="rounded-lg bg-amber-500 px-3 py-1 text-xs font-bold text-white">+ Sabor</button>
             </div>
             {sabores.length === 0 ? (
-              <p className="text-[11px] text-slate-500">Reparte el lote en sabores. Ej: “1 balde vainilla”, “20 L frutilla” → a cada uno le pones sus gramos de esencia y color.</p>
+              <p className="text-[11px] text-slate-500">Reparte el lote en sabores. Ej: “1 balde vainilla”, “20 L frutilla”. A cada sabor le agregas su <b>esencia</b>, su <b>color</b> y otros insumos con sus gramos (ej: 1,5 g sabor · 3 g color).</p>
             ) : (
               <div className="space-y-2">
                 {sabores.map((s) => (
@@ -206,30 +213,38 @@ export default function RecetaChecklist({
                       </select>
                       <button type="button" onClick={() => delSabor(s.key)} className="shrink-0 text-xs font-semibold text-red-500">✕</button>
                     </div>
-                    {/* Agregados de este sabor */}
-                    <div className="mt-1.5 space-y-1 pl-1">
-                      {s.agregados.map((a) => (
-                        <div key={a.key} className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <select value={a.materiaPrimaId} onChange={(e) => setAg(s.key, a.key, { materiaPrimaId: e.target.value })} className="min-w-0 flex-1 rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
-                              <option value="">— esencia/color/insumo —</option>
-                              {materiales.map((m) => <option key={m.id} value={m.id}>{categoriaIcono[m.categoria]} {m.nombre}</option>)}
-                              <option value="__nuevo__">➕ nuevo</option>
-                            </select>
-                            <input value={a.cantidad} onChange={(e) => setAg(s.key, a.key, { cantidad: e.target.value })} inputMode="decimal" placeholder="grs" className="w-16 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
-                            <button type="button" onClick={() => delAg(s.key, a.key)} className="shrink-0 text-xs font-semibold text-red-500">✕</button>
-                          </div>
-                          {a.materiaPrimaId === "__nuevo__" && (
-                            <div className="flex items-center gap-2 pl-1">
-                              <input value={a.nombre} onChange={(e) => setAg(s.key, a.key, { nombre: e.target.value })} placeholder="Nombre nuevo" className="min-w-0 flex-1 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-sm" />
-                              <select value={a.unidad} onChange={(e) => setAg(s.key, a.key, { unidad: e.target.value })} className="w-16 rounded-lg border border-slate-300 px-1 py-1.5 text-xs">
+                    {/* Agregados de este sabor: esencia, color, otros insumos */}
+                    <div className="mt-1.5 space-y-1.5 pl-1">
+                      {s.agregados.map((a) => {
+                        const info = ROL_INFO[a.rol];
+                        return (
+                          <div key={a.key} className="rounded-lg border border-slate-200 bg-slate-50/70 p-1.5">
+                            <div className="mb-1 flex items-center justify-between">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold" style={{ color: info.color }}>{info.icono} {info.label}</span>
+                              <button type="button" onClick={() => delAg(s.key, a.key)} className="text-xs font-semibold text-red-500">✕ quitar</button>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <select value={a.materiaPrimaId} onChange={(e) => setAg(s.key, a.key, { materiaPrimaId: e.target.value })} className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm">
+                                <option value="">— elige {info.label.toLowerCase()} —</option>
+                                {materiales.map((m) => <option key={m.id} value={m.id}>{categoriaIcono[m.categoria]} {m.nombre}</option>)}
+                                <option value="__nuevo__">➕ crear nuevo</option>
+                              </select>
+                              <input value={a.cantidad} onChange={(e) => setAg(s.key, a.key, { cantidad: e.target.value })} inputMode="decimal" placeholder={info.ph} className="w-16 rounded-lg border border-slate-300 px-2 py-1.5 text-center text-sm" />
+                              <select value={a.unidad} onChange={(e) => setAg(s.key, a.key, { unidad: e.target.value })} className="w-14 rounded-lg border border-slate-300 bg-white px-1 py-1.5 text-xs">
                                 <option value="g">g</option><option value="kg">kg</option><option value="ml">ml</option><option value="l">L</option><option value="unidad">u.</option>
                               </select>
                             </div>
-                          )}
-                        </div>
-                      ))}
-                      <button type="button" onClick={() => addAg(s.key)} className="rounded bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600">+ esencia/color</button>
+                            {a.materiaPrimaId === "__nuevo__" && (
+                              <input value={a.nombre} onChange={(e) => setAg(s.key, a.key, { nombre: e.target.value })} placeholder={`Nombre del ${info.label.toLowerCase()} nuevo`} className="mt-1 w-full rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-sm" />
+                            )}
+                          </div>
+                        );
+                      })}
+                      <div className="flex flex-wrap gap-1.5">
+                        <button type="button" onClick={() => addAg(s.key, "esencia")} className="rounded bg-amber-100 px-2 py-1 text-[11px] font-bold text-amber-700">🧴 + Esencia</button>
+                        <button type="button" onClick={() => addAg(s.key, "color")} className="rounded bg-pink-100 px-2 py-1 text-[11px] font-bold text-pink-700">🎨 + Color</button>
+                        <button type="button" onClick={() => addAg(s.key, "otro")} className="rounded bg-slate-100 px-2 py-1 text-[11px] font-bold text-slate-600">🧂 + Otro insumo</button>
+                      </div>
                     </div>
                   </div>
                 ))}
