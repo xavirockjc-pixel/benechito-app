@@ -315,6 +315,57 @@ model CanalVenta {
   createdAt DateTime @default(now())
 }
 
+/// Trabajador del equipo (operario, vendedor, repartidor…). No es un login: es la
+/// ficha para asistencia, estadísticas y su cuenta (pagos/adelantos/deudas).
+model Trabajador {
+  id         String   @id @default(cuid())
+  nombre     String
+  cargo      String   @default("operario") // operario|vendedor|repartidor|otro
+  activo     Boolean  @default(true)
+  usuarioId  String? // si tiene login (para cruzar ventas por vendedorId)
+  valorHora  Decimal? @db.Decimal(12, 2) // referencia interna (no es liquidación)
+  notas      String?
+  createdAt  DateTime @default(now())
+
+  asistencias  Asistencia[]
+  movimientos  MovimientoTrabajador[]
+
+  @@index([cargo])
+}
+
+/// Asistencia del día: horas trabajadas y horas extra.
+model Asistencia {
+  id           String     @id @default(cuid())
+  trabajador   Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
+  trabajadorId String
+  fecha        DateTime   @default(now())
+  presente     Boolean    @default(true)
+  horas        Float      @default(0)
+  horasExtra   Float      @default(0)
+  notas        String?
+
+  @@index([trabajadorId])
+  @@index([fecha])
+}
+
+/// Movimiento de la cuenta del trabajador: pago, adelanto, deuda (queda debiendo),
+/// hora extra, bono o descuento. El saldo se deriva de la suma.
+model MovimientoTrabajador {
+  id           String     @id @default(cuid())
+  trabajador   Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
+  trabajadorId String
+  fecha        DateTime   @default(now())
+  tipo         String // pago|adelanto|deuda|hora_extra|bono|descuento
+  monto        Decimal    @default(0) @db.Decimal(12, 2)
+  horas        Float      @default(0) // para hora_extra
+  notas        String?
+  usuarioId     String?
+  nombreUsuario String?
+
+  @@index([trabajadorId])
+  @@index([fecha])
+}
+
 /// Gasto del vehículo: combustible y otros (mantención, repuestos, neumáticos, peaje…).
 /// Registrado por el repartidor desde su celular; se refleja en finanzas/reparto.
 model GastoVehiculo {

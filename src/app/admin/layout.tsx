@@ -70,7 +70,8 @@ function construirModulos(L: Etiquetas): Modulo[] {
       titulo: "Sistema",
       activo: true,
       items: [
-        { href: "/admin/usuarios", label: "Usuarios", icon: "👥" },
+        { href: "/admin/equipo", label: "Equipo", icon: "👥" },
+        { href: "/admin/usuarios", label: "Usuarios", icon: "🔑" },
       ],
     },
   ];
