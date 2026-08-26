@@ -88,6 +88,8 @@ export default async function AdminLayout({
   const rubro = await rubroActivo();
   const modulos = construirModulos(rubro.labels);
   const ocultos = new Set(rubro.ocultar);
+  const tema = rubro.tema;
+  const gradMarca = `linear-gradient(135deg, ${tema.degradado[0]}, ${tema.degradado[1]})`;
 
   // Filtra el menú según el rol y el rubro.
   const modulosVisibles = modulos
@@ -105,17 +107,17 @@ export default async function AdminLayout({
       {/* Sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col justify-between bg-slate-900 p-5 text-slate-300 md:flex">
         <div>
-          {/* Marca del sistema */}
+          {/* Marca del sistema (con tema del rubro) */}
           <div className="mb-8 flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-naranja to-dorado text-lg font-extrabold text-white shadow">
-              B
+            <span className="grid h-11 w-11 place-items-center rounded-2xl text-xl shadow" style={{ background: gradMarca }}>
+              {rubro.emoji}
             </span>
             <div>
               <p className="font-display text-base font-extrabold leading-tight text-white">
                 Benechito
               </p>
               <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Administración
+                {rubro.nombre}
               </p>
             </div>
           </div>
@@ -138,9 +140,9 @@ export default async function AdminLayout({
                       <Link
                         key={n.label}
                         href={n.href}
-                        className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-800 hover:text-white"
+                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-semibold text-slate-300 transition hover:translate-x-0.5 hover:bg-slate-800 hover:text-white"
                       >
-                        <span>{n.icon}</span> {n.label}
+                        <span className="text-lg">{n.icon}</span> {n.label}
                       </Link>
                     ) : (
                       <span
@@ -192,7 +194,8 @@ export default async function AdminLayout({
             <Link
               key={n.label}
               href={n.href}
-              className="whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold text-slate-700"
+              className="whitespace-nowrap rounded-xl px-4 py-2 text-sm font-bold text-slate-700"
+              style={{ backgroundColor: `${tema.primario}12` }}
             >
               {n.icon} {n.label}
             </Link>

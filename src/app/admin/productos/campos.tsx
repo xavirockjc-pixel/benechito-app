@@ -35,6 +35,16 @@ export async function CamposProducto({ p }: { p?: Producto }) {
         </select>
       </label>
 
+      <label className="text-sm font-bold text-navy sm:col-span-2">
+        Sección del catálogo *
+        <select name="seccion" required defaultValue={p?.seccion ?? "propio"} className={inputCls}>
+          <option value="propio">🏭 Fabricación (propios)</option>
+          <option value="distribucion">🏪 Distribución (local)</option>
+          <option value="ruta">🚚 Ruta / reventa</option>
+          <option value="promo">🎁 Promos y combos</option>
+        </select>
+      </label>
+
       <label className="text-sm font-bold text-navy">
         Línea *
         <select name="linea" required defaultValue={p?.linea ?? ""} className={inputCls}>

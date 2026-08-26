@@ -18,11 +18,19 @@ export type Etiquetas = {
   materias: string;     // materias primas
 };
 
+/** Tema visual del rubro: colores e ícono característico (minimalista). */
+export type TemaRubro = {
+  primario: string;   // color principal de acciones/marca
+  acento: string;     // color secundario/energía
+  degradado: [string, string]; // gradiente de la marca (sidebar/sellos)
+};
+
 export type Rubro = {
   id: RubroId;
   nombre: string;
   emoji: string;
   labels: Etiquetas;
+  tema: TemaRubro;
   /** Rutas de módulos a ocultar del menú para este rubro. */
   ocultar: string[];
 };
@@ -47,6 +55,7 @@ export const RUBROS: Record<RubroId, Rubro> = {
     id: "fabrica",
     nombre: "Fábrica / Producción",
     emoji: "🏭",
+    tema: { primario: "#1479c4", acento: "#f28a1e", degradado: ["#f28a1e", "#d8a944"] },
     labels: { ...BASE },
     ocultar: [],
   },
@@ -54,6 +63,7 @@ export const RUBROS: Record<RubroId, Rubro> = {
     id: "panaderia",
     nombre: "Panadería",
     emoji: "🥖",
+    tema: { primario: "#b45309", acento: "#d97706", degradado: ["#d97706", "#f59e0b"] },
     labels: {
       ...BASE,
       produccion: "Horno",
@@ -72,6 +82,7 @@ export const RUBROS: Record<RubroId, Rubro> = {
     id: "comida_rapida",
     nombre: "Comida rápida",
     emoji: "🍔",
+    tema: { primario: "#dc2626", acento: "#f59e0b", degradado: ["#dc2626", "#f59e0b"] },
     labels: {
       ...BASE,
       produccion: "Cocina",
@@ -90,6 +101,7 @@ export const RUBROS: Record<RubroId, Rubro> = {
     id: "restaurante",
     nombre: "Restaurante",
     emoji: "🍽️",
+    tema: { primario: "#0f766e", acento: "#ca8a04", degradado: ["#0f766e", "#0d9488"] },
     labels: {
       ...BASE,
       produccion: "Cocina",
