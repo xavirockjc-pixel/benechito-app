@@ -15,6 +15,16 @@ export const cargoIcono: Record<string, string> = {
   otro: "👤",
 };
 
+/** Roles de login que corresponden a cada cargo (para enlazar según rubro). */
+export function rolesDeCargo(cargo: string): string[] {
+  switch (cargo) {
+    case "operario": return ["produccion"];
+    case "vendedor": return ["vendedor"];
+    case "repartidor": return ["chofer", "vendedor"];
+    default: return ["produccion", "vendedor", "chofer", "caja", "bodega", "propietario", "admin"];
+  }
+}
+
 // Movimientos de la cuenta del trabajador.
 export const TIPOS_MOV_TRABAJADOR = ["pago", "adelanto", "deuda", "hora_extra", "bono", "descuento"] as const;
 export type TipoMovTrabajador = (typeof TIPOS_MOV_TRABAJADOR)[number];

@@ -3,9 +3,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import {
-  cargoLabel, cargoIcono, tipoMovTrabajadorLabel, tipoMovTrabajadorIcono, signoMovTrabajador,
+  cargoLabel, cargoIcono, tipoMovTrabajadorLabel, tipoMovTrabajadorIcono, signoMovTrabajador, rolesDeCargo,
 } from "@/lib/dominio/equipo";
-import { registrarAsistencia, movimientoTrabajador, eliminarMovTrabajador, toggleTrabajador } from "../actions";
+import { registrarAsistencia, movimientoTrabajador, eliminarMovTrabajador, toggleTrabajador, enlazarTrabajadorUsuario } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +31,13 @@ export default async function FichaTrabajador({ params }: { params: Promise<{ id
   if (!t) notFound();
 
   const { hoy, semana, mes } = rangos();
+
+  // Usuarios de login para enlazar (recomendados = los del rol que calza con el cargo).
+  const usuarios = await prisma.usuario.findMany({ select: { id: true, nombre: true, email: true, rol: true }, orderBy: { nombre: "asc" } });
+  const rolesOk = new Set(rolesDeCargo(t.cargo));
+  const recomendados = usuarios.filter((us) => rolesOk.has(us.rol));
+  const otros = usuarios.filter((us) => !rolesOk.has(us.rol));
+  const linkActual = usuarios.find((us) => us.id === t.usuarioId) ?? null;
 
   // Estadísticas de producción/ventas por período.
   let statLabel = "Actividad";
@@ -73,6 +80,28 @@ export default async function FichaTrabajador({ params }: { params: Promise<{ id
       </div>
       <p className="text-sm text-slate-500">{cargoLabel[t.cargo] ?? t.cargo}</p>
 
+      {/* Enlace con el login (para cruzar ventas/actividad) */}
+      <form action={enlazarTrabajadorUsuario} className="mt-3 flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+        <input type="hidden" name="trabajadorId" value={t.id} />
+        <label className="text-xs font-bold text-slate-600">🔑 Login enlazado
+          <select name="usuarioId" defaultValue={t.usuarioId ?? ""} className="mt-1 block w-64 rounded-lg border border-slate-300 px-2 py-2 text-sm">
+            <option value="">— sin enlazar —</option>
+            {recomendados.length > 0 && (
+              <optgroup label={`Recomendados (${cargoLabel[t.cargo] ?? t.cargo})`}>
+                {recomendados.map((us) => <option key={us.id} value={us.id}>{us.nombre} · {us.rol}</option>)}
+              </optgroup>
+            )}
+            {otros.length > 0 && (
+              <optgroup label="Otros usuarios">
+                {otros.map((us) => <option key={us.id} value={us.id}>{us.nombre} · {us.rol}</option>)}
+              </optgroup>
+            )}
+          </select>
+        </label>
+        <button className="rounded-lg bg-slate-900 px-3 py-2 text-sm font-bold text-white active:scale-95">Guardar</button>
+        {linkActual && <span className="text-xs text-slate-400">Enlazado a {linkActual.email}</span>}
+      </form>
+
       {/* Estadísticas por período */}
       <div className="mt-4">
         <p className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">{statLabel}</p>
@@ -81,7 +110,7 @@ export default async function FichaTrabajador({ params }: { params: Promise<{ id
           <Kpi label="Semana" valor={fmtStat(prod.semana)} />
           <Kpi label="Mes" valor={fmtStat(prod.mes)} />
         </div>
-        {t.cargo === "vendedor" && !t.usuarioId && <p className="mt-1 text-[11px] text-amber-600">Para ver sus ventas, enlaza este trabajador a su login de vendedor.</p>}
+        {t.cargo === "vendedor" && !t.usuarioId && <p className="mt-1 text-[11px] text-amber-600">Enlaza arriba el login del vendedor para ver sus ventas.</p>}
       </div>
 
       {/* Cuenta */}

@@ -66,6 +66,16 @@ export async function eliminarMovTrabajador(formData: FormData) {
   if (trabajadorId) revalidatePath(`/admin/equipo/${trabajadorId}`);
 }
 
+/** Enlaza (o desenlaza) el trabajador con su usuario de login. */
+export async function enlazarTrabajadorUsuario(formData: FormData) {
+  const trabajadorId = String(formData.get("trabajadorId") ?? "").trim();
+  const usuarioId = String(formData.get("usuarioId") ?? "").trim() || null;
+  if (!trabajadorId) return;
+  await prisma.trabajador.update({ where: { id: trabajadorId }, data: { usuarioId } });
+  revalidatePath(`/admin/equipo/${trabajadorId}`);
+  revalidatePath("/admin/equipo");
+}
+
 /** Activa/desactiva un trabajador. */
 export async function toggleTrabajador(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
