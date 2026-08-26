@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
-import { canalVentaLabel } from "@/lib/dominio/ventas";
+import { getCanalMaps } from "@/lib/dominio/canales";
 import PanelMontos from "./PanelMontos";
 
 export const dynamic = "force-dynamic";
@@ -28,13 +28,16 @@ export default async function Panel() {
   const totalHoy = Number(ventasHoy._sum.total ?? 0);
   const totalMes = Number(ventasMes._sum.total ?? 0);
   const porCobrar = Math.max(0, Number(sumaVentas._sum.total ?? 0) - Number(sumaPagos._sum.monto ?? 0));
+  const { label: canalLabel } = await getCanalMaps();
 
   // Montos (ocultos con el ojito): comercial + por canal.
   const montos = [
     { label: "Ventas de hoy", valor: fmtCLP(totalHoy), href: "/admin/ventas", accent: "text-slate-900" },
     { label: "Ventas del mes", valor: fmtCLP(totalMes), href: "/admin/ventas", accent: "text-slate-900" },
     { label: "Por cobrar", valor: fmtCLP(porCobrar), href: "/admin/ventas", accent: "text-amber-600" },
-    ...canalMes.map((c) => ({ label: canalVentaLabel[c.canal] ?? c.canal, valor: fmtCLP(Number(c._sum.total ?? 0)), href: `/admin/ventas?canal=${c.canal}`, accent: "text-slate-900" })),
+    ...canalMes
+      .filter((c) => Number(c._sum.total ?? 0) > 0)
+      .map((c) => ({ label: canalLabel[c.canal] ?? c.canal, valor: fmtCLP(Number(c._sum.total ?? 0)), href: `/admin/ventas?canal=${c.canal}`, accent: "text-slate-900" })),
   ];
 
   // Ranking de más vendidos (mes), separado dulce/helado.

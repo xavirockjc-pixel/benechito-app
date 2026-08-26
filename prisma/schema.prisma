@@ -302,6 +302,19 @@ model PedidoItem {
   @@index([pedidoId])
 }
 
+/// Canal de venta administrable (Local, Web, Delivery, Ruta, Distribuidor, Supermercado…).
+/// El usuario puede agregar los suyos. Venta.canal guarda el `codigo`.
+model CanalVenta {
+  id     String  @id @default(cuid())
+  codigo String  @unique
+  nombre String
+  color  String  @default("#334155")
+  activo Boolean @default(true)
+  orden  Int     @default(0)
+
+  createdAt DateTime @default(now())
+}
+
 /// Venta = hecho económico. Genera documento y descuenta stock. estadoPago ≠ estado del pedido.
 model Venta {
   id          String    @id @default(cuid())

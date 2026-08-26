@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { estadoPagoDe, MEDIOS_PAGO } from "@/lib/dominio/ventas";
+import { canalPorTipoCliente } from "@/lib/dominio/canales";
 
 /** Recalcula y guarda el estado de pago de una venta según sus abonos. */
 async function recalcularEstadoPago(ventaId: string) {
@@ -27,12 +28,20 @@ export async function generarVenta(formData: FormData) {
 
   const pedido = await prisma.pedido.findUnique({
     where: { id: pedidoId },
-    include: { items: true, venta: true },
+    include: { items: true, venta: true, negocio: { select: { tipoCliente: true } } },
   });
   if (!pedido || pedido.items.length === 0) return;
   if (pedido.venta) redirect(`/admin/ventas/${pedido.venta.id}`);
 
   const total = pedido.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0);
+
+  // Canal automático (editable después en la venta): por tipo de cliente, luego por
+  // entrega/destino (delivery/reparto), luego "directa de fábrica" por defecto.
+  const pd = pedido as unknown as { tipoEntrega?: string | null; destino?: string | null };
+  const canal =
+    canalPorTipoCliente(pedido.negocio?.tipoCliente) ??
+    (pd.tipoEntrega === "delivery" || pd.destino === "reparto" ? "delivery" : null) ??
+    "directa_fabrica";
 
   // Ubicación por defecto: primera "sala", si no la primera que exista.
   const ubicacion =
@@ -46,6 +55,7 @@ export async function generarVenta(formData: FormData) {
       negocioId: pedido.negocioId,
       ubicacionId: ubicacion.id,
       total,
+      canal,
       estadoPago: "pendiente",
     },
   });
@@ -81,6 +91,17 @@ export async function eliminarPago(formData: FormData) {
 
   revalidatePath(`/admin/ventas/${ventaId}`);
   revalidatePath("/admin/ventas");
+}
+
+/** Cambia el canal de una venta (corrección manual del canal automático). */
+export async function cambiarCanalVenta(formData: FormData) {
+  const ventaId = String(formData.get("ventaId") ?? "").trim();
+  const canal = String(formData.get("canal") ?? "").trim();
+  if (!ventaId || !canal) return;
+  await prisma.venta.update({ where: { id: ventaId }, data: { canal } });
+  revalidatePath(`/admin/ventas/${ventaId}`);
+  revalidatePath("/admin/ventas");
+  revalidatePath("/admin");
 }
 
 /** Asigna el tipo de documento tributario a la venta (boleta/factura/ninguno). */

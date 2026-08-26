@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
-import { estadoPagoLabel, estadoPagoColor, CANALES_VENTA, canalVentaLabel, canalVentaColor, etiquetaVentaLabel } from "@/lib/dominio/ventas";
+import { estadoPagoLabel, estadoPagoColor, etiquetaVentaLabel } from "@/lib/dominio/ventas";
+import { getCanales } from "@/lib/dominio/canales";
 import EliminarVentaBtn from "./EliminarVentaBtn";
 
 export const dynamic = "force-dynamic";
@@ -11,7 +12,11 @@ const fmtFecha = (d: Date) =>
 
 export default async function VentasPage({ searchParams }: { searchParams: Promise<{ canal?: string }> }) {
   const { canal } = await searchParams;
-  const canalSel = (CANALES_VENTA as readonly string[]).includes(canal ?? "") ? canal! : "";
+  const canales = await getCanales();
+  const canalLabel: Record<string, string> = {};
+  const canalColor: Record<string, string> = {};
+  for (const c of canales) { canalLabel[c.codigo] = c.nombre; canalColor[c.codigo] = c.color; }
+  const canalSel = canales.some((c) => c.codigo === canal) ? canal! : "";
 
   const ventas = await prisma.venta.findMany({
     where: canalSel ? { canal: canalSel } : {},
@@ -26,6 +31,8 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
   const todas = await prisma.venta.findMany({ select: { canal: true, total: true, pagos: { select: { monto: true } } } });
   const porCanal = (c: string) => todas.filter((v) => v.canal === c);
   const sumTotal = (arr: typeof todas) => arr.reduce((s, v) => s + Number(v.total), 0);
+  // Muestra solo canales con ventas (para no llenar de tarjetas vacías).
+  const canalesConVenta = canales.filter((c) => porCanal(c.codigo).length > 0);
 
   const totalVendido = sumTotal(ventas);
   const totalPorCobrar = ventas.reduce((s, v) => {
@@ -35,7 +42,10 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold text-slate-900">Ventas</h1>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-2xl font-extrabold text-slate-900">Ventas</h1>
+        <Link href="/admin/ventas/canales" className="rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 active:scale-95 hover:border-slate-400">⚙️ Canales</Link>
+      </div>
       <p className="text-sm text-slate-500">
         Historial por canal. El pago se registra aparte; el estado de pago se calcula solo.
       </p>
@@ -46,14 +56,13 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
           <p className="text-xs uppercase tracking-wide text-slate-500">Todo</p>
           <p className="text-lg font-extrabold text-slate-900">{fmtCLP(sumTotal(todas))}</p>
         </Link>
-        {CANALES_VENTA.map((c) => {
-          const col = canalVentaColor[c];
-          const activo = canalSel === c;
+        {canalesConVenta.map((c) => {
+          const activo = canalSel === c.codigo;
           return (
-            <Link key={c} href={`/admin/ventas?canal=${c}`} className="rounded-xl border-2 bg-white px-4 py-3" style={{ borderColor: activo ? col.color : "var(--tw-border, #e2e8f0)" }}>
-              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: col.color }}>{canalVentaLabel[c]}</p>
-              <p className="text-lg font-extrabold text-slate-900">{fmtCLP(sumTotal(porCanal(c)))}</p>
-              <p className="text-[11px] text-slate-400">{porCanal(c).length} venta(s)</p>
+            <Link key={c.codigo} href={`/admin/ventas?canal=${c.codigo}`} className="rounded-xl border-2 bg-white px-4 py-3" style={{ borderColor: activo ? c.color : "#e2e8f0" }}>
+              <p className="text-xs font-bold uppercase tracking-wide" style={{ color: c.color }}>{c.nombre}</p>
+              <p className="text-lg font-extrabold text-slate-900">{fmtCLP(sumTotal(porCanal(c.codigo)))}</p>
+              <p className="text-[11px] text-slate-400">{porCanal(c.codigo).length} venta(s)</p>
             </Link>
           );
         })}
@@ -61,7 +70,7 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
 
       <div className="mt-3 flex flex-wrap gap-3">
         <div className="rounded-xl border border-slate-200 bg-white px-5 py-3">
-          <p className="text-xs uppercase tracking-wide text-slate-500">{canalSel ? canalVentaLabel[canalSel] : "Vendido (todo)"}</p>
+          <p className="text-xs uppercase tracking-wide text-slate-500">{canalSel ? canalLabel[canalSel] : "Vendido (todo)"}</p>
           <p className="text-lg font-extrabold text-slate-900">{fmtCLP(totalVendido)}</p>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white px-5 py-3">
@@ -103,8 +112,8 @@ export default async function VentasPage({ searchParams }: { searchParams: Promi
                       {v.etiqueta && <span className="ml-2 text-xs font-semibold text-slate-400">{etiquetaVentaLabel[v.etiqueta] ?? v.etiqueta}</span>}
                     </td>
                     <td className="px-4 py-3">
-                      <span className="rounded-md px-2 py-1 text-xs font-bold" style={{ color: canalVentaColor[v.canal]?.color, backgroundColor: canalVentaColor[v.canal]?.bg }}>
-                        {canalVentaLabel[v.canal] ?? v.canal}
+                      <span className="rounded-md px-2 py-1 text-xs font-bold" style={{ color: canalColor[v.canal] ?? "#334155", backgroundColor: `${canalColor[v.canal] ?? "#334155"}18` }}>
+                        {canalLabel[v.canal] ?? v.canal}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right text-slate-700">{fmtCLP(Number(v.total))}</td>
