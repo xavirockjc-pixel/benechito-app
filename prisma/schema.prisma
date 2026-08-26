@@ -754,6 +754,11 @@ model RecetaBase {
   linea      String   @unique // tipo
   baseRef    Float    @default(1) // ej: 120 (litros de referencia)
   baseUnidad String   @default("l") // l | kg
+  // Modo de agregados: "simple" (esencia/color por grs/litro, sin gramos manuales)
+  // o "detallado" (el operario pesa cada agregado; para postres/salsas/especias).
+  modoAgregados String @default("simple")
+  esenciaGrsL   Float  @default(0) // grs de esencia por litro (modo simple)
+  colorGrsL     Float  @default(0) // grs de color por litro (modo simple)
   updatedAt  DateTime @updatedAt
   createdAt  DateTime @default(now())
 }

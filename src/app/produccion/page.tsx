@@ -54,7 +54,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
     prisma.materiaPrima.findMany({ where: { activo: true }, orderBy: [{ categoria: "asc" }, { nombre: "asc" }], select: { id: true, nombre: true, unidad: true, categoria: true, subtipo: true } }),
     prisma.recetaGuia.findMany({ where: { linea: { not: null } }, select: { linea: true, videoUrl: true, pasos: true } }),
     prisma.medida.findMany({ where: { activo: true }, orderBy: { litros: "asc" }, select: { id: true, nombre: true, litros: true } }),
-    prisma.recetaBase.findMany({ select: { linea: true, baseRef: true, baseUnidad: true } }),
+    prisma.recetaBase.findMany({ select: { linea: true, baseRef: true, baseUnidad: true, modoAgregados: true, esenciaGrsL: true, colorGrsL: true } }),
   ]);
 
   const totalHoy = registroHoy.reduce((s, m) => s + m.cantidad, 0);
@@ -69,9 +69,13 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   const guiaPorLinea: Record<string, { videoUrl: string | null; pasos: string | null }> = {};
   for (const g of guias) if (g.linea) guiaPorLinea[g.linea] = { videoUrl: g.videoUrl, pasos: g.pasos };
 
-  // Lote de referencia por tipo (para escalar).
+  // Lote de referencia por tipo (para escalar) + modo de agregados y tasas grs/L.
   const baseRefPorLinea: Record<string, { baseRef: number; baseUnidad: string }> = {};
-  for (const b of recetaBases) baseRefPorLinea[b.linea] = { baseRef: b.baseRef, baseUnidad: b.baseUnidad };
+  const modoPorLinea: Record<string, { modo: string; esenciaGrsL: number; colorGrsL: number }> = {};
+  for (const b of recetaBases) {
+    baseRefPorLinea[b.linea] = { baseRef: b.baseRef, baseUnidad: b.baseUnidad };
+    modoPorLinea[b.linea] = { modo: b.modoAgregados, esenciaGrsL: b.esenciaGrsL, colorGrsL: b.colorGrsL };
+  }
 
   // Protege el secreto: no envía al cliente los insumos ni la guía de tipos bloqueados.
   for (const l of lineasBloqueadas) { delete basePorLinea[l]; delete guiaPorLinea[l]; }
@@ -152,6 +156,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
         <RecetaChecklist
           basePorLinea={basePorLinea} materiales={materiales} guiaPorLinea={guiaPorLinea}
           baseRefPorLinea={baseRefPorLinea} medidas={medidas} lineasBloqueadas={lineasBloqueadas}
+          modoPorLinea={modoPorLinea}
           onDesbloquear={desbloquearRecetas} claveIncorrecta={desbloqueo === "0"}
         />
       </section>

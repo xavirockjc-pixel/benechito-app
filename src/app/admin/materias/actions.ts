@@ -251,6 +251,23 @@ export async function guardarBaseRef(formData: FormData) {
   redirect(`/admin/materias/recetas?linea=${linea}`);
 }
 
+/** Configura el modo de agregados de un tipo: simple (grs/L automáticos) o detallado. */
+export async function guardarModoAgregados(formData: FormData) {
+  const linea = String(formData.get("linea") ?? "").trim();
+  const modo = String(formData.get("modoAgregados") ?? "simple").trim() === "detallado" ? "detallado" : "simple";
+  const esenciaGrsL = Math.max(0, Number(String(formData.get("esenciaGrsL") ?? "0").replace(",", ".")) || 0);
+  const colorGrsL = Math.max(0, Number(String(formData.get("colorGrsL") ?? "0").replace(",", ".")) || 0);
+  if (!linea) return;
+  await prisma.recetaBase.upsert({
+    where: { linea },
+    update: { modoAgregados: modo, esenciaGrsL, colorGrsL },
+    create: { linea, modoAgregados: modo, esenciaGrsL, colorGrsL },
+  });
+  revalidatePath("/admin/materias/recetas");
+  revalidatePath("/produccion");
+  redirect(`/admin/materias/recetas?linea=${linea}`);
+}
+
 /** Quita un insumo de una receta. */
 export async function quitarRecetaItem(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();

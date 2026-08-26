@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCant, unidadLabel, categoriaIcono } from "@/lib/dominio/materias";
 import { LINEAS_PRODUCCION, lineaLabel } from "@/lib/dominio/produccion";
-import { agregarRecetaItem, quitarRecetaItem, guardarClaveTipo, guardarGuiaReceta, guardarBaseRef, crearMedida, eliminarMedida, precargarMedidas, precargarRecetaEjemplo } from "../actions";
+import { agregarRecetaItem, quitarRecetaItem, guardarClaveTipo, guardarGuiaReceta, guardarBaseRef, guardarModoAgregados, crearMedida, eliminarMedida, precargarMedidas, precargarRecetaEjemplo } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -156,6 +156,31 @@ export default async function RecetasPage({
               </select>
               <button className="rounded-lg bg-teal-700 px-3 py-1.5 text-xs font-bold text-white">Guardar lote</button>
               <p className="w-full text-[11px] text-slate-500">Carga las cantidades <b>para ese lote</b> (ej: azúcar 19 kg para 120 L). Al producir, el sistema escala según los litros/kg que hagas.</p>
+            </form>
+          )}
+
+          {/* Modo de agregados: esencia/color automáticos (simple) o detallado (postres) */}
+          {target.clase === "linea" && (
+            <form action={guardarModoAgregados} className="mt-3 rounded-xl border-2 border-amber-200 bg-amber-50/50 p-3">
+              <input type="hidden" name="linea" value={target.id} />
+              <p className="text-sm font-bold text-amber-800">🍦 Esencias y colores de este tipo</p>
+              <label className="mt-2 flex items-center gap-2 text-sm text-slate-700">
+                <input type="radio" name="modoAgregados" value="simple" defaultChecked={(recetaBase?.modoAgregados ?? "simple") !== "detallado"} className="h-4 w-4 accent-amber-600" />
+                <span><b>Simple</b> — el operario solo pone el sabor y los baldes; la esencia y el color se descuentan <b>solos por litro</b> (tú y yo, paletas).</span>
+              </label>
+              <div className="ml-6 mt-1 flex flex-wrap items-end gap-2">
+                <label className="text-xs font-bold text-slate-600">Esencia grs/L
+                  <input name="esenciaGrsL" inputMode="decimal" defaultValue={recetaBase?.esenciaGrsL || ""} placeholder="ej: 1,5" className="mt-0.5 block w-24 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+                </label>
+                <label className="text-xs font-bold text-slate-600">Color grs/L
+                  <input name="colorGrsL" inputMode="decimal" defaultValue={recetaBase?.colorGrsL || ""} placeholder="ej: 3" className="mt-0.5 block w-24 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+                </label>
+              </div>
+              <label className="mt-2 flex items-center gap-2 text-sm text-slate-700">
+                <input type="radio" name="modoAgregados" value="detallado" defaultChecked={(recetaBase?.modoAgregados ?? "simple") === "detallado"} className="h-4 w-4 accent-amber-600" />
+                <span><b>Detallado</b> — el operario pesa cada agregado (esencia, color, salsa, especias) para saber cuánto gasta cada sabor (postres, cassatas…).</span>
+              </label>
+              <button className="mt-2 rounded-lg bg-amber-700 px-3 py-1.5 text-xs font-bold text-white">Guardar modo</button>
             </form>
           )}
 
