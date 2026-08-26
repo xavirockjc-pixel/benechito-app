@@ -103,7 +103,7 @@ export async function confirmarMezcla(formData: FormData) {
       await prisma.movimientoMateria.create({
         data: {
           materiaPrimaId: it.materiaPrimaId, tipo: "consumo", cantidad: usar,
-          motivo: `Base · ${nombre} · ${base} ${baseUnidad}`,
+          motivo: `Base · ${nombre} · ${base} ${baseUnidad}`, referencia: control.id,
           usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
         },
       });
@@ -139,7 +139,7 @@ export async function confirmarMezcla(formData: FormData) {
       await prisma.movimientoMateria.create({
         data: {
           materiaPrimaId: mpId, tipo: "consumo", cantidad: ag.cantidad,
-          motivo: `${s.nombre} · ${linea ?? ""} (lote ${lote})`,
+          motivo: `${s.nombre} · ${linea ?? ""} (lote ${lote})`, referencia: control.id,
           usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
         },
       });

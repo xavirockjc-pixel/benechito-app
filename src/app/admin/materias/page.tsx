@@ -16,7 +16,10 @@ export default async function MateriasCentral() {
   inicioMes.setDate(1);
   inicioMes.setHours(0, 0, 0, 0);
 
-  const [materiales, movs, mermasMes] = await Promise.all([
+  const en30dias = new Date();
+  en30dias.setDate(en30dias.getDate() + 30);
+
+  const [materiales, movs, mermasMes, porVencer] = await Promise.all([
     prisma.materiaPrima.findMany({ where: { activo: true }, orderBy: [{ categoria: "asc" }, { nombre: "asc" }] }),
     prisma.movimientoMateria.findMany({
       orderBy: { fecha: "desc" }, take: 40,
@@ -26,6 +29,11 @@ export default async function MateriasCentral() {
       where: { tipo: "merma", fecha: { gte: inicioMes } },
       include: { materiaPrima: { select: { nombre: true, unidad: true, costo: true } } },
       orderBy: { fecha: "desc" },
+    }),
+    prisma.movimientoMateria.findMany({
+      where: { tipo: "entrada", vence: { not: null, lte: en30dias } },
+      include: { materiaPrima: { select: { nombre: true, unidad: true } } },
+      orderBy: { vence: "asc" }, take: 30,
     }),
   ]);
 
@@ -70,6 +78,29 @@ export default async function MateriasCentral() {
                 <li key={m.id} className="flex justify-between">
                   <span>{m.nombre} <span className="text-red-500">· quedan {fmtCant(m.stock, m.unidad)}</span></span>
                   {falta > 0 && <span className="font-bold">faltan {fmtCant(falta, m.unidad)}</span>}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+
+      {/* Alertas de vencimiento (trazabilidad en alimentos) */}
+      {porVencer.length > 0 && (
+        <div className="mt-3 rounded-xl border border-orange-200 bg-orange-50 p-3 text-sm text-orange-800">
+          ⏳ <b>Por vencer / vencidos:</b>
+          <ul className="mt-1 space-y-0.5">
+            {porVencer.map((mv) => {
+              const dias = Math.ceil((new Date(mv.vence!).getTime() - Date.now()) / 86400000);
+              return (
+                <li key={mv.id} className="flex justify-between">
+                  <span>
+                    {mv.materiaPrima.nombre}
+                    {mv.lote ? <span className="text-orange-600"> · lote {mv.lote}</span> : ""}
+                  </span>
+                  <span className={`font-bold ${dias < 0 ? "text-red-600" : ""}`}>
+                    {dias < 0 ? `vencido hace ${-dias}d` : dias === 0 ? "vence hoy" : `en ${dias}d`}
+                  </span>
                 </li>
               );
             })}

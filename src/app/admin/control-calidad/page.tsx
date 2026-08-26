@@ -122,7 +122,7 @@ export default async function ControlCalidadPage() {
                       {r.operarios ? ` · 👷 ${r.operarios}` : ""}
                       {r.nombreUsuario ? ` · registró ${r.nombreUsuario}` : ""}
                     </p>
-                    {r.lote && <p className="mt-0.5 inline-block rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white">Lote {r.lote}</p>}
+                    {r.lote && <a href={`/admin/control-calidad/${r.id}`} className="mt-0.5 inline-block rounded bg-slate-900 px-2 py-0.5 text-[11px] font-bold text-white hover:bg-slate-700">Lote {r.lote} · ver trazabilidad →</a>}
                   </div>
                   <span className={`shrink-0 rounded-lg px-2 py-1 text-xs font-bold ${completo ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"}`}>
                     {completo ? "✓ Receta completa" : "⚠ Parcial"} {r.itemsTotal > 0 ? `${r.itemsMarcados}/${r.itemsTotal}` : ""}

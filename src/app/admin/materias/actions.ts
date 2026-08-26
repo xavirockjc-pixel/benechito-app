@@ -59,6 +59,9 @@ export async function moverMateria(formData: FormData) {
   const tipo = String(formData.get("tipo") ?? "").trim(); // entrada | merma | ajuste
   const cantidad = num(formData.get("cantidad"));
   const motivo = String(formData.get("motivo") ?? "").trim() || null;
+  const lote = String(formData.get("lote") ?? "").trim() || null; // lote del proveedor (entradas)
+  const venceStr = String(formData.get("vence") ?? "").trim();
+  const vence = venceStr ? new Date(venceStr) : null;
   if (!id || !["entrada", "merma", "ajuste"].includes(tipo)) return;
   if (!Number.isFinite(cantidad)) return;
 
@@ -78,7 +81,12 @@ export async function moverMateria(formData: FormData) {
     const signo = tipo === "entrada" ? 1 : -1;
     await prisma.materiaPrima.update({ where: { id }, data: { stock: { increment: signo * cantidad } } });
     await prisma.movimientoMateria.create({
-      data: { materiaPrimaId: id, tipo, cantidad, motivo, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+      data: {
+        materiaPrimaId: id, tipo, cantidad, motivo,
+        lote: tipo === "entrada" ? lote : null,
+        vence: tipo === "entrada" && vence && !isNaN(vence.getTime()) ? vence : null,
+        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+      },
     });
   }
 

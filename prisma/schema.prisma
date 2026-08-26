@@ -656,13 +656,16 @@ model MovimientoMateria {
   tipo           String // entrada | consumo | merma | ajuste
   cantidad       Float
   motivo         String?
-  referencia     String? // id de orden de producción / producción
+  referencia     String? // id de orden de producción / producción (para trazabilidad)
+  lote           String? // lote del proveedor (en entradas) — trazabilidad
+  vence          DateTime? // vencimiento del insumo que entró
   usuarioId      String?
   nombreUsuario  String?
   fecha          DateTime     @default(now())
 
   @@index([materiaPrimaId])
   @@index([fecha])
+  @@index([referencia])
 }
 
 /// Receta (lista de materiales): cuánto de un insumo lleva UNA unidad de un

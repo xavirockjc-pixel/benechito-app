@@ -34,8 +34,8 @@ export default function MateriaRow({ m }: { m: Mat }) {
 
       {abierto && (
         <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-          <div className="grid grid-cols-3 gap-2">
-            <Mini action={moverMateria} id={m.id} tipo="entrada" etiqueta="➕ Entrada" color="bg-green-600" ph={`+ ${unidadLabel[m.unidad] ?? m.unidad}`} />
+          <EntradaMini id={m.id} unidad={unidadLabel[m.unidad] ?? m.unidad} />
+          <div className="grid grid-cols-2 gap-2">
             <MermaMini id={m.id} unidad={unidadLabel[m.unidad] ?? m.unidad} />
             <Mini action={moverMateria} id={m.id} tipo="ajuste" etiqueta="✎ Ajustar a" color="bg-slate-700" ph="valor real" />
           </div>
@@ -74,6 +74,26 @@ function Mini({
       <input type="hidden" name="tipo" value={tipo} />
       <input name="cantidad" inputMode="decimal" placeholder={ph} className="w-full rounded border border-slate-300 px-2 py-1 text-sm" />
       <button className={`rounded-lg ${color} py-1.5 text-xs font-bold text-white`}>{etiqueta}</button>
+    </form>
+  );
+}
+
+/** Entrada con lote del proveedor y vencimiento (trazabilidad en alimentos). */
+function EntradaMini({ id, unidad }: { id: string; unidad: string }) {
+  return (
+    <form action={moverMateria} className="rounded-lg border border-green-200 bg-green-50/60 p-2">
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="tipo" value="entrada" />
+      <div className="flex items-center gap-2">
+        <input name="cantidad" inputMode="decimal" placeholder={`+ ${unidad}`} className="w-20 rounded border border-slate-300 px-2 py-1 text-sm" />
+        <input name="lote" placeholder="Lote proveedor (opcional)" className="min-w-0 flex-1 rounded border border-slate-300 px-2 py-1 text-sm" />
+      </div>
+      <div className="mt-1 flex items-center gap-2">
+        <label className="text-[11px] font-semibold text-slate-500">Vence
+          <input name="vence" type="date" className="ml-1 rounded border border-slate-300 px-1 py-1 text-xs" />
+        </label>
+        <button className="ml-auto rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white">➕ Entrada</button>
+      </div>
     </form>
   );
 }
