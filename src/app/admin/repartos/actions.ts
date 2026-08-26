@@ -3,28 +3,30 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
+import { TIPOS_GASTO } from "@/lib/dominio/vehiculo";
 
 const num = (v: FormDataEntryValue | null) => Math.max(0, Number(String(v ?? "0").replace(",", ".")) || 0);
 
-/** Registra el costo de un reparto: combustible + tiempo (+ km opcional). */
-export async function registrarCostoReparto(formData: FormData) {
-  const combustible = num(formData.get("combustible"));
-  const horas = num(formData.get("horas"));
-  const km = num(formData.get("km"));
+/** Registra un gasto del vehículo desde la central. */
+export async function registrarGastoVehiculo(formData: FormData) {
+  const tipoRaw = String(formData.get("tipo") ?? "combustible").trim();
+  const tipo = (TIPOS_GASTO as readonly string[]).includes(tipoRaw) ? tipoRaw : "otro";
+  const monto = num(formData.get("monto"));
+  const litros = num(formData.get("litros"));
   const canal = String(formData.get("canal") ?? "").trim() || null;
   const notas = String(formData.get("notas") ?? "").trim() || null;
-  if (combustible <= 0 && horas <= 0 && km <= 0) return;
+  if (monto <= 0 && litros <= 0) return;
   const u = await usuarioActual();
-  await prisma.costoReparto.create({
-    data: { combustible, horas, km, canal, notas, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+  await prisma.gastoVehiculo.create({
+    data: { tipo, monto, litros, canal, notas, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
   });
   revalidatePath("/admin/repartos");
 }
 
-/** Elimina un registro de costo de reparto. */
-export async function eliminarCostoReparto(formData: FormData) {
+/** Elimina un gasto del vehículo. */
+export async function eliminarGastoVehiculo(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
   if (!id) return;
-  await prisma.costoReparto.delete({ where: { id } });
+  await prisma.gastoVehiculo.delete({ where: { id } });
   revalidatePath("/admin/repartos");
 }

@@ -315,16 +315,41 @@ model CanalVenta {
   createdAt DateTime @default(now())
 }
 
-/// Costo de un reparto/despacho (combustible + tiempo). Para saber cuánto cuesta
-/// llevar a distribuidores/rutas y reflejarlo en finanzas.
-model CostoReparto {
+/// Gasto del vehículo: combustible y otros (mantención, repuestos, neumáticos, peaje…).
+/// Registrado por el repartidor desde su celular; se refleja en finanzas/reparto.
+model GastoVehiculo {
   id            String   @id @default(cuid())
   fecha         DateTime @default(now())
-  canal         String? // a qué canal fue el reparto (ruta, distribuidor, delivery…)
-  combustible   Decimal  @default(0) @db.Decimal(12, 2)
-  horas         Float    @default(0) // tiempo del reparto
-  km            Float    @default(0)
+  vehiculoId    String? // Ubicacion tipo vehiculo
+  tipo          String   @default("combustible") // combustible|mantencion|repuesto|neumaticos|peaje|lavado|otro
+  monto         Decimal  @default(0) @db.Decimal(12, 2)
+  litros        Float    @default(0) // si es combustible
+  canal         String? // a qué canal/ruta fue (opcional)
   notas         String?
+  usuarioId     String?
+  nombreUsuario String?
+
+  @@index([fecha])
+  @@index([tipo])
+}
+
+/// Revisión del vehículo (checklist del chofer): niveles, neumáticos, luces… + km.
+/// Deja registro del estado y de los km de entrada/salida para costear cada ruta.
+model RevisionVehiculo {
+  id            String   @id @default(cuid())
+  fecha         DateTime @default(now())
+  vehiculoId    String?
+  kmSalida      Float    @default(0)
+  kmEntrada     Float    @default(0)
+  // Estado de cada punto: "ok" | "revisar" | "malo"
+  agua          String   @default("ok")
+  aceite        String   @default("ok")
+  neumaticos    String   @default("ok")
+  luces         String   @default("ok")
+  frenos        String   @default("ok")
+  limpieza      String   @default("ok")
+  documentos    String   @default("ok")
+  observaciones String?
   usuarioId     String?
   nombreUsuario String?
 
