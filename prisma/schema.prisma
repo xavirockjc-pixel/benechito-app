@@ -64,6 +64,7 @@ model Negocio {
   ventas       Venta[]
   preventas    Preventa[]
   paradasRuta  ParadaRuta[]
+  despachosLote DespachoLote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -421,7 +422,28 @@ model ControlCalidad {
   usuarioId     String?
   nombreUsuario String?
 
+  despachos     DespachoLote[]
+
   @@index([fecha])
+}
+
+// Trazabilidad hacia el cliente: a qué cliente(s) se despachó un lote de producción.
+// Permite un retiro de mercado ("¿a quién le llegó el lote X?").
+model DespachoLote {
+  id            String         @id @default(cuid())
+  control       ControlCalidad @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  controlId     String
+  negocio       Negocio?       @relation(fields: [negocioId], references: [id])
+  negocioId     String?
+  clienteTexto  String? // cliente libre si no está en la lista
+  cantidad      Float          @default(0)
+  notas         String?
+  usuarioId     String?
+  nombreUsuario String?
+  fecha         DateTime       @default(now())
+
+  @@index([controlId])
+  @@index([negocioId])
 }
 
 /// Registro diario simple de las apps operativas (Bodega y Local).

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { fmtCant } from "@/lib/dominio/materias";
 import { turnoLabel } from "@/lib/dominio/produccion";
+import { registrarDespachoLote, eliminarDespachoLote } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,13 +19,19 @@ export default async function TrazabilidadLote({ params }: { params: Promise<{ i
   const control = await prisma.controlCalidad.findUnique({ where: { id } });
   if (!control) notFound();
 
-  const [consumos, agregados] = await Promise.all([
+  const [consumos, agregados, despachos, negocios] = await Promise.all([
     prisma.movimientoMateria.findMany({
       where: { referencia: id, tipo: "consumo" },
       include: { materiaPrima: { select: { nombre: true, unidad: true } } },
       orderBy: { fecha: "asc" },
     }),
     prisma.agregadoUso.findMany({ where: { controlId: id }, orderBy: { fecha: "asc" } }),
+    prisma.despachoLote.findMany({
+      where: { controlId: id },
+      include: { negocio: { select: { nombreNegocio: true } } },
+      orderBy: { fecha: "desc" },
+    }),
+    prisma.negocio.findMany({ orderBy: { nombreNegocio: "asc" }, select: { id: true, nombreNegocio: true } }),
   ]);
 
   // Agrupa agregados por sabor.
@@ -98,10 +105,58 @@ export default async function TrazabilidadLote({ params }: { params: Promise<{ i
         </>
       )}
 
-      <p className="mt-6 rounded-xl border border-dashed border-slate-300 p-4 text-xs text-slate-500">
-        💡 Para trazabilidad completa hacia el cliente, registra el lote del proveedor en cada
-        entrada de insumo (Materias primas → ➕ Entrada) y, más adelante, el lote de producción
-        en la venta/despacho.
+      {/* Trazabilidad hacia el cliente: a quién salió este lote (retiro de mercado) */}
+      <h2 className="mb-2 mt-6 text-sm font-bold uppercase tracking-wide text-slate-500">📦 ¿A quién salió este lote?</h2>
+      {despachos.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400">
+          Aún no registras despachos de este lote.
+        </p>
+      ) : (
+        <ul className="space-y-1">
+          {despachos.map((d) => (
+            <li key={d.id} className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm shadow-sm">
+              <span className="min-w-0 truncate">
+                <b className="text-slate-800">{d.negocio?.nombreNegocio ?? d.clienteTexto ?? "Cliente"}</b>
+                {d.cantidad > 0 ? <span className="text-slate-500"> · {d.cantidad} u.</span> : ""}
+                {d.notas ? <span className="text-xs text-slate-400"> · {d.notas}</span> : ""}
+                <span className="block text-[11px] text-slate-400">{fmtFecha(d.fecha)}{d.nombreUsuario ? ` · ${d.nombreUsuario}` : ""}</span>
+              </span>
+              <form action={eliminarDespachoLote}>
+                <input type="hidden" name="id" value={d.id} />
+                <input type="hidden" name="controlId" value={control.id} />
+                <button className="ml-2 shrink-0 text-xs font-semibold text-red-400">quitar</button>
+              </form>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <form action={registrarDespachoLote} className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
+        <input type="hidden" name="controlId" value={control.id} />
+        <p className="mb-2 text-xs font-bold text-slate-600">Registrar despacho de este lote</p>
+        <div className="grid grid-cols-2 gap-2">
+          <label className="col-span-2 text-xs font-semibold text-slate-500">Cliente
+            <select name="negocioId" defaultValue="" className="mt-0.5 w-full rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm">
+              <option value="">— elegir cliente —</option>
+              {negocios.map((nn) => <option key={nn.id} value={nn.id}>{nn.nombreNegocio}</option>)}
+            </select>
+          </label>
+          <label className="col-span-2 text-xs font-semibold text-slate-500">…o cliente libre (si no está en la lista)
+            <input name="clienteTexto" placeholder="Nombre del cliente" className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+          </label>
+          <label className="text-xs font-semibold text-slate-500">Cantidad
+            <input name="cantidad" inputMode="decimal" placeholder="u." className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+          </label>
+          <label className="text-xs font-semibold text-slate-500">Notas
+            <input name="notas" placeholder="opcional" className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+          </label>
+        </div>
+        <button className="mt-2 w-full rounded-lg bg-slate-900 py-2 text-sm font-bold text-white active:brightness-110">➕ Registrar despacho</button>
+      </form>
+
+      <p className="mt-4 rounded-xl border border-dashed border-slate-300 p-3 text-[11px] text-slate-500">
+        💡 Con esto tienes la cadena completa para un retiro de mercado: lote del proveedor (en las
+        entradas) → producción de este lote → clientes que lo recibieron.
       </p>
     </div>
   );

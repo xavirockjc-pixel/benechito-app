@@ -54,11 +54,36 @@ export default async function FichaNegocio({
     orderBy: { nombre: "asc" },
   });
 
+  // Lotes de producción despachados a este cliente (trazabilidad / retiro de mercado).
+  const lotesRecibidos = await prisma.despachoLote.findMany({
+    where: { negocioId: id },
+    include: { control: { select: { id: true, lote: true, nombre: true } } },
+    orderBy: { fecha: "desc" },
+    take: 30,
+  });
+
   return (
     <div>
       <Link href="/admin/negocios" className="text-sm font-semibold text-naranja">
         ← Negocios
       </Link>
+
+      {lotesRecibidos.length > 0 && (
+        <details className="mt-2 rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-sm">
+          <summary className="cursor-pointer font-bold text-slate-700">📦 Lotes recibidos ({lotesRecibidos.length})</summary>
+          <ul className="mt-2 space-y-1">
+            {lotesRecibidos.map((d) => (
+              <li key={d.id} className="flex items-center justify-between border-t border-slate-100 pt-1">
+                <span className="min-w-0 truncate text-slate-700">
+                  <Link href={`/admin/control-calidad/${d.control.id}`} className="font-bold text-slate-900 hover:underline">Lote {d.control.lote ?? "—"}</Link>
+                  {" · "}{d.control.nombre}{d.cantidad > 0 ? ` · ${d.cantidad} u.` : ""}
+                </span>
+                <span className="shrink-0 text-xs text-slate-400">{new Date(d.fecha).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {/* Encabezado */}
       <div className="mt-2 flex flex-wrap items-start justify-between gap-3">
