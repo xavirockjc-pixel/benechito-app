@@ -23,6 +23,7 @@ const ACCESO: { prefix: string; roles: string[] }[] = [
   { prefix: "/admin/ventas", roles: ["caja"] },
   { prefix: "/admin/pedidos", roles: ["caja"] },
   { prefix: "/admin/finanzas", roles: ["caja"] },
+  { prefix: "/admin/caja", roles: ["caja"] }, // historial de cierres
   { prefix: "/admin/negocios", roles: ["caja"] }, // clientes
   { prefix: "/admin/precios", roles: ["caja"] },
   { prefix: "/admin/preventa", roles: [] },
