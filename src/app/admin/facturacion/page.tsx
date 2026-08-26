@@ -65,6 +65,21 @@ export default async function FacturacionPage() {
         </div>
       )}
 
+      {/* Emisión electrónica: preparado, pendiente de proveedor */}
+      <details className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
+        <summary className="cursor-pointer font-bold text-slate-700">⚡ Emisión electrónica (boleta/factura) — preparado</summary>
+        <div className="mt-2 space-y-2 text-slate-600">
+          <p>Hoy esto funciona como <b>recordatorio + registro de folio</b>. Para emitir con un clic hacia el SII falta enchufar un <b>proveedor DTE</b>. Cuando lo decidas, se conecta aquí mismo.</p>
+          <p className="font-semibold text-slate-700">Para activarlo necesitarás:</p>
+          <ul className="list-disc space-y-1 pl-5">
+            <li>Elegir proveedor (ej: LibreDTE, Bsale) o certificado propio del SII.</li>
+            <li>Tu <b>certificado digital</b> y los <b>folios (CAF)</b> autorizados por el SII.</li>
+            <li>El <b>RUT y giro</b> del negocio y de cada cliente que reciba factura.</li>
+          </ul>
+          <p className="text-xs text-slate-500">🔒 Las claves y el certificado los cargas tú en la configuración del servidor; el sistema nunca los expone.</p>
+        </div>
+      </details>
+
       {/* Emitidas */}
       {emitidas.length > 0 && (
         <>
