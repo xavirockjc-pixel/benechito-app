@@ -14,27 +14,40 @@ type Modulo = { titulo: string; activo: boolean; items: Item[] };
 function construirModulos(L: Etiquetas): Modulo[] {
   return [
     {
-      titulo: "Comercial",
+      titulo: "Inicio",
       activo: true,
       items: [
         { href: "/admin", label: "Panel", icon: "📊" },
         { href: "/admin/dashboard", label: "Tablero", icon: "📈" },
         { href: "/admin/voz", label: "Asistente voz", icon: "🎙️" },
         { href: "/admin/agenda", label: "Agenda", icon: "📅" },
+      ],
+    },
+    {
+      // Todos los canales de venta juntos (evita saturar el menú).
+      titulo: "Ventas y canales",
+      activo: true,
+      items: [
         { href: "/admin/pos", label: L.pos, icon: "🛒" },
+        { href: "/admin/ventas", label: "Ventas", icon: "💵" },
+        { href: "/admin/pedidos", label: "Pedidos", icon: "🧾" },
+        { href: "/admin/preventa", label: "Preventa", icon: "📲" },
+        { href: "/admin/retiros", label: L.retiros, icon: "📥" },
+        { href: "/admin/rutas", label: L.rutas, icon: "🗺️" },
+      ],
+    },
+    {
+      titulo: "Catálogo y clientes",
+      activo: true,
+      items: [
         { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
         { href: "/admin/productos", label: "Catálogo", icon: "🍫" },
         { href: "/admin/precios", label: "Precios", icon: "🏷️" },
-        { href: "/admin/pedidos", label: "Pedidos", icon: "🧾" },
-        { href: "/admin/preventa", label: "Preventa", icon: "📲" },
-        { href: "/admin/retiros", label: L.retiros, icon: "🧾" },
-        { href: "/admin/rutas", label: L.rutas, icon: "🗺️" },
-        { href: "/admin/ventas", label: "Ventas", icon: "💵" },
         { href: "/admin/inventario", label: "Inventario", icon: "📦" },
       ],
     },
     {
-      titulo: "Gestión",
+      titulo: "Producción",
       activo: true,
       items: [
         { href: "/admin/produccion", label: L.produccion, icon: "🏭" },

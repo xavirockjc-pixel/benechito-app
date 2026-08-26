@@ -12,11 +12,20 @@ const fmtHora = (d: Date) =>
   new Date(d).toLocaleString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export default async function MateriasCentral() {
-  const [materiales, movs] = await Promise.all([
+  const inicioMes = new Date();
+  inicioMes.setDate(1);
+  inicioMes.setHours(0, 0, 0, 0);
+
+  const [materiales, movs, mermasMes] = await Promise.all([
     prisma.materiaPrima.findMany({ where: { activo: true }, orderBy: [{ categoria: "asc" }, { nombre: "asc" }] }),
     prisma.movimientoMateria.findMany({
       orderBy: { fecha: "desc" }, take: 40,
       include: { materiaPrima: { select: { nombre: true, unidad: true } } },
+    }),
+    prisma.movimientoMateria.findMany({
+      where: { tipo: "merma", fecha: { gte: inicioMes } },
+      include: { materiaPrima: { select: { nombre: true, unidad: true, costo: true } } },
+      orderBy: { fecha: "desc" },
     }),
   ]);
 
@@ -27,6 +36,12 @@ export default async function MateriasCentral() {
   const valorTotal = mats.reduce((s, m) => s + (m.costo != null ? m.stock * m.costo : 0), 0);
   const bajos = mats.filter((m) => stockBajo(m.stock, m.stockMinimo));
   const porCat = (cat: string) => mats.filter((m) => m.categoria === cat);
+
+  // Pérdida por mermas del mes (para ajustar costos reales).
+  const perdidaMermas = mermasMes.reduce(
+    (s, mv) => s + (mv.materiaPrima.costo != null ? Math.abs(mv.cantidad) * Number(mv.materiaPrima.costo) : 0),
+    0,
+  );
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -47,8 +62,43 @@ export default async function MateriasCentral() {
 
       {bajos.length > 0 && (
         <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          ⚠️ <b>Reponer pronto:</b> {bajos.map((m) => `${m.nombre} (${fmtCant(m.stock, m.unidad)})`).join(", ")}.
+          ⚠️ <b>Reponer pronto:</b>
+          <ul className="mt-1 space-y-0.5">
+            {bajos.map((m) => {
+              const falta = Math.max(0, m.stockMinimo - m.stock);
+              return (
+                <li key={m.id} className="flex justify-between">
+                  <span>{m.nombre} <span className="text-red-500">· quedan {fmtCant(m.stock, m.unidad)}</span></span>
+                  {falta > 0 && <span className="font-bold">faltan {fmtCant(falta, m.unidad)}</span>}
+                </li>
+              );
+            })}
+          </ul>
         </div>
+      )}
+
+      {/* Mermas del mes (ajuste de costos reales) */}
+      {mermasMes.length > 0 && (
+        <details className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <summary className="flex cursor-pointer items-center justify-between font-bold">
+            <span>🗑️ Mermas del mes ({mermasMes.length})</span>
+            {perdidaMermas > 0 && <span>−${Math.round(perdidaMermas).toLocaleString("es-CL")} en pérdidas</span>}
+          </summary>
+          <ul className="mt-2 space-y-1">
+            {mermasMes.slice(0, 25).map((mv) => (
+              <li key={mv.id} className="flex items-center justify-between border-t border-amber-100 pt-1">
+                <span className="min-w-0 truncate">
+                  <b>{fmtCant(Math.abs(mv.cantidad), mv.materiaPrima.unidad)}</b> {mv.materiaPrima.nombre}
+                  {mv.motivo ? <span className="text-amber-600"> · {mv.motivo}</span> : ""}
+                </span>
+                <span className="shrink-0 text-xs text-amber-600">
+                  {mv.materiaPrima.costo != null ? `−$${Math.round(Math.abs(mv.cantidad) * Number(mv.materiaPrima.costo)).toLocaleString("es-CL")}` : ""}
+                </span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[11px] text-amber-600">La pérdida se calcula con el costo cargado de cada insumo. Registra las mermas con su motivo desde cada insumo (➖ Merma).</p>
+        </details>
       )}
 
       {/* Crear insumo */}

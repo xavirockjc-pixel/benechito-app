@@ -36,7 +36,7 @@ export default function MateriaRow({ m }: { m: Mat }) {
         <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
           <div className="grid grid-cols-3 gap-2">
             <Mini action={moverMateria} id={m.id} tipo="entrada" etiqueta="➕ Entrada" color="bg-green-600" ph={`+ ${unidadLabel[m.unidad] ?? m.unidad}`} />
-            <Mini action={moverMateria} id={m.id} tipo="merma" etiqueta="➖ Merma" color="bg-amber-600" ph={`- ${unidadLabel[m.unidad] ?? m.unidad}`} />
+            <MermaMini id={m.id} unidad={unidadLabel[m.unidad] ?? m.unidad} />
             <Mini action={moverMateria} id={m.id} tipo="ajuste" etiqueta="✎ Ajustar a" color="bg-slate-700" ph="valor real" />
           </div>
 
@@ -74,6 +74,21 @@ function Mini({
       <input type="hidden" name="tipo" value={tipo} />
       <input name="cantidad" inputMode="decimal" placeholder={ph} className="w-full rounded border border-slate-300 px-2 py-1 text-sm" />
       <button className={`rounded-lg ${color} py-1.5 text-xs font-bold text-white`}>{etiqueta}</button>
+    </form>
+  );
+}
+
+/** Merma con motivo (vencido, dañado…) para poder ajustar los costos reales. */
+function MermaMini({ id, unidad }: { id: string; unidad: string }) {
+  return (
+    <form action={moverMateria} className="flex flex-col gap-1">
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="tipo" value="merma" />
+      <input name="cantidad" inputMode="decimal" placeholder={`- ${unidad}`} className="w-full rounded border border-slate-300 px-2 py-1 text-sm" />
+      <select name="motivo" defaultValue="Vencido" className="w-full rounded border border-slate-300 px-1 py-1 text-xs text-slate-600">
+        <option>Vencido</option><option>Dañado</option><option>Derrame</option><option>Robo/pérdida</option><option>Otro</option>
+      </select>
+      <button className="rounded-lg bg-amber-600 py-1.5 text-xs font-bold text-white">➖ Merma</button>
     </form>
   );
 }
