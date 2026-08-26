@@ -315,6 +315,22 @@ model CanalVenta {
   createdAt DateTime @default(now())
 }
 
+/// Costo de un reparto/despacho (combustible + tiempo). Para saber cuánto cuesta
+/// llevar a distribuidores/rutas y reflejarlo en finanzas.
+model CostoReparto {
+  id            String   @id @default(cuid())
+  fecha         DateTime @default(now())
+  canal         String? // a qué canal fue el reparto (ruta, distribuidor, delivery…)
+  combustible   Decimal  @default(0) @db.Decimal(12, 2)
+  horas         Float    @default(0) // tiempo del reparto
+  km            Float    @default(0)
+  notas         String?
+  usuarioId     String?
+  nombreUsuario String?
+
+  @@index([fecha])
+}
+
 /// Venta = hecho económico. Genera documento y descuenta stock. estadoPago ≠ estado del pedido.
 model Venta {
   id          String    @id @default(cuid())

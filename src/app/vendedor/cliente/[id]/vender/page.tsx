@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { listaParaCliente } from "@/lib/dominio/precios";
+import { getCanales } from "@/lib/dominio/canales";
 import VenderTerreno from "./VenderTerreno";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +31,8 @@ export default async function VenderPage({
     .map((p) => ({ id: p.producto.id, nombre: p.producto.nombre, formato: p.producto.formato, precio: Number(p.precio) }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
+  const canales = (await getCanales(true)).map((c) => ({ codigo: c.codigo, nombre: c.nombre }));
+
   return (
     <div>
       <Link href={`/vendedor/cliente/${id}`} className="text-sm font-semibold text-[#1479c4]">← {cliente.nombreNegocio}</Link>
@@ -37,7 +40,7 @@ export default async function VenderPage({
       <p className="text-xs text-slate-500">Precios de la lista: {lista?.nombre ?? "automática"}</p>
 
       <div className="mt-3">
-        <VenderTerreno negocioId={id} productos={productos} />
+        <VenderTerreno negocioId={id} productos={productos} canales={canales} />
       </div>
     </div>
   );

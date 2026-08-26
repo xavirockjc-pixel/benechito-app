@@ -11,9 +11,11 @@ type Prod = { id: string; nombre: string; formato: string | null; precio: number
 export default function VenderTerreno({
   negocioId,
   productos,
+  canales = [],
 }: {
   negocioId: string;
   productos: Prod[];
+  canales?: { codigo: string; nombre: string }[];
 }) {
   const [cart, setCart] = useState<Record<string, number>>({});
   const add = (id: string) => setCart((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 }));
@@ -111,6 +113,12 @@ export default function VenderTerreno({
       <form action={venderTerreno} className="sticky bottom-20 space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
         <input type="hidden" name="negocioId" value={negocioId} />
         <input type="hidden" name="items" value={JSON.stringify(lineas)} />
+        {canales.length > 0 && (
+          <select name="canal" defaultValue="" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800">
+            <option value="">📍 Canal automático</option>
+            {canales.map((c) => <option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}
+          </select>
+        )}
         <select name="modo" value={modo} onChange={(e) => setModo(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800">
           <option value="efectivo">Pago: Efectivo</option>
           <option value="transferencia">Pago: Transferencia</option>

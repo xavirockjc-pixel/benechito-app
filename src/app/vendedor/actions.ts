@@ -5,8 +5,17 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
 import { estadoPagoDe, MEDIOS_PAGO } from "@/lib/dominio/ventas";
+import { canalPorTipoCliente } from "@/lib/dominio/canales";
 
 type LineaTerreno = { productoId: string; cantidad: number; precioUnit: number };
+
+/** Canal de la venta del vendedor: el elegido, o auto por tipo de cliente, o "ruta". */
+async function canalVendedor(formData: FormData, negocioId: string): Promise<string> {
+  const elegido = String(formData.get("canal") ?? "").trim();
+  if (elegido) return elegido;
+  const neg = await prisma.negocio.findUnique({ where: { id: negocioId }, select: { tipoCliente: true } });
+  return canalPorTipoCliente(neg?.tipoCliente) ?? "ruta";
+}
 
 /** Cierra la sesión del vendedor. */
 export async function logout() {
@@ -103,6 +112,7 @@ export async function venderTerreno(formData: FormData) {
   }
 
   const u = await usuarioActual();
+  const canal = await canalVendedor(formData, negocioId);
   const venta = await prisma.venta.create({
     data: {
       negocioId,
@@ -111,7 +121,7 @@ export async function venderTerreno(formData: FormData) {
       total,
       estadoPago,
       documento: "boleta",
-      canal: "terreno",
+      canal,
       ...(pagos ? { pagos } : {}),
     },
   });
@@ -228,6 +238,7 @@ export async function ventaRapida(formData: FormData) {
     pagos = { create: { medio, monto: total } };
   }
 
+  const canal = await canalVendedor(formData, cliente.id);
   const venta = await prisma.venta.create({
     data: {
       negocioId: cliente.id,
@@ -236,7 +247,7 @@ export async function ventaRapida(formData: FormData) {
       total,
       estadoPago,
       documento: "boleta",
-      canal: "terreno",
+      canal,
       etiqueta,
       ...(pagos ? { pagos } : {}),
     },

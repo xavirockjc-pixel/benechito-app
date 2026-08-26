@@ -34,6 +34,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/preventa", label: "Preventa", icon: "📲" },
         { href: "/admin/retiros", label: L.retiros, icon: "📥" },
         { href: "/admin/rutas", label: L.rutas, icon: "🗺️" },
+        { href: "/admin/repartos", label: "Costos reparto", icon: "🚚" },
       ],
     },
     {
