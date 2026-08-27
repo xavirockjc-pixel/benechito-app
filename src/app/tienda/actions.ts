@@ -32,8 +32,12 @@ export async function crearPedidoTienda(formData: FormData) {
   carro = carro.filter((l) => l.productoId && l.cantidad > 0);
   if (carro.length === 0) redirect("/tienda?error=carro");
 
-  // Lista pública (misma lógica que la página).
+  // Tarifa elegida por el cliente → canal de la lista de precios.
+  const TARIFA_CANAL: Record<string, string> = { detalle: "sala", online: "web", comerciante: "negocio", distribuidor: "distribuidor" };
+  const tarifa = String(formData.get("tarifa") ?? "detalle").trim();
+  const canalTarifa = TARIFA_CANAL[tarifa] ?? "web";
   const lista =
+    (await prisma.listaPrecio.findFirst({ where: { canal: canalTarifa, activo: true } })) ??
     (await prisma.listaPrecio.findFirst({ where: { canal: "web", activo: true } })) ??
     (await prisma.listaPrecio.findFirst({ where: { canal: "sala", activo: true } })) ??
     (await prisma.listaPrecio.findFirst({ where: { activo: true } }));
@@ -79,7 +83,9 @@ export async function crearPedidoTienda(formData: FormData) {
 
   const tipoEntrega = entrega === "despacho" ? "delivery" : "retiro";
   const destino = entrega === "despacho" ? "reparto" : "local";
+  const TARIFA_LABEL: Record<string, string> = { detalle: "Consumidor/detalle", online: "Promocional online", comerciante: "Mayorista/comerciante", distribuidor: "Distribuidor" };
   const notas = [
+    `Tarifa: ${TARIFA_LABEL[tarifa] ?? tarifa}`,
     entrega === "despacho" && direccion ? `Despacho a: ${direccion}` : "Retira en local",
     notasCliente ? `Nota: ${notasCliente}` : "",
   ].filter(Boolean).join(" · ");

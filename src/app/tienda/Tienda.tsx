@@ -4,8 +4,9 @@ import { useMemo, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { crearPedidoTienda } from "./actions";
 
-type Prod = { id: string; nombre: string; descripcion: string | null; formato: string | null; seccion: string; fotoUrl: string | null; precio: number; sabores: string[]; min: number; max: number };
+type Prod = { id: string; nombre: string; descripcion: string | null; formato: string | null; seccion: string; fotoUrl: string | null; precios: Record<string, number>; sabores: string[]; min: number; max: number };
 type Seccion = { codigo: string; label: string; icono: string };
+type Tarifa = { codigo: string; label: string; icono: string; cond: string };
 
 const GRAD: Record<string, string> = {
   propio: "from-[#f28a1e] to-[#d8a944]",
@@ -17,17 +18,19 @@ const GRAD: Record<string, string> = {
 const KEY = (id: string, sabor: string) => `${id}::${sabor}`;
 
 export default function Tienda({
-  negocio, logoUrl, productos, secciones, sinConfig,
+  negocio, logoUrl, productos, secciones, tarifas = [], sinConfig,
 }: {
-  negocio: string; logoUrl?: string; productos: Prod[]; secciones: Seccion[]; sinConfig: boolean;
+  negocio: string; logoUrl?: string; productos: Prod[]; secciones: Seccion[]; tarifas?: Tarifa[]; sinConfig: boolean;
 }) {
   const byId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
   const [cart, setCart] = useState<Record<string, number>>({}); // key = id::sabor -> cantidad
   const [sel, setSel] = useState<Record<string, string>>({}); // sabor elegido por producto
   const [seccion, setSeccion] = useState("");
+  const [tarifa, setTarifa] = useState(tarifas[0]?.codigo ?? "detalle");
   const [abierto, setAbierto] = useState(false);
   const [entrega, setEntrega] = useState("retiro");
 
+  const precioDe = (p: Prod) => p.precios[tarifa] ?? Object.values(p.precios)[0] ?? 0;
   const minOf = (id: string) => Math.max(1, byId.get(id)?.min ?? 1);
   const maxOf = (id: string) => byId.get(id)?.max ?? 0;
 
@@ -50,8 +53,9 @@ export default function Tienda({
   const items = useMemo(() => Object.entries(cart).map(([k, cant]) => {
     const [id, sabor] = k.split("::");
     const p = byId.get(id);
-    return p ? { k, id, sabor, p, cant, sub: p.precio * cant } : null;
-  }).filter(Boolean) as { k: string; id: string; sabor: string; p: Prod; cant: number; sub: number }[], [cart, byId]);
+    const pr = p ? (p.precios[tarifa] ?? Object.values(p.precios)[0] ?? 0) : 0;
+    return p ? { k, id, sabor, p, cant, precio: pr, sub: pr * cant } : null;
+  }).filter(Boolean) as { k: string; id: string; sabor: string; p: Prod; cant: number; precio: number; sub: number }[], [cart, byId, tarifa]);
 
   const total = items.reduce((s, i) => s + i.sub, 0);
   const nUnid = items.reduce((s, i) => s + i.cant, 0);
@@ -101,6 +105,25 @@ export default function Tienda({
           </div>
         ) : (
           <>
+            {/* Selector de tarifa (tipo de cliente) — los precios cambian solos */}
+            {tarifas.length > 1 && (
+              <div className="mt-5 rounded-2xl border border-crema-2 bg-white p-3 shadow-sm">
+                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-choco-2">Ver precios como:</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  {tarifas.map((t) => {
+                    const activo = tarifa === t.codigo;
+                    return (
+                      <button key={t.codigo} onClick={() => setTarifa(t.codigo)}
+                        className={`rounded-xl border-2 px-3 py-2 text-left transition active:scale-95 ${activo ? "border-azul bg-azul/10" : "border-crema-2 bg-white hover:border-crema-2"}`}>
+                        <span className={`block text-sm font-extrabold ${activo ? "text-azul" : "text-tinta"}`}>{t.icono} {t.label}</span>
+                        <span className="block text-[11px] text-choco-2">{t.cond}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {secciones.length > 1 && (
               <div className="sticky top-[57px] z-10 -mx-4 mt-5 flex gap-2 overflow-x-auto bg-papel/95 px-4 py-2 backdrop-blur">
                 <Chip activo={!seccion} onClick={() => setSeccion("")}>Todo</Chip>
@@ -126,7 +149,7 @@ export default function Tienda({
                           <span className="font-display text-4xl font-extrabold text-white/90">{p.nombre.charAt(0)}</span>
                         </div>
                       )}
-                      <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2.5 py-1 text-sm font-extrabold text-tinta shadow">{fmtCLP(p.precio)}</span>
+                      <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2.5 py-1 text-sm font-extrabold text-tinta shadow">{fmtCLP(precioDe(p))}</span>
                       {enCarro > 0 && <span className="absolute right-2 top-2 rounded-full bg-azul px-2 py-0.5 text-xs font-bold text-white shadow">🛒 {enCarro}</span>}
                     </div>
                     <div className="flex flex-1 flex-col p-3">
@@ -175,7 +198,7 @@ export default function Tienda({
                 <li key={i.k} className="flex items-center justify-between gap-2 py-2.5 text-sm">
                   <span className="min-w-0">
                     <span className="block truncate font-semibold text-tinta">{i.p.nombre}{i.sabor ? <span className="text-naranja"> · {i.sabor}</span> : ""}</span>
-                    <span className="text-xs text-choco-2">{fmtCLP(i.p.precio)} c/u</span>
+                    <span className="text-xs text-choco-2">{fmtCLP(i.precio)} c/u</span>
                   </span>
                   <span className="flex shrink-0 items-center gap-2">
                     <button onClick={() => setQty(i.k, i.id, i.cant - 1)} className="h-7 w-7 rounded-lg bg-crema-2 text-lg font-bold text-choco-2 active:scale-90">−</button>
@@ -192,6 +215,7 @@ export default function Tienda({
 
             <form action={crearPedidoTienda} className="mt-4 space-y-2.5">
               <input type="hidden" name="carro" value={carroJSON} />
+              <input type="hidden" name="tarifa" value={tarifa} />
               <input name="nombre" required placeholder="Tu nombre" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
               <input name="telefono" required inputMode="tel" placeholder="Tu WhatsApp / teléfono" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
               <div className="grid grid-cols-2 gap-2">

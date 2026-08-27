@@ -4,14 +4,13 @@ import Tienda from "./Tienda";
 
 export const dynamic = "force-dynamic";
 
-/** Lista de precios pública de la tienda: canal "web", si no "sala", si no la primera. */
-async function listaTienda() {
-  return (
-    (await prisma.listaPrecio.findFirst({ where: { canal: "web", activo: true } })) ??
-    (await prisma.listaPrecio.findFirst({ where: { canal: "sala", activo: true } })) ??
-    (await prisma.listaPrecio.findFirst({ where: { activo: true } }))
-  );
-}
+// Tarifas que el cliente puede elegir en la tienda (cada una lee su lista de precios).
+export const TARIFAS_TIENDA = [
+  { codigo: "detalle", canal: "sala", label: "Consumidor / detalle", icono: "🧍", cond: "Precio por unidad" },
+  { codigo: "online", canal: "web", label: "Promocional online", icono: "💻", cond: "Ofertas de la tienda" },
+  { codigo: "comerciante", canal: "negocio", label: "Mayorista / comerciante", icono: "🏪", cond: "Para negocios y repartos" },
+  { codigo: "distribuidor", canal: "distribuidor", label: "Distribuidor", icono: "🚚", cond: "Compra por volumen" },
+] as const;
 
 // Foto por defecto (assets de la web) según el producto, si no subió una propia.
 function imagenDefault(nombre: string): string | null {
@@ -31,11 +30,19 @@ function imagenDefault(nombre: string): string | null {
 
 export default async function TiendaPage() {
   const empresa = await prisma.empresa.findFirst();
-  const lista = await listaTienda();
 
-  const precios = lista
+  // Listas por tarifa (por canal). Guarda qué tarifa corresponde a cada lista.
+  const listas = await prisma.listaPrecio.findMany({ where: { canal: { in: TARIFAS_TIENDA.map((t) => t.canal) }, activo: true } });
+  const tarifaDeLista: Record<string, string> = {};
+  for (const t of TARIFAS_TIENDA) {
+    const l = listas.find((x) => x.canal === t.canal);
+    if (l) tarifaDeLista[l.id] = t.codigo;
+  }
+  const listaIds = Object.keys(tarifaDeLista);
+
+  const precios = listaIds.length
     ? await prisma.precioProducto.findMany({
-        where: { listaId: lista.id, cantidadMinima: 1, producto: { publicarTienda: true, activo: true } },
+        where: { listaId: { in: listaIds }, cantidadMinima: 1, producto: { publicarTienda: true, activo: true } },
         include: { producto: true },
       })
     : [];
@@ -54,18 +61,27 @@ export default async function TiendaPage() {
     return prod.permiteMixto ? ["🎲 Mixto al azar", ...disponibles] : disponibles;
   };
 
-  const productos = precios
-    .map((p) => ({
-      id: p.producto.id,
-      nombre: p.producto.nombre,
-      descripcion: p.producto.descripcion,
-      formato: p.producto.formato,
-      seccion: p.producto.seccion ?? "propio",
-      fotoUrl: p.producto.fotoUrl || imagenDefault(p.producto.nombre),
-      precio: Number(p.precio),
-      sabores: saboresDe(p.producto),
-      min: p.producto.minTienda ?? 1,
-      max: p.producto.maxTienda ?? 0,
+  // Agrupa por producto y arma el precio de cada tarifa.
+  const porProd = new Map<string, { producto: (typeof precios)[number]["producto"]; precios: Record<string, number> }>();
+  for (const p of precios) {
+    const tar = tarifaDeLista[p.listaId];
+    if (!tar) continue;
+    if (!porProd.has(p.producto.id)) porProd.set(p.producto.id, { producto: p.producto, precios: {} });
+    porProd.get(p.producto.id)!.precios[tar] = Number(p.precio);
+  }
+
+  const productos = [...porProd.values()]
+    .map(({ producto, precios }) => ({
+      id: producto.id,
+      nombre: producto.nombre,
+      descripcion: producto.descripcion,
+      formato: producto.formato,
+      seccion: producto.seccion ?? "propio",
+      fotoUrl: producto.fotoUrl || imagenDefault(producto.nombre),
+      precios, // { detalle, online, comerciante, distribuidor }
+      sabores: saboresDe(producto),
+      min: producto.minTienda ?? 1,
+      max: producto.maxTienda ?? 0,
     }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
@@ -73,13 +89,16 @@ export default async function TiendaPage() {
     codigo: s, label: seccionCatalogoLabel[s] ?? s, icono: seccionCatalogoIcono[s] ?? "🛍️",
   }));
 
+  const tarifas = TARIFAS_TIENDA.map((t) => ({ codigo: t.codigo, label: t.label, icono: t.icono, cond: t.cond }));
+
   return (
     <Tienda
       negocio={empresa?.nombre ?? "Tienda"}
       logoUrl="/marca/logo.png"
       productos={productos}
       secciones={secciones}
-      sinConfig={!lista || productos.length === 0}
+      tarifas={tarifas}
+      sinConfig={listaIds.length === 0 || productos.length === 0}
     />
   );
 }
