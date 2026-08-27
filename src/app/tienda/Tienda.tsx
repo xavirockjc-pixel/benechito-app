@@ -4,9 +4,14 @@ import { useMemo, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { crearPedidoTienda } from "./actions";
 
-type Prod = { id: string; nombre: string; descripcion: string | null; formato: string | null; seccion: string; fotoUrl: string | null; precios: Record<string, number>; sabores: string[]; min: number; max: number };
-type Seccion = { codigo: string; label: string; icono: string };
+type SaborInfo = { nombre: string; desc: string | null; foto: string | null };
+type Prod = { id: string; nombre: string; descripcion: string | null; formato: string | null; seccion: string; fotoUrl: string | null; precios: Record<string, number>; sabores: SaborInfo[]; grupo: string; min: number; max: number };
 type Tarifa = { codigo: string; label: string; icono: string; cond: string };
+
+const GRUPOS = [
+  { codigo: "helados", label: "Helados artesanales", icono: "🍧" },
+  { codigo: "dulces", label: "Dulces artesanales", icono: "🍫" },
+];
 
 const GRAD: Record<string, string> = {
   propio: "from-[#f28a1e] to-[#d8a944]",
@@ -18,17 +23,18 @@ const GRAD: Record<string, string> = {
 const KEY = (id: string, sabor: string) => `${id}::${sabor}`;
 
 export default function Tienda({
-  negocio, logoUrl, productos, secciones, tarifas = [], sinConfig,
+  negocio, logoUrl, productos, tarifas = [], sinConfig,
 }: {
-  negocio: string; logoUrl?: string; productos: Prod[]; secciones: Seccion[]; tarifas?: Tarifa[]; sinConfig: boolean;
+  negocio: string; logoUrl?: string; productos: Prod[]; tarifas?: Tarifa[]; sinConfig: boolean;
 }) {
   const byId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
   const [cart, setCart] = useState<Record<string, number>>({}); // key = id::sabor -> cantidad
   const [sel, setSel] = useState<Record<string, string>>({}); // sabor elegido por producto
-  const [seccion, setSeccion] = useState("");
+  const [grupo, setGrupo] = useState("helados");
   const [tarifa, setTarifa] = useState(tarifas[0]?.codigo ?? "detalle");
   const [abierto, setAbierto] = useState(false);
   const [entrega, setEntrega] = useState("retiro");
+  const [detalleSabor, setDetalleSabor] = useState<SaborInfo | null>(null); // modal "¿cómo es?"
 
   const precioDe = (p: Prod) => p.precios[tarifa] ?? Object.values(p.precios)[0] ?? 0;
   const minOf = (id: string) => Math.max(1, byId.get(id)?.min ?? 1);
@@ -61,7 +67,8 @@ export default function Tienda({
   const nUnid = items.reduce((s, i) => s + i.cant, 0);
   const carroJSON = JSON.stringify(items.map((i) => ({ productoId: i.id, cantidad: i.cant, sabor: i.sabor || undefined })));
   const enCarroProd = (id: string) => items.filter((i) => i.id === id).reduce((s, i) => s + i.cant, 0);
-  const visibles = seccion ? productos.filter((p) => p.seccion === seccion) : productos;
+  const gruposConProd = GRUPOS.filter((g) => productos.some((p) => p.grupo === g.codigo));
+  const visibles = productos.filter((p) => p.grupo === grupo);
   const fotos = productos.filter((p) => p.fotoUrl).slice(0, 8); // vitrina de la portada
 
   return (
@@ -142,11 +149,13 @@ export default function Tienda({
               </div>
             )}
 
-            {secciones.length > 1 && (
-              <div className="sticky top-[57px] z-10 -mx-4 mt-5 flex gap-2 overflow-x-auto bg-papel/95 px-4 py-2 backdrop-blur">
-                <Chip activo={!seccion} onClick={() => setSeccion("")}>Todo</Chip>
-                {secciones.map((s) => (
-                  <Chip key={s.codigo} activo={seccion === s.codigo} onClick={() => setSeccion(s.codigo)}>{s.icono} {s.label}</Chip>
+            {gruposConProd.length > 1 && (
+              <div className="sticky top-[57px] z-10 -mx-4 mt-5 flex gap-2 bg-papel/95 px-4 py-2 backdrop-blur">
+                {gruposConProd.map((g) => (
+                  <button key={g.codigo} onClick={() => setGrupo(g.codigo)}
+                    className={`flex-1 rounded-2xl px-4 py-3 text-center text-sm font-extrabold transition active:scale-95 ${grupo === g.codigo ? (g.codigo === "dulces" ? "bg-choco text-white shadow" : "bg-azul text-white shadow") : "bg-white text-choco-2 ring-1 ring-crema-2"}`}>
+                    {g.icono} {g.label}
+                  </button>
                 ))}
               </div>
             )}
@@ -155,7 +164,8 @@ export default function Tienda({
               {visibles.map((p) => {
                 const grad = GRAD[p.seccion] ?? GRAD.propio;
                 const enCarro = enCarroProd(p.id);
-                const saborSel = sel[p.id] ?? (p.sabores[0] ?? "");
+                const saborSel = sel[p.id] ?? (p.sabores[0]?.nombre ?? "");
+                const saborObj = p.sabores.find((s) => s.nombre === saborSel);
                 return (
                   <div key={p.id} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-crema-2 transition hover:-translate-y-1 hover:shadow-xl">
                     <div className="relative aspect-square w-full overflow-hidden">
@@ -178,9 +188,13 @@ export default function Tienda({
 
                       <div className="mt-2 space-y-2">
                         {p.sabores.length > 0 && (
-                          <select value={saborSel} onChange={(e) => setSel((s) => ({ ...s, [p.id]: e.target.value }))} className="w-full rounded-lg border border-crema-2 bg-crema/40 px-2 py-2 text-xs font-semibold text-tinta">
-                            {p.sabores.map((sb) => <option key={sb} value={sb}>{sb}</option>)}
-                          </select>
+                          <div className="flex items-center gap-1.5">
+                            <select value={saborSel} onChange={(e) => setSel((s) => ({ ...s, [p.id]: e.target.value }))} className="min-w-0 flex-1 rounded-lg border border-crema-2 bg-crema/40 px-2 py-2 text-xs font-semibold text-tinta">
+                              {p.sabores.map((sb) => <option key={sb.nombre} value={sb.nombre}>{sb.nombre}</option>)}
+                            </select>
+                            <button type="button" onClick={() => saborObj && setDetalleSabor(saborObj)} title="¿Cómo es este sabor?"
+                              className="shrink-0 rounded-lg bg-azul/10 px-2 py-2 text-sm font-bold text-azul active:scale-90">ⓘ</button>
+                          </div>
                         )}
                         <button onClick={() => agregar(p.id, saborSel)} className="w-full rounded-xl bg-azul py-2.5 text-sm font-extrabold text-white shadow-sm transition active:scale-95 hover:bg-azul-2">
                           Agregar{p.min > 1 ? ` ${p.min}` : ""}
@@ -253,14 +267,26 @@ export default function Tienda({
           </div>
         </div>
       )}
-    </div>
-  );
-}
 
-function Chip({ activo, onClick, children }: { activo: boolean; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button onClick={onClick} className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition active:scale-95 ${activo ? "bg-azul text-white shadow" : "bg-white text-choco-2 ring-1 ring-crema-2"}`}>
-      {children}
-    </button>
+      {/* Detalle del sabor: cómo es y de qué está hecho */}
+      {detalleSabor && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => setDetalleSabor(null)}>
+          <div className="w-full max-w-sm overflow-hidden rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            {detalleSabor.foto ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={detalleSabor.foto} alt={detalleSabor.nombre} className="aspect-square w-full object-cover" />
+            ) : (
+              <div className="flex aspect-[2/1] w-full items-center justify-center bg-gradient-to-br from-choco to-[#5a2d12] text-5xl">🍫</div>
+            )}
+            <div className="p-5">
+              <span className="sello bg-azul/10 text-azul script text-sm">Sabor Benechito ♥</span>
+              <h3 className="mt-1 font-display text-2xl font-extrabold text-tinta">{detalleSabor.nombre}</h3>
+              <p className="mt-2 text-sm text-choco-2">{detalleSabor.desc || "Pronto agregamos la descripción de este sabor. 🍧"}</p>
+              <button onClick={() => setDetalleSabor(null)} className="mt-4 w-full rounded-xl bg-azul py-3 text-sm font-extrabold text-white active:scale-95">Cerrar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

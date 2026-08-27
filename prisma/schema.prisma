@@ -737,6 +737,8 @@ model Sabor {
   nombre    String
   seccion   String?  // dulce | helado (agrupación mayor)
   linea     String   // tipo: cuchufli | trufa | paletas_agua | postres_500 | ...
+  descripcion String? // "de qué está hecho" (para la tienda)
+  fotoUrl     String? // imagen del sabor (para la tienda)
   activo    Boolean  @default(true)
   createdAt DateTime @default(now())
 
