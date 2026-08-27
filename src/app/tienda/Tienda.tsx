@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
+import { whatsappLink } from "@/lib/config";
 import { crearPedidoTienda } from "./actions";
 
 type SaborInfo = { nombre: string; desc: string | null; foto: string | null };
@@ -30,7 +31,6 @@ export default function Tienda({
   const byId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
   const [cart, setCart] = useState<Record<string, number>>({}); // key = id::sabor -> cantidad
   const [sel, setSel] = useState<Record<string, string>>({}); // sabor elegido por producto
-  const [grupo, setGrupo] = useState("helados");
   const [tarifa, setTarifa] = useState(tarifas[0]?.codigo ?? "detalle");
   const [abierto, setAbierto] = useState(false);
   const [entrega, setEntrega] = useState("retiro");
@@ -68,8 +68,52 @@ export default function Tienda({
   const carroJSON = JSON.stringify(items.map((i) => ({ productoId: i.id, cantidad: i.cant, sabor: i.sabor || undefined })));
   const enCarroProd = (id: string) => items.filter((i) => i.id === id).reduce((s, i) => s + i.cant, 0);
   const gruposConProd = GRUPOS.filter((g) => productos.some((p) => p.grupo === g.codigo));
-  const visibles = productos.filter((p) => p.grupo === grupo);
-  const fotos = productos.filter((p) => p.fotoUrl).slice(0, 8); // vitrina de la portada
+  const prodDeGrupo = (codigo: string) => productos.filter((p) => p.grupo === codigo);
+  const waPunto = whatsappLink("¡Hola Benechito! Quiero llevar un Punto Benechito o inscribirme para reparto 🙌");
+
+  // Tarjeta de producto (se usa en las dos secciones).
+  const renderCard = (p: Prod) => {
+    const grad = GRAD[p.seccion] ?? GRAD.propio;
+    const enCarro = enCarroProd(p.id);
+    const saborSel = sel[p.id] ?? (p.sabores[0]?.nombre ?? "");
+    const saborObj = p.sabores.find((s) => s.nombre === saborSel);
+    return (
+      <div key={p.id} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-crema-2 transition hover:-translate-y-1 hover:shadow-xl">
+        <div className="relative aspect-square w-full overflow-hidden">
+          {p.fotoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={p.fotoUrl} alt={p.nombre} className="h-full w-full object-cover transition group-hover:scale-105" />
+          ) : (
+            <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${grad}`}>
+              <span className="font-display text-4xl font-extrabold text-white/90">{p.nombre.charAt(0)}</span>
+            </div>
+          )}
+          <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2.5 py-1 text-sm font-extrabold text-tinta shadow">{fmtCLP(precioDe(p))}</span>
+          {enCarro > 0 && <span className="absolute right-2 top-2 rounded-full bg-azul px-2 py-0.5 text-xs font-bold text-white shadow">🛒 {enCarro}</span>}
+        </div>
+        <div className="flex flex-1 flex-col p-3">
+          <p className="font-bold leading-tight text-tinta">{p.nombre}</p>
+          {(p.descripcion || p.formato) && <p className="mt-0.5 line-clamp-2 text-xs text-choco-2">{p.descripcion || p.formato}</p>}
+          {p.sabores.length > 0 && <p className="mt-0.5 text-[11px] font-semibold text-naranja">{p.sabores.length} sabores</p>}
+          {p.min > 1 && <p className="text-[11px] text-choco-2">Mínimo {p.min}{p.max > 0 ? ` · máx ${p.max}` : ""}</p>}
+          <div className="mt-2 space-y-2">
+            {p.sabores.length > 0 && (
+              <div className="flex items-center gap-1.5">
+                <select value={saborSel} onChange={(e) => setSel((s) => ({ ...s, [p.id]: e.target.value }))} className="min-w-0 flex-1 rounded-lg border border-crema-2 bg-crema/40 px-2 py-2 text-xs font-semibold text-tinta">
+                  {p.sabores.map((sb) => <option key={sb.nombre} value={sb.nombre}>{sb.nombre}</option>)}
+                </select>
+                <button type="button" onClick={() => saborObj && setDetalleSabor(saborObj)} title="¿Cómo es este sabor?"
+                  className="shrink-0 rounded-lg bg-azul/10 px-2 py-2 text-sm font-bold text-azul active:scale-90">ⓘ</button>
+              </div>
+            )}
+            <button onClick={() => agregar(p.id, saborSel)} className="w-full rounded-xl bg-azul py-2.5 text-sm font-extrabold text-white shadow-sm transition active:scale-95 hover:bg-azul-2">
+              Agregar{p.min > 1 ? ` ${p.min}` : ""}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="relative min-h-screen bg-papel pb-28">
@@ -91,36 +135,31 @@ export default function Tienda({
       </header>
 
       <main className="relative mx-auto max-w-4xl px-4">
-        {/* Portada grande, veraniega y chocolatosa, con vitrina de productos */}
-        <section className="relative mt-4 overflow-hidden rounded-[1.75rem] border border-white/60 shadow-lg"
-          style={{ background: "linear-gradient(160deg,#8fd3f4 0%,#fdf0d5 42%,#f6c99f 72%,#c98a4b 100%)" }}>
-          <div className="bg-sellos pointer-events-none absolute inset-0 opacity-[0.12]" />
-          {/* Sol veraniego */}
-          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/40 blur-2xl" />
-          <div className="relative p-6 sm:p-8">
-            <span className="sello bg-white/70 text-azul script text-base shadow-sm">Tienda online ♥</span>
-            <h1 className="mt-2 max-w-lg font-display text-3xl font-extrabold leading-[1.05] text-tinta drop-shadow-sm sm:text-[2.7rem]">
-              Helados y dulces artesanales, <span className="text-azul">frescos y chocolatosos.</span>
-            </h1>
-            <p className="mt-2 max-w-md text-sm font-semibold text-tinta/80 sm:text-base">Puro verano en cada bocado ☀️🍫 — pídelos online y elige <b className="text-choco">retiro</b> o <b className="text-choco">despacho</b>.</p>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-tinta/80">
-              <span className="rounded-full bg-white/85 px-3 py-1.5 shadow-sm">🏪 Retiro</span>
-              <span className="rounded-full bg-white/85 px-3 py-1.5 shadow-sm">🛵 Despacho</span>
-              <span className="rounded-full bg-white/85 px-3 py-1.5 shadow-sm">💳 Pago en línea</span>
-            </div>
-
-            {/* Vitrina de fotos de productos */}
-            {fotos.length > 0 && (
-              <div className="mt-5 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                {fotos.map((p) => (
-                  <div key={p.id} className="w-28 shrink-0 overflow-hidden rounded-2xl bg-white shadow-md ring-2 ring-white sm:w-32">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.fotoUrl!} alt={p.nombre} className="aspect-square w-full object-cover" />
-                    <p className="truncate px-2 py-1 text-center text-[11px] font-bold text-tinta">{p.nombre}</p>
-                  </div>
-                ))}
-              </div>
+        {/* Portada tropical (temática Benechito): rayos verdes + logo */}
+        <section className="relative mt-4 overflow-hidden rounded-[1.75rem] shadow-lg"
+          style={{ background: "radial-gradient(circle at 50% 42%, #86c847 0%, #58a838 42%, #2f7d2a 100%)" }}>
+          {/* Rayos de sol */}
+          <div className="pointer-events-none absolute inset-0"
+            style={{ background: "repeating-conic-gradient(from 0deg at 50% 40%, rgba(255,255,255,0.12) 0deg 7deg, transparent 7deg 15deg)" }} />
+          {/* Hojas/flores tropicales en las esquinas */}
+          <span className="pointer-events-none absolute left-3 top-3 text-3xl opacity-90 sm:text-4xl">🌿</span>
+          <span className="pointer-events-none absolute right-4 top-4 text-3xl opacity-90 sm:text-4xl">🌺</span>
+          <span className="pointer-events-none absolute bottom-3 left-4 text-3xl opacity-90 sm:text-4xl">🍃</span>
+          <span className="pointer-events-none absolute bottom-4 right-3 text-3xl opacity-90 sm:text-4xl">🌻</span>
+          <div className="relative flex flex-col items-center px-6 py-10 text-center sm:py-12">
+            {logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={logoUrl} alt={negocio} className="h-24 w-auto drop-shadow-lg sm:h-28" />
+            ) : (
+              <h1 className="font-display text-4xl font-extrabold text-white drop-shadow">{negocio}</h1>
             )}
+            <p className="script mt-2 text-xl text-white drop-shadow-sm">El helado de la Zona del Carbón 🖤</p>
+            <p className="mt-1 text-sm font-semibold text-white/90">Helados y dulces artesanales · pide online</p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs font-bold text-tinta">
+              <span className="rounded-full bg-white/90 px-3 py-1.5 shadow-sm">🏪 Retiro</span>
+              <span className="rounded-full bg-white/90 px-3 py-1.5 shadow-sm">🛵 Despacho</span>
+              <span className="rounded-full bg-white/90 px-3 py-1.5 shadow-sm">💳 Pago en línea</span>
+            </div>
           </div>
         </section>
 
@@ -149,62 +188,45 @@ export default function Tienda({
               </div>
             )}
 
+            {/* Selección rápida (salta a la sección, no oculta) */}
             {gruposConProd.length > 1 && (
               <div className="sticky top-[57px] z-10 -mx-4 mt-5 flex gap-2 bg-papel/95 px-4 py-2 backdrop-blur">
                 {gruposConProd.map((g) => (
-                  <button key={g.codigo} onClick={() => setGrupo(g.codigo)}
-                    className={`flex-1 rounded-2xl px-4 py-3 text-center text-sm font-extrabold transition active:scale-95 ${grupo === g.codigo ? (g.codigo === "dulces" ? "bg-choco text-white shadow" : "bg-azul text-white shadow") : "bg-white text-choco-2 ring-1 ring-crema-2"}`}>
+                  <a key={g.codigo} href={`#g-${g.codigo}`}
+                    className={`flex-1 rounded-2xl px-4 py-3 text-center text-sm font-extrabold text-white shadow transition active:scale-95 ${g.codigo === "dulces" ? "bg-choco" : "bg-azul"}`}>
                     {g.icono} {g.label}
-                  </button>
+                  </a>
                 ))}
               </div>
             )}
 
-            <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-              {visibles.map((p) => {
-                const grad = GRAD[p.seccion] ?? GRAD.propio;
-                const enCarro = enCarroProd(p.id);
-                const saborSel = sel[p.id] ?? (p.sabores[0]?.nombre ?? "");
-                const saborObj = p.sabores.find((s) => s.nombre === saborSel);
-                return (
-                  <div key={p.id} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-crema-2 transition hover:-translate-y-1 hover:shadow-xl">
-                    <div className="relative aspect-square w-full overflow-hidden">
-                      {p.fotoUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={p.fotoUrl} alt={p.nombre} className="h-full w-full object-cover transition group-hover:scale-105" />
-                      ) : (
-                        <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${grad}`}>
-                          <span className="font-display text-4xl font-extrabold text-white/90">{p.nombre.charAt(0)}</span>
-                        </div>
-                      )}
-                      <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2.5 py-1 text-sm font-extrabold text-tinta shadow">{fmtCLP(precioDe(p))}</span>
-                      {enCarro > 0 && <span className="absolute right-2 top-2 rounded-full bg-azul px-2 py-0.5 text-xs font-bold text-white shadow">🛒 {enCarro}</span>}
-                    </div>
-                    <div className="flex flex-1 flex-col p-3">
-                      <p className="font-bold leading-tight text-tinta">{p.nombre}</p>
-                      {(p.descripcion || p.formato) && <p className="mt-0.5 line-clamp-2 text-xs text-choco-2">{p.descripcion || p.formato}</p>}
-                      {p.sabores.length > 0 && <p className="mt-0.5 text-[11px] font-semibold text-naranja">{p.sabores.length} sabores</p>}
-                      {p.min > 1 && <p className="text-[11px] text-choco-2">Mínimo {p.min}{p.max > 0 ? ` · máx ${p.max}` : ""}</p>}
+            {/* Secciones apiladas: primero Helados, luego Dulces (tipo landing) */}
+            {gruposConProd.map((g) => (
+              <section key={g.codigo} id={`g-${g.codigo}`} className="mt-7 scroll-mt-32">
+                <h2 className="mb-3 flex items-center gap-2 font-display text-2xl font-extrabold" style={{ color: g.codigo === "dulces" ? "#6b3f1d" : "#1479c4" }}>
+                  <span>{g.icono}</span> {g.label}
+                </h2>
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+                  {prodDeGrupo(g.codigo).map((p) => renderCard(p))}
+                </div>
+              </section>
+            ))}
 
-                      <div className="mt-2 space-y-2">
-                        {p.sabores.length > 0 && (
-                          <div className="flex items-center gap-1.5">
-                            <select value={saborSel} onChange={(e) => setSel((s) => ({ ...s, [p.id]: e.target.value }))} className="min-w-0 flex-1 rounded-lg border border-crema-2 bg-crema/40 px-2 py-2 text-xs font-semibold text-tinta">
-                              {p.sabores.map((sb) => <option key={sb.nombre} value={sb.nombre}>{sb.nombre}</option>)}
-                            </select>
-                            <button type="button" onClick={() => saborObj && setDetalleSabor(saborObj)} title="¿Cómo es este sabor?"
-                              className="shrink-0 rounded-lg bg-azul/10 px-2 py-2 text-sm font-bold text-azul active:scale-90">ⓘ</button>
-                          </div>
-                        )}
-                        <button onClick={() => agregar(p.id, saborSel)} className="w-full rounded-xl bg-azul py-2.5 text-sm font-extrabold text-white shadow-sm transition active:scale-95 hover:bg-azul-2">
-                          Agregar{p.min > 1 ? ` ${p.min}` : ""}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            {/* Publicidad: reparto / Punto Benechito */}
+            <section className="relative mt-9 overflow-hidden rounded-3xl bg-gradient-to-br from-azul to-azul-2 p-6 text-white shadow-lg sm:p-8">
+              <div className="bg-sellos pointer-events-none absolute inset-0 opacity-10" />
+              <div className="relative sm:flex sm:items-center sm:justify-between sm:gap-6">
+                <div>
+                  <span className="sello bg-white/20 script text-base text-white">¿Tienes un negocio? 🏪</span>
+                  <h3 className="mt-2 font-display text-2xl font-extrabold sm:text-3xl">Lleva un <span className="text-dorado-2">Punto Benechito</span> o únete al reparto</h3>
+                  <p className="mt-2 max-w-md text-sm text-white/90">Vende nuestros helados y dulces en tu local, o inscríbete para recibir reparto. Te acompañamos con la góndola y la primera reposición. 🍦</p>
+                </div>
+                <a href={waPunto} target="_blank" rel="noopener noreferrer"
+                  className="mt-4 inline-block shrink-0 rounded-full bg-white px-6 py-3.5 text-center text-base font-extrabold text-azul shadow-lg transition active:scale-95 hover:bg-crema sm:mt-0">
+                  📲 Quiero inscribirme
+                </a>
+              </div>
+            </section>
           </>
         )}
       </main>
