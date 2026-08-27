@@ -24,10 +24,15 @@ export default async function TiendaPage() {
       })
     : [];
 
-  // Sabores activos por línea (para el selector de sabor en la tienda).
+  // Sabores por línea (respaldo para trufas/cuchuflís, que sí tienen línea propia).
   const sabores = await prisma.sabor.findMany({ where: { activo: true }, select: { nombre: true, linea: true }, orderBy: { nombre: "asc" } });
   const saboresPorLinea: Record<string, string[]> = {};
   for (const s of sabores) (saboresPorLinea[s.linea] ??= []).push(s.nombre);
+  // Sabores del producto: los propios (saboresTienda) o, si no hay, los de su línea.
+  const saboresDe = (prod: { saboresTienda: string | null; linea: string }) => {
+    const propios = (prod.saboresTienda ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+    return propios.length > 0 ? propios : (saboresPorLinea[prod.linea] ?? []);
+  };
 
   const productos = precios
     .map((p) => ({
@@ -38,7 +43,7 @@ export default async function TiendaPage() {
       seccion: p.producto.seccion ?? "propio",
       fotoUrl: p.producto.fotoUrl,
       precio: Number(p.precio),
-      sabores: saboresPorLinea[p.producto.linea] ?? [],
+      sabores: saboresDe(p.producto),
       min: p.producto.minTienda ?? 1,
       max: p.producto.maxTienda ?? 0,
     }))

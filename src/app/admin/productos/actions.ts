@@ -35,6 +35,17 @@ export async function guardarReglasTienda(formData: FormData) {
   revalidatePath("/tienda");
 }
 
+/** Guarda los sabores del producto para la tienda (separados por coma). */
+export async function guardarSaboresTienda(formData: FormData) {
+  const id = val(formData, "id");
+  if (!id) return;
+  const raw = String(formData.get("saboresTienda") ?? "");
+  const limpio = raw.split(/[,\n]/).map((s) => s.trim()).filter(Boolean).join(", ");
+  await prisma.producto.update({ where: { id }, data: { saboresTienda: limpio || null } });
+  revalidatePath("/admin/productos/imagenes");
+  revalidatePath("/tienda");
+}
+
 /** Marca/desmarca un producto para la tienda (toggle rápido desde la galería). */
 export async function togglePublicarTienda(formData: FormData) {
   const id = val(formData, "id");

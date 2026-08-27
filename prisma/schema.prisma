@@ -96,6 +96,7 @@ model Producto {
   // Publicar en la tienda online pública (/tienda).
   publicarTienda Boolean @default(false)
   descripcion    String? // descripción para la tienda online
+  saboresTienda  String? // sabores propios del producto para la tienda (separados por coma)
   minTienda      Int     @default(1) // cantidad mínima por pedido (para preparar/entregar)
   maxTienda      Int     @default(0) // cantidad máxima (0 = sin tope)
   // Foto / presentación del producto (URL) — para el botón "Ver".

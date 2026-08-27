@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { lineaLabel } from "@/lib/dominio/produccion";
 import { seccionCatalogoLabel, seccionCatalogoIcono } from "@/lib/dominio/catalogo";
 import SubirFoto from "../SubirFoto";
-import { togglePublicarTienda, guardarReglasTienda } from "../actions";
+import { togglePublicarTienda, guardarReglasTienda, guardarSaboresTienda } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +57,15 @@ export default async function ImagenesPage() {
               </label>
               <button className="rounded bg-slate-900 px-2 py-1 text-[10px] font-bold text-white">OK</button>
             </form>
+            {/* Sabores editables (separados por coma) */}
+            <details className="mt-2">
+              <summary className="cursor-pointer text-[11px] font-bold text-[#1479c4]">🍧 Sabores ({(p.saboresTienda ?? "").split(",").map((s) => s.trim()).filter(Boolean).length})</summary>
+              <form action={guardarSaboresTienda} className="mt-1">
+                <input type="hidden" name="id" value={p.id} />
+                <textarea name="saboresTienda" rows={3} defaultValue={p.saboresTienda ?? ""} placeholder="Vainilla, Frutilla, Chocolate…" className="w-full rounded border border-slate-300 px-2 py-1 text-xs" />
+                <button className="mt-1 w-full rounded bg-slate-100 py-1 text-[11px] font-bold text-slate-700">Guardar sabores</button>
+              </form>
+            </details>
           </div>
         ))}
       </div>
