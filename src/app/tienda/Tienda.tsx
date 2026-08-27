@@ -70,6 +70,7 @@ export default function Tienda({
   const gruposConProd = GRUPOS.filter((g) => productos.some((p) => p.grupo === g.codigo));
   const prodDeGrupo = (codigo: string) => productos.filter((p) => p.grupo === codigo);
   const waPunto = whatsappLink("¡Hola Benechito! Quiero llevar un Punto Benechito o inscribirme para reparto 🙌");
+  const waComercial = whatsappLink("¡Hola Benechito! Tengo una consulta comercial 🙌");
 
   // Tarjeta de producto (se usa en las dos secciones).
   const renderCard = (p: Prod) => {
@@ -135,30 +136,36 @@ export default function Tienda({
       </header>
 
       <main className="relative mx-auto max-w-4xl px-4">
-        {/* Portada tropical (temática Benechito): rayos verdes + logo */}
-        <section className="relative mt-4 overflow-hidden rounded-[1.75rem] shadow-lg"
-          style={{ background: "radial-gradient(circle at 50% 42%, #86c847 0%, #58a838 42%, #2f7d2a 100%)" }}>
-          {/* Rayos de sol */}
-          <div className="pointer-events-none absolute inset-0"
-            style={{ background: "repeating-conic-gradient(from 0deg at 50% 40%, rgba(255,255,255,0.12) 0deg 7deg, transparent 7deg 15deg)" }} />
-          {/* Hojas/flores tropicales en las esquinas */}
-          <span className="pointer-events-none absolute left-3 top-3 text-3xl opacity-90 sm:text-4xl">🌿</span>
-          <span className="pointer-events-none absolute right-4 top-4 text-3xl opacity-90 sm:text-4xl">🌺</span>
-          <span className="pointer-events-none absolute bottom-3 left-4 text-3xl opacity-90 sm:text-4xl">🍃</span>
-          <span className="pointer-events-none absolute bottom-4 right-3 text-3xl opacity-90 sm:text-4xl">🌻</span>
-          <div className="relative flex flex-col items-center px-6 py-10 text-center sm:py-12">
-            {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt={negocio} className="h-24 w-auto drop-shadow-lg sm:h-28" />
-            ) : (
-              <h1 className="font-display text-4xl font-extrabold text-white drop-shadow">{negocio}</h1>
-            )}
-            <p className="script mt-2 text-xl text-white drop-shadow-sm">El helado de la Zona del Carbón 🖤</p>
-            <p className="mt-1 text-sm font-semibold text-white/90">Helados y dulces artesanales · pide online</p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs font-bold text-tinta">
-              <span className="rounded-full bg-white/90 px-3 py-1.5 shadow-sm">🏪 Retiro</span>
-              <span className="rounded-full bg-white/90 px-3 py-1.5 shadow-sm">🛵 Despacho</span>
-              <span className="rounded-full bg-white/90 px-3 py-1.5 shadow-sm">💳 Pago en línea</span>
+        {/* Portada azul Benechito, horizontal, con productos */}
+        <section className="relative mt-4 overflow-hidden rounded-[1.75rem] shadow-xl"
+          style={{ background: "radial-gradient(circle at 50% 22%, #33abe6 0%, #1479c4 48%, #0f5e9c 100%)" }}>
+          {/* rayos + sellos de marca de fondo */}
+          <div className="pointer-events-none absolute inset-0" style={{ background: "repeating-conic-gradient(from 0deg at 50% 18%, rgba(255,255,255,0.10) 0deg 7deg, transparent 7deg 15deg)" }} />
+          <div className="bg-sellos pointer-events-none absolute inset-0 opacity-[0.06]" />
+          <div className="relative grid items-center gap-4 p-6 sm:grid-cols-2 sm:p-8">
+            {/* Texto + logo */}
+            <div className="text-center sm:text-left">
+              {logoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt={negocio} className="mx-auto h-24 w-auto drop-shadow-lg sm:mx-0 sm:h-28" />
+              ) : (
+                <h1 className="font-display text-4xl font-extrabold text-white drop-shadow">{negocio}</h1>
+              )}
+              <p className="script mt-1 text-2xl text-white drop-shadow-sm">Hecho a lo Benechito ♥</p>
+              <p className="mt-1 text-sm font-bold uppercase tracking-wider text-white/85">Productos Artesanales Helados</p>
+              <p className="mt-3 font-display text-3xl font-extrabold leading-tight text-white drop-shadow sm:text-4xl">Irresistible <span className="text-dorado-2">Sabor Artesanal</span></p>
+              <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs font-bold text-azul sm:justify-start">
+                <span className="rounded-full bg-white px-3 py-1.5 shadow-sm">🏪 Retiro</span>
+                <span className="rounded-full bg-white px-3 py-1.5 shadow-sm">🛵 Despacho</span>
+                <span className="rounded-full bg-white px-3 py-1.5 shadow-sm">💳 Pago en línea</span>
+              </div>
+            </div>
+            {/* Vitrina de productos (helados) */}
+            <div className="grid grid-cols-3 gap-2 sm:gap-3">
+              {["/productos/tu-y-yo.jpg", "/productos/paletas-leche.jpg", "/productos/paletas-agua.jpg", "/productos/postres.jpg", "/productos/paletas-premium.jpg", "/productos/variedades.jpg"].map((src) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={src} src={src} alt="Producto Benechito" className="aspect-square w-full rounded-2xl object-cover shadow-lg ring-2 ring-white/70" />
+              ))}
             </div>
           </div>
         </section>
@@ -202,31 +209,54 @@ export default function Tienda({
 
             {/* Secciones apiladas: primero Helados, luego Dulces (tipo landing) */}
             {gruposConProd.map((g) => (
-              <section key={g.codigo} id={`g-${g.codigo}`} className="mt-7 scroll-mt-32">
-                <h2 className="mb-3 flex items-center gap-2 font-display text-2xl font-extrabold" style={{ color: g.codigo === "dulces" ? "#6b3f1d" : "#1479c4" }}>
-                  <span>{g.icono}</span> {g.label}
-                </h2>
+              <section key={g.codigo} id={`g-${g.codigo}`} className="mt-8 scroll-mt-32">
+                <div className="mb-4 flex items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 text-white shadow-md"
+                  style={{ background: g.codigo === "dulces" ? "linear-gradient(90deg,#6b3f1d,#8a4b1e)" : "linear-gradient(90deg,#1479c4,#0f5e9c)" }}>
+                  <span className="text-2xl">{g.icono}</span>
+                  <h2 className="font-display text-xl font-extrabold sm:text-2xl">{g.label}</h2>
+                  <span className="ml-auto rounded-full bg-white/20 px-2.5 py-1 text-xs font-bold">{prodDeGrupo(g.codigo).length} productos</span>
+                </div>
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                   {prodDeGrupo(g.codigo).map((p) => renderCard(p))}
                 </div>
               </section>
             ))}
 
-            {/* Publicidad: reparto / Punto Benechito */}
-            <section className="relative mt-9 overflow-hidden rounded-3xl bg-gradient-to-br from-azul to-azul-2 p-6 text-white shadow-lg sm:p-8">
-              <div className="bg-sellos pointer-events-none absolute inset-0 opacity-10" />
-              <div className="relative sm:flex sm:items-center sm:justify-between sm:gap-6">
-                <div>
-                  <span className="sello bg-white/20 script text-base text-white">¿Tienes un negocio? 🏪</span>
+            {/* Publicidad: reparto / Punto Benechito (con góndola de dulces) */}
+            <section className="relative mt-10 overflow-hidden rounded-3xl bg-gradient-to-br from-[#1e6b3a] to-[#0f4d28] p-6 text-white shadow-xl sm:p-8">
+              <div className="bg-sellos pointer-events-none absolute inset-0 opacity-[0.08]" />
+              <div className="relative grid items-center gap-5 sm:grid-cols-2">
+                <div className="text-center sm:text-left">
+                  <span className="sello bg-white/15 script text-base text-white">¿Tienes un negocio? 🏪</span>
                   <h3 className="mt-2 font-display text-2xl font-extrabold sm:text-3xl">Lleva un <span className="text-dorado-2">Punto Benechito</span> o únete al reparto</h3>
-                  <p className="mt-2 max-w-md text-sm text-white/90">Vende nuestros helados y dulces en tu local, o inscríbete para recibir reparto. Te acompañamos con la góndola y la primera reposición. 🍦</p>
+                  <p className="mx-auto mt-2 max-w-md text-sm text-white/90 sm:mx-0">Vende nuestros helados y dulces en tu local, o inscríbete para recibir reparto. Te entregamos la <b>góndola</b> y la primera reposición. Tú solo te preocupas de vender. 🍫</p>
+                  <a href={waPunto} target="_blank" rel="noopener noreferrer"
+                    className="mt-4 inline-block rounded-full bg-white px-6 py-3.5 text-base font-extrabold text-[#1e6b3a] shadow-lg transition active:scale-95 hover:bg-crema">
+                    📲 Quiero inscribirme
+                  </a>
                 </div>
-                <a href={waPunto} target="_blank" rel="noopener noreferrer"
-                  className="mt-4 inline-block shrink-0 rounded-full bg-white px-6 py-3.5 text-center text-base font-extrabold text-azul shadow-lg transition active:scale-95 hover:bg-crema sm:mt-0">
-                  📲 Quiero inscribirme
-                </a>
+                <div className="flex justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/laminas/gondola-negocio.png" alt="Góndola Benechito con dulces artesanales" className="max-h-72 w-auto rounded-2xl shadow-2xl ring-2 ring-white/40" />
+                </div>
               </div>
             </section>
+
+            {/* Footer: redes y consultas comerciales */}
+            <footer className="mt-8 rounded-3xl bg-tinta p-6 text-center text-white shadow-lg">
+              {logoUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={logoUrl} alt={negocio} className="mx-auto h-14 w-auto brightness-0 invert" />
+              )}
+              <p className="script mt-1 text-lg text-white/90">Hecho a lo Benechito ♥</p>
+              <p className="mt-3 text-xs font-bold uppercase tracking-wider text-white/60">Consultas comerciales</p>
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                <a href={waComercial} target="_blank" rel="noopener noreferrer" className="rounded-full bg-[#25d366] px-4 py-2.5 text-sm font-bold text-white active:scale-95">💬 WhatsApp</a>
+                <a href="https://www.facebook.com/Benechito.helados/" target="_blank" rel="noopener noreferrer" className="rounded-full bg-[#1877f2] px-4 py-2.5 text-sm font-bold text-white active:scale-95">📘 Facebook</a>
+                <a href="https://instagram.com/benechito.oficial" target="_blank" rel="noopener noreferrer" className="rounded-full bg-gradient-to-r from-[#f58529] via-[#dd2a7b] to-[#8134af] px-4 py-2.5 text-sm font-bold text-white active:scale-95">📷 Instagram</a>
+              </div>
+              <p className="mt-4 text-[11px] text-white/50">@benechito.oficial · Productos Artesanales Helados</p>
+            </footer>
           </>
         )}
       </main>
