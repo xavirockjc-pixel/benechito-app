@@ -64,9 +64,10 @@ export default async function TiendaPage() {
     return nombres.map((nombre) => ({ nombre, ...(infoSabor[norm(nombre)] ?? { desc: null, foto: null }) }));
   };
 
-  // Grupo Helados / Dulces por línea.
+  // Grupo Helados / Dulces por línea (o por nombre, para combos con línea "otro").
   const DULCES = new Set(["trufa", "trufas", "cuchufli", "cocada"]);
-  const grupoDe = (linea: string) => (DULCES.has(linea) ? "dulces" : "helados");
+  const grupoDe = (linea: string, nombre: string) =>
+    DULCES.has(linea) || /trufa|cuchufl|cocada|bombon/.test(norm(nombre)) ? "dulces" : "helados";
 
   // Agrupa por producto y arma el precio de cada tarifa.
   const porProd = new Map<string, { producto: (typeof precios)[number]["producto"]; precios: Record<string, number> }>();
@@ -87,7 +88,7 @@ export default async function TiendaPage() {
       fotoUrl: producto.fotoUrl || imagenDefault(producto.nombre),
       precios, // { detalle, online, comerciante, distribuidor }
       sabores: saboresDe(producto),
-      grupo: grupoDe(producto.linea),
+      grupo: grupoDe(producto.linea, producto.nombre),
       min: producto.minTienda ?? 1,
       max: producto.maxTienda ?? 0,
     }))
