@@ -23,6 +23,18 @@ export async function guardarFotoProducto(formData: FormData) {
   revalidatePath("/tienda");
 }
 
+/** Guarda las reglas de cantidad de la tienda (mínimo/máximo) de un producto. */
+export async function guardarReglasTienda(formData: FormData) {
+  const id = val(formData, "id");
+  if (!id) return;
+  const min = Math.max(1, Math.floor(Number(val(formData, "minTienda")) || 1));
+  const maxRaw = Math.floor(Number(val(formData, "maxTienda")) || 0);
+  const max = maxRaw > 0 && maxRaw >= min ? maxRaw : 0;
+  await prisma.producto.update({ where: { id }, data: { minTienda: min, maxTienda: max } });
+  revalidatePath("/admin/productos/imagenes");
+  revalidatePath("/tienda");
+}
+
 /** Marca/desmarca un producto para la tienda (toggle rápido desde la galería). */
 export async function togglePublicarTienda(formData: FormData) {
   const id = val(formData, "id");

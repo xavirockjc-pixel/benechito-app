@@ -96,6 +96,8 @@ model Producto {
   // Publicar en la tienda online pública (/tienda).
   publicarTienda Boolean @default(false)
   descripcion    String? // descripción para la tienda online
+  minTienda      Int     @default(1) // cantidad mínima por pedido (para preparar/entregar)
+  maxTienda      Int     @default(0) // cantidad máxima (0 = sin tope)
   // Foto / presentación del producto (URL) — para el botón "Ver".
   fotoUrl      String?
 
@@ -304,6 +306,7 @@ model PedidoItem {
   productoId String
   cantidad   Int
   precioUnit Decimal  @db.Decimal(12, 2)
+  sabor      String? // sabor elegido en la tienda (si aplica)
 
   @@index([pedidoId])
 }

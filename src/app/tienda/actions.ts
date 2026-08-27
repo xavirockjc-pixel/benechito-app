@@ -6,7 +6,7 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { mpConfigurado, crearPreferencia } from "@/lib/mercadopago";
 
-type LineaCarro = { productoId: string; cantidad: number };
+type LineaCarro = { productoId: string; cantidad: number; sabor?: string };
 
 /** Últimos 8 dígitos del teléfono, para calzar clientes sin depender del prefijo. */
 function colaTelefono(v: string): string {
@@ -46,9 +46,17 @@ export async function crearPedidoTienda(formData: FormData) {
     select: { productoId: true, precio: true },
   });
   const precioDe = new Map(precios.map((p) => [p.productoId, Number(p.precio)]));
+  // Reglas de cantidad (mín/máx) por producto — se validan en el servidor.
+  const prods = await prisma.producto.findMany({ where: { id: { in: ids } }, select: { id: true, minTienda: true, maxTienda: true } });
+  const reglaDe = new Map(prods.map((p) => [p.id, { min: Math.max(1, p.minTienda ?? 1), max: p.maxTienda ?? 0 }]));
   const items = carro
     .filter((l) => precioDe.has(l.productoId))
-    .map((l) => ({ productoId: l.productoId, cantidad: Math.max(1, Math.floor(l.cantidad)), precioUnit: precioDe.get(l.productoId)! }));
+    .map((l) => {
+      const r = reglaDe.get(l.productoId) ?? { min: 1, max: 0 };
+      let cant = Math.max(r.min, Math.floor(l.cantidad));
+      if (r.max > 0) cant = Math.min(cant, r.max);
+      return { productoId: l.productoId, cantidad: cant, precioUnit: precioDe.get(l.productoId)!, sabor: (l.sabor ?? "").trim() || null };
+    });
   if (items.length === 0) redirect("/tienda?error=carro");
 
   // Cliente: calza por teléfono o se crea uno nuevo (consumidor web).

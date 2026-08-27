@@ -24,6 +24,11 @@ export default async function TiendaPage() {
       })
     : [];
 
+  // Sabores activos por línea (para el selector de sabor en la tienda).
+  const sabores = await prisma.sabor.findMany({ where: { activo: true }, select: { nombre: true, linea: true }, orderBy: { nombre: "asc" } });
+  const saboresPorLinea: Record<string, string[]> = {};
+  for (const s of sabores) (saboresPorLinea[s.linea] ??= []).push(s.nombre);
+
   const productos = precios
     .map((p) => ({
       id: p.producto.id,
@@ -33,6 +38,9 @@ export default async function TiendaPage() {
       seccion: p.producto.seccion ?? "propio",
       fotoUrl: p.producto.fotoUrl,
       precio: Number(p.precio),
+      sabores: saboresPorLinea[p.producto.linea] ?? [],
+      min: p.producto.minTienda ?? 1,
+      max: p.producto.maxTienda ?? 0,
     }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 

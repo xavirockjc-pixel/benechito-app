@@ -32,7 +32,7 @@ export default async function GraciasPage({ searchParams }: { searchParams: Prom
             <ul className="mt-1 divide-y divide-crema-2 text-sm">
               {pedido.items.map((it) => (
                 <li key={it.id} className="flex justify-between py-1.5">
-                  <span className="text-choco">{it.cantidad}× {it.producto.nombre}</span>
+                  <span className="text-choco">{it.cantidad}× {it.producto.nombre}{it.sabor ? <span className="text-naranja"> · {it.sabor}</span> : ""}</span>
                   <span className="font-semibold text-choco">{fmtCLP(Number(it.precioUnit) * it.cantidad)}</span>
                 </li>
               ))}

@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Producto" ADD COLUMN     "maxTienda" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "minTienda" INTEGER NOT NULL DEFAULT 1;

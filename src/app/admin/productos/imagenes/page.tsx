@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { lineaLabel } from "@/lib/dominio/produccion";
 import { seccionCatalogoLabel, seccionCatalogoIcono } from "@/lib/dominio/catalogo";
 import SubirFoto from "../SubirFoto";
-import { togglePublicarTienda } from "../actions";
+import { togglePublicarTienda, guardarReglasTienda } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +45,17 @@ export default async function ImagenesPage() {
               <button className={`w-full rounded-lg py-2 text-xs font-bold transition active:scale-95 ${p.publicarTienda ? "bg-green-600 text-white" : "bg-slate-100 text-slate-600"}`}>
                 {p.publicarTienda ? "✓ En la tienda" : "Publicar en tienda"}
               </button>
+            </form>
+            {/* Cantidad configurable: mínimo / máximo por pedido */}
+            <form action={guardarReglasTienda} className="mt-2 flex items-end gap-1">
+              <input type="hidden" name="id" value={p.id} />
+              <label className="flex-1 text-[10px] font-bold text-slate-500">Mín
+                <input name="minTienda" inputMode="numeric" defaultValue={p.minTienda || 1} className="mt-0.5 w-full rounded border border-slate-300 px-1.5 py-1 text-xs" />
+              </label>
+              <label className="flex-1 text-[10px] font-bold text-slate-500">Máx
+                <input name="maxTienda" inputMode="numeric" defaultValue={p.maxTienda || ""} placeholder="∞" className="mt-0.5 w-full rounded border border-slate-300 px-1.5 py-1 text-xs" />
+              </label>
+              <button className="rounded bg-slate-900 px-2 py-1 text-[10px] font-bold text-white">OK</button>
             </form>
           </div>
         ))}
