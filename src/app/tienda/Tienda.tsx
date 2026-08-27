@@ -62,11 +62,12 @@ export default function Tienda({
   const carroJSON = JSON.stringify(items.map((i) => ({ productoId: i.id, cantidad: i.cant, sabor: i.sabor || undefined })));
   const enCarroProd = (id: string) => items.filter((i) => i.id === id).reduce((s, i) => s + i.cant, 0);
   const visibles = seccion ? productos.filter((p) => p.seccion === seccion) : productos;
+  const fotos = productos.filter((p) => p.fotoUrl).slice(0, 8); // vitrina de la portada
 
   return (
     <div className="relative min-h-screen bg-papel pb-28">
-      {/* Fondo de doodles de dulces (temática de la web) */}
-      <div className="bg-doodles pointer-events-none fixed inset-0 opacity-[0.06]" />
+      {/* Fondo de sellos: paletas, chocolate, leche, frutas, frutos secos */}
+      <div className="bg-sellos pointer-events-none fixed inset-0 opacity-[0.05]" />
 
       <header className="sticky top-0 z-20 border-b border-crema-2/70 bg-crema/85 backdrop-blur-md">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-2.5">
@@ -83,19 +84,36 @@ export default function Tienda({
       </header>
 
       <main className="relative mx-auto max-w-4xl px-4">
-        <section className="relative mt-4 overflow-hidden rounded-3xl border border-crema-2 bg-gradient-to-b from-azul/10 via-crema/50 to-crema p-6 shadow-sm sm:p-8">
-          <div className="bg-doodles pointer-events-none absolute inset-0 opacity-[0.10]" />
-          <div className="relative">
-            <span className="sello bg-azul/10 text-azul script text-base">Tienda online ♥</span>
-            <h1 className="mt-2 font-display text-3xl font-extrabold leading-tight text-tinta sm:text-4xl">
-              Helados y dulces artesanales, <span className="text-azul">pídelos online.</span>
+        {/* Portada grande, veraniega y chocolatosa, con vitrina de productos */}
+        <section className="relative mt-4 overflow-hidden rounded-[1.75rem] border border-white/60 shadow-lg"
+          style={{ background: "linear-gradient(160deg,#8fd3f4 0%,#fdf0d5 42%,#f6c99f 72%,#c98a4b 100%)" }}>
+          <div className="bg-sellos pointer-events-none absolute inset-0 opacity-[0.12]" />
+          {/* Sol veraniego */}
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/40 blur-2xl" />
+          <div className="relative p-6 sm:p-8">
+            <span className="sello bg-white/70 text-azul script text-base shadow-sm">Tienda online ♥</span>
+            <h1 className="mt-2 max-w-lg font-display text-3xl font-extrabold leading-[1.05] text-tinta drop-shadow-sm sm:text-[2.7rem]">
+              Helados y dulces artesanales, <span className="text-azul">frescos y chocolatosos.</span>
             </h1>
-            <p className="mt-2 max-w-md text-sm text-tinta/75 sm:text-base">Elige <b className="text-naranja-2">retiro en el local</b> o <b className="text-naranja-2">despacho a domicilio</b>. Fresco y hecho a lo Benechito. 🍧</p>
-            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-tinta/70">
-              <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-crema-2">🏪 Retiro</span>
-              <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-crema-2">🛵 Despacho</span>
-              <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-crema-2">💳 Pago en línea</span>
+            <p className="mt-2 max-w-md text-sm font-semibold text-tinta/80 sm:text-base">Puro verano en cada bocado ☀️🍫 — pídelos online y elige <b className="text-choco">retiro</b> o <b className="text-choco">despacho</b>.</p>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-tinta/80">
+              <span className="rounded-full bg-white/85 px-3 py-1.5 shadow-sm">🏪 Retiro</span>
+              <span className="rounded-full bg-white/85 px-3 py-1.5 shadow-sm">🛵 Despacho</span>
+              <span className="rounded-full bg-white/85 px-3 py-1.5 shadow-sm">💳 Pago en línea</span>
             </div>
+
+            {/* Vitrina de fotos de productos */}
+            {fotos.length > 0 && (
+              <div className="mt-5 flex gap-3 overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                {fotos.map((p) => (
+                  <div key={p.id} className="w-28 shrink-0 overflow-hidden rounded-2xl bg-white shadow-md ring-2 ring-white sm:w-32">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={p.fotoUrl!} alt={p.nombre} className="aspect-square w-full object-cover" />
+                    <p className="truncate px-2 py-1 text-center text-[11px] font-bold text-tinta">{p.nombre}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </section>
 

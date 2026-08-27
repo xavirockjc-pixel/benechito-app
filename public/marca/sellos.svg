@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="380" height="380" viewBox="0 0 380 380">
+  <g fill="none" stroke="#8a4b1e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity="0.9">
+    <!-- Paleta (popsicle) -->
+    <g transform="translate(40,45) rotate(-12)">
+      <rect x="-16" y="-24" width="32" height="42" rx="14"/>
+      <line x1="0" y1="18" x2="0" y2="40"/>
+    </g>
+    <!-- Cono con helado -->
+    <g transform="translate(150,60) rotate(8)">
+      <circle cx="0" cy="-8" r="15"/>
+      <path d="M-13 0 L0 34 L13 0"/>
+      <path d="M-8 8 H8 M-5 16 H5"/>
+    </g>
+    <!-- Barra de chocolate -->
+    <g transform="translate(270,45) rotate(-6)">
+      <rect x="-22" y="-16" width="44" height="34" rx="4"/>
+      <line x1="0" y1="-16" x2="0" y2="18"/>
+      <line x1="-22" y1="1" x2="22" y2="1"/>
+    </g>
+    <!-- Frutilla -->
+    <g transform="translate(60,160) rotate(10)">
+      <path d="M0 -14 C 18 -14 18 8 0 24 C -18 8 -18 -14 0 -14 Z"/>
+      <path d="M-8 -16 L0 -10 L8 -16"/>
+      <circle cx="-5" cy="0" r="1.4"/><circle cx="5" cy="2" r="1.4"/><circle cx="0" cy="10" r="1.4"/>
+    </g>
+    <!-- Vaso Tú y Yo (con mordida) -->
+    <g transform="translate(185,175) rotate(-8)">
+      <path d="M-15 -20 H15 L11 22 H-11 Z"/>
+      <path d="M-15 -20 q8 6 15 0 q7 -6 15 0"/>
+    </g>
+    <!-- Gota de leche -->
+    <g transform="translate(300,165) rotate(6)">
+      <path d="M0 -20 C 12 -4 14 6 14 10 A14 14 0 1 1 -14 10 C -14 6 -12 -4 0 -20 Z"/>
+    </g>
+    <!-- Maní / fruto seco -->
+    <g transform="translate(45,285) rotate(-14)">
+      <path d="M-10 -12 a10 10 0 0 0 0 20 a12 12 0 0 0 0 -6 a12 12 0 0 0 0 6 a10 10 0 0 0 0 -20 Z" transform="rotate(90)"/>
+      <path d="M-14 -2 q4 3 8 0 M-14 4 q4 3 8 0" transform="rotate(90)"/>
+    </g>
+    <!-- Cerezas -->
+    <g transform="translate(165,290) rotate(6)">
+      <circle cx="-8" cy="10" r="8"/><circle cx="9" cy="12" r="8"/>
+      <path d="M-8 2 C -4 -12 6 -14 9 4"/>
+      <path d="M-8 2 q10 -6 17 2" />
+    </g>
+    <!-- Cuchufli / barquillo -->
+    <g transform="translate(295,290) rotate(-10)">
+      <rect x="-20" y="-8" width="40" height="16" rx="8"/>
+      <line x1="-12" y1="-8" x2="-16" y2="8"/><line x1="-2" y1="-8" x2="-6" y2="8"/>
+      <line x1="8" y1="-8" x2="4" y2="8"/><line x1="16" y1="-8" x2="12" y2="8"/>
+    </g>
+  </g>
+</svg>

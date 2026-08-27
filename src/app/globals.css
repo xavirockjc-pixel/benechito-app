@@ -68,6 +68,13 @@ h1, h2, h3, h4 {
   background-repeat: repeat;
 }
 
+/* Patrón de SELLOS/timbres: paletas, chocolate, leche, frutas, frutos secos */
+.bg-sellos {
+  background-image: url("/marca/sellos.svg");
+  background-size: 300px 300px;
+  background-repeat: repeat;
+}
+
 /* Sello "Hecho a lo Benechito" reutilizable */
 .sello {
   display: inline-flex;
