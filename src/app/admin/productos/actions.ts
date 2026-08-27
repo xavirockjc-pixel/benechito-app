@@ -10,6 +10,30 @@ const val = (fd: FormData, k: string) => {
   return v ? String(v).trim() : "";
 };
 
+/** Guarda la foto de un producto (imagen subida y comprimida a data URL). */
+export async function guardarFotoProducto(formData: FormData) {
+  const id = val(formData, "id");
+  const fotoUrl = String(formData.get("fotoUrl") ?? "");
+  if (!id) return;
+  // Solo acepta data URL de imagen (subida) o una URL http; evita basura.
+  const ok = fotoUrl.startsWith("data:image/") || fotoUrl.startsWith("http");
+  await prisma.producto.update({ where: { id }, data: { fotoUrl: ok ? fotoUrl : null } });
+  revalidatePath("/admin/productos/imagenes");
+  revalidatePath("/admin/productos");
+  revalidatePath("/tienda");
+}
+
+/** Marca/desmarca un producto para la tienda (toggle rápido desde la galería). */
+export async function togglePublicarTienda(formData: FormData) {
+  const id = val(formData, "id");
+  if (!id) return;
+  const p = await prisma.producto.findUnique({ where: { id }, select: { publicarTienda: true } });
+  if (!p) return;
+  await prisma.producto.update({ where: { id }, data: { publicarTienda: !p.publicarTienda } });
+  revalidatePath("/admin/productos/imagenes");
+  revalidatePath("/tienda");
+}
+
 /** Alta de un producto del catálogo. */
 export async function crearProducto(formData: FormData) {
   const nombre = val(formData, "nombre");
