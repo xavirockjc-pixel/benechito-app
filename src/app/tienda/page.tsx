@@ -28,10 +28,14 @@ export default async function TiendaPage() {
   const sabores = await prisma.sabor.findMany({ where: { activo: true }, select: { nombre: true, linea: true }, orderBy: { nombre: "asc" } });
   const saboresPorLinea: Record<string, string[]> = {};
   for (const s of sabores) (saboresPorLinea[s.linea] ??= []).push(s.nombre);
-  // Sabores del producto: los propios (saboresTienda) o, si no hay, los de su línea.
-  const saboresDe = (prod: { saboresTienda: string | null; linea: string }) => {
+  // Sabores del producto: los propios (saboresTienda) o, si no hay, los de su línea;
+  // se quitan los NO disponibles hoy y se agrega "Mixto al azar" si está activo.
+  const saboresDe = (prod: { saboresTienda: string | null; saboresNoDisp: string | null; permiteMixto: boolean; linea: string }) => {
     const propios = (prod.saboresTienda ?? "").split(",").map((x) => x.trim()).filter(Boolean);
-    return propios.length > 0 ? propios : (saboresPorLinea[prod.linea] ?? []);
+    const base = propios.length > 0 ? propios : (saboresPorLinea[prod.linea] ?? []);
+    const noDisp = new Set((prod.saboresNoDisp ?? "").split(",").map((x) => x.trim()).filter(Boolean));
+    const disponibles = base.filter((s) => !noDisp.has(s));
+    return prod.permiteMixto ? ["🎲 Mixto al azar", ...disponibles] : disponibles;
   };
 
   const productos = precios

@@ -97,6 +97,8 @@ model Producto {
   publicarTienda Boolean @default(false)
   descripcion    String? // descripción para la tienda online
   saboresTienda  String? // sabores propios del producto para la tienda (separados por coma)
+  saboresNoDisp  String? // sabores marcados como NO disponibles hoy (separados por coma)
+  permiteMixto   Boolean @default(false) // ofrece opción "Mixto al azar" en la tienda
   minTienda      Int     @default(1) // cantidad mínima por pedido (para preparar/entregar)
   maxTienda      Int     @default(0) // cantidad máxima (0 = sin tope)
   // Foto / presentación del producto (URL) — para el botón "Ver".

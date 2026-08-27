@@ -46,6 +46,43 @@ export async function guardarSaboresTienda(formData: FormData) {
   revalidatePath("/tienda");
 }
 
+const listaSabores = (s: string | null) => (s ?? "").split(",").map((x) => x.trim()).filter(Boolean);
+
+/** Marca/desmarca un sabor como disponible hoy (para que el cliente vea solo los que hay). */
+export async function toggleSaborDisponible(formData: FormData) {
+  const id = val(formData, "id");
+  const sabor = val(formData, "sabor");
+  if (!id || !sabor) return;
+  const prod = await prisma.producto.findUnique({ where: { id }, select: { saboresNoDisp: true } });
+  if (!prod) return;
+  const noDisp = new Set(listaSabores(prod.saboresNoDisp));
+  if (noDisp.has(sabor)) noDisp.delete(sabor); // estaba no disponible → ahora disponible
+  else noDisp.add(sabor); // estaba disponible → ahora no
+  await prisma.producto.update({ where: { id }, data: { saboresNoDisp: [...noDisp].join(", ") || null } });
+  revalidatePath("/admin/productos/disponibilidad");
+  revalidatePath("/tienda");
+}
+
+/** Marca TODOS los sabores de un producto como disponibles (limpia el "no disponible"). */
+export async function marcarTodosDisponibles(formData: FormData) {
+  const id = val(formData, "id");
+  if (!id) return;
+  await prisma.producto.update({ where: { id }, data: { saboresNoDisp: null } });
+  revalidatePath("/admin/productos/disponibilidad");
+  revalidatePath("/tienda");
+}
+
+/** Activa/desactiva la opción "Mixto al azar" de un producto. */
+export async function togglePermiteMixto(formData: FormData) {
+  const id = val(formData, "id");
+  if (!id) return;
+  const prod = await prisma.producto.findUnique({ where: { id }, select: { permiteMixto: true } });
+  if (!prod) return;
+  await prisma.producto.update({ where: { id }, data: { permiteMixto: !prod.permiteMixto } });
+  revalidatePath("/admin/productos/disponibilidad");
+  revalidatePath("/tienda");
+}
+
 /** Marca/desmarca un producto para la tienda (toggle rápido desde la galería). */
 export async function togglePublicarTienda(formData: FormData) {
   const id = val(formData, "id");
