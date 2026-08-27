@@ -17,9 +17,9 @@ const GRAD: Record<string, string> = {
 const KEY = (id: string, sabor: string) => `${id}::${sabor}`;
 
 export default function Tienda({
-  negocio, productos, secciones, sinConfig,
+  negocio, logoUrl, productos, secciones, sinConfig,
 }: {
-  negocio: string; productos: Prod[]; secciones: Seccion[]; sinConfig: boolean;
+  negocio: string; logoUrl?: string; productos: Prod[]; secciones: Seccion[]; sinConfig: boolean;
 }) {
   const byId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
   const [cart, setCart] = useState<Record<string, number>>({}); // key = id::sabor -> cantidad
@@ -60,25 +60,38 @@ export default function Tienda({
   const visibles = seccion ? productos.filter((p) => p.seccion === seccion) : productos;
 
   return (
-    <div className="min-h-screen bg-papel pb-28">
-      <header className="sticky top-0 z-20 border-b border-crema-2/70 bg-crema/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
-          <span className="font-display text-xl font-extrabold tracking-tight text-tinta">{negocio}</span>
-          <button onClick={() => nUnid > 0 && setAbierto(true)} className="rounded-full bg-white px-4 py-2 text-sm font-bold text-naranja shadow-sm ring-1 ring-crema-2">
+    <div className="relative min-h-screen bg-papel pb-28">
+      {/* Fondo de doodles de dulces (temática de la web) */}
+      <div className="bg-doodles pointer-events-none fixed inset-0 opacity-[0.06]" />
+
+      <header className="sticky top-0 z-20 border-b border-crema-2/70 bg-crema/85 backdrop-blur-md">
+        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-2.5">
+          {logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={logoUrl} alt={negocio} className="h-11 w-auto drop-shadow-sm" />
+          ) : (
+            <span className="font-display text-xl font-extrabold tracking-tight text-tinta">{negocio}</span>
+          )}
+          <button onClick={() => nUnid > 0 && setAbierto(true)} className="rounded-full bg-white px-4 py-2 text-sm font-bold text-azul shadow-sm ring-1 ring-crema-2">
             🛒 {nUnid > 0 && <span className="ml-1">{nUnid}</span>}
           </button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4">
-        <section className="mt-4 overflow-hidden rounded-3xl bg-gradient-to-br from-naranja to-dorado p-6 text-white shadow-lg sm:p-8">
-          <p className="text-xs font-bold uppercase tracking-widest text-white/80">Tienda online</p>
-          <h1 className="mt-1 font-display text-3xl font-extrabold leading-tight sm:text-4xl">{negocio}</h1>
-          <p className="mt-2 max-w-md text-sm text-white/90 sm:text-base">Pide online y elige <b>retiro en el local</b> o <b>despacho a domicilio</b>. Fresco y artesanal. 🍧</p>
-          <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold">
-            <span className="rounded-full bg-white/20 px-3 py-1.5">🏪 Retiro</span>
-            <span className="rounded-full bg-white/20 px-3 py-1.5">🛵 Despacho</span>
-            <span className="rounded-full bg-white/20 px-3 py-1.5">💳 Pago en línea</span>
+      <main className="relative mx-auto max-w-4xl px-4">
+        <section className="relative mt-4 overflow-hidden rounded-3xl border border-crema-2 bg-gradient-to-b from-azul/10 via-crema/50 to-crema p-6 shadow-sm sm:p-8">
+          <div className="bg-doodles pointer-events-none absolute inset-0 opacity-[0.10]" />
+          <div className="relative">
+            <span className="sello bg-azul/10 text-azul script text-base">Tienda online ♥</span>
+            <h1 className="mt-2 font-display text-3xl font-extrabold leading-tight text-tinta sm:text-4xl">
+              Helados y dulces artesanales, <span className="text-azul">pídelos online.</span>
+            </h1>
+            <p className="mt-2 max-w-md text-sm text-tinta/75 sm:text-base">Elige <b className="text-naranja-2">retiro en el local</b> o <b className="text-naranja-2">despacho a domicilio</b>. Fresco y hecho a lo Benechito. 🍧</p>
+            <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-tinta/70">
+              <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-crema-2">🏪 Retiro</span>
+              <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-crema-2">🛵 Despacho</span>
+              <span className="rounded-full bg-white px-3 py-1.5 ring-1 ring-crema-2">💳 Pago en línea</span>
+            </div>
           </div>
         </section>
 
@@ -114,7 +127,7 @@ export default function Tienda({
                         </div>
                       )}
                       <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2.5 py-1 text-sm font-extrabold text-tinta shadow">{fmtCLP(p.precio)}</span>
-                      {enCarro > 0 && <span className="absolute right-2 top-2 rounded-full bg-naranja px-2 py-0.5 text-xs font-bold text-white shadow">🛒 {enCarro}</span>}
+                      {enCarro > 0 && <span className="absolute right-2 top-2 rounded-full bg-azul px-2 py-0.5 text-xs font-bold text-white shadow">🛒 {enCarro}</span>}
                     </div>
                     <div className="flex flex-1 flex-col p-3">
                       <p className="font-bold leading-tight text-tinta">{p.nombre}</p>
@@ -128,7 +141,7 @@ export default function Tienda({
                             {p.sabores.map((sb) => <option key={sb} value={sb}>{sb}</option>)}
                           </select>
                         )}
-                        <button onClick={() => agregar(p.id, saborSel)} className="w-full rounded-xl bg-naranja py-2.5 text-sm font-extrabold text-white shadow-sm transition active:scale-95 hover:brightness-105">
+                        <button onClick={() => agregar(p.id, saborSel)} className="w-full rounded-xl bg-azul py-2.5 text-sm font-extrabold text-white shadow-sm transition active:scale-95 hover:bg-azul-2">
                           Agregar{p.min > 1 ? ` ${p.min}` : ""}
                         </button>
                       </div>
@@ -142,7 +155,7 @@ export default function Tienda({
       </main>
 
       {nUnid > 0 && !abierto && (
-        <button onClick={() => setAbierto(true)} className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-4xl items-center justify-between bg-gradient-to-r from-naranja to-naranja-2 px-5 py-4 text-white shadow-2xl active:brightness-95">
+        <button onClick={() => setAbierto(true)} className="fixed inset-x-0 bottom-0 z-30 mx-auto flex max-w-4xl items-center justify-between bg-gradient-to-r from-azul to-azul-2 px-5 py-4 text-white shadow-2xl active:brightness-95">
           <span className="font-bold">🛒 {nUnid} producto{nUnid > 1 ? "s" : ""}</span>
           <span className="font-extrabold">{fmtCLP(total)} · Ver pedido →</span>
         </button>
@@ -167,7 +180,7 @@ export default function Tienda({
                   <span className="flex shrink-0 items-center gap-2">
                     <button onClick={() => setQty(i.k, i.id, i.cant - 1)} className="h-7 w-7 rounded-lg bg-crema-2 text-lg font-bold text-choco-2 active:scale-90">−</button>
                     <span className="w-6 text-center font-bold text-tinta">{i.cant}</span>
-                    <button onClick={() => setQty(i.k, i.id, i.cant + 1)} className="h-7 w-7 rounded-lg bg-naranja/15 text-lg font-bold text-naranja active:scale-90">+</button>
+                    <button onClick={() => setQty(i.k, i.id, i.cant + 1)} className="h-7 w-7 rounded-lg bg-azul/15 text-lg font-bold text-azul active:scale-90">+</button>
                     <span className="w-16 text-right font-bold text-tinta">{fmtCLP(i.sub)}</span>
                   </span>
                 </li>
@@ -182,8 +195,8 @@ export default function Tienda({
               <input name="nombre" required placeholder="Tu nombre" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
               <input name="telefono" required inputMode="tel" placeholder="Tu WhatsApp / teléfono" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
               <div className="grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => setEntrega("retiro")} className={`rounded-xl py-3 text-sm font-bold transition ${entrega === "retiro" ? "bg-naranja text-white shadow" : "bg-crema text-choco-2 ring-1 ring-crema-2"}`}>🏪 Retiro en local</button>
-                <button type="button" onClick={() => setEntrega("despacho")} className={`rounded-xl py-3 text-sm font-bold transition ${entrega === "despacho" ? "bg-naranja text-white shadow" : "bg-crema text-choco-2 ring-1 ring-crema-2"}`}>🛵 Despacho</button>
+                <button type="button" onClick={() => setEntrega("retiro")} className={`rounded-xl py-3 text-sm font-bold transition ${entrega === "retiro" ? "bg-azul text-white shadow" : "bg-crema text-choco-2 ring-1 ring-crema-2"}`}>🏪 Retiro en local</button>
+                <button type="button" onClick={() => setEntrega("despacho")} className={`rounded-xl py-3 text-sm font-bold transition ${entrega === "despacho" ? "bg-azul text-white shadow" : "bg-crema text-choco-2 ring-1 ring-crema-2"}`}>🛵 Despacho</button>
               </div>
               <input type="hidden" name="entrega" value={entrega} />
               {entrega === "despacho" && (
@@ -204,7 +217,7 @@ export default function Tienda({
 
 function Chip({ activo, onClick, children }: { activo: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
-    <button onClick={onClick} className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition active:scale-95 ${activo ? "bg-tinta text-white shadow" : "bg-white text-choco-2 ring-1 ring-crema-2"}`}>
+    <button onClick={onClick} className={`shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-sm font-bold transition active:scale-95 ${activo ? "bg-azul text-white shadow" : "bg-white text-choco-2 ring-1 ring-crema-2"}`}>
       {children}
     </button>
   );

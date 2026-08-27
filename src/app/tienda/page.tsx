@@ -13,6 +13,22 @@ async function listaTienda() {
   );
 }
 
+// Foto por defecto (assets de la web) según el producto, si no subió una propia.
+function imagenDefault(nombre: string): string | null {
+  const n = nombre.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  if (n.includes("paleta de leche")) return "/productos/paletas-leche.jpg";
+  if (n.includes("paleta de agua")) return "/productos/paletas-agua.jpg";
+  if (n.includes("premi")) return "/productos/paletas-premium.jpg";
+  if (n.includes("tu y yo")) return "/productos/tu-y-yo.jpg";
+  if (n.includes("postre")) return "/productos/postres.jpg";
+  if (n.includes("cuchufli") && n.includes("banad")) return "/productos/cuchufli-b.jpg";
+  if (n.includes("cuchufli")) return "/productos/cuchufli-a.jpg";
+  if (n.includes("cocada")) return "/productos/pack-sin-precio.jpg";
+  if (n.includes("trufa")) return "/productos/variedades.jpg";
+  if (n.includes("pack") || n.includes("combo") || n.includes("bandeja")) return "/productos/pack-comercios.jpg";
+  return null;
+}
+
 export default async function TiendaPage() {
   const empresa = await prisma.empresa.findFirst();
   const lista = await listaTienda();
@@ -45,7 +61,7 @@ export default async function TiendaPage() {
       descripcion: p.producto.descripcion,
       formato: p.producto.formato,
       seccion: p.producto.seccion ?? "propio",
-      fotoUrl: p.producto.fotoUrl,
+      fotoUrl: p.producto.fotoUrl || imagenDefault(p.producto.nombre),
       precio: Number(p.precio),
       sabores: saboresDe(p.producto),
       min: p.producto.minTienda ?? 1,
@@ -60,6 +76,7 @@ export default async function TiendaPage() {
   return (
     <Tienda
       negocio={empresa?.nombre ?? "Tienda"}
+      logoUrl="/marca/logo.png"
       productos={productos}
       secciones={secciones}
       sinConfig={!lista || productos.length === 0}
