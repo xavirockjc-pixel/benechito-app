@@ -4,19 +4,27 @@ import { fmtCLP } from "@/lib/dominio/pedidos";
 
 export const dynamic = "force-dynamic";
 
-export default async function GraciasPage({ searchParams }: { searchParams: Promise<{ pedido?: string }> }) {
-  const { pedido: pedidoId } = await searchParams;
+export default async function GraciasPage({ searchParams }: { searchParams: Promise<{ pedido?: string; status?: string; pago?: string }> }) {
+  const { pedido: pedidoId, status, pago } = await searchParams;
   const pedido = pedidoId
     ? await prisma.pedido.findUnique({ where: { id: pedidoId }, include: { items: { include: { producto: true } } } })
     : null;
   const total = pedido ? pedido.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0) : 0;
 
+  const pagado = Boolean(pedido?.pagado) || status === "approved";
+  const falloPago = pago === "fallo" || status === "rejected" || status === "failure";
+  const estado = pagado
+    ? { icono: "✅", burbuja: "bg-verde/15", titulo: "¡Pago confirmado!", texto: "Recibimos tu pago y tu pedido. ¡Gracias!" }
+    : falloPago
+      ? { icono: "⚠️", burbuja: "bg-naranja/15", titulo: "Pedido tomado, pago pendiente", texto: "El pago no se completó, pero tu pedido quedó registrado. Te contactaremos para coordinarlo." }
+      : { icono: "✅", burbuja: "bg-verde/15", titulo: "¡Pedido enviado!", texto: "Lo recibimos y te contactaremos para confirmar el pago y la entrega." };
+
   return (
     <div className="min-h-screen bg-crema">
       <div className="mx-auto max-w-md px-4 py-10 text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-verde/15 text-3xl">✅</div>
-        <h1 className="mt-4 font-display text-2xl font-extrabold text-choco">¡Pedido enviado!</h1>
-        <p className="mt-1 text-sm text-choco-2">Lo recibimos y te contactaremos para confirmar el pago y la entrega.</p>
+        <div className={`mx-auto flex h-16 w-16 items-center justify-center rounded-full ${estado.burbuja} text-3xl`}>{estado.icono}</div>
+        <h1 className="mt-4 font-display text-2xl font-extrabold text-choco">{estado.titulo}</h1>
+        <p className="mt-1 text-sm text-choco-2">{estado.texto}</p>
 
         {pedido && (
           <div className="mt-5 rounded-2xl bg-white p-4 text-left shadow-sm ring-1 ring-crema-2">

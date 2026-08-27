@@ -282,6 +282,9 @@ model Pedido {
   ubicacionOrigen   Ubicacion? @relation("PedidoOrigen", fields: [ubicacionOrigenId], references: [id])
   ubicacionOrigenId String?
   notas             String?
+  // Pago online (tienda): si se pagó y la referencia del pago (ej. Mercado Pago).
+  pagado            Boolean    @default(false)
+  pagoRef           String?
 
   items PedidoItem[]
   venta Venta?

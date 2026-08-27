@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { mpConfigurado, crearPreferencia } from "@/lib/mercadopago";
 
 type LineaCarro = { productoId: string; cantidad: number };
 
@@ -80,6 +82,7 @@ export async function crearPedidoTienda(formData: FormData) {
       tipoEntrega, destino, listaPrecioId: lista.id, notas,
       items: { create: items },
     },
+    include: { items: { include: { producto: { select: { nombre: true } } } } },
   });
 
   await prisma.actividad.create({
@@ -87,5 +90,25 @@ export async function crearPedidoTienda(formData: FormData) {
   }).catch(() => {});
 
   ["/admin/retiros", "/admin/pedidos", "/caja"].forEach((r) => revalidatePath(r));
+
+  // Pago en línea con Mercado Pago (si está configurado): redirige al checkout.
+  if (mpConfigurado()) {
+    const h = await headers();
+    const host = h.get("x-forwarded-host") ?? h.get("host") ?? "";
+    const proto = h.get("x-forwarded-proto") ?? "https";
+    const baseUrl = process.env.APP_URL || (host ? `${proto}://${host}` : "");
+    if (baseUrl) {
+      const link = await crearPreferencia({
+        pedidoId: pedido.id,
+        baseUrl,
+        nombre,
+        telefono,
+        items: pedido.items.map((it) => ({ title: it.producto.nombre, quantity: it.cantidad, unit_price: Number(it.precioUnit) })),
+      });
+      if (link) redirect(link);
+    }
+  }
+
+  // Sin pago en línea (o falló): confirma el pedido y avisa que se contactará.
   redirect(`/tienda/gracias?pedido=${pedido.id}`);
 }
