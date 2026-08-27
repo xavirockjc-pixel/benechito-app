@@ -57,6 +57,16 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
     prisma.recetaBase.findMany({ select: { linea: true, baseRef: true, baseUnidad: true, modoAgregados: true, esenciaGrsL: true, colorGrsL: true } }),
   ]);
 
+  // Sabores por tipo (para elegir al rendir la producción). Incluye alias trufas↔trufa.
+  const saboresAll = await prisma.sabor.findMany({ where: { activo: true }, select: { nombre: true, linea: true }, orderBy: { nombre: "asc" } });
+  const saboresPorLinea: Record<string, string[]> = {};
+  for (const s of saboresAll) (saboresPorLinea[s.linea] ??= []).push(s.nombre);
+  const saboresProd: Record<string, string[]> = {};
+  for (const l of ["tuyyo", "paletas", "paletas_premium", "postres_500", "cassatas", "trufas", "cuchufli"]) {
+    const alias = l === "trufas" ? ["trufas", "trufa"] : l === "cuchufli" ? ["cuchufli"] : [l];
+    saboresProd[l] = [...new Set(alias.flatMap((a) => saboresPorLinea[a] ?? []))];
+  }
+
   const totalHoy = registroHoy.reduce((s, m) => s + m.cantidad, 0);
 
   // Receta base agrupada por tipo/línea (común a todos los sabores de ese tipo).
@@ -165,7 +175,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
       <section className="rounded-2xl border border-teal-200 bg-white p-4 shadow-sm">
         <h2 className="mb-1 text-sm font-extrabold text-teal-800">✍️ Anota lo que hiciste</h2>
         <p className="mb-2 text-xs text-slate-500">Cuántos salieron por tipo y sabor.</p>
-        <ProduccionForm />
+        <ProduccionForm saboresPorLinea={saboresProd} />
       </section>
 
       {/* Reporte del turno */}
