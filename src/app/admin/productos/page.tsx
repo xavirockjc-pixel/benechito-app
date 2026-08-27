@@ -37,7 +37,10 @@ export default async function ProductosPage({
           <h1 className="text-2xl font-extrabold text-slate-900">Catálogo</h1>
           <p className="text-sm text-slate-500">Separado por sección. Precios en <Link href="/admin/precios" className="font-semibold text-[#1479c4]">Precios</Link>.</p>
         </div>
-        <Link href="/admin/productos/nuevo" className="rounded-full bg-[#1479c4] px-6 py-3 text-base font-extrabold text-white shadow-sm transition hover:brightness-110 active:scale-95">+ Nuevo producto</Link>
+        <div className="flex gap-2">
+          <a href="/tienda" target="_blank" rel="noopener noreferrer" className="rounded-full border border-slate-300 bg-white px-4 py-3 text-sm font-bold text-slate-700 transition hover:border-slate-400 active:scale-95">🛒 Ver tienda</a>
+          <Link href="/admin/productos/nuevo" className="rounded-full bg-[#1479c4] px-6 py-3 text-base font-extrabold text-white shadow-sm transition hover:brightness-110 active:scale-95">+ Nuevo producto</Link>
+        </div>
       </div>
 
       {/* Chips de sección (catálogos) */}

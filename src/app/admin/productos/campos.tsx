@@ -87,8 +87,20 @@ export async function CamposProducto({ p }: { p?: Producto }) {
       </label>
 
       <label className="text-sm font-bold text-navy sm:col-span-2">
-        Foto / presentación <span className="font-normal text-choco-2">(link de imagen, para el botón “Ver”)</span>
+        Foto / presentación <span className="font-normal text-choco-2">(link de imagen, para la tienda y el botón “Ver”)</span>
         <input name="fotoUrl" type="url" placeholder="https://…" defaultValue={p?.fotoUrl ?? ""} className={inputCls} />
+      </label>
+
+      <label className="text-sm font-bold text-navy sm:col-span-2">
+        Descripción para la tienda <span className="font-normal text-choco-2">(opcional)</span>
+        <input name="descripcion" placeholder="Ej: Paleta de leche artesanal, 100 g" defaultValue={p?.descripcion ?? ""} className={inputCls} />
+      </label>
+
+      <label className="flex items-start gap-3 self-end pb-2 text-sm font-semibold text-navy sm:col-span-2">
+        <input type="checkbox" name="publicarTienda" value="si" defaultChecked={p ? p.publicarTienda : false} className="mt-0.5 h-5 w-5 accent-azul" />
+        <span>
+          🛒 Publicar en la tienda online <span className="font-normal text-choco-2">— aparece en /tienda con su foto y su precio de la lista Web. Necesita precio cargado.</span>
+        </span>
       </label>
 
       <label className="flex items-center gap-3 self-end pb-2 text-sm font-semibold text-navy">
