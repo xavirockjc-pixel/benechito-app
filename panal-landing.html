@@ -1,0 +1,325 @@
+<title>Panal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root {
+    --bg: #fbf7f0;
+    --surface: #ffffff;
+    --surface-2: #f4ede0;
+    --ink: #241c14;
+    --ink-2: #6b5d4a;
+    --line: #e7dcc9;
+    --accent: #e0921a;        /* miel / ámbar */
+    --accent-deep: #b56a06;
+    --fresh: #2f8f5b;         /* verde "listo" */
+    --fresh-bg: #e5f2ea;
+    --tomato: #d1492f;
+    --shadow: 0 1px 2px rgba(60,40,10,.06), 0 8px 24px rgba(60,40,10,.07);
+    --radius: 16px;
+    --serif: Georgia, 'Times New Roman', serif;
+    --sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17120c;
+      --surface: #211a12;
+      --surface-2: #2a2117;
+      --ink: #f5ecdd;
+      --ink-2: #b7a88f;
+      --line: #34291c;
+      --accent: #f0a836;
+      --accent-deep: #f0a836;
+      --fresh: #55c088;
+      --fresh-bg: #17281e;
+      --tomato: #f06c50;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #17120c;
+    --surface: #211a12;
+    --surface-2: #2a2117;
+    --ink: #f5ecdd;
+    --ink-2: #b7a88f;
+    --line: #34291c;
+    --accent: #f0a836;
+    --accent-deep: #f0a836;
+    --fresh: #55c088;
+    --fresh-bg: #17281e;
+    --tomato: #f06c50;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px rgba(0,0,0,.35);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  h1, h2, h3 { font-family: var(--serif); font-weight: 700; text-wrap: balance; letter-spacing: -.01em; }
+  .eyebrow { font-family: var(--sans); font-size: .74rem; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--accent-deep); }
+
+  /* Header */
+  header.top { position: sticky; top: 0; z-index: 20; backdrop-filter: blur(10px);
+    background: color-mix(in srgb, var(--bg) 82%, transparent); border-bottom: 1px solid var(--line); }
+  .top .wrap { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; padding-bottom: 14px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 1.25rem; font-weight: 700; }
+  .brand .mark { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-deep)); color: #fff; font-size: 1rem; box-shadow: var(--shadow); }
+  .top-cta { font-size: .86rem; font-weight: 700; color: var(--ink); text-decoration: none; padding: 8px 16px;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+
+  /* Hero */
+  .hero { padding: 68px 0 44px; position: relative; overflow: hidden; }
+  .hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center; }
+  .hero h1 { font-size: clamp(2.1rem, 5.2vw, 3.5rem); line-height: 1.04; margin: 14px 0 18px; }
+  .hero h1 .hl { color: var(--accent-deep); }
+  .hero p.lede { font-size: 1.12rem; color: var(--ink-2); margin: 0 0 26px; max-width: 33ch; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
+  .chip { font-size: .82rem; font-weight: 600; padding: 6px 13px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
+  .btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: .98rem; text-decoration: none;
+    padding: 13px 24px; border-radius: 999px; cursor: pointer; border: 0; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-deep)); color: #fff; box-shadow: var(--shadow); }
+  .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 12px; }
+
+  /* Phone mock */
+  .phone { justify-self: center; width: 260px; border-radius: 34px; background: var(--surface); border: 1px solid var(--line);
+    box-shadow: var(--shadow); padding: 14px; }
+  .phone .screen { border-radius: 22px; background: var(--surface-2); padding: 16px 14px; }
+  .phone .status { font-size: .68rem; color: var(--ink-2); display: flex; justify-content: space-between; margin-bottom: 10px; }
+  .mic { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 11px 13px; margin-bottom: 10px; }
+  .mic .dot { width: 30px; height: 30px; border-radius: 999px; background: var(--tomato); display: grid; place-items: center; color: #fff; font-size: .9rem; }
+  .mic small { font-size: .72rem; color: var(--ink-2); }
+  .prow { display: flex; justify-content: space-between; align-items: center; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 11px; padding: 9px 11px; margin-bottom: 7px; font-size: .78rem; }
+  .prow b { color: var(--accent-deep); }
+  .tag-ready { font-size: .64rem; font-weight: 700; color: var(--fresh); background: var(--fresh-bg); padding: 2px 7px; border-radius: 6px; }
+
+  /* Sections */
+  section { padding: 52px 0; }
+  .sec-head { text-align: center; max-width: 40ch; margin: 0 auto 34px; }
+  .sec-head h2 { font-size: clamp(1.6rem, 3.6vw, 2.3rem); margin: 10px 0 8px; }
+  .sec-head p { color: var(--ink-2); margin: 0; }
+
+  /* Core grid */
+  .core { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow);
+    transition: transform .18s ease, border-color .18s ease; }
+  .card:hover { transform: translateY(-3px); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+  .card .ic { font-size: 1.5rem; }
+  .card h3 { font-family: var(--sans); font-size: .98rem; font-weight: 700; margin: 12px 0 5px; }
+  .card p { font-size: .84rem; color: var(--ink-2); margin: 0; }
+
+  /* Verticals */
+  .vsec { background: var(--surface-2); }
+  .verticals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  .vcard { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .vcard .vhead { padding: 16px 18px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 9%, var(--surface)), var(--surface)); }
+  .vcard .vhead .emo { font-size: 1.4rem; }
+  .vcard .vhead h3 { font-family: var(--sans); font-size: 1rem; margin: 0; }
+  .vcard ul { list-style: none; margin: 0; padding: 12px 18px 18px; }
+  .vcard li { font-size: .82rem; padding: 6px 0; border-bottom: 1px dashed var(--line); display: flex; justify-content: space-between; gap: 8px; }
+  .vcard li:last-child { border-bottom: 0; }
+  .vcard li span:first-child { color: var(--ink-2); }
+  .vcard li span:last-child { font-weight: 600; text-align: right; }
+
+  /* Flow */
+  .flow { display: flex; flex-wrap: wrap; align-items: stretch; justify-content: center; gap: 10px; }
+  .step { flex: 1 1 150px; min-width: 140px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+    padding: 18px 16px; text-align: center; box-shadow: var(--shadow); }
+  .step .n { font-family: var(--serif); font-size: 1.1rem; color: var(--accent-deep); }
+  .step h3 { font-family: var(--sans); font-size: .95rem; margin: 6px 0 4px; }
+  .step p { font-size: .78rem; color: var(--ink-2); margin: 0; }
+  .arrow { align-self: center; color: var(--accent); font-weight: 700; font-size: 1.2rem; }
+
+  /* Differentiators */
+  .diffs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .diff { display: flex; gap: 14px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+  .diff .big { font-size: 1.7rem; }
+  .diff h3 { font-family: var(--sans); font-size: 1.02rem; margin: 2px 0 5px; }
+  .diff p { font-size: .86rem; color: var(--ink-2); margin: 0; }
+
+  /* CTA */
+  .cta { text-align: center; background: linear-gradient(135deg, var(--accent), var(--accent-deep)); color: #fff; border-radius: 24px; padding: 46px 24px; box-shadow: var(--shadow); }
+  .cta h2 { color: #fff; font-size: clamp(1.6rem, 3.4vw, 2.2rem); margin: 0 0 10px; }
+  .cta p { color: rgba(255,255,255,.9); max-width: 42ch; margin: 0 auto 22px; }
+  .cta .btn-primary { background: #fff; color: var(--accent-deep); }
+
+  footer { text-align: center; color: var(--ink-2); font-size: .8rem; padding: 34px 0 44px; }
+
+  @media (max-width: 860px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 30px; }
+    .phone { order: -1; }
+    .core, .verticals { grid-template-columns: repeat(2, 1fr); }
+    .diffs { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 480px) {
+    .core { grid-template-columns: 1fr 1fr; }
+    .arrow { display: none; }
+  }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><span class="mark">🍯</span> Panal</div>
+    <a href="#demo" class="top-cta">Solicitar demo</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">Gestión total para tu negocio de comida</span>
+      <h1>Un sistema. <span class="hl">Todo tu negocio</span>, bajo control.</h1>
+      <p class="lede">Producción, inventario, ventas, deudas y pedidos por WhatsApp — todo desde el teléfono y por voz.</p>
+      <div class="chips">
+        <span class="chip">🥖 Panadería</span>
+        <span class="chip">🍔 Comida rápida</span>
+        <span class="chip">🍽️ Restaurante</span>
+        <span class="chip">🏭 Fábrica</span>
+      </div>
+      <div class="btn-row">
+        <a href="#demo" class="btn btn-primary">Ver una demo →</a>
+        <a href="#rubros" class="btn btn-ghost">Cómo se adapta</a>
+      </div>
+    </div>
+
+    <div class="phone" aria-hidden="true">
+      <div class="screen">
+        <div class="status"><span>Bodega</span><span>9:41</span></div>
+        <div class="mic">
+          <span class="dot">🎙️</span>
+          <div><small>Dijiste:</small><br><b style="font-size:.8rem">"Ingresa 5 kilos de harina"</b></div>
+        </div>
+        <div class="prow"><span>Harina</span><b>+5 kg</b></div>
+        <div class="prow"><span>Azúcar</span><span>12 kg</span></div>
+        <div class="prow"><span>Chocolate</span><span class="tag-ready">bajo · 2 kg</span></div>
+        <div class="prow"><span>Levadura</span><span>8 u.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">El motor</span>
+      <h2>Las funciones que todo negocio necesita</h2>
+      <p>El mismo corazón sirve para cualquier rubro de comida. Cambia el nombre de las áreas, no el sistema.</p>
+    </div>
+    <div class="core">
+      <div class="card"><div class="ic">📦</div><h3>Inventario y recetas</h3><p>Las materias primas se descuentan solas al producir, según la receta.</p></div>
+      <div class="card"><div class="ic">🛒</div><h3>Ventas y caja</h3><p>Efectivo, transferencia, abono (paga una parte) y crédito.</p></div>
+      <div class="card"><div class="ic">💵</div><h3>Clientes y deudas</h3><p>Cuenta corriente, saldos y cobranza por abonos.</p></div>
+      <div class="card"><div class="ic">💬</div><h3>Pedidos por WhatsApp</h3><p>Entran de WhatsApp, Facebook e Instagram y caen solos en la central.</p></div>
+      <div class="card"><div class="ic">📅</div><h3>Agenda y entregas</h3><p>Encargos, visitas y delivery, con recordatorio al cliente.</p></div>
+      <div class="card"><div class="ic">🎙️</div><h3>Control por voz</h3><p>Tu equipo dicta en español; nada de escribir en el teléfono.</p></div>
+      <div class="card"><div class="ic">🔒</div><h3>Privacidad por rol</h3><p>Cada área ve solo lo suyo. Los costos y totales, solo el dueño.</p></div>
+      <div class="card"><div class="ic">📈</div><h3>Tablero y finanzas</h3><p>Ventas, gastos y stock por día, semana o mes, de un vistazo.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="vsec" id="rubros">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Un producto, cuatro presentaciones</span>
+      <h2>El mismo sistema, con el nombre de tu rubro</h2>
+      <p>Las áreas se renombran solas según tu negocio. Por dentro, el mismo motor probado.</p>
+    </div>
+    <div class="verticals">
+      <div class="vcard">
+        <div class="vhead"><span class="emo">🥖</span><h3>Panadería</h3></div>
+        <ul>
+          <li><span>Producción</span><span>Amasado / Horno</span></li>
+          <li><span>Bodega</span><span>Despensa</span></li>
+          <li><span>Menú</span><span>Tipos de pan</span></li>
+          <li><span>Venta</span><span>Mostrador + reparto</span></li>
+          <li><span>Pedidos</span><span>Encargos</span></li>
+        </ul>
+      </div>
+      <div class="vcard">
+        <div class="vhead"><span class="emo">🍔</span><h3>Comida rápida</h3></div>
+        <ul>
+          <li><span>Producción</span><span>Cocina</span></li>
+          <li><span>Bodega</span><span>Almacén</span></li>
+          <li><span>Menú</span><span>Ítems / combos</span></li>
+          <li><span>Venta</span><span>Mostrador / Drive</span></li>
+          <li><span>Pedidos</span><span>Delivery / Pickup</span></li>
+        </ul>
+      </div>
+      <div class="vcard">
+        <div class="vhead"><span class="emo">🍽️</span><h3>Restaurante</h3></div>
+        <ul>
+          <li><span>Producción</span><span>Cocina</span></li>
+          <li><span>Bodega</span><span>Bodega / Cava</span></li>
+          <li><span>Menú</span><span>Platos</span></li>
+          <li><span>Venta</span><span>Salón / Caja</span></li>
+          <li><span>Pedidos</span><span>Reservas / Pickup</span></li>
+        </ul>
+      </div>
+      <div class="vcard">
+        <div class="vhead"><span class="emo">🏭</span><h3>Fábrica</h3></div>
+        <ul>
+          <li><span>Producción</span><span>Fabricación</span></li>
+          <li><span>Bodega</span><span>Bodega</span></li>
+          <li><span>Menú</span><span>Líneas / sabores</span></li>
+          <li><span>Venta</span><span>Ruta + distribución</span></li>
+          <li><span>Pedidos</span><span>Retiros</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">De la materia prima a la caja</span>
+      <h2>Toda la cadena, conectada</h2>
+    </div>
+    <div class="flow">
+      <div class="step"><div class="n">01</div><h3>Insumos</h3><p>Entran y se descuentan por receta.</p></div>
+      <span class="arrow">→</span>
+      <div class="step"><div class="n">02</div><h3>Producción</h3><p>Se fabrica y entra a bodega.</p></div>
+      <span class="arrow">→</span>
+      <div class="step"><div class="n">03</div><h3>Venta</h3><p>Local, ruta o delivery.</p></div>
+      <span class="arrow">→</span>
+      <div class="step"><div class="n">04</div><h3>Cobranza</h3><p>Pagos, abonos y deudas al día.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="vsec">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Por qué es distinto</span>
+      <h2>Hecho para el equipo real, no para expertos</h2>
+    </div>
+    <div class="diffs">
+      <div class="diff"><span class="big">🎙️</span><div><h3>Funciona por voz</h3><p>El bodeguero o el cocinero dictan en español y listo. Botones grandes, cero complicación.</p></div></div>
+      <div class="diff"><span class="big">💬</span><div><h3>Pedidos que llegan solos</h3><p>Lo que te escriben por WhatsApp, Facebook o Instagram entra automático y se despacha.</p></div></div>
+      <div class="diff"><span class="big">🔒</span><div><h3>Cada quien ve lo suyo</h3><p>Los operarios registran su trabajo; los costos, márgenes y totales quedan solo para ti.</p></div></div>
+      <div class="diff"><span class="big">📱</span><div><h3>Todo desde el teléfono</h3><p>Sin instalar nada pesado. Se abre como una app y trabaja en cualquier Android.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="demo">
+  <div class="wrap">
+    <div class="cta">
+      <h2>¿Quieres verlo con tu propio negocio?</h2>
+      <p>Te muestro cómo quedaría con tus áreas, tus productos y tus precios. Sin compromiso.</p>
+      <a href="#" class="btn btn-primary">Agenda una demo →</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Panal · Sistema de gestión para negocios de comida — panadería, comida rápida, restaurante y fábrica.
+</footer>
