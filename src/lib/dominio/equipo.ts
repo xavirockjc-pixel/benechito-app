@@ -54,3 +54,52 @@ export const tipoMovTrabajadorIcono: Record<string, string> = {
 export function signoMovTrabajador(tipo: string): 1 | -1 {
   return tipo === "hora_extra" || tipo === "bono" ? 1 : -1;
 }
+
+// Asistencia: tipo de jornada del día.
+export const TIPOS_ASISTENCIA = ["trabajo", "salida_antes", "permiso", "licencia", "falta"] as const;
+export type TipoAsistencia = (typeof TIPOS_ASISTENCIA)[number];
+export const tipoAsistenciaLabel: Record<string, string> = {
+  trabajo: "Trabajó",
+  salida_antes: "Salió antes",
+  permiso: "Permiso",
+  licencia: "Licencia",
+  falta: "Falta",
+};
+export const tipoAsistenciaIcono: Record<string, string> = {
+  trabajo: "✅",
+  salida_antes: "🏃",
+  permiso: "📝",
+  licencia: "🏥",
+  falta: "❌",
+};
+/** Color del día en el calendario (fondo / texto Tailwind por tipo). */
+export const tipoAsistenciaColor: Record<string, string> = {
+  trabajo: "bg-emerald-100 text-emerald-800 border-emerald-300",
+  salida_antes: "bg-amber-100 text-amber-800 border-amber-300",
+  permiso: "bg-sky-100 text-sky-800 border-sky-300",
+  licencia: "bg-violet-100 text-violet-800 border-violet-300",
+  falta: "bg-rose-100 text-rose-800 border-rose-300",
+};
+/** ¿El tipo cuenta como presente (sumó horas)? */
+export function tipoPresente(tipo: string): boolean {
+  return tipo === "trabajo" || tipo === "salida_antes";
+}
+
+/**
+ * Horas entre dos horarios "HH:MM" (ej. "08:30" → "18:00" = 9.5).
+ * Devuelve 0 si falta alguno o el formato no calza. Cruza medianoche si salida < entrada.
+ */
+export function horasEntre(entrada?: string | null, salida?: string | null): number {
+  const m = (s?: string | null) => {
+    const r = /^(\d{1,2}):(\d{2})$/.exec((s ?? "").trim());
+    if (!r) return null;
+    const h = Number(r[1]), min = Number(r[2]);
+    if (h > 23 || min > 59) return null;
+    return h * 60 + min;
+  };
+  const e = m(entrada), s = m(salida);
+  if (e == null || s == null) return 0;
+  let diff = s - e;
+  if (diff < 0) diff += 24 * 60; // cruzó medianoche
+  return Math.round((diff / 60) * 100) / 100;
+}

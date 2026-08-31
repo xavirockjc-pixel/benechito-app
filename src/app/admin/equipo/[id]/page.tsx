@@ -4,8 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import {
   cargoLabel, cargoIcono, tipoMovTrabajadorLabel, tipoMovTrabajadorIcono, signoMovTrabajador, rolesDeCargo,
+  TIPOS_ASISTENCIA, tipoAsistenciaLabel, tipoAsistenciaIcono, tipoAsistenciaColor, tipoPresente,
 } from "@/lib/dominio/equipo";
-import { registrarAsistencia, movimientoTrabajador, eliminarMovTrabajador, toggleTrabajador, enlazarTrabajadorUsuario } from "../actions";
+import { registrarAsistencia, movimientoTrabajador, eliminarMovTrabajador, eliminarAsistencia, toggleTrabajador, enlazarTrabajadorUsuario } from "../actions";
+import AsistenciaVoz from "../AsistenciaVoz";
+import CalendarioAsistencia from "../CalendarioAsistencia";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +27,7 @@ export default async function FichaTrabajador({ params }: { params: Promise<{ id
   const t = await prisma.trabajador.findUnique({
     where: { id },
     include: {
-      asistencias: { orderBy: { fecha: "desc" }, take: 30 },
+      asistencias: { orderBy: { fecha: "desc" }, take: 62 },
       movimientos: { orderBy: { fecha: "desc" } },
     },
   });
@@ -173,37 +176,75 @@ export default async function FichaTrabajador({ params }: { params: Promise<{ id
         )}
       </div>
 
-      {/* Asistencia */}
+      {/* Asistencia / Agenda */}
       <div className="mt-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <h2 className="text-base font-extrabold text-slate-900">🗓️ Asistencia</h2>
+          <h2 className="text-base font-extrabold text-slate-900">🗓️ Asistencia y agenda</h2>
           <span className="text-sm font-bold text-slate-500">{horasSemana.toFixed(1).replace(/\.0$/, "")} h esta semana</span>
         </div>
-        <form action={registrarAsistencia} className="mt-3 grid grid-cols-2 gap-2 rounded-xl bg-slate-50 p-3 sm:grid-cols-4">
-          <input type="hidden" name="trabajadorId" value={t.id} />
-          <label className="text-xs font-bold text-slate-600">Fecha
-            <input type="date" name="fecha" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
-          </label>
-          <label className="text-xs font-bold text-slate-600">Horas
-            <input name="horas" inputMode="decimal" placeholder="8" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
-          </label>
-          <label className="text-xs font-bold text-slate-600">Horas extra
-            <input name="horasExtra" inputMode="decimal" placeholder="0" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
-          </label>
-          <label className="text-xs font-bold text-slate-600">Nota
-            <input name="notas" placeholder="opcional" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
-          </label>
-          <button className="col-span-2 rounded-lg bg-[#0f766e] py-2.5 text-sm font-extrabold text-white active:scale-95 sm:col-span-4">Marcar asistencia</button>
-        </form>
+
+        {/* Marcar por voz */}
+        <div className="mt-3">
+          <AsistenciaVoz trabajadorId={t.id} />
+        </div>
+
+        {/* Formulario manual */}
+        <details className="mt-3 rounded-xl bg-slate-50 p-3">
+          <summary className="cursor-pointer text-xs font-bold text-slate-600">✍️ Marcar a mano</summary>
+          <form action={registrarAsistencia} className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <input type="hidden" name="trabajadorId" value={t.id} />
+            <label className="text-xs font-bold text-slate-600">Fecha
+              <input type="date" name="fecha" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+            </label>
+            <label className="text-xs font-bold text-slate-600">Tipo
+              <select name="tipo" defaultValue="trabajo" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm">
+                {TIPOS_ASISTENCIA.map((x) => <option key={x} value={x}>{tipoAsistenciaIcono[x]} {tipoAsistenciaLabel[x]}</option>)}
+              </select>
+            </label>
+            <label className="text-xs font-bold text-slate-600">Horas extra
+              <input name="horasExtra" inputMode="decimal" placeholder="0" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+            </label>
+            <label className="text-xs font-bold text-slate-600">Entrada
+              <input type="time" name="horaEntrada" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+            </label>
+            <label className="text-xs font-bold text-slate-600">Salida
+              <input type="time" name="horaSalida" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+            </label>
+            <label className="text-xs font-bold text-slate-600">¿Qué hizo?
+              <input name="notas" placeholder="nota del día" className="mt-1 w-full rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+            </label>
+            <button className="col-span-2 rounded-lg bg-[#0f766e] py-2.5 text-sm font-extrabold text-white active:scale-95 sm:col-span-3">Marcar asistencia</button>
+          </form>
+        </details>
+
+        {/* Calendario del mes */}
+        <div className="mt-4 border-t border-slate-100 pt-4">
+          <CalendarioAsistencia asistencias={t.asistencias} />
+        </div>
+
+        {/* Historial */}
         {t.asistencias.length > 0 && (
-          <ul className="mt-3 divide-y divide-slate-100 text-sm">
-            {t.asistencias.slice(0, 14).map((a) => (
-              <li key={a.id} className="flex items-center justify-between py-1.5">
-                <span className="text-slate-700">{fmtDia(a.fecha)}{a.notas ? <span className="text-xs text-slate-400"> · {a.notas}</span> : ""}</span>
-                <span className="font-semibold text-slate-800">{a.horas} h{a.horasExtra > 0 ? <span className="text-amber-600"> +{a.horasExtra} extra</span> : ""}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-4 border-t border-slate-100 pt-3">
+            <p className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">Historial</p>
+            <ul className="divide-y divide-slate-100 text-sm">
+              {t.asistencias.slice(0, 20).map((a) => (
+                <li key={a.id} className="flex items-center justify-between gap-2 py-1.5">
+                  <span className="min-w-0">
+                    <span className={`mr-1 inline-block rounded px-1.5 py-0.5 text-[10px] font-bold ${tipoAsistenciaColor[a.tipo] ?? "bg-slate-100 text-slate-600 border border-slate-200"}`}>
+                      {tipoAsistenciaIcono[a.tipo]} {tipoAsistenciaLabel[a.tipo] ?? a.tipo}
+                    </span>
+                    <span className="text-slate-700">{fmtDia(a.fecha)}</span>
+                    {a.horaEntrada && a.horaSalida && <span className="text-xs text-slate-400"> · {a.horaEntrada}–{a.horaSalida}</span>}
+                    {a.notas ? <span className="block truncate text-xs text-slate-500">📝 {a.notas}</span> : null}
+                  </span>
+                  <span className="flex shrink-0 items-center gap-2">
+                    {tipoPresente(a.tipo) && <span className="font-semibold text-slate-800">{a.horas} h{a.horasExtra > 0 ? <span className="text-amber-600"> +{a.horasExtra}</span> : ""}</span>}
+                    <form action={eliminarAsistencia}><input type="hidden" name="id" value={a.id} /><input type="hidden" name="trabajadorId" value={t.id} /><button className="text-xs text-red-400">✕</button></form>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
         )}
       </div>
     </div>

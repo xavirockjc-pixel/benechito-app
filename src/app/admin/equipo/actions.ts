@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
-import { CARGOS, TIPOS_MOV_TRABAJADOR } from "@/lib/dominio/equipo";
+import { CARGOS, TIPOS_MOV_TRABAJADOR, TIPOS_ASISTENCIA, tipoPresente, horasEntre } from "@/lib/dominio/equipo";
 
 const num = (v: FormDataEntryValue | null) => Math.max(0, Number(String(v ?? "0").replace(",", ".")) || 0);
 
@@ -22,20 +22,48 @@ export async function crearTrabajador(formData: FormData) {
   revalidatePath("/admin/equipo");
 }
 
-/** Registra la asistencia del día (horas + horas extra). */
+const hhmm = (v: FormDataEntryValue | null) => {
+  const s = String(v ?? "").trim();
+  return /^\d{1,2}:\d{2}$/.test(s) ? s.padStart(5, "0") : null;
+};
+
+/** Registra la asistencia del día: horario, tipo de jornada, horas y nota de lo que hizo. */
 export async function registrarAsistencia(formData: FormData) {
   const trabajadorId = String(formData.get("trabajadorId") ?? "").trim();
-  const horas = num(formData.get("horas"));
+  if (!trabajadorId) return;
+
+  const tipoRaw = String(formData.get("tipo") ?? "trabajo").trim();
+  const tipo = (TIPOS_ASISTENCIA as readonly string[]).includes(tipoRaw) ? tipoRaw : "trabajo";
+  const horaEntrada = hhmm(formData.get("horaEntrada"));
+  const horaSalida = hhmm(formData.get("horaSalida"));
   const horasExtra = num(formData.get("horasExtra"));
   const notas = String(formData.get("notas") ?? "").trim() || null;
   const fechaStr = String(formData.get("fecha") ?? "").trim();
-  if (!trabajadorId) return;
+
+  // Horas: si vino el número lo respeto; si no, lo calculo desde el horario.
+  const horasManual = num(formData.get("horas"));
+  const horasCalc = horasEntre(horaEntrada, horaSalida);
+  const horas = tipoPresente(tipo) ? (horasManual > 0 ? horasManual : horasCalc) : 0;
+
   const fecha = fechaStr ? new Date(fechaStr) : new Date();
   await prisma.asistencia.create({
-    data: { trabajadorId, horas, horasExtra, notas, presente: horas > 0 || horasExtra > 0, fecha: isNaN(fecha.getTime()) ? new Date() : fecha },
+    data: {
+      trabajadorId, tipo, horaEntrada, horaSalida, horas, horasExtra, notas,
+      presente: tipoPresente(tipo),
+      fecha: isNaN(fecha.getTime()) ? new Date() : fecha,
+    },
   });
-  // Registra las horas extra también en su cuenta si se indicó valor.
   revalidatePath(`/admin/equipo/${trabajadorId}`);
+  revalidatePath("/admin/equipo");
+}
+
+/** Borra un registro de asistencia. */
+export async function eliminarAsistencia(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  const trabajadorId = String(formData.get("trabajadorId") ?? "").trim();
+  if (!id) return;
+  await prisma.asistencia.delete({ where: { id } });
+  if (trabajadorId) revalidatePath(`/admin/equipo/${trabajadorId}`);
   revalidatePath("/admin/equipo");
 }
 

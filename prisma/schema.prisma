@@ -345,16 +345,19 @@ model Trabajador {
   @@index([cargo])
 }
 
-/// Asistencia del día: horas trabajadas y horas extra.
+/// Asistencia del día: horario, tipo de jornada, horas y nota de lo que hizo.
 model Asistencia {
   id           String     @id @default(cuid())
   trabajador   Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
   trabajadorId String
   fecha        DateTime   @default(now())
   presente     Boolean    @default(true)
+  tipo         String     @default("trabajo") // trabajo|permiso|licencia|falta|salida_antes
+  horaEntrada  String? // "08:30"
+  horaSalida   String? // "18:00"
   horas        Float      @default(0)
   horasExtra   Float      @default(0)
-  notas        String?
+  notas        String? // qué hizo ese día
 
   @@index([trabajadorId])
   @@index([fecha])
