@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { crearDocumentoVenta } from "@/lib/facturacion";
 import { estadoPagoDe, MEDIOS_PAGO } from "@/lib/dominio/ventas";
 import { canalPorTipoCliente } from "@/lib/dominio/canales";
 
@@ -59,6 +60,8 @@ export async function generarVenta(formData: FormData) {
       estadoPago: "pendiente",
     },
   });
+
+  await crearDocumentoVenta({ ventaId: venta.id, negocioId: pedido.negocioId, tipo: "boleta", total });
 
   revalidatePath("/admin/ventas");
   revalidatePath(`/admin/pedidos/${pedidoId}`);

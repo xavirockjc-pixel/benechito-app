@@ -9,6 +9,9 @@ export const dynamic = "force-dynamic";
 // Qué líneas son "helado" (congelado) vs "dulce".
 const LINEAS_HELADO = new Set(["paletas", "paletas_premium", "postres_500", "cassatas", "tuyyo", "helado", "paleta"]);
 
+// Paleta de marca para rotar en las tarjetas por canal.
+const COLORES_CANAL = ["#d8a944", "#2f9e44", "#1479c4", "#f28a1e", "#e23b2c"];
+
 export default async function Panel() {
   const ahora = new Date();
   const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
@@ -30,14 +33,20 @@ export default async function Panel() {
   const porCobrar = Math.max(0, Number(sumaVentas._sum.total ?? 0) - Number(sumaPagos._sum.monto ?? 0));
   const { label: canalLabel } = await getCanalMaps();
 
-  // Montos (ocultos con el ojito): comercial + por canal.
+  // Montos (ocultos con el ojito): comercial + por canal, cada uno con su color/ícono.
   const montos = [
-    { label: "Ventas de hoy", valor: fmtCLP(totalHoy), href: "/admin/ventas", accent: "text-slate-900" },
-    { label: "Ventas del mes", valor: fmtCLP(totalMes), href: "/admin/ventas", accent: "text-slate-900" },
-    { label: "Por cobrar", valor: fmtCLP(porCobrar), href: "/admin/ventas", accent: "text-amber-600" },
+    { label: "Ventas de hoy", valor: fmtCLP(totalHoy), href: "/admin/ventas", color: "#1479c4", icon: "💰" },
+    { label: "Ventas del mes", valor: fmtCLP(totalMes), href: "/admin/ventas", color: "#f28a1e", icon: "📅" },
+    { label: "Por cobrar", valor: fmtCLP(porCobrar), href: "/admin/ventas", color: "#e23b2c", icon: "⏳" },
     ...canalMes
       .filter((c) => Number(c._sum.total ?? 0) > 0)
-      .map((c) => ({ label: canalLabel[c.canal] ?? c.canal, valor: fmtCLP(Number(c._sum.total ?? 0)), href: `/admin/ventas?canal=${c.canal}`, accent: "text-slate-900" })),
+      .map((c, i) => ({
+        label: canalLabel[c.canal] ?? c.canal,
+        valor: fmtCLP(Number(c._sum.total ?? 0)),
+        href: `/admin/ventas?canal=${c.canal}`,
+        color: COLORES_CANAL[i % COLORES_CANAL.length],
+        icon: "📊",
+      })),
   ];
 
   // Ranking de más vendidos (mes), separado dulce/helado.
@@ -48,44 +57,50 @@ export default async function Panel() {
     .map((v) => ({ id: v.productoId, u: Number(v._sum.cantidad ?? 0), p: pById.get(v.productoId) }))
     .filter((r) => r.p && r.u > 0)
     .sort((a, b) => b.u - a.u);
-  const helados = ranking.filter((r) => LINEAS_HELADO.has(r.p!.linea)).slice(0, 8);
-  const dulces = ranking.filter((r) => !LINEAS_HELADO.has(r.p!.linea)).slice(0, 8);
+  const helados = ranking.filter((r) => LINEAS_HELADO.has(r.p!.linea)).slice(0, 6);
+  const dulces = ranking.filter((r) => !LINEAS_HELADO.has(r.p!.linea)).slice(0, 6);
 
   return (
     <div>
-      <div className="flex items-center justify-between">
+      {/* Encabezado */}
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">Panel</h1>
-          <p className="text-sm text-slate-500">Operación comercial Benechito</p>
+          <h1 className="font-display text-3xl font-extrabold text-slate-900">
+            Hola, <span style={{ color: "#e0730c" }}>Benechito</span> 👋
+          </h1>
+          <p className="mt-0.5 text-sm text-slate-500">Tu negocio de un vistazo</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/admin/pos" className="rounded-lg bg-green-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:brightness-105">🛒 Vender</Link>
-          <Link href="/admin/negocios/nuevo" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-slate-700">+ Cliente</Link>
+          <Link href="/admin/pos" className="rounded-2xl bg-[#1479c4] px-5 py-2.5 text-sm font-extrabold text-white shadow-md transition hover:brightness-110">🛒 Vender</Link>
+          <Link href="/admin/negocios/nuevo" className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-extrabold text-slate-700 transition hover:-translate-y-0.5">＋ Cliente</Link>
         </div>
-      </div>
-
-      {/* Conteos (sin dinero) */}
-      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <Link href="/admin/pedidos" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md">
-          <p className="text-2xl font-extrabold text-slate-900">{pedidosPend}</p>
-          <p className="mt-1 text-sm font-semibold text-slate-500">Pedidos pendientes</p>
-        </Link>
-        <Link href="/admin/negocios" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md">
-          <p className="text-2xl font-extrabold text-slate-900">{totalClientes}</p>
-          <p className="mt-1 text-sm font-semibold text-slate-500">Clientes</p>
-        </Link>
-        <Link href="/admin/dashboard" className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:-translate-y-0.5 hover:shadow-md">
-          <p className="text-2xl font-extrabold text-slate-900">📈</p>
-          <p className="mt-1 text-sm font-semibold text-slate-500">Ver Tablero</p>
-        </Link>
       </div>
 
       {/* Montos con ojito (comercial + por canal) */}
       <PanelMontos items={montos} />
 
+      {/* Conteos rápidos (sin dinero) */}
+      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-3">
+        <Link href="/admin/pedidos" className="kpi-card card-dyn" style={{ "--kc": "#2f9e44" } as React.CSSProperties}>
+          <div className="kpi-ic">📋</div>
+          <p className="kpi-lab">Pedidos pendientes</p>
+          <p className="kpi-val">{pedidosPend}</p>
+        </Link>
+        <Link href="/admin/negocios" className="kpi-card card-dyn" style={{ "--kc": "#1479c4" } as React.CSSProperties}>
+          <div className="kpi-ic">👥</div>
+          <p className="kpi-lab">Clientes</p>
+          <p className="kpi-val">{totalClientes}</p>
+        </Link>
+        <Link href="/admin/dashboard" className="kpi-card card-dyn" style={{ "--kc": "#f28a1e" } as React.CSSProperties}>
+          <div className="kpi-ic">📈</div>
+          <p className="kpi-lab">Ver tablero completo</p>
+          <p className="kpi-val" style={{ fontSize: "18px" }}>Abrir →</p>
+        </Link>
+      </div>
+
       {/* Más vendidos del mes: dulces vs helados */}
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <RankingCol titulo="🍫 Dulces más vendidos" filas={dulces} color="#b45309" />
+        <RankingCol titulo="🍫 Dulces más vendidos" filas={dulces} color="#e0730c" />
         <RankingCol titulo="🍦 Helados más vendidos" filas={helados} color="#1479c4" />
       </div>
     </div>
@@ -95,20 +110,20 @@ export default async function Panel() {
 function RankingCol({ titulo, filas, color }: { titulo: string; filas: { id: string; u: number; p: { nombre: string } | undefined }[]; color: string }) {
   const max = Math.max(1, ...filas.map((f) => f.u));
   return (
-    <div>
-      <h2 className="mb-2 text-sm font-bold uppercase tracking-wide text-slate-500">{titulo}</h2>
+    <div className="kpi-card">
+      <h2 className="mb-3 font-display text-base font-extrabold text-slate-900">{titulo}</h2>
       {filas.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400">Sin ventas este mes.</p>
       ) : (
-        <div className="space-y-1.5">
+        <div className="space-y-1">
           {filas.map((f, i) => (
-            <div key={f.id} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm">
-              <span className="w-5 shrink-0 text-center text-sm font-extrabold text-slate-400">{i + 1}</span>
-              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-800">{f.p?.nombre}</span>
-              <div className="hidden h-2 w-24 overflow-hidden rounded-full bg-slate-100 sm:block">
+            <div key={f.id} className="flex items-center gap-3 border-b border-slate-100 py-2 last:border-0">
+              <span className="grid h-6 w-6 shrink-0 place-items-center rounded-lg text-xs font-extrabold" style={i === 0 ? { background: color, color: "#fff" } : { background: "var(--surface-2)", color: "var(--text-soft)" }}>{i + 1}</span>
+              <span className="min-w-0 flex-1 truncate text-sm font-bold text-slate-800">{f.p?.nombre}</span>
+              <div className="hidden h-2 w-20 overflow-hidden rounded-full sm:block" style={{ background: "var(--surface-2)" }}>
                 <div className="h-full rounded-full" style={{ width: `${(f.u / max) * 100}%`, backgroundColor: color }} />
               </div>
-              <span className="w-12 shrink-0 text-right text-sm font-bold" style={{ color }}>{f.u} u</span>
+              <span className="w-12 shrink-0 text-right text-sm font-extrabold tabular-nums" style={{ color }}>{f.u} u</span>
             </div>
           ))}
         </div>

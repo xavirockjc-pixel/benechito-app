@@ -4,6 +4,15 @@ import { puedeAccederAdmin, ROLES_FULL } from "@/lib/dominio/permisos";
 import { rubroActivo } from "@/lib/dominio/empresa";
 import type { Etiquetas } from "@/lib/dominio/rubros";
 import { logout } from "./actions";
+import RegistrarSW from "./RegistrarSW";
+import type { Metadata, Viewport } from "next";
+
+export const metadata: Metadata = {
+  title: "Panel Benechito",
+  manifest: "/panel.webmanifest",
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Panel Benechito" },
+};
+export const viewport: Viewport = { themeColor: "#1479c4" };
 
 // Sistema de administración organizado por módulos (ver ARQUITECTURA-ECOSYSTEM.md).
 // Identidad propia de "sistema operativo": tonos sobrios slate, distinta de la web pública.
@@ -67,6 +76,15 @@ function construirModulos(L: Etiquetas): Modulo[] {
       ],
     },
     {
+      titulo: "Calidad y BPM",
+      activo: true,
+      items: [
+        { href: "/admin/formularios", label: "Checklists / BPM", icon: "✅" },
+        { href: "/admin/capacitaciones", label: "Capacitaciones", icon: "🎓" },
+        { href: "/admin/higiene", label: "Higiene y EPP", icon: "🧴" },
+      ],
+    },
+    {
       titulo: "Sistema",
       activo: true,
       items: [
@@ -106,6 +124,7 @@ export default async function AdminLayout({
 
   return (
     <div className="flex min-h-screen bg-slate-100 text-slate-800">
+      <RegistrarSW />
       {/* Sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col justify-between bg-slate-900 p-5 text-slate-300 md:flex">
         <div>

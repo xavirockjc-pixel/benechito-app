@@ -27,6 +27,12 @@ model Negocio {
   sector            String? // zona/sector para agrupar la ruta (si no, usa la comuna)
   rut               String? // para facturar (cliente que compra con factura)
   razonSocial       String? // razón social para la factura
+  // --- Facturación (extensión) ---
+  tipoDocumentoDefault String  @default("boleta") // boleta | factura | sin_documento
+  requiereFactura      Boolean @default(false)
+  giro                 String? // obligatorio (validación app) si tipoDocumentoDefault=factura
+  direccionFacturacion String? // puede diferir de `direccion`
+  emailFacturacion     String? // destino del PDF/XML
   tipoNegocio       String?
   direccion         String?
   // Ubicación GPS (capturada en terreno por el vendedor)
@@ -65,6 +71,7 @@ model Negocio {
   preventas    Preventa[]
   paradasRuta  ParadaRuta[]
   despachosLote DespachoLote[]
+  documentosVenta DocumentoVenta[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -199,6 +206,7 @@ model Empresa {
   recetaClave      String?
   recetasSecretas  String? // "trufa,helado" — tipos cuya receta queda bajo llave
   sucursales Sucursal[]
+  configFacturacion ConfigFacturacion?
   createdAt  DateTime   @default(now())
 }
 
@@ -449,6 +457,7 @@ model Venta {
   sesionCajaId String?
 
   pagos Pago[]
+  documentos DocumentoVenta[]
 
   @@index([negocioId])
   @@index([estadoPago])
@@ -964,4 +973,156 @@ model MovimientoCaja {
   fecha       DateTime   @default(now())
 
   @@index([sesionCajaId])
+}
+
+
+// ===========================================================================
+//  EXTENSIÓN — FACTURACIÓN Y DOCUMENTOS TRIBUTARIOS
+// ===========================================================================
+
+/// Documento tributario/comercial de una venta (boleta, factura, etc.).
+/// Convención del schema: estados como String (sin enums), ids cuid.
+model DocumentoVenta {
+  id                    String    @id @default(cuid())
+  venta                 Venta     @relation(fields: [ventaId], references: [id])
+  ventaId               String
+  negocio               Negocio   @relation(fields: [negocioId], references: [id])
+  negocioId             String
+  tipo                  String    // boleta | factura | nota_venta | guia_despacho | nota_credito | sin_documento
+  // Solo nota_credito: documento que corrige/anula.
+  documentoReferencia   DocumentoVenta?  @relation("NotaCredito", fields: [documentoReferenciaId], references: [id])
+  documentoReferenciaId String?
+  notasCredito          DocumentoVenta[] @relation("NotaCredito")
+  estado                String    @default("pendiente") // pendiente | emitido | enviado | pagado | rechazado
+  folio                 String?
+  montoNeto             Decimal?  @db.Decimal(12, 2)
+  iva                   Decimal?  @db.Decimal(12, 2)
+  montoTotal            Decimal   @db.Decimal(12, 2)
+  urlPdf                String?
+  fechaEmision          DateTime?
+  fechaEnvio            DateTime?
+  canalEnvio            String?   // email | whatsapp
+  createdAt             DateTime  @default(now())
+
+  @@index([ventaId])
+  @@index([negocioId])
+  @@index([estado])
+}
+
+/// Credenciales de facturación por instancia de Panal (una por Empresa).
+model ConfigFacturacion {
+  id        String  @id @default(cuid())
+  empresa   Empresa @relation(fields: [empresaId], references: [id])
+  empresaId String  @unique
+  proveedor String  @default("sii_directo") // sii_directo | openfactura | bsale | defontana | otro
+  apiKey    String? // la carga Xavier; no se commitea
+  ambiente  String  @default("certificacion") // certificacion | produccion
+  activo    Boolean @default(false)
+}
+
+// ===========================================================================
+//  EXTENSIÓN — CHECKLISTS / BPM Y CAPACITACIONES
+//  Plantillas editables desde el panel; cada app por rol las llena. Videos de
+//  capacitación por enlace. Convención del schema: estados como String, ids cuid.
+// ===========================================================================
+
+/// Plantilla de checklist/formulario (higiene, seguridad, limpieza, temperaturas…).
+model Formulario {
+  id         String   @id @default(cuid())
+  nombre     String
+  categoria  String   @default("higiene") // higiene | seguridad | limpieza | temperatura | logistica | revision | bpm | personal
+  rol        String   @default("todos")   // produccion | bodega | caja | vendedor | todos
+  frecuencia String   @default("diaria")  // diaria | semanal | por_evento | una_vez
+  campos     String   @default("[]")      // JSON: [{id,label,tipo,requerido,opciones?}] tipo: si_no|texto|numero|opcion
+  activo     Boolean  @default(true)
+  orden      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  respuestas FormularioRespuesta[]
+
+  @@index([rol])
+  @@index([activo])
+}
+
+/// Un checklist completado: quién, cuándo y qué respondió.
+model FormularioRespuesta {
+  id            String     @id @default(cuid())
+  formulario    Formulario @relation(fields: [formularioId], references: [id], onDelete: Cascade)
+  formularioId  String
+  usuarioId     String?    // sin FK: guardamos snapshot del nombre por si cambia
+  usuarioNombre String?
+  rol           String?
+  respuestas    String     @default("{}") // JSON {campoId: valor}
+  notas         String?
+  fecha         DateTime   @default(now())
+
+  @@index([formularioId])
+  @@index([fecha])
+}
+
+/// Capacitación (video paso a paso de fabricación o uso de máquinas).
+model Capacitacion {
+  id          String   @id @default(cuid())
+  titulo      String
+  descripcion String?
+  categoria   String   @default("fabricacion") // fabricacion | maquinas | receta | otro
+  urlVideo    String?  // enlace YouTube/Drive
+  pasos       String?  // texto paso a paso (opcional)
+  productoId  String?  // enlazar a un producto/receta (sin FK dura)
+  rol         String   @default("todos")
+  orden       Int      @default(0)
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  vistas CapacitacionVista[]
+
+  @@index([categoria])
+  @@index([productoId])
+}
+
+/// Registro de que un trabajador vio/entendió una capacitación.
+model CapacitacionVista {
+  id             String       @id @default(cuid())
+  capacitacion   Capacitacion @relation(fields: [capacitacionId], references: [id], onDelete: Cascade)
+  capacitacionId String
+  usuarioId      String?
+  usuarioNombre  String?
+  fecha          DateTime     @default(now())
+
+  @@index([capacitacionId])
+}
+
+// ===========================================================================
+//  EXTENSIÓN — IMPLEMENTOS (EPP) Y ENTREGAS
+//  Catálogo editable (pechera, cofia, guantes…) y registro de entregas.
+//  Las compras de higiene se registran como Gasto (+ entrada de MateriaPrima).
+// ===========================================================================
+
+/// Catálogo editable de implementos / EPP.
+model Implemento {
+  id        String   @id @default(cuid())
+  nombre    String
+  activo    Boolean  @default(true)
+  orden     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  entregas EntregaImplemento[]
+
+  @@index([activo])
+}
+
+/// Registro de entrega de un implemento a un trabajador (quién, cuánto, cuándo).
+model EntregaImplemento {
+  id            String     @id @default(cuid())
+  implemento    Implemento @relation(fields: [implementoId], references: [id], onDelete: Cascade)
+  implementoId  String
+  trabajador    String     // a quién se le entregó
+  cantidad      Int        @default(1)
+  usuarioId     String?    // quién registró la entrega
+  usuarioNombre String?
+  notas         String?
+  fecha         DateTime   @default(now())
+
+  @@index([implementoId])
+  @@index([fecha])
 }

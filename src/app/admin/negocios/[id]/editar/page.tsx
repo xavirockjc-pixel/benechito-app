@@ -52,6 +52,22 @@ export default async function EditarNegocio({
           <label className="text-sm font-bold text-navy">Razón social <span className="font-normal text-choco-2">(factura)</span>
             <input name="razonSocial" defaultValue={n.razonSocial ?? ""} className={inputCls} />
           </label>
+          <label className="text-sm font-bold text-navy">Giro <span className="font-normal text-choco-2">(factura)</span>
+            <input name="giro" defaultValue={n.giro ?? ""} placeholder="Ej: Comercio al por menor" className={inputCls} />
+          </label>
+          <label className="text-sm font-bold text-navy">Email de facturación <span className="font-normal text-choco-2">(recibe el PDF/XML)</span>
+            <input name="emailFacturacion" type="email" defaultValue={n.emailFacturacion ?? ""} className={inputCls} />
+          </label>
+          <label className="text-sm font-bold text-navy">Dirección de facturación <span className="font-normal text-choco-2">(si difiere)</span>
+            <input name="direccionFacturacion" defaultValue={n.direccionFacturacion ?? ""} className={inputCls} />
+          </label>
+          <label className="text-sm font-bold text-navy">Documento por defecto
+            <select name="tipoDocumentoDefault" defaultValue={n.tipoDocumentoDefault ?? "boleta"} className={inputCls}>
+              <option value="boleta">Boleta</option>
+              <option value="factura">Factura</option>
+              <option value="sin_documento">Sin documento</option>
+            </select>
+          </label>
           <label className="text-sm font-bold text-navy">Dirección
             <input name="direccion" defaultValue={n.direccion ?? ""} className={inputCls} />
           </label>

@@ -9,6 +9,14 @@ export async function marcarFacturada(formData: FormData) {
   const folio = String(formData.get("folio") ?? "").trim() || null;
   if (!ventaId) return;
   await prisma.venta.update({ where: { id: ventaId }, data: { facturada: true, folioFactura: folio } });
+  // Sincroniza el DocumentoVenta más reciente de la venta (extensión Facturación).
+  const doc = await prisma.documentoVenta.findFirst({ where: { ventaId }, orderBy: { createdAt: "desc" } });
+  if (doc) {
+    await prisma.documentoVenta.update({
+      where: { id: doc.id },
+      data: { estado: "emitido", ...(folio ? { folio } : {}), fechaEmision: doc.fechaEmision ?? new Date() },
+    });
+  }
   revalidatePath("/admin/facturacion");
 }
 
@@ -17,5 +25,9 @@ export async function desmarcarFacturada(formData: FormData) {
   const ventaId = String(formData.get("ventaId") ?? "").trim();
   if (!ventaId) return;
   await prisma.venta.update({ where: { id: ventaId }, data: { facturada: false, folioFactura: null } });
+  const doc = await prisma.documentoVenta.findFirst({ where: { ventaId }, orderBy: { createdAt: "desc" } });
+  if (doc) {
+    await prisma.documentoVenta.update({ where: { id: doc.id }, data: { estado: "pendiente", folio: null } });
+  }
   revalidatePath("/admin/facturacion");
 }

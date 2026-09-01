@@ -1,0 +1,37 @@
+# Base para levantar LibreDTE (Edición Comunidad) junto a tu n8n en Hostinger.
+# Es un punto de partida: ajusta imagen/versión según el repo oficial que uses
+# (https://github.com/LibreDTE/libredte-app-community). Ponlo en la misma red que n8n.
+services:
+  libredte:
+    # Imagen comunitaria de referencia; reemplaza por la que definas del repo oficial.
+    image: nosagadu/libredte-web-docker:latest
+    container_name: libredte
+    restart: unless-stopped
+    depends_on:
+      - libredte-db
+    environment:
+      # Ajusta según la config que pida la imagen que elijas.
+      - DB_HOST=libredte-db
+      - DB_NAME=libredte
+      - DB_USER=libredte
+      - DB_PASS=CAMBIA_ESTO
+    ports:
+      - "8090:80"   # expón detrás de tu proxy/EasyPanel como https://libredte.tudominio.cl
+    volumes:
+      - libredte_data:/var/www/libredte/data   # certificado, CAF y config persistentes
+
+  libredte-db:
+    image: mariadb:11
+    container_name: libredte-db
+    restart: unless-stopped
+    environment:
+      - MYSQL_DATABASE=libredte
+      - MYSQL_USER=libredte
+      - MYSQL_PASSWORD=CAMBIA_ESTO
+      - MYSQL_ROOT_PASSWORD=CAMBIA_ESTO_TAMBIEN
+    volumes:
+      - libredte_db:/var/lib/mysql
+
+volumes:
+  libredte_data:
+  libredte_db:

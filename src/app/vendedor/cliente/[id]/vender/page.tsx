@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { listaParaCliente } from "@/lib/dominio/precios";
+import { faltaParaFactura } from "@/lib/dominio/ventas";
 import { getCanales } from "@/lib/dominio/canales";
 import VenderTerreno from "./VenderTerreno";
 
@@ -9,10 +10,13 @@ export const dynamic = "force-dynamic";
 
 export default async function VenderPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { id } = await params;
+  const { error } = await searchParams;
   const cliente = await prisma.negocio.findUnique({ where: { id } });
   if (!cliente) notFound();
 
@@ -39,8 +43,20 @@ export default async function VenderPage({
       <h1 className="mt-1 text-xl font-extrabold text-slate-900">Vender</h1>
       <p className="text-xs text-slate-500">Precios de la lista: {lista?.nombre ?? "automática"}</p>
 
+      {error === "factura" && (
+        <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">
+          ⚠️ No se pudo cerrar como factura: al cliente le faltan datos tributarios (RUT, razón social o giro). Complétalos en su ficha.
+        </p>
+      )}
+
       <div className="mt-3">
-        <VenderTerreno negocioId={id} productos={productos} canales={canales} />
+        <VenderTerreno
+          negocioId={id}
+          productos={productos}
+          canales={canales}
+          docDefault={cliente.tipoDocumentoDefault}
+          faltaFactura={faltaParaFactura(cliente)}
+        />
       </div>
     </div>
   );

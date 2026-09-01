@@ -1,0 +1,967 @@
+// Esquema de datos Benechito
+// Diseñado para ser PORTABLE: hoy corre en SQLite (local, sin Docker) y
+// migra a PostgreSQL/Supabase cambiando solo el `provider` y `DATABASE_URL`.
+// Por eso se evitan enums nativos y arrays: los estados son String.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Negocio = prospecto y cliente son la misma entidad; cambia el `estado`.
+/// Estados: nuevo, contactado, interesado, visita_agendada,
+///          instalacion_pendiente, punto_activo, reposicion, inactivo
+model Negocio {
+  id                String       @id @default(cuid())
+  // Contacto
+  nombreContacto    String
+  nombreNegocio     String
+  whatsapp          String
+  comuna            String
+  ciudad            String?
+  sector            String? // zona/sector para agrupar la ruta (si no, usa la comuna)
+  rut               String? // para facturar (cliente que compra con factura)
+  razonSocial       String? // razón social para la factura
+  tipoNegocio       String?
+  direccion         String?
+  // Ubicación GPS (capturada en terreno por el vendedor)
+  latitud           Float?
+  longitud          Float?
+  // Interés (captación)
+  interesPunto      String? // nivel de interés declarado en el formulario
+  interesHelados    Boolean      @default(false)
+  observaciones     String?
+  // Estado comercial (CRM)
+  estado            String       @default("nuevo")
+  origen            String       @default("landing") // landing | manual | otro
+  // --- v2: clasificación comercial ---
+  // tipoCliente determina la lista de precios cuando listaPrecioId es null.
+  tipoCliente       String       @default("prospecto") // ruta|distribuidor|revendedor|mayorista|negocio_retiro|local_recurrente|consumidor|prospecto
+  // Qué compra este cliente: dulce | helado | ambos
+  compra            String?
+  listaPrecio       ListaPrecio? @relation(fields: [listaPrecioId], references: [id])
+  listaPrecioId     String?
+  vendedor          Usuario?     @relation("VendedorClientes", fields: [vendedorId], references: [id])
+  vendedorId        String?
+  // Fechas clave
+  fechaIngreso      DateTime     @default(now())
+  fechaInstalacion  DateTime?
+  ultimaReposicion  DateTime?
+  proximaReposicion DateTime?
+  // Notas internas del equipo
+  notas             String?
+
+  productos    PuntoProducto[]
+  reposiciones Reposicion[]
+  actividades  Actividad[]
+  // --- v2: operación comercial ---
+  pedidos      Pedido[]
+  ventas       Venta[]
+  preventas    Preventa[]
+  paradasRuta  ParadaRuta[]
+  despachosLote DespachoLote[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([estado])
+  @@index([tipoCliente])
+}
+
+/// Catálogo de productos Benechito.
+/// linea: trufa | cuchufli | helado | proteico
+model Producto {
+  id           String  @id @default(cuid())
+  linea        String
+  nombre       String // sabor / nombre comercial
+  base         String? // blanca | cafe (trufas)
+  formato      String? // "pack 3", "pack 5", "pack 9" (= presentación comercial)
+  sku          String? @unique
+  codigoBarras String? // EAN / código de barras (v2)
+  categoria    String? // agrupación comercial (Bebidas, Snacks, Distribución…)
+  // tipo: propio (fabricado: producción/sabores) | reventa (comprado y revendido)
+  tipo         String  @default("propio")
+  // seccion del catálogo: propio (fabricación) | distribucion (local) | ruta (ruta/reventa) | promo (promos y combos)
+  seccion      String  @default("propio")
+  costo        Decimal? @db.Decimal(12, 2) // costo de compra (para reventa: margen)
+  activo       Boolean @default(true)
+  // Solo local: producto que vive únicamente en el local (Sala de Ventas) y la
+  // central. Se oculta de bodega, rutas y vendedor (ej: bebidas, snacks de reventa).
+  soloLocal    Boolean @default(false)
+  // Publicar en la tienda online pública (/tienda).
+  publicarTienda Boolean @default(false)
+  descripcion    String? // descripción para la tienda online
+  saboresTienda  String? // sabores propios del producto para la tienda (separados por coma)
+  saboresNoDisp  String? // sabores marcados como NO disponibles hoy (separados por coma)
+  permiteMixto   Boolean @default(false) // ofrece opción "Mixto al azar" en la tienda
+  minTienda      Int     @default(1) // cantidad mínima por pedido (para preparar/entregar)
+  maxTienda      Int     @default(0) // cantidad máxima (0 = sin tope)
+  // Foto / presentación del producto (URL) — para el botón "Ver".
+  fotoUrl      String?
+
+  instalaciones   PuntoProducto[]
+  reposicionItems ReposicionItem[]
+  // --- v2: catálogo comercial ---
+  precios         PrecioProducto[]
+  pedidoItems     PedidoItem[]
+  stock           Stock[]
+  movimientos     MovimientoStock[]
+  ordenesProduccion OrdenProduccion[]
+  recetaItems     RecetaItem[]
+
+  createdAt DateTime @default(now())
+}
+
+/// Qué productos (y cuántos) hay instalados en la góndola de un negocio.
+model PuntoProducto {
+  id                String   @id @default(cuid())
+  negocio           Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId         String
+  producto          Producto @relation(fields: [productoId], references: [id])
+  productoId        String
+  cantidadInstalada Int      @default(0)
+
+  @@unique([negocioId, productoId])
+}
+
+/// Registro de cada reposición realizada a un negocio.
+model Reposicion {
+  id        String           @id @default(cuid())
+  negocio   Negocio          @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId String
+  fecha     DateTime         @default(now())
+  notas     String?
+  items     ReposicionItem[]
+}
+
+/// Ítem de reposición: puede ser por producto (pack) o por SABOR (reposición de Puntos).
+model ReposicionItem {
+  id           String     @id @default(cuid())
+  reposicion   Reposicion @relation(fields: [reposicionId], references: [id], onDelete: Cascade)
+  reposicionId String
+  producto     Producto?  @relation(fields: [productoId], references: [id])
+  productoId   String?
+  sabor        Sabor?     @relation(fields: [saborId], references: [id])
+  saborId      String?
+  cantidad     Int        @default(0)
+}
+
+/// Historial / timeline de cada negocio (cambios de estado, notas, contactos).
+model Actividad {
+  id          String   @id @default(cuid())
+  negocio     Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId   String
+  tipo        String // cambio_estado | nota | contacto | instalacion | reposicion | creado
+  descripcion String
+  createdAt   DateTime @default(now())
+
+  @@index([negocioId])
+}
+
+/// Usuarios del panel interno (login simple del equipo).
+model Usuario {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  nombre       String
+  passwordHash String
+  // rol (v2): propietario|admin|caja|produccion|bodega|vendedor|chofer|tecnico|rrhh (compat: admin|equipo)
+  rol          String   @default("equipo")
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  // Vehículo/ubicación con la que trabaja este usuario (vendedor/chofer).
+  vehiculo     Ubicacion? @relation("UsuarioVehiculo", fields: [vehiculoId], references: [id])
+  vehiculoId   String?
+
+  // --- v2: back-relations ---
+  clientesAsignados Negocio[]   @relation("VendedorClientes")
+  ventasRegistradas Venta[]     @relation("VendedorVentas")
+  auditorias        Auditoria[]
+  rutas             Ruta[]      @relation("RutaVendedor")
+  sesionesCaja      SesionCaja[]
+}
+
+// ===========================================================================
+//  v2 — NÚCLEO (multiubicación): Empresa → Sucursal → Ubicación
+// ===========================================================================
+
+model Empresa {
+  id         String     @id @default(cuid())
+  nombre     String
+  // Plantilla por rubro: renombra áreas y activa/oculta módulos (mismo motor).
+  rubro      String     @default("fabrica") // fabrica | panaderia | comida_rapida | restaurante
+  // Secreto de recetas: clave para ver las recetas protegidas + tipos secretos (CSV de líneas).
+  recetaClave      String?
+  recetasSecretas  String? // "trufa,helado" — tipos cuya receta queda bajo llave
+  sucursales Sucursal[]
+  createdAt  DateTime   @default(now())
+}
+
+model Sucursal {
+  id          String      @id @default(cuid())
+  empresa     Empresa     @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+  empresaId   String
+  nombre      String
+  ubicaciones Ubicacion[]
+
+  @@index([empresaId])
+}
+
+/// Ubicación física de stock: bodega fábrica | sala de ventas | vehículo 1 | vehículo 2 ...
+model Ubicacion {
+  id         String   @id @default(cuid())
+  sucursal   Sucursal @relation(fields: [sucursalId], references: [id], onDelete: Cascade)
+  sucursalId String
+  nombre     String
+  tipo       String // bodega | sala | vehiculo | otro
+  activo     Boolean  @default(true)
+
+  stock              Stock[]
+  stockSabores       StockSabor[]
+  ventas             Venta[]
+  movimientosOrigen  MovimientoStock[] @relation("MovOrigen")
+  movimientosDestino MovimientoStock[] @relation("MovDestino")
+  pedidosOrigen      Pedido[]          @relation("PedidoOrigen")
+  usuarios           Usuario[]         @relation("UsuarioVehiculo")
+  ordenesProduccion  OrdenProduccion[] @relation("OPDestino")
+  sesionesCaja       SesionCaja[]
+
+  @@index([sucursalId])
+}
+
+// ===========================================================================
+//  v2 — LISTAS DE PRECIOS (producto único, muchos precios)
+// ===========================================================================
+
+/// Lista de precios por canal / tipo de cliente.
+/// Ej: Sala de Ventas, Web, Reparto, Negocio, Punto Benechito, Revendedor, Distribuidor, Supermercado.
+model ListaPrecio {
+  id            String    @id @default(cuid())
+  nombre        String
+  canal         String // sala | web | reparto | negocio | punto | revendedor | distribuidor | supermercado
+  vigenciaDesde DateTime?
+  vigenciaHasta DateTime?
+  activo        Boolean   @default(true)
+
+  precios   PrecioProducto[]
+  clientes  Negocio[]
+  createdAt DateTime         @default(now())
+}
+
+/// Precio de UN producto en UNA lista. cantidadMinima permite tramos/descuentos por volumen.
+model PrecioProducto {
+  id             String      @id @default(cuid())
+  producto       Producto    @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  productoId     String
+  lista          ListaPrecio @relation(fields: [listaId], references: [id], onDelete: Cascade)
+  listaId        String
+  precio         Decimal     @db.Decimal(12, 2)
+  cantidadMinima Int         @default(1)
+  descuento      Decimal?    @db.Decimal(12, 2)
+
+  @@unique([productoId, listaId, cantidadMinima])
+  @@index([listaId])
+}
+
+// ===========================================================================
+//  v2 — PEDIDOS / VENTAS / PAGOS  (conceptos SEPARADOS)
+// ===========================================================================
+
+/// Pedido = intención de compra. Su estado es INDEPENDIENTE del estado de pago.
+model Pedido {
+  id                String     @id @default(cuid())
+  negocio           Negocio    @relation(fields: [negocioId], references: [id])
+  negocioId         String
+  canal             String // whatsapp | online | llamada | agenda | sala | vendedor | preventa | distribuidor
+  estado            String     @default("solicitud") // solicitud|confirmado|preparacion|listo|entregado|finalizado
+  // Cómo se entrega y a qué área se despacha (centraliza con retiros/reparto).
+  tipoEntrega       String? // local | retiro | delivery
+  destino           String? // bodega | local | reparto
+  // Lista de precios elegida (por tipo de cliente) para resolver los precios.
+  listaPrecioId     String?
+  ubicacionOrigen   Ubicacion? @relation("PedidoOrigen", fields: [ubicacionOrigenId], references: [id])
+  ubicacionOrigenId String?
+  notas             String?
+  // Pago online (tienda): si se pagó y la referencia del pago (ej. Mercado Pago).
+  pagado            Boolean    @default(false)
+  pagoRef           String?
+
+  items PedidoItem[]
+  venta Venta?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([negocioId])
+  @@index([estado])
+}
+
+model PedidoItem {
+  id         String   @id @default(cuid())
+  pedido     Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  pedidoId   String
+  producto   Producto @relation(fields: [productoId], references: [id])
+  productoId String
+  cantidad   Int
+  precioUnit Decimal  @db.Decimal(12, 2)
+  sabor      String? // sabor elegido en la tienda (si aplica)
+
+  @@index([pedidoId])
+}
+
+/// Canal de venta administrable (Local, Web, Delivery, Ruta, Distribuidor, Supermercado…).
+/// El usuario puede agregar los suyos. Venta.canal guarda el `codigo`.
+model CanalVenta {
+  id     String  @id @default(cuid())
+  codigo String  @unique
+  nombre String
+  color  String  @default("#334155")
+  activo Boolean @default(true)
+  orden  Int     @default(0)
+
+  createdAt DateTime @default(now())
+}
+
+/// Trabajador del equipo (operario, vendedor, repartidor…). No es un login: es la
+/// ficha para asistencia, estadísticas y su cuenta (pagos/adelantos/deudas).
+model Trabajador {
+  id         String   @id @default(cuid())
+  nombre     String
+  cargo      String   @default("operario") // operario|vendedor|repartidor|otro
+  activo     Boolean  @default(true)
+  usuarioId  String? // si tiene login (para cruzar ventas por vendedorId)
+  valorHora  Decimal? @db.Decimal(12, 2) // referencia interna (no es liquidación)
+  notas      String?
+  createdAt  DateTime @default(now())
+
+  asistencias  Asistencia[]
+  movimientos  MovimientoTrabajador[]
+
+  @@index([cargo])
+}
+
+/// Asistencia del día: horario, tipo de jornada, horas y nota de lo que hizo.
+model Asistencia {
+  id           String     @id @default(cuid())
+  trabajador   Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
+  trabajadorId String
+  fecha        DateTime   @default(now())
+  presente     Boolean    @default(true)
+  tipo         String     @default("trabajo") // trabajo|permiso|licencia|falta|salida_antes
+  horaEntrada  String? // "08:30"
+  horaSalida   String? // "18:00"
+  horas        Float      @default(0)
+  horasExtra   Float      @default(0)
+  notas        String? // qué hizo ese día
+
+  @@index([trabajadorId])
+  @@index([fecha])
+}
+
+/// Movimiento de la cuenta del trabajador: pago, adelanto, deuda (queda debiendo),
+/// hora extra, bono o descuento. El saldo se deriva de la suma.
+model MovimientoTrabajador {
+  id           String     @id @default(cuid())
+  trabajador   Trabajador @relation(fields: [trabajadorId], references: [id], onDelete: Cascade)
+  trabajadorId String
+  fecha        DateTime   @default(now())
+  tipo         String // pago|adelanto|deuda|hora_extra|bono|descuento
+  monto        Decimal    @default(0) @db.Decimal(12, 2)
+  horas        Float      @default(0) // para hora_extra
+  notas        String?
+  usuarioId     String?
+  nombreUsuario String?
+
+  @@index([trabajadorId])
+  @@index([fecha])
+}
+
+/// Gasto del vehículo: combustible y otros (mantención, repuestos, neumáticos, peaje…).
+/// Registrado por el repartidor desde su celular; se refleja en finanzas/reparto.
+model GastoVehiculo {
+  id            String   @id @default(cuid())
+  fecha         DateTime @default(now())
+  vehiculoId    String? // Ubicacion tipo vehiculo
+  tipo          String   @default("combustible") // combustible|mantencion|repuesto|neumaticos|peaje|lavado|otro
+  monto         Decimal  @default(0) @db.Decimal(12, 2)
+  litros        Float    @default(0) // si es combustible
+  canal         String? // a qué canal/ruta fue (opcional)
+  notas         String?
+  usuarioId     String?
+  nombreUsuario String?
+
+  @@index([fecha])
+  @@index([tipo])
+}
+
+/// Revisión del vehículo (checklist del chofer): niveles, neumáticos, luces… + km.
+/// Deja registro del estado y de los km de entrada/salida para costear cada ruta.
+model RevisionVehiculo {
+  id            String   @id @default(cuid())
+  fecha         DateTime @default(now())
+  vehiculoId    String?
+  kmSalida      Float    @default(0)
+  kmEntrada     Float    @default(0)
+  // Estado de cada punto: "ok" | "revisar" | "malo"
+  agua          String   @default("ok")
+  aceite        String   @default("ok")
+  neumaticos    String   @default("ok")
+  luces         String   @default("ok")
+  frenos        String   @default("ok")
+  limpieza      String   @default("ok")
+  documentos    String   @default("ok")
+  observaciones String?
+  usuarioId     String?
+  nombreUsuario String?
+
+  @@index([fecha])
+}
+
+/// Venta = hecho económico. Genera documento y descuenta stock. estadoPago ≠ estado del pedido.
+model Venta {
+  id          String    @id @default(cuid())
+  pedido      Pedido?   @relation(fields: [pedidoId], references: [id])
+  pedidoId    String?   @unique
+  negocio     Negocio   @relation(fields: [negocioId], references: [id])
+  negocioId   String
+  ubicacion   Ubicacion @relation(fields: [ubicacionId], references: [id])
+  ubicacionId String
+  vendedor    Usuario?  @relation("VendedorVentas", fields: [vendedorId], references: [id])
+  vendedorId  String?
+  total       Decimal   @db.Decimal(12, 2)
+  documento   String? // boleta | factura (integración tributaria futura)
+  estadoPago  String    @default("pendiente") // pendiente | parcial | pagado | vencido
+  // Canal de venta, para separar y llevar historial aparte por área.
+  canal       String    @default("directa") // local | terreno | directa
+  // Etiqueta libre del tipo de venta (delivery, exprés ruta, extra a pedido…).
+  etiqueta    String?
+  // Facturación: si esta venta requiere factura y si ya se emitió.
+  facturada   Boolean   @default(false)
+  folioFactura String?
+  fecha       DateTime  @default(now())
+  // Sesión de caja del POS a la que pertenece (si se vendió en la sala).
+  sesionCaja   SesionCaja? @relation(fields: [sesionCajaId], references: [id])
+  sesionCajaId String?
+
+  pagos Pago[]
+
+  @@index([negocioId])
+  @@index([estadoPago])
+}
+
+/// Pago = abono a una venta. Una venta puede tener varios pagos (crédito, mixtos).
+model Pago {
+  id      String   @id @default(cuid())
+  venta   Venta    @relation(fields: [ventaId], references: [id], onDelete: Cascade)
+  ventaId String
+  medio   String // efectivo | transferencia | tarjeta | credito | otro
+  monto   Decimal  @db.Decimal(12, 2)
+  fecha   DateTime @default(now())
+
+  @@index([ventaId])
+}
+
+// ===========================================================================
+//  v2 — INVENTARIO MULTIUBICACIÓN
+// ===========================================================================
+
+/// Stock de un producto EN una ubicación. Cargar un vehículo = TRANSFERENCIA, no venta.
+model Stock {
+  id          String    @id @default(cuid())
+  producto    Producto  @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  productoId  String
+  ubicacion   Ubicacion @relation(fields: [ubicacionId], references: [id], onDelete: Cascade)
+  ubicacionId String
+  cantidad    Int       @default(0)
+
+  @@unique([productoId, ubicacionId])
+  @@index([ubicacionId])
+}
+
+/// Cada movimiento de inventario (auditable).
+model MovimientoStock {
+  id                 String     @id @default(cuid())
+  producto           Producto   @relation(fields: [productoId], references: [id])
+  productoId         String
+  tipo               String // ingreso | venta | transferencia | merma | ajuste | produccion
+  ubicacionOrigen    Ubicacion? @relation("MovOrigen", fields: [ubicacionOrigenId], references: [id])
+  ubicacionOrigenId  String?
+  ubicacionDestino   Ubicacion? @relation("MovDestino", fields: [ubicacionDestinoId], references: [id])
+  ubicacionDestinoId String?
+  cantidad           Int
+  referencia         String? // id de venta, pedido, orden de producción, etc.
+  fecha              DateTime   @default(now())
+
+  @@index([productoId])
+}
+
+/// Agenda / pedidos agendados: algo a preparar para una fecha (apartar en bodega,
+/// mandar a mezclar o a fabricar, o una entrega). Alimenta el calendario del panel.
+model Agenda {
+  id         String   @id @default(cuid())
+  titulo     String
+  fecha      DateTime
+  tipo       String   @default("otro") // apartar | mezclar | fabricar | entrega | express | visita | retiro | otro
+  estado     String   @default("pendiente") // pendiente | en_proceso | hecho | cancelado
+  negocioId  String?
+  productoId String?
+  saborId    String?
+  cantidad   Int?
+  notas      String?
+  // Despacho de pedidos de retiro: a qué departamento se manda y por qué canal entró.
+  destino    String? // local | bodega | reparto | central
+  canal      String? // whatsapp | facebook | instagram | manual
+  contacto   String? // nombre/teléfono libre del cliente cuando no está en la base
+  createdAt  DateTime @default(now())
+
+  @@index([fecha])
+  @@index([estado])
+  @@index([destino])
+}
+
+/// Control de calidad de una mezcla/producción: qué se hizo, cuántos salieron, qué
+/// insumos de la receta se marcaron, turno, operarios y observaciones. Historial en la central.
+model ControlCalidad {
+  id            String   @id @default(cuid())
+  fecha         DateTime @default(now())
+  turno         String? // manana | tarde | noche | libre
+  operarios     String? // nombres de quienes participaron (libre)
+  clase         String? // producto | sabor
+  refId         String?
+  nombre        String // qué se mezcló/produjo
+  cantidad      Int      @default(0) // unidades que salieron
+  base          Float? // litros o kg de base preparada (escala la receta base)
+  baseUnidad    String? // l | kg
+  itemsMarcados Int      @default(0) // insumos marcados como echados
+  itemsTotal    Int      @default(0) // insumos de la receta
+  lote          String? // lote de fabricación (fecha + turno + correlativo)
+  observaciones String?
+  usuarioId     String?
+  nombreUsuario String?
+
+  despachos     DespachoLote[]
+
+  @@index([fecha])
+}
+
+// Trazabilidad hacia el cliente: a qué cliente(s) se despachó un lote de producción.
+// Permite un retiro de mercado ("¿a quién le llegó el lote X?").
+model DespachoLote {
+  id            String         @id @default(cuid())
+  control       ControlCalidad @relation(fields: [controlId], references: [id], onDelete: Cascade)
+  controlId     String
+  negocio       Negocio?       @relation(fields: [negocioId], references: [id])
+  negocioId     String?
+  clienteTexto  String? // cliente libre si no está en la lista
+  cantidad      Float          @default(0)
+  notas         String?
+  usuarioId     String?
+  nombreUsuario String?
+  fecha         DateTime       @default(now())
+
+  @@index([controlId])
+  @@index([negocioId])
+}
+
+/// Registro diario simple de las apps operativas (Bodega y Local).
+/// Denormalizado (guarda el nombre) para mostrar el "registro del día" sin joins.
+model MovimientoBodega {
+  id            String   @id @default(cuid())
+  zona          String   @default("bodega") // bodega | sala (a qué app/ubicación pertenece)
+  ubicacionId   String? // ubicación afectada (bodega o sala)
+  tipo          String // entrada | merma | mixto
+  clase         String // producto | sabor
+  refId         String // id del producto o sabor
+  nombre        String // nombre al momento del registro
+  detalle       String? // p.ej. composición de un mixto (solo se ve en el panel)
+  cantidad      Int
+  usuarioId     String?
+  nombreUsuario String?
+  fecha         DateTime @default(now())
+
+  @@index([fecha])
+  @@index([zona])
+}
+
+// ===========================================================================
+//  v2 — METAS y AUDITORÍA (Hub / seguridad)
+// ===========================================================================
+
+/// Meta/objetivo comercial u operativo. El Hub muestra Meta → Real → Diferencia → % cumplimiento.
+model Meta {
+  id        String   @id @default(cuid())
+  tipo      String // ventas | clientes_nuevos | puntos_instalados | margen | merma | produccion | cobranza
+  periodo   String // "2026-08" | "2026-Q3" | "2026" | "temporada-verano"
+  objetivo  Decimal  @db.Decimal(14, 2)
+  ambito    String? // sucursal:<id> | ruta:<id> | vendedor:<id> | global
+  createdAt DateTime @default(now())
+
+  @@index([tipo, periodo])
+}
+
+/// Auditoría de acciones críticas (ventas, pagos, cambios de precio, transferencias, cambios de estado).
+model Auditoria {
+  id        String   @id @default(cuid())
+  usuario   Usuario? @relation(fields: [usuarioId], references: [id])
+  usuarioId String?
+  accion    String // crear | actualizar | eliminar | cambiar_estado | ...
+  entidad   String // Venta | Pago | PrecioProducto | Stock | Negocio | ...
+  entidadId String?
+  detalle   String? // JSON serializado con antes/después
+  createdAt DateTime @default(now())
+
+  @@index([entidad, entidadId])
+}
+
+// ===========================================================================
+//  v2 — PREVENTA (contacto por WhatsApp antes de la ruta, vía n8n + Evolution)
+// ===========================================================================
+
+/// Contacto de preventa a un cliente. El resultado alimenta la planificación de ruta.
+model Preventa {
+  id        String   @id @default(cuid())
+  negocio   Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId String
+  mensaje   String?
+  // estado: enviada | pedido | visita | no_necesita | sin_respuesta
+  estado    String   @default("enviada")
+  canal     String   @default("whatsapp")
+  createdAt DateTime @default(now())
+
+  @@index([negocioId])
+  @@index([estado])
+}
+
+// ===========================================================================
+//  v2 — GESTIÓN: Fabricación (órdenes de producción)
+// ===========================================================================
+
+/// Orden de producción: al terminarse ingresa el producto fabricado a bodega.
+/// (Recetas, materias primas y trazabilidad de lote se amplían más adelante.)
+model OrdenProduccion {
+  id           String    @id @default(cuid())
+  // Produce un PRODUCTO (pack) o un SABOR (para reposición). Uno de los dos.
+  producto     Producto? @relation(fields: [productoId], references: [id])
+  productoId   String?
+  sabor        Sabor?    @relation(fields: [saborId], references: [id])
+  saborId      String?
+  cantidadPlan Int
+  cantidadReal Int?
+  merma        Int      @default(0)
+  // estado: planificada | en_proceso | terminada
+  estado       String   @default("planificada")
+  lote         String?
+  responsable  String?
+  notas        String?
+  ubicacionDestino   Ubicacion? @relation("OPDestino", fields: [ubicacionDestinoId], references: [id])
+  ubicacionDestinoId String?
+  createdAt    DateTime @default(now())
+  fechaTermino DateTime?
+
+  @@index([estado])
+}
+
+// ===========================================================================
+//  v2 — RUTA (planificación y ejecución de la ruta del vendedor)
+// ===========================================================================
+
+/// Ruta de un día asignada a un vendedor. Deja registro de lo planificado y hecho.
+model Ruta {
+  id         String   @id @default(cuid())
+  nombre     String?
+  fecha      DateTime @default(now())
+  vendedor   Usuario? @relation("RutaVendedor", fields: [vendedorId], references: [id])
+  vendedorId String?
+  // estado: planificada | en_curso | cerrada
+  estado     String   @default("planificada")
+  notas      String?
+  createdAt  DateTime @default(now())
+
+  paradas ParadaRuta[]
+
+  @@index([vendedorId])
+  @@index([estado])
+}
+
+/// Parada de una ruta = un cliente a visitar, con su orden y resultado.
+model ParadaRuta {
+  id        String  @id @default(cuid())
+  ruta      Ruta    @relation(fields: [rutaId], references: [id], onDelete: Cascade)
+  rutaId    String
+  negocio   Negocio @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId String
+  orden     Int     @default(0)
+  // estado: pendiente | vendido | no_compro | no_estaba | visitado
+  estado    String  @default("pendiente")
+  notas     String?
+
+  @@unique([rutaId, negocioId])
+  @@index([rutaId])
+}
+
+// ===========================================================================
+//  v2 — SABORES (para producción y reposición por sabor de los Puntos)
+// ===========================================================================
+
+/// Sabor de un producto (trufa, cuchuflí, helado…). NO tiene precio: los sabores
+/// se usan para producción y para reponer los Puntos (reposición por sabor).
+/// Tipo de producto (cuchuflí, trufa, paletas de agua, postres 500ml…) dentro de una
+/// sección (dulce/helado). Lista administrable, interconecta sabores y formatos.
+model Tipo {
+  id        String   @id @default(cuid())
+  codigo    String   @unique // = Sabor.linea (código simple)
+  nombre    String
+  seccion   String   @default("helado") // dulce | helado | ...
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([seccion])
+}
+
+/// Formato/presentación (pack 9, bandeja 50, 500ml, 1 L, vaso…). Puede ser general
+/// o de un tipo. Se usa en el catálogo de productos.
+model Formato {
+  id        String   @id @default(cuid())
+  nombre    String
+  linea     String? // tipo al que pertenece (opcional = general)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([linea])
+}
+
+model Sabor {
+  id        String   @id @default(cuid())
+  nombre    String
+  seccion   String?  // dulce | helado (agrupación mayor)
+  linea     String   // tipo: cuchufli | trufa | paletas_agua | postres_500 | ...
+  descripcion String? // "de qué está hecho" (para la tienda)
+  fotoUrl     String? // imagen del sabor (para la tienda)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  stock             StockSabor[]
+  reposicionItems   ReposicionItem[]
+  ordenesProduccion OrdenProduccion[]
+  recetaItems       RecetaItem[]
+
+  @@index([linea])
+}
+
+/// Stock POR SABOR en una ubicación. La "caja de reposición" del vendedor es su
+/// stock de sabores en el vehículo. Al reponer un Punto se descuenta de aquí.
+model StockSabor {
+  id          String    @id @default(cuid())
+  sabor       Sabor     @relation(fields: [saborId], references: [id], onDelete: Cascade)
+  saborId     String
+  ubicacion   Ubicacion @relation(fields: [ubicacionId], references: [id], onDelete: Cascade)
+  ubicacionId String
+  cantidad    Int       @default(0)
+
+  @@unique([saborId, ubicacionId])
+  @@index([ubicacionId])
+}
+
+// ===========================================================================
+//  v2 — MATERIAS PRIMAS Y MATERIALES (insumos que se consumen al fabricar)
+// ===========================================================================
+
+/// Insumo en existencia: materia prima (chocolate, azúcar…) o material/envase
+/// (cajas, envoltorios, etiquetas). Se consume al fabricar (por receta o a mano).
+model MateriaPrima {
+  id          String   @id @default(cuid())
+  nombre      String
+  categoria   String   @default("insumo") // insumo | material
+  subtipo     String   @default("otro") // esencia | colorante | base | otro
+  unidad      String   @default("unidad") // kg | g | l | ml | unidad
+  stock       Float    @default(0)
+  stockMinimo Float    @default(0)
+  costo       Decimal? @db.Decimal(12, 2) // costo por unidad (solo lo ve la central)
+  activo      Boolean  @default(true)
+
+  movimientos MovimientoMateria[]
+  recetaItems RecetaItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoria])
+}
+
+/// Cada movimiento de un insumo (auditable): entrada (compra/recepción),
+/// consumo (al fabricar), merma o ajuste. Denormaliza el usuario para el registro.
+model MovimientoMateria {
+  id             String       @id @default(cuid())
+  materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id], onDelete: Cascade)
+  materiaPrimaId String
+  tipo           String // entrada | consumo | merma | ajuste
+  cantidad       Float
+  motivo         String?
+  referencia     String? // id de orden de producción / producción (para trazabilidad)
+  lote           String? // lote del proveedor (en entradas) — trazabilidad
+  vence          DateTime? // vencimiento del insumo que entró
+  usuarioId      String?
+  nombreUsuario  String?
+  fecha          DateTime     @default(now())
+
+  @@index([materiaPrimaId])
+  @@index([fecha])
+  @@index([referencia])
+}
+
+/// Receta (lista de materiales): cuánto de un insumo lleva UNA unidad de un
+/// producto (pack) o de un sabor. Al fabricar N, se descuenta cantidad × N.
+model RecetaItem {
+  id             String       @id @default(cuid())
+  producto       Producto?    @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  productoId     String?
+  sabor          Sabor?       @relation(fields: [saborId], references: [id], onDelete: Cascade)
+  saborId        String?
+  // Receta BASE por tipo/línea (trufa, postre, cuchufli…): común a todos los sabores
+  // de ese tipo. Los agregados (esencia, color, decorado…) se pesan aparte al producir.
+  linea          String?
+  // Grupo de elección: insumos con el mismo grupo son ALTERNATIVAS (se elige uno al
+  // producir, ej: grupo "Fruto" → almendra o avellana). Sin grupo = fijo (se tiquea).
+  grupo          String?
+  materiaPrima   MateriaPrima @relation(fields: [materiaPrimaId], references: [id], onDelete: Cascade)
+  materiaPrimaId String
+  cantidad       Float // cantidad de insumo por 1 unidad producida
+
+  @@index([productoId])
+  @@index([saborId])
+  @@index([linea])
+  @@index([materiaPrimaId])
+}
+
+/// Clave de receta POR TIPO: cada tipo (línea) puede tener su propia clave, para que
+/// solo los operarios con esa clave desbloqueen esa receta.
+model ClaveReceta {
+  id     String @id @default(cuid())
+  linea  String @unique
+  clave  String
+}
+
+/// Medida/recipiente para medir la base al producir (balde, depósito, máquina 30/60 L).
+/// Guarda cuántos litros equivale, para calcular la base sin hacer cuentas.
+model Medida {
+  id        String   @id @default(cuid())
+  nombre    String
+  litros    Float // capacidad en litros (o kg) de esta medida
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+}
+
+/// Lote de referencia de la receta base de un tipo: define para cuántos litros/kg
+/// están puestas las cantidades. Al producir se escala (producido / referencia).
+model RecetaBase {
+  id         String   @id @default(cuid())
+  linea      String   @unique // tipo
+  baseRef    Float    @default(1) // ej: 120 (litros de referencia)
+  baseUnidad String   @default("l") // l | kg
+  // Modo de agregados: "simple" (esencia/color por grs/litro, sin gramos manuales)
+  // o "detallado" (el operario pesa cada agregado; para postres/salsas/especias).
+  modoAgregados String @default("simple")
+  esenciaGrsL   Float  @default(0) // grs de esencia por litro (modo simple)
+  colorGrsL     Float  @default(0) // grs de color por litro (modo simple)
+  updatedAt  DateTime @updatedAt
+  createdAt  DateTime @default(now())
+}
+
+/// Guía de una receta: link de video y paso a paso, complementario a la receta.
+/// Se asocia a una receta base por tipo (linea) o a un producto/sabor puntual.
+model RecetaGuia {
+  id         String   @id @default(cuid())
+  linea      String? // receta base por tipo
+  productoId String?
+  saborId    String?
+  videoUrl   String?
+  pasos      String? // pasos separados por salto de línea
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([linea])
+  @@index([productoId])
+  @@index([saborId])
+}
+
+/// Agregado usado al producir (esencia, color, salsa, decorado, relleno, frutos,
+/// galleta…): se pesa y se descuenta. Guarda el sabor/formato y las unidades para
+/// ver el rendimiento ("cuánto rinde cada agregado").
+model AgregadoUso {
+  id                 String   @id @default(cuid())
+  fecha              DateTime @default(now())
+  controlId          String? // opcional: control de calidad al que pertenece
+  materiaPrimaId     String
+  nombreInsumo       String
+  unidad             String
+  cantidad           Float // cuánto se usó (pesado)
+  linea              String?
+  sabor              String?
+  formato            String?
+  unidadesProducidas Int      @default(0)
+  usuarioId          String?
+  nombreUsuario      String?
+
+  @@index([fecha])
+  @@index([materiaPrimaId])
+}
+
+// ===========================================================================
+//  v2 — FINANZAS: gastos (egresos) para el flujo de caja
+// ===========================================================================
+
+/// Gasto/egreso simple. Los ingresos vienen de los Pagos; el flujo = pagos − gastos.
+model Gasto {
+  id        String   @id @default(cuid())
+  concepto  String
+  monto     Decimal  @db.Decimal(12, 2)
+  categoria String?  // insumos | sueldos | arriendo | transporte | servicios | otros
+  fecha     DateTime @default(now())
+  notas     String?
+  createdAt DateTime @default(now())
+
+  @@index([fecha])
+}
+
+// ===========================================================================
+//  v2 — CAJA del POS (apertura / ventas del día / cierre con arqueo)
+// ===========================================================================
+
+/// Sesión de caja de la sala: se abre con un fondo, acumula ventas y se cierra
+/// contando el efectivo (arqueo). Ver §8.
+model SesionCaja {
+  id           String   @id @default(cuid())
+  ubicacion    Ubicacion @relation(fields: [ubicacionId], references: [id])
+  ubicacionId  String
+  usuario      Usuario? @relation(fields: [usuarioId], references: [id])
+  usuarioId    String?
+  estado       String   @default("abierta") // abierta | cerrada
+  fondoInicial    Decimal  @db.Decimal(12, 2)
+  efectivoContado Decimal? @db.Decimal(12, 2)
+  fechaApertura DateTime @default(now())
+  fechaCierre   DateTime?
+  notas        String?
+
+  ventas      Venta[]
+  movimientos MovimientoCaja[]
+
+  @@index([estado])
+}
+
+/// Movimiento manual de efectivo en la caja (retiro para pagar algo, ingreso extra).
+model MovimientoCaja {
+  id          String     @id @default(cuid())
+  sesion      SesionCaja @relation(fields: [sesionCajaId], references: [id], onDelete: Cascade)
+  sesionCajaId String
+  tipo        String // ingreso | egreso
+  concepto    String
+  monto       Decimal    @db.Decimal(12, 2)
+  fecha       DateTime   @default(now())
+
+  @@index([sesionCajaId])
+}

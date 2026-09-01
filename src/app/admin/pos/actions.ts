@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { crearDocumentoVenta } from "@/lib/facturacion";
 import { MEDIOS_PAGO, estadoPagoDe } from "@/lib/dominio/ventas";
 
 type LineaPOS = { productoId: string; cantidad: number; precioUnit: number };
@@ -111,6 +112,8 @@ export async function venderPOS(formData: FormData) {
       },
     });
   }
+
+  await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: "boleta", total });
 
   revalidatePath("/admin/ventas");
   revalidatePath("/admin/inventario");

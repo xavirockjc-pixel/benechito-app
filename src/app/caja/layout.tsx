@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Link from "next/link";
 import { usuarioActual } from "@/lib/auth";
 import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
@@ -28,6 +29,10 @@ export default async function CajaLayout({ children }: { children: React.ReactNo
           <form action={logout}><button className="text-xs font-semibold text-white/80">Salir</button></form>
         </span>
       </header>
+      <nav className="flex gap-2 border-b border-slate-200 bg-white px-4 py-2 text-sm">
+        <Link href="/caja" className="rounded-lg px-3 py-1.5 font-bold text-slate-700">🛒 Caja</Link>
+        <Link href="/caja/checklist" className="rounded-lg px-3 py-1.5 font-bold text-slate-700">🌡️ Higiene y temperaturas</Link>
+      </nav>
       <main className="flex-1 p-4">{children}</main>
     </div>
   );

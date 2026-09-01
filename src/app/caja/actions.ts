@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { crearDocumentoVenta } from "@/lib/facturacion";
 import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
 import { MEDIOS_PAGO } from "@/lib/dominio/ventas";
 
@@ -100,6 +101,8 @@ export async function venderCaja(formData: FormData) {
       data: { productoId: it.productoId, tipo: "venta", ubicacionOrigenId: sesion.ubicacionId, cantidad: it.cantidad, referencia: venta.id },
     });
   }
+
+  await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: "boleta", total });
 
   revalidatePath("/caja");
 }

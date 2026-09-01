@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
+import { TIPOS_DOCUMENTO, tipoDocumentoLabel } from "@/lib/dominio/ventas";
 import { venderTerreno } from "../../../actions";
 import ControlVoz from "../../../ControlVoz";
 import type { CambioVoz } from "@/lib/dominio/voz";
@@ -12,10 +13,14 @@ export default function VenderTerreno({
   negocioId,
   productos,
   canales = [],
+  docDefault = "boleta",
+  faltaFactura = [],
 }: {
   negocioId: string;
   productos: Prod[];
   canales?: { codigo: string; nombre: string }[];
+  docDefault?: string;
+  faltaFactura?: string[];
 }) {
   const [cart, setCart] = useState<Record<string, number>>({});
   const add = (id: string) => setCart((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 }));
@@ -39,6 +44,7 @@ export default function VenderTerreno({
     });
 
   const [modo, setModo] = useState("efectivo");
+  const [tipoDoc, setTipoDoc] = useState(docDefault || "boleta");
   const [abono, setAbono] = useState("");
 
   const porId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
@@ -118,6 +124,16 @@ export default function VenderTerreno({
             <option value="">📍 Canal automático</option>
             {canales.map((c) => <option key={c.codigo} value={c.codigo}>{c.nombre}</option>)}
           </select>
+        )}
+        <select name="tipoDocumento" value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800">
+          {TIPOS_DOCUMENTO.map((t) => (
+            <option key={t} value={t}>📄 {tipoDocumentoLabel[t]}</option>
+          ))}
+        </select>
+        {tipoDoc === "factura" && faltaFactura.length > 0 && (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+            ⚠️ Para facturar falta {faltaFactura.join(", ")} del cliente. Complétalo en su ficha antes de cerrar.
+          </p>
         )}
         <select name="modo" value={modo} onChange={(e) => setModo(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800">
           <option value="efectivo">Pago: Efectivo</option>

@@ -1,0 +1,96 @@
+{
+  "name": "Facturación LibreDTE (boleta/factura) — Panal",
+  "nodes": [
+    {
+      "parameters": { "httpMethod": "POST", "path": "facturacion", "options": {} },
+      "id": "webhook-in",
+      "name": "Webhook (venta cerrada)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [180, 300],
+      "webhookId": "facturacion"
+    },
+    {
+      "parameters": {
+        "conditions": { "string": [ { "value1": "={{$json[\"headers\"][\"x-webhook-token\"]}}", "value2": "={{$env.SII_N8N_WEBHOOK_TOKEN}}" } ] }
+      },
+      "id": "check-token",
+      "name": "Validar token",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [380, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "// Mapea el payload de la app -> cuerpo 'emitir' de LibreDTE.\n// Boleta = TipoDTE 39 (no exige receptor). Factura = 33 (receptor obligatorio).\n// Con normalizar=1 LibreDTE calcula IVA/total a partir del precio neto.\nconst b = $json.body || $json;\nconst esFactura = b.tipoDTE === 33;\nconst enc = { IdDoc: { TipoDTE: b.tipoDTE } , Emisor: { RUTEmisor: $env.LIBREDTE_RUT_EMISOR } };\nif (esFactura) {\n  enc.Receptor = {\n    RUTRecep: b.receptor?.rut || '',\n    RznSocRecep: b.receptor?.razonSocial || '',\n    GiroRecep: b.receptor?.giro || '',\n    DirRecep: b.receptor?.direccion || '',\n    CmnaRecep: b.receptor?.comuna || ''\n  };\n}\nconst neto = Number(b.montoNeto || b.montoTotal || 0);\nconst dte = {\n  Encabezado: enc,\n  Detalle: [ { NmbItem: 'Venta Benechito', QtyItem: 1, PrcItem: neto } ]\n};\nreturn [{ json: { documentoId: b.documentoId, tipoDTE: b.tipoDTE, dte } }];"
+      },
+      "id": "map-dte",
+      "name": "Mapear a DTE",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [600, 220]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.LIBREDTE_API_URL}}/dte/documentos/emitir?normalizar=1&formato=json&links=0&email=0",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={{ JSON.stringify($json.dte) }}",
+        "options": {}
+      },
+      "id": "emitir",
+      "name": "LibreDTE · emitir (temporal)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [820, 220],
+      "notes": "Basic Auth: usuario = tu HASH de LibreDTE, contraseña = X (vacía). Guárdalo como credencial en n8n."
+    },
+    {
+      "parameters": {
+        "url": "={{$env.LIBREDTE_API_URL}}/dte/documentos/generar?getXML=0&links=0&email=1&retry=10&gzip=0",
+        "method": "POST",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={{ JSON.stringify({ emisor: Number(($env.LIBREDTE_RUT_EMISOR||'').split('-')[0]), receptor: Number(($json.dte.Encabezado.Receptor && $json.dte.Encabezado.Receptor.RUTRecep || '66666666-6').split('-')[0]), dte: $json.tipoDTE, codigo: $json.codigo }) }}",
+        "options": {}
+      },
+      "id": "generar",
+      "name": "LibreDTE · generar (real)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1040, 220],
+      "notes": "El 'codigo' viene de la respuesta de emitir. Devuelve folio (y track_id)."
+    },
+    {
+      "parameters": {
+        "url": "={{$env.APP_BASE_URL}}/api/facturacion/callback",
+        "method": "POST",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "x-webhook-token", "value": "={{$env.SII_WEBHOOK_TOKEN}}" } ] },
+        "sendBody": true,
+        "contentType": "json",
+        "jsonBody": "={{ JSON.stringify({ documentoId: $node[\"Mapear a DTE\"].json.documentoId, estado: 'emitido', folio: String($json.folio || ''), urlPdf: ($env.LIBREDTE_API_URL + '/dte/dte_emitidos/pdf/' + $json.dte + '/' + $json.folio + '/' + $json.emisor), canalEnvio: 'email' }) }}",
+        "options": {}
+      },
+      "id": "callback",
+      "name": "Avisar a la app (folio/PDF)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1260, 220]
+    }
+  ],
+  "connections": {
+    "Webhook (venta cerrada)": { "main": [[{ "node": "Validar token", "type": "main", "index": 0 }]] },
+    "Validar token": { "main": [[{ "node": "Mapear a DTE", "type": "main", "index": 0 }]] },
+    "Mapear a DTE": { "main": [[{ "node": "LibreDTE · emitir (temporal)", "type": "main", "index": 0 }]] },
+    "LibreDTE · emitir (temporal)": { "main": [[{ "node": "LibreDTE · generar (real)", "type": "main", "index": 0 }]] },
+    "LibreDTE · generar (real)": { "main": [[{ "node": "Avisar a la app (folio/PDF)", "type": "main", "index": 0 }]] }
+  },
+  "settings": {},
+  "active": false
+}

@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Baloo_2, Nunito, Pacifico } from "next/font/google";
 import "./globals.css";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const baloo = Baloo_2({
   variable: "--font-baloo",
@@ -32,13 +33,27 @@ export const metadata: Metadata = {
   },
 };
 
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fdf8ef" },
+    { media: "(prefers-color-scheme: dark)", color: "#12100e" },
+  ],
+};
+
+// Aplica el tema guardado ANTES de pintar (evita el parpadeo claro→oscuro).
+const noFlash = `(function(){try{var t=localStorage.getItem('tema');if(t!=='light'&&t!=='dark'){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches)?'dark':'light';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`;
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
       className={`${baloo.variable} ${nunito.variable} ${pacifico.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-papel">{children}</body>
+      <body className="min-h-full flex flex-col bg-papel">
+        <script dangerouslySetInnerHTML={{ __html: noFlash }} />
+        {children}
+        <ThemeToggle />
+      </body>
     </html>
   );
 }

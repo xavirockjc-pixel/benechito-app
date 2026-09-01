@@ -63,3 +63,58 @@ export const documentoLabel: Record<string, string> = {
   boleta: "Boleta",
   factura: "Factura",
 };
+
+// ===========================================================================
+//  EXTENSIÓN FACTURACIÓN — elección de documento al cerrar la venta
+// ===========================================================================
+
+/** Opciones de documento que el vendedor elige al cerrar cada venta. */
+export const TIPOS_DOCUMENTO = ["boleta", "factura", "sin_documento"] as const;
+export type TipoDocumento = (typeof TIPOS_DOCUMENTO)[number];
+
+export const tipoDocumentoLabel: Record<string, string> = {
+  boleta: "Boleta",
+  factura: "Factura",
+  sin_documento: "Sin documento (interna)",
+};
+
+/** IVA Chile. Los totales de boleta/factura se guardan IVA incluido. */
+export const IVA_RATE = 0.19;
+
+/** Desglosa un total IVA-incluido en neto + IVA. "sin_documento" no lleva desglose. */
+export function desglosarDocumento(
+  total: number,
+  tipo: string,
+): { montoNeto: number | null; iva: number | null; montoTotal: number } {
+  if (tipo === "sin_documento" || total <= 0) return { montoNeto: null, iva: null, montoTotal: total };
+  const montoNeto = Math.round(total / (1 + IVA_RATE));
+  const iva = total - montoNeto;
+  return { montoNeto, iva, montoTotal: total };
+}
+
+/** Campos tributarios que exige una factura; devuelve los que faltan en el cliente. */
+export function faltaParaFactura(neg: {
+  rut?: string | null;
+  razonSocial?: string | null;
+  giro?: string | null;
+}): string[] {
+  const faltan: string[] = [];
+  if (!neg.rut) faltan.push("RUT");
+  if (!neg.razonSocial) faltan.push("razón social");
+  if (!neg.giro) faltan.push("giro");
+  return faltan;
+}
+
+/** Mapea la elección al campo legacy Venta.documento ("" = sin documento). */
+export function documentoLegacy(tipo: string): string {
+  return tipo === "sin_documento" ? "" : tipo;
+}
+
+/** Estados del documento tributario (DocumentoVenta.estado). */
+export const estadoDocumentoLabel: Record<string, string> = {
+  pendiente: "Pendiente",
+  emitido: "Emitido",
+  enviado: "Enviado",
+  pagado: "Pagado",
+  rechazado: "Rechazado",
+};

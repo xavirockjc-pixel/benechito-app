@@ -17,7 +17,12 @@ async function listaVentaRapida(): Promise<{ id: string; nombre: string } | null
   return conPrecio?.lista ?? null;
 }
 
-export default async function VentaRapidaPage() {
+export default async function VentaRapidaPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
+  const { error } = await searchParams;
   const lista = await listaVentaRapida();
 
   const precios = lista
@@ -47,6 +52,12 @@ export default async function VentaRapidaPage() {
       <p className="text-xs text-slate-500">
         Venta directa a público. Sin cliente = contado; con cliente puedes abonar o fiar. {lista ? `Precios: ${lista.nombre}` : ""}
       </p>
+
+      {error === "factura" && (
+        <p className="mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">
+          ⚠️ No se pudo cerrar como factura: elige un cliente registrado con RUT, razón social y giro.
+        </p>
+      )}
 
       <div className="mt-3">
         <VentaRapida productos={productos} clientes={clientes} />

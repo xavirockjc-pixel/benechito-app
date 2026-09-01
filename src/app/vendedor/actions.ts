@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
-import { estadoPagoDe, MEDIOS_PAGO } from "@/lib/dominio/ventas";
+import { estadoPagoDe, MEDIOS_PAGO, faltaParaFactura, documentoLegacy } from "@/lib/dominio/ventas";
+import { crearDocumentoVenta } from "@/lib/facturacion";
 import { canalPorTipoCliente } from "@/lib/dominio/canales";
 
 type LineaTerreno = { productoId: string; cantidad: number; precioUnit: number };
@@ -111,6 +112,16 @@ export async function venderTerreno(formData: FormData) {
     pagos = { create: { medio, monto: total } };
   }
 
+  // Documento tributario elegido en la venta (o el default del cliente).
+  const negFac = await prisma.negocio.findUnique({
+    where: { id: negocioId },
+    select: { tipoDocumentoDefault: true, rut: true, razonSocial: true, giro: true },
+  });
+  const tipoDoc = String(formData.get("tipoDocumento") ?? "").trim() || negFac?.tipoDocumentoDefault || "boleta";
+  if (tipoDoc === "factura" && faltaParaFactura(negFac ?? {}).length > 0) {
+    redirect(`/vendedor/cliente/${negocioId}/vender?error=factura`);
+  }
+
   const u = await usuarioActual();
   const canal = await canalVendedor(formData, negocioId);
   const venta = await prisma.venta.create({
@@ -120,7 +131,7 @@ export async function venderTerreno(formData: FormData) {
       vendedorId: u?.sub ?? null,
       total,
       estadoPago,
-      documento: "boleta",
+      documento: documentoLegacy(tipoDoc),
       canal,
       ...(pagos ? { pagos } : {}),
     },
@@ -148,6 +159,8 @@ export async function venderTerreno(formData: FormData) {
   await prisma.actividad.create({
     data: { negocioId, tipo: "venta", descripcion },
   });
+
+  await crearDocumentoVenta({ ventaId: venta.id, negocioId, tipo: tipoDoc, total });
 
   revalidatePath(`/vendedor/cliente/${negocioId}`);
   redirect(`/vendedor/cliente/${negocioId}`);
@@ -214,6 +227,15 @@ export async function ventaRapida(formData: FormData) {
   }
   const clienteReal = cliente.nombreNegocio !== "Consumidor Final";
 
+  // Documento tributario elegido (o el default del cliente registrado).
+  const tipoDoc =
+    String(formData.get("tipoDocumento") ?? "").trim() ||
+    (cliente as { tipoDocumentoDefault?: string }).tipoDocumentoDefault ||
+    "boleta";
+  if (tipoDoc === "factura" && faltaParaFactura(cliente).length > 0) {
+    redirect("/vendedor/venta-rapida?error=factura");
+  }
+
   // Abono: paga una parte ahora, el resto queda de deuda.
   let abono = Number(String(formData.get("abono") ?? "").replace(/[^0-9.]/g, ""));
   if (!Number.isFinite(abono) || abono < 0) abono = 0;
@@ -246,7 +268,7 @@ export async function ventaRapida(formData: FormData) {
       vendedorId: u?.sub ?? null,
       total,
       estadoPago,
-      documento: "boleta",
+      documento: documentoLegacy(tipoDoc),
       canal,
       etiqueta,
       ...(pagos ? { pagos } : {}),
@@ -268,6 +290,8 @@ export async function ventaRapida(formData: FormData) {
       data: { productoId: it.productoId, tipo: "venta", ubicacionOrigenId: ubicacionId, cantidad: it.cantidad, referencia: venta.id },
     });
   }
+
+  await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: tipoDoc, total });
 
   revalidatePath("/vendedor/venta-rapida");
   redirect("/vendedor?vendido=1");

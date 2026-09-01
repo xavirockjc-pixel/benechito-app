@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
-import { ETIQUETAS_VENTA, etiquetaVentaLabel } from "@/lib/dominio/ventas";
+import { ETIQUETAS_VENTA, etiquetaVentaLabel, TIPOS_DOCUMENTO, tipoDocumentoLabel } from "@/lib/dominio/ventas";
 import { ventaRapida } from "../actions";
 import ControlVoz from "../ControlVoz";
 import type { CambioVoz } from "@/lib/dominio/voz";
@@ -120,6 +120,13 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
           <option value="">Tipo de venta: Normal</option>
           {ETIQUETAS_VENTA.filter((e) => e).map((e) => (
             <option key={e} value={e}>Tipo: {etiquetaVentaLabel[e]}</option>
+          ))}
+        </select>
+
+        {/* Documento tributario (extensión Facturación). Factura requiere cliente con RUT/razón social/giro. */}
+        <select name="tipoDocumento" defaultValue="boleta" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700">
+          {TIPOS_DOCUMENTO.map((t) => (
+            <option key={t} value={t}>📄 {tipoDocumentoLabel[t]}</option>
           ))}
         </select>
 

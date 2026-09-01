@@ -25,6 +25,7 @@ export default async function ProduccionLayout({ children }: { children: React.R
           </span>
         </Link>
         <span className="flex items-center gap-3">
+          <Link href="/produccion/capacitaciones" className="text-xs font-semibold text-white/90">🎓 Capacitaciones</Link>
           <span className="hidden text-xs text-white/80 sm:inline">{usuario?.nombre}</span>
           <form action={logout}><button className="text-xs font-semibold text-white/80">Salir</button></form>
         </span>
@@ -38,6 +39,12 @@ export default async function ProduccionLayout({ children }: { children: React.R
         </Link>
         <Link href="/produccion/insumos" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
           <span className="text-lg">🧪</span> Insumos
+        </Link>
+        <Link href="/produccion/checklist" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
+          <span className="text-lg">🧼</span> Higiene
+        </Link>
+        <Link href="/produccion/capacitaciones" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
+          <span className="text-lg">🎓</span> Capacita
         </Link>
       </nav>
     </div>
