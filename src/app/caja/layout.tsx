@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   manifest: "/caja.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Caja" },
 };
-export const viewport: Viewport = { themeColor: "#0f7a44" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0f7a44" };
 
 export default async function CajaLayout({ children }: { children: React.ReactNode }) {
   const usuario = await usuarioActual();

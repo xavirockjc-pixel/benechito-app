@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Vendedor" },
 };
 
-export const viewport: Viewport = { themeColor: "#1479c4" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#1479c4" };
 
 export default async function VendedorLayout({
   children,

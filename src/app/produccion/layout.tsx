@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   manifest: "/produccion.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Producción" },
 };
-export const viewport: Viewport = { themeColor: "#0f766e" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#0f766e" };
 
 export default async function ProduccionLayout({ children }: { children: React.ReactNode }) {
   const usuario = await usuarioActual();

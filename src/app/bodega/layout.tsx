@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   manifest: "/bodega.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Bodega" },
 };
-export const viewport: Viewport = { themeColor: "#b45309" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#b45309" };
 
 export default async function BodegaLayout({ children }: { children: React.ReactNode }) {
   const usuario = await usuarioActual();

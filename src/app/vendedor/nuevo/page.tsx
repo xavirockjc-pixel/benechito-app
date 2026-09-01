@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { crearClienteRuta } from "../actions";
 import CapturarUbicacion from "../CapturarUbicacion";
+import BuscadorDuplicados from "@/components/BuscadorDuplicados";
 
 const inputCls = "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]";
 
@@ -31,10 +32,32 @@ export default function NuevoClienteRuta() {
           <input name="tipoNegocio" placeholder="Almacén, kiosco…" className={`mt-1 ${inputCls}`} />
         </label>
 
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="mb-2 text-sm font-extrabold text-slate-700">🧾 ¿Compra con factura?</p>
+          <label className="block text-sm font-semibold text-slate-700">RUT
+            <input name="rut" placeholder="12.345.678-9" className={`mt-1 ${inputCls}`} />
+          </label>
+          <label className="mt-2 block text-sm font-semibold text-slate-700">Razón social
+            <input name="razonSocial" className={`mt-1 ${inputCls}`} />
+          </label>
+          <label className="mt-2 block text-sm font-semibold text-slate-700">Giro
+            <input name="giro" className={`mt-1 ${inputCls}`} />
+          </label>
+          <label className="mt-2 block text-sm font-semibold text-slate-700">Documento por defecto
+            <select name="tipoDocumentoDefault" defaultValue="boleta" className={`mt-1 ${inputCls}`}>
+              <option value="boleta">Boleta</option>
+              <option value="factura">Factura</option>
+              <option value="sin_documento">Sin documento</option>
+            </select>
+          </label>
+        </div>
+
         <div>
           <p className="mb-1 text-sm font-bold text-slate-700">Ubicación</p>
           <CapturarUbicacion />
         </div>
+
+        <BuscadorDuplicados hrefBase="/vendedor/cliente/" />
 
         <button className="w-full rounded-xl bg-[#1479c4] py-3 text-base font-extrabold text-white shadow active:brightness-95">
           Guardar cliente

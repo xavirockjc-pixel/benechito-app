@@ -5,6 +5,7 @@ import { rubroActivo } from "@/lib/dominio/empresa";
 import type { Etiquetas } from "@/lib/dominio/rubros";
 import { logout } from "./actions";
 import RegistrarSW from "./RegistrarSW";
+import MenuMovil from "./MenuMovil";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
@@ -12,7 +13,7 @@ export const metadata: Metadata = {
   manifest: "/panel.webmanifest",
   appleWebApp: { capable: true, statusBarStyle: "default", title: "Panel Benechito" },
 };
-export const viewport: Viewport = { themeColor: "#1479c4" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#1479c4" };
 
 // Sistema de administración organizado por módulos (ver ARQUITECTURA-ECOSYSTEM.md).
 // Identidad propia de "sistema operativo": tonos sobrios slate, distinta de la web pública.
@@ -51,6 +52,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       activo: true,
       items: [
         { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
+        { href: "/admin/negocios/duplicados", label: "Duplicados", icon: "🔁" },
         { href: "/admin/productos", label: "Catálogo", icon: "🍫" },
         { href: "/admin/precios", label: "Precios", icon: "🏷️" },
         { href: "/admin/inventario", label: "Inventario", icon: "📦" },
@@ -120,7 +122,6 @@ export default async function AdminLayout({
       ),
     }))
     .filter((m) => m.items.length > 0);
-  const itemsMovilVisibles = modulosVisibles.filter((m) => m.activo).flatMap((m) => m.items);
 
   return (
     <div className="flex min-h-screen bg-slate-100 text-slate-800">
@@ -201,7 +202,8 @@ export default async function AdminLayout({
       {/* Contenido */}
       <div className="flex-1">
         {/* Barra móvil */}
-        <div className="flex items-center justify-between bg-slate-900 px-4 py-3 text-white md:hidden">
+        <div className="flex items-center justify-between gap-2 bg-slate-900 px-4 py-3 text-white md:hidden">
+          <MenuMovil modulos={modulosVisibles} />
           <span className="font-display text-sm font-extrabold">
             Benechito <span className="font-normal text-slate-400">· Administración</span>
           </span>
@@ -209,21 +211,17 @@ export default async function AdminLayout({
             <button className="text-sm font-semibold text-slate-300">Salir</button>
           </form>
         </div>
-        {/* Nav móvil */}
-        <nav className="flex gap-1 overflow-x-auto border-b border-slate-200 bg-white px-2 py-2 md:hidden">
-          {itemsMovilVisibles.map((n) => (
-            <Link
-              key={n.label}
-              href={n.href}
-              className="whitespace-nowrap rounded-xl px-4 py-2 text-sm font-bold text-slate-700"
-              style={{ backgroundColor: `${tema.primario}12` }}
-            >
-              {n.icon} {n.label}
-            </Link>
-          ))}
-        </nav>
 
-        <main className="mx-auto max-w-5xl p-4 md:p-8">{children}</main>
+        <main className="mx-auto max-w-5xl p-4 pb-24 md:p-8 md:pb-8">{children}</main>
+
+        {/* Barra inferior tipo app (solo celular) para administrar rápido */}
+        <nav className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-around border-t border-slate-200 bg-white px-1 py-1.5 text-[11px] md:hidden">
+          <Link href="/admin" className="flex flex-1 flex-col items-center gap-0.5 py-1 font-bold text-slate-700"><span className="text-xl">📊</span> Panel</Link>
+          <Link href="/admin/pos" className="flex flex-1 flex-col items-center gap-0.5 py-1 font-bold text-slate-700"><span className="text-xl">🛒</span> Vender</Link>
+          <Link href="/admin/ventas" className="flex flex-1 flex-col items-center gap-0.5 py-1 font-bold text-slate-700"><span className="text-xl">💵</span> Ventas</Link>
+          <Link href="/admin/negocios" className="flex flex-1 flex-col items-center gap-0.5 py-1 font-bold text-slate-700"><span className="text-xl">🏪</span> Clientes</Link>
+          <Link href="/admin/inventario" className="flex flex-1 flex-col items-center gap-0.5 py-1 font-bold text-slate-700"><span className="text-xl">📦</span> Stock</Link>
+        </nav>
       </div>
     </div>
   );

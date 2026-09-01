@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ESTADOS, estadoMeta } from "@/lib/estados";
 import { crearNegocio } from "../actions";
+import BuscadorDuplicados from "@/components/BuscadorDuplicados";
 
 const tipos = ["Almacén", "Minimarket", "Kiosco", "Botillería", "Panadería", "Cafetería", "Food truck", "Otro"];
 
@@ -30,6 +31,18 @@ export default function NuevoNegocio() {
           />
         </div>
 
+        <div className="mt-4 rounded-xl border border-crema-2 bg-crema/30 p-4">
+          <p className="mb-3 text-sm font-extrabold text-navy">🧾 Facturación <span className="font-normal text-choco-2">(si el cliente compra con factura)</span></p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Campo label="RUT" name="rut" />
+            <Campo label="Razón social" name="razonSocial" />
+            <Campo label="Giro" name="giro" />
+            <Campo label="Email de facturación" name="emailFacturacion" />
+            <Campo label="Dirección de facturación" name="direccionFacturacion" />
+            <Select label="Documento por defecto" name="tipoDocumentoDefault" options={["Boleta", "Factura", "Sin documento"]} values={["boleta", "factura", "sin_documento"]} />
+          </div>
+        </div>
+
         <label className="mt-4 flex items-center gap-3 text-sm font-semibold text-navy">
           <input type="checkbox" name="interesHelados" value="si" className="h-5 w-5 accent-naranja" />
           Interesado en helados 🍦
@@ -43,6 +56,8 @@ export default function NuevoNegocio() {
             className="mt-1 w-full rounded-xl border border-crema-2 bg-crema/40 px-3 py-2.5 font-normal text-choco outline-none focus:border-naranja focus:ring-2 focus:ring-naranja/30"
           />
         </label>
+
+        <div className="mt-4"><BuscadorDuplicados hrefBase="/admin/negocios/" /></div>
 
         <button className="mt-5 rounded-full bg-naranja px-6 py-2.5 font-bold text-white shadow-md transition hover:bg-naranja-2">
           Crear negocio
