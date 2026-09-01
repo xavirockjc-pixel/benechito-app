@@ -38,6 +38,12 @@ export default function Hero() {
 
           <div className="mt-6 flex flex-wrap items-center gap-3">
             <a
+              href="/tienda"
+              className="rounded-full bg-naranja px-6 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-naranja-2 hover:-translate-y-0.5"
+            >
+              🛒 Comprar online
+            </a>
+            <a
               href="#helados"
               className="rounded-full bg-azul px-6 py-3.5 text-base font-bold text-white shadow-lg transition hover:bg-azul-2 hover:-translate-y-0.5"
             >
