@@ -8,7 +8,7 @@ import { resolverLinkMapa } from "@/app/admin/negocios/actions";
  * toque (GPS) o pegando el link de Google Maps. Envía lat/lng ocultos con el pedido
  * para que el local sepa a dónde llevar.
  */
-export default function UbicacionCliente() {
+export default function UbicacionCliente({ titulo = "📍 Comparte tu ubicación para el despacho" }: { titulo?: string }) {
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [link, setLink] = useState("");
@@ -40,7 +40,7 @@ export default function UbicacionCliente() {
     <div className="rounded-xl border border-crema-2 bg-crema/40 p-3">
       <input type="hidden" name="lat" value={lat ?? ""} />
       <input type="hidden" name="lng" value={lng ?? ""} />
-      <p className="text-xs font-bold text-tinta">📍 Comparte tu ubicación para el despacho</p>
+      <p className="text-xs font-bold text-tinta">{titulo}</p>
       <button type="button" onClick={gps} className="mt-2 w-full rounded-lg bg-azul py-2.5 text-sm font-bold text-white active:scale-95">
         📍 Compartir mi ubicación (GPS)
       </button>

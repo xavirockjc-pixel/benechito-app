@@ -54,6 +54,7 @@ export default async function NegociosPage({
               <p className="truncate text-xs text-slate-500">{n.nombreContacto} · {n.comuna} · {n.whatsapp}</p>
             </div>
             <div className="flex shrink-0 items-center gap-1.5">
+              {n.origen === "portal" && <span className="rounded-lg bg-amber-100 px-2 py-1 text-xs font-extrabold text-amber-800">🆕 Portal</span>}
               {n.compra && <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-bold text-slate-600">{compraLabel[n.compra] ?? n.compra}</span>}
               <span className="rounded-lg bg-blue-50 px-2 py-1 text-xs font-bold text-[#1479c4]">{tipoClienteLabel[n.tipoCliente] ?? n.tipoCliente}</span>
             </div>
