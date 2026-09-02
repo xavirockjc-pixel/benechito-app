@@ -1,0 +1,53 @@
+{
+  "id": "benechitoRecord001",
+  "name": "Benechito · Recordatorios → WhatsApp (dueño)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [ { "field": "cronExpression", "expression": "0 9 * * 1-6" } ] }
+      },
+      "id": "r1000000-0000-4000-8000-000000000001",
+      "name": "Lun a Sáb 9:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "http://host.docker.internal:3000/api/recordatorios",
+        "sendQuery": true,
+        "queryParameters": { "parameters": [ { "name": "token", "value": "benechito-reporte-2026" } ] },
+        "options": {}
+      },
+      "id": "r2000000-0000-4000-8000-000000000002",
+      "name": "Calcular recordatorios (app)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [700, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://evolution:8080/message/sendText/benechito",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "apikey", "value": "benechito-evo-key-2026" } ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"number\": \"56965813188\",\n  \"text\": {{ JSON.stringify($json.resumen) }}\n}",
+        "options": {}
+      },
+      "id": "r3000000-0000-4000-8000-000000000003",
+      "name": "Enviar resumen al dueño",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [980, 300]
+    }
+  ],
+  "connections": {
+    "Lun a Sáb 9:00": { "main": [[{ "node": "Calcular recordatorios (app)", "type": "main", "index": 0 }]] },
+    "Calcular recordatorios (app)": { "main": [[{ "node": "Enviar resumen al dueño", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

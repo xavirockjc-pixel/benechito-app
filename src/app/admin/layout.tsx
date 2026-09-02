@@ -32,6 +32,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/voz", label: "Asistente voz", icon: "🎙️" },
         { href: "/admin/agenda", label: "Agenda", icon: "📅" },
         { href: "/admin/mejoras", label: "Mejoras y proyecciones", icon: "🚀" },
+        { href: "/admin/recordatorios", label: "Recordatorios", icon: "🔔" },
       ],
     },
     {

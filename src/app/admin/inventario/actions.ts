@@ -70,6 +70,28 @@ export async function registrarMovimiento(formData: FormData) {
   revalidatePath("/admin/inventario");
 }
 
+/**
+ * Fija la cantidad EXACTA de un producto en una ubicación (edición directa de la tabla).
+ * Registra la diferencia como "ajuste" auditable. Es el modo manual, sin protocolos.
+ */
+export async function fijarStock(productoId: string, ubicacionId: string, cantidad: number) {
+  if (!productoId || !ubicacionId || !Number.isFinite(cantidad) || cantidad < 0) return;
+  const actual = await prisma.stock.findUnique({
+    where: { productoId_ubicacionId: { productoId, ubicacionId } },
+  });
+  const delta = cantidad - (actual?.cantidad ?? 0);
+  if (delta === 0) return;
+  await prisma.stock.upsert({
+    where: { productoId_ubicacionId: { productoId, ubicacionId } },
+    update: { cantidad },
+    create: { productoId, ubicacionId, cantidad },
+  });
+  await prisma.movimientoStock.create({
+    data: { productoId, tipo: "ajuste", ubicacionDestinoId: ubicacionId, cantidad: delta },
+  });
+  revalidatePath("/admin/inventario");
+}
+
 // --- Ubicaciones (CRUD) ---
 
 /** Crea una ubicación en la sucursal (la primera disponible). */
