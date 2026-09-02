@@ -28,7 +28,10 @@ export default async function DistribucionPage({ searchParams }: { searchParams:
           <h1 className="text-xl font-extrabold text-slate-900">📦 Distribución del local</h1>
           <p className="text-xs text-slate-500">Recibe bebidas, snacks y productos de distribución.</p>
         </div>
-        <Link href="/caja" className="text-sm font-semibold text-[#0f7a44]">← Caja</Link>
+        <div className="flex items-center gap-3">
+          <Link href="/caja/inventario" className="rounded-lg bg-[#0f7a44] px-3 py-2 text-sm font-bold text-white active:scale-95">🍫 Productos del local</Link>
+          <Link href="/caja" className="text-sm font-semibold text-[#0f7a44]">← Caja</Link>
+        </div>
       </div>
 
       {ok && (

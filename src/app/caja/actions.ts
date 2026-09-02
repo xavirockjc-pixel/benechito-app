@@ -185,3 +185,13 @@ export async function agregarProductoCaja(formData: FormData) {
   revalidatePath("/admin/productos");
   redirect("/caja");
 }
+
+/** Quita un producto de la venta del local (lo desactiva). Reversible desde el admin. */
+export async function quitarProductoCaja(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  await prisma.producto.update({ where: { id }, data: { activo: false } });
+  revalidatePath("/caja");
+  revalidatePath("/caja/inventario");
+  revalidatePath("/admin/productos");
+}
