@@ -51,7 +51,14 @@ export default async function PedidosLocal() {
                     <p className="font-bold text-slate-900">{canalIcono[p.canal] ?? "🛒"} {p.negocio?.nombreNegocio ?? "Cliente"}</p>
                     <p className="text-xs text-slate-500">{(p.tipoEntrega ? (entregaLabel[p.tipoEntrega] ?? p.tipoEntrega) : "—")} · 🕐 {fmtHora(p.createdAt)}{p.notas ? ` · ${p.notas}` : ""}</p>
                   </div>
-                  <span className="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold" style={{ color: c.color, backgroundColor: c.bg }}>{estadoPedidoLabel[p.estado] ?? p.estado}</span>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{ color: c.color, backgroundColor: c.bg }}>{estadoPedidoLabel[p.estado] ?? p.estado}</span>
+                    {p.pagado ? (
+                      <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-extrabold text-green-700">💰 Pagado</span>
+                    ) : (
+                      <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-extrabold text-amber-800">⏳ Por cobrar</span>
+                    )}
+                  </div>
                 </div>
 
                 <ul className="mt-2 rounded-lg bg-slate-50 p-2 text-sm">

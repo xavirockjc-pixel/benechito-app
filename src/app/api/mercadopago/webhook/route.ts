@@ -33,7 +33,7 @@ export async function POST(req: Request) {
         where: { id: pago.externalReference },
         data: { pagado: true, estado: "confirmado", pagoRef: String(dataId) },
       }).catch(() => {});
-      ["/admin/retiros", "/admin/pedidos", "/caja"].forEach((r) => revalidatePath(r));
+      ["/admin/retiros", "/admin/pedidos", "/caja", "/caja/pedidos"].forEach((r) => revalidatePath(r));
     }
 
     return NextResponse.json({ ok: true });
