@@ -62,3 +62,30 @@ Solo hay que agregar workflows en n8n:
 - Evolution API key: `benechito-evo-key-2026` · instancia: `benechito`
 - n8n webhook: `http://localhost:5678/webhook/nuevo-prospecto`
 - En el VPS con EasyPanel se replican estos servicios; cambia URLs y llaves por las de producción.
+
+---
+
+## Flujo 2 · Reporte diario automático (socio digital) 🐝
+
+Cada mañana, Benechito te envía por WhatsApp un resumen del negocio (ventas del día por
+canal, producción, equipo presente, pedidos/preventa pendientes, por cobrar, caja y stock bajo).
+
+```
+Cron n8n (8:00) → GET /api/reporte/diario (app, con token)
+                       └→ lee la base y arma el texto
+                              └→ Evolution API → WhatsApp (+56 9 6581 3188)
+```
+
+**Piezas (ya en el repo):**
+- Endpoint: `src/app/api/reporte/diario/route.ts` — devuelve `{ ok, fecha, texto }`. Protegido por `REPORTE_TOKEN`.
+- Workflow: `n8n/workflow-reporte-diario.json` — "Benechito · Reporte diario → WhatsApp".
+
+**Activar:**
+1. En `.env` define `REPORTE_TOKEN` (mismo valor que usa el workflow).
+2. Importa `n8n/workflow-reporte-diario.json` en n8n y actívalo.
+3. Ajusta la URL del nodo "Generar reporte" según dónde corre la app:
+   - Local (app en el host, n8n en Docker): `http://host.docker.internal:3000/api/reporte/diario`
+   - Producción (EasyPanel): la URL interna del servicio de la app.
+4. Prueba: en n8n pulsa "Execute workflow" → debe llegar el WhatsApp.
+
+**Probar el reporte sin n8n:** abre en el navegador `http://localhost:3000/api/reporte/diario` (o con `?token=` si lo definiste).

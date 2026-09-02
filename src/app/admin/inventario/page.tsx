@@ -3,12 +3,10 @@ import type { Producto, Ubicacion } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { fmtCant, unidadLabel, stockBajo } from "@/lib/dominio/materias";
-import { TIPOS_MOVIMIENTO, tipoMovimientoLabel } from "@/lib/dominio/inventario";
-import { registrarMovimiento } from "./actions";
+import AjusteStockVoz from "./AjusteStockVoz";
 
 export const dynamic = "force-dynamic";
 
-const inputCls = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-slate-800 outline-none focus:border-slate-500";
 const TABS = [
   { k: "productos", label: "🍫 Productos" },
   { k: "insumos", label: "🧪 Insumos" },
@@ -74,42 +72,13 @@ export default async function InventarioPage({ searchParams }: { searchParams: P
             </>
           )}
 
-          {/* Registrar movimiento (productos) */}
+          {/* Ajustar stock de productos (con voz) */}
           {ubicaciones.length > 0 && productos.length > 0 && (
-            <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <h2 className="mb-3 text-lg font-bold text-slate-900">Registrar movimiento</h2>
-              <form action={registrarMovimiento} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                <label className="text-sm font-bold text-slate-700">Tipo
-                  <select name="tipo" required defaultValue="ingreso" className={`mt-1 ${inputCls}`}>
-                    {TIPOS_MOVIMIENTO.map((x) => <option key={x} value={x}>{tipoMovimientoLabel[x]}</option>)}
-                  </select>
-                </label>
-                <label className="text-sm font-bold text-slate-700">Producto
-                  <select name="productoId" required defaultValue="" className={`mt-1 ${inputCls}`}>
-                    <option value="">Selecciona…</option>
-                    {productos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                  </select>
-                </label>
-                <label className="text-sm font-bold text-slate-700">Cantidad
-                  <input type="number" name="cantidad" min="0" step="1" defaultValue="1" inputMode="numeric" className={`mt-1 ${inputCls}`} />
-                </label>
-                <label className="text-sm font-bold text-slate-700">Origen
-                  <select name="ubicacionOrigenId" defaultValue="" className={`mt-1 ${inputCls}`}>
-                    <option value="">—</option>
-                    {ubicaciones.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
-                  </select>
-                </label>
-                <label className="text-sm font-bold text-slate-700">Destino
-                  <select name="ubicacionDestinoId" defaultValue="" className={`mt-1 ${inputCls}`}>
-                    <option value="">—</option>
-                    {ubicaciones.map((u) => <option key={u.id} value={u.id}>{u.nombre}</option>)}
-                  </select>
-                </label>
-                <div className="flex items-end">
-                  <button className="w-full rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white hover:bg-slate-700">Registrar</button>
-                </div>
-              </form>
-            </section>
+            <AjusteStockVoz
+              productos={productos.map((p) => ({ id: p.id, nombre: p.nombre }))}
+              ubicaciones={ubicaciones.map((u) => ({ id: u.id, nombre: u.nombre }))}
+              stockMap={Object.fromEntries(stock.map((s) => [`${s.productoId}:${s.ubicacionId}`, s.cantidad]))}
+            />
           )}
         </div>
       )}

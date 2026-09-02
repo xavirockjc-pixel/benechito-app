@@ -1126,3 +1126,21 @@ model EntregaImplemento {
   @@index([implementoId])
   @@index([fecha])
 }
+
+/// Mejoras y proyecciones: cosas por hacer / proyectos del negocio, dictadas por voz,
+/// con prioridad, fecha objetivo y recordatorio. Se van "tachando" al cumplirse.
+model Mejora {
+  id            String    @id @default(cuid())
+  titulo        String
+  detalle       String?
+  area          String    @default("general") // general|produccion|ventas|reparto|inventario|equipo|calidad|marketing
+  prioridad     String    @default("media") // alta|media|baja
+  estado        String    @default("pendiente") // pendiente|en_proceso|hecha
+  fechaObjetivo DateTime?
+  recordar      Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  completadaEn  DateTime?
+
+  @@index([estado])
+  @@index([fechaObjetivo])
+}
