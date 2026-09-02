@@ -11,29 +11,18 @@ export const TARIFAS_TIENDA = [
   { codigo: "distribuidor", canal: "distribuidor", label: "Distribuidor", icono: "🚚", cond: "Compra por volumen" },
 ] as const;
 
-// Foto por defecto según el producto, si no subió una propia. Prioriza las fotos
-// reales del catálogo (/catalogo) y cae en los assets genéricos (/productos).
+// Foto por defecto (assets de la web) según el producto, si no subió una propia.
 function imagenDefault(nombre: string): string | null {
   const n = nombre.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
-  // --- Fotos reales del catálogo (Benechito) ---
-  // Trufas por sabor
-  if (n.includes("trufa") && (n.includes("manjar") || n.includes("nuez") || n.includes("nueces"))) return "/catalogo/trufa-manjar-nueces.jpg";
-  if (n.includes("trufa") && n.includes("pistacho")) return "/catalogo/trufa-pistacho.jpg";
-  if (n.includes("trufa") && n.includes("frutilla")) return "/catalogo/trufa-frutilla.jpg";
-  if (n.includes("trufa")) return "/catalogo/trufa-manjar-nueces.jpg";
-  // Postres helados por sabor
-  if (n.includes("postre") && (n.includes("chocolate") || n.includes("kiss"))) return "/catalogo/postre-kiss-chocolate.jpg";
-  if (n.includes("postre") && (n.includes("frutos rojos") || n.includes("frutos") || n.includes("berr"))) return "/catalogo/postre-frutos-rojos.jpg";
-  if (n.includes("postre") || n.includes("cassata")) return "/catalogo/postre-kiss-chocolate.jpg";
-  // Cocadas
-  if (n.includes("cocada")) return "/catalogo/cocadas.jpg";
-  // Cuchuflís / conos rellenos
-  if (n.includes("cuchufli") || n.includes("cono")) return "/catalogo/cuchuflis.jpg";
-  // Paletas
-  if (n.includes("paleta")) return "/catalogo/paletas-surtidas.jpg";
-  // --- Assets genéricos (respaldo) ---
+  if (n.includes("paleta de leche")) return "/productos/paletas-leche.jpg";
+  if (n.includes("paleta de agua")) return "/productos/paletas-agua.jpg";
   if (n.includes("premi")) return "/productos/paletas-premium.jpg";
   if (n.includes("tu y yo")) return "/productos/tu-y-yo.jpg";
+  if (n.includes("postre")) return "/productos/postres.jpg";
+  if (n.includes("cuchufli") && n.includes("banad")) return "/productos/cuchufli-b.jpg";
+  if (n.includes("cuchufli")) return "/productos/cuchufli-a.jpg";
+  if (n.includes("cocada")) return "/productos/cocadas.jpg";
+  if (n.includes("trufa")) return "/productos/trufas.jpg";
   if (n.includes("pack") || n.includes("combo") || n.includes("bandeja")) return "/productos/pack-comercios.jpg";
   return null;
 }
