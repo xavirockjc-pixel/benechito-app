@@ -19,7 +19,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "http://host.docker.internal:3000/api/reporte/diario",
+        "url": "https://benechito.com/api/reporte/diario",
         "sendQuery": true,
         "queryParameters": {
           "parameters": [

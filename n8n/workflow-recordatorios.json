@@ -15,7 +15,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "http://host.docker.internal:3000/api/recordatorios",
+        "url": "https://benechito.com/api/recordatorios",
         "sendQuery": true,
         "queryParameters": { "parameters": [ { "name": "token", "value": "benechito-reporte-2026" } ] },
         "options": {}
