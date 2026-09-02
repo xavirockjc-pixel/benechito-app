@@ -85,6 +85,18 @@ export async function GET(req: NextRequest) {
   );
   const bajoStock = materias.filter((m) => m.stock <= m.stockMinimo);
 
+  // Productos terminados bajo su mínimo de alerta.
+  const prodsMin = await safe(
+    () => prisma.producto.findMany({
+      where: { activo: true, stockMinimo: { gt: 0 } },
+      select: { nombre: true, stockMinimo: true, stock: { select: { cantidad: true } } },
+    }),
+    [] as { nombre: string; stockMinimo: number; stock: { cantidad: number }[] }[],
+  );
+  const prodBajo = prodsMin
+    .map((p) => ({ nombre: p.nombre, total: p.stock.reduce((s, x) => s + x.cantidad, 0), min: p.stockMinimo }))
+    .filter((p) => p.total <= p.min);
+
   // Mejoras/proyecciones a la vista: pendientes con fecha en los próximos 7 días o vencidas.
   const en7 = new Date(inicio); en7.setDate(en7.getDate() + 7); en7.setHours(23, 59, 59, 999);
   const mejoras = await safe(
@@ -116,8 +128,13 @@ export async function GET(req: NextRequest) {
   L.push(`   • Caja: ${cajaAbierta > 0 ? "⚠️ abierta sin cerrar" : "✅ cerrada"}`);
   if (bajoStock.length) {
     L.push("");
-    L.push(`🔴 *Stock bajo (${bajoStock.length}):*`);
+    L.push(`🔴 *Insumos bajo mínimo (${bajoStock.length}):*`);
     L.push(bajoStock.slice(0, 8).map((m) => `   • ${m.nombre}: ${m.stock} ${m.unidad} (mín ${m.stockMinimo})`).join("\n"));
+  }
+  if (prodBajo.length) {
+    L.push("");
+    L.push(`🔴 *Productos bajo mínimo (${prodBajo.length}):*`);
+    L.push(prodBajo.slice(0, 8).map((p) => `   • ${p.nombre}: ${p.total} (mín ${p.min})`).join("\n"));
   }
   if (mejoras.length) {
     L.push("");

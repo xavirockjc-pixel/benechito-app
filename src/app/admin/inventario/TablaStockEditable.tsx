@@ -4,7 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { fijarStock } from "./actions";
 
-type Item = { id: string; nombre: string };
+type Item = { id: string; nombre: string; stockMinimo?: number };
 
 /**
  * Tabla de stock EDITABLE: escribes la cantidad de cada producto en cada ubicación
@@ -77,9 +77,15 @@ export default function TablaStockEditable({ titulo, productos, ubicaciones, can
             <tr><th className="px-4 py-3">Producto</th>{ubicaciones.map((u) => <th key={u.id} className="px-3 py-3 text-right">{u.nombre}</th>)}</tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {productos.map((p) => (
-              <tr key={p.id} className="hover:bg-slate-50">
-                <td className="px-4 py-2 font-semibold text-slate-800">{p.nombre}</td>
+            {productos.map((p) => {
+              const totalProd = ubicaciones.reduce((s, u) => { const k = `${p.id}:${u.id}`; return s + (pend[k] ?? cant[k] ?? 0); }, 0);
+              const bajo = (p.stockMinimo ?? 0) > 0 && totalProd <= (p.stockMinimo ?? 0);
+              return (
+              <tr key={p.id} className={`hover:bg-slate-50 ${bajo ? "bg-red-50/60" : ""}`}>
+                <td className="px-4 py-2 font-semibold text-slate-800">
+                  {p.nombre}
+                  {bajo && <span className="ml-1 rounded bg-red-100 px-1.5 py-0.5 text-[10px] font-bold text-red-700" title={`Stock bajo (mín ${p.stockMinimo})`}>⚠ bajo</span>}
+                </td>
                 {ubicaciones.map((u) => {
                   const key = `${p.id}:${u.id}`;
                   const base = cant[key] ?? 0;
@@ -96,7 +102,8 @@ export default function TablaStockEditable({ titulo, productos, ubicaciones, can
                   );
                 })}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

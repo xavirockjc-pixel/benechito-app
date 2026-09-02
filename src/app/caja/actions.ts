@@ -159,13 +159,14 @@ export async function agregarProductoCaja(formData: FormData) {
   const fotoUrl = String(formData.get("fotoUrl") ?? "").trim() || null;
   const precio = Math.max(0, Math.floor(Number(String(formData.get("precio") ?? "0").replace(/\D/g, "")) || 0));
   const stockIni = Math.max(0, Math.floor(Number(String(formData.get("stock") ?? "0").replace(/\D/g, "")) || 0));
+  const stockMinimo = Math.max(0, Math.floor(Number(String(formData.get("stockMinimo") ?? "0").replace(/\D/g, "")) || 0));
 
   const prod = await prisma.producto.create({
     data: {
       nombre, linea, formato, tipo,
       seccion: tipo === "reventa" ? "distribucion" : "propio",
       soloLocal: tipo === "reventa",
-      fotoUrl, activo: true,
+      fotoUrl, activo: true, stockMinimo,
     },
   });
 

@@ -96,6 +96,11 @@ export async function CamposProducto({ p }: { p?: Producto }) {
         <input name="descripcion" placeholder="Ej: Paleta de leche artesanal, 100 g" defaultValue={p?.descripcion ?? ""} className={inputCls} />
       </label>
 
+      <label className="text-sm font-bold text-navy">
+        ⚠️ Avisar cuando el stock baje de <span className="font-normal text-choco-2">(0 = sin alerta)</span>
+        <input name="stockMinimo" type="number" min="0" step="1" inputMode="numeric" defaultValue={p?.stockMinimo ?? 0} className={inputCls} />
+      </label>
+
       <label className="flex items-start gap-3 self-end pb-2 text-sm font-semibold text-navy sm:col-span-2">
         <input type="checkbox" name="publicarTienda" value="si" defaultChecked={p ? p.publicarTienda : false} className="mt-0.5 h-5 w-5 accent-azul" />
         <span>

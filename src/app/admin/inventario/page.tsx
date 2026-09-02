@@ -76,8 +76,8 @@ export default async function InventarioPage({ searchParams }: { searchParams: P
             <p className="rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500">No hay ubicaciones. Créalas en Ubicaciones.</p>
           ) : (
             <>
-              <TablaStockEditable titulo="🏭 Fábrica y producción" productos={productos.filter((p) => !p.soloLocal).map((p) => ({ id: p.id, nombre: p.nombre }))} ubicaciones={ubicaciones.map((u) => ({ id: u.id, nombre: u.nombre }))} cant={cantObj} />
-              <TablaStockEditable titulo="🛒 Solo local (Sala de Ventas)" productos={productos.filter((p) => p.soloLocal).map((p) => ({ id: p.id, nombre: p.nombre }))} ubicaciones={ubicaciones.map((u) => ({ id: u.id, nombre: u.nombre }))} cant={cantObj} vacio="No hay productos exclusivos del local." />
+              <TablaStockEditable titulo="🏭 Fábrica y producción" productos={productos.filter((p) => !p.soloLocal).map((p) => ({ id: p.id, nombre: p.nombre, stockMinimo: p.stockMinimo }))} ubicaciones={ubicaciones.map((u) => ({ id: u.id, nombre: u.nombre }))} cant={cantObj} />
+              <TablaStockEditable titulo="🛒 Solo local (Sala de Ventas)" productos={productos.filter((p) => p.soloLocal).map((p) => ({ id: p.id, nombre: p.nombre, stockMinimo: p.stockMinimo }))} ubicaciones={ubicaciones.map((u) => ({ id: u.id, nombre: u.nombre }))} cant={cantObj} vacio="No hay productos exclusivos del local." />
             </>
           )}
 

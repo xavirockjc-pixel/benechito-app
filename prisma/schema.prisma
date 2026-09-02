@@ -107,6 +107,7 @@ model Producto {
   saboresNoDisp  String? // sabores marcados como NO disponibles hoy (separados por coma)
   permiteMixto   Boolean @default(false) // ofrece opción "Mixto al azar" en la tienda
   minTienda      Int     @default(1) // cantidad mínima por pedido (para preparar/entregar)
+  stockMinimo    Int     @default(0) // alerta de stock bajo (0 = sin alerta)
   maxTienda      Int     @default(0) // cantidad máxima (0 = sin tope)
   // Foto / presentación del producto (URL) — para el botón "Ver".
   fotoUrl      String?

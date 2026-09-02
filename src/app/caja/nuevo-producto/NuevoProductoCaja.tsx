@@ -23,6 +23,7 @@ export default function NuevoProductoCaja({ lineas }: { lineas: string[] }) {
   const [tipo, setTipo] = useState("reventa");
   const [precio, setPrecio] = useState("");
   const [stock, setStock] = useState("");
+  const [stockMin, setStockMin] = useState("");
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
   const [escuchando, setEscuchando] = useState(false);
@@ -109,6 +110,9 @@ export default function NuevoProductoCaja({ lineas }: { lineas: string[] }) {
         </label>
         <label className="text-xs font-bold text-slate-600">Stock inicial (local)
           <input name="stock" inputMode="numeric" value={stock} onChange={(e) => setStock(e.target.value)} placeholder="Ej: 24" className={inp} />
+        </label>
+        <label className="text-xs font-bold text-slate-600">⚠️ Avisar bajo
+          <input name="stockMinimo" inputMode="numeric" value={stockMin} onChange={(e) => setStockMin(e.target.value)} placeholder="Ej: 6" className={inp} />
         </label>
       </div>
 
