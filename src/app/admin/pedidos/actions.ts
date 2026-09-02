@@ -131,4 +131,5 @@ export async function cambiarEstadoPedido(formData: FormData) {
   revalidatePath(`/admin/pedidos/${pedidoId}`);
   revalidatePath("/admin/pedidos");
   revalidatePath("/caja/pedidos");
+  revalidatePath("/vendedor/entregas");
 }

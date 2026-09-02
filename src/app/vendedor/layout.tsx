@@ -41,9 +41,12 @@ export default async function VendedorLayout({
       <main className="flex-1 p-4 pb-24">{children}</main>
 
       {/* Barra inferior (navegación) */}
-      <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md items-center justify-around border-t border-slate-200 bg-white px-2 py-2 text-xs">
-        <Link href="/vendedor" className="flex flex-col items-center gap-0.5 px-4 py-1 font-semibold text-slate-700">
+      <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md items-center gap-1 overflow-x-auto border-t border-slate-200 bg-white px-2 py-2 text-xs">
+        <Link href="/vendedor" className="flex shrink-0 flex-col items-center gap-0.5 px-3 py-1 font-semibold text-slate-700">
           <span className="text-lg">🏪</span> Clientes
+        </Link>
+        <Link href="/vendedor/entregas" className="flex shrink-0 flex-col items-center gap-0.5 px-3 py-1 font-semibold text-slate-700">
+          <span className="text-lg">🛵</span> Entregas
         </Link>
         <Link href="/vendedor/agenda" className="flex flex-col items-center gap-0.5 px-3 py-1 font-semibold text-slate-700">
           <span className="text-lg">📅</span> Agenda
