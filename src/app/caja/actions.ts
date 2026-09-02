@@ -144,3 +144,43 @@ export async function cerrarCaja(formData: FormData) {
 export async function contarPedidosPendientes(): Promise<number> {
   return prisma.pedido.count({ where: { estado: { notIn: ["entregado", "finalizado"] } } });
 }
+
+/**
+ * Agrega un producto DESDE la Caja (local): lo crea con su foto, le pone precio de
+ * venta (lista Sala de Ventas) y stock inicial en el inventario del local (Sala).
+ * Así aparece solo en "vender" y se descuenta del stock del local al venderlo.
+ */
+export async function agregarProductoCaja(formData: FormData) {
+  const nombre = String(formData.get("nombre") ?? "").trim();
+  const linea = String(formData.get("linea") ?? "").trim();
+  if (!nombre || !linea) return;
+  const tipo = String(formData.get("tipo") ?? "") === "propio" ? "propio" : "reventa";
+  const formato = String(formData.get("formato") ?? "").trim() || null;
+  const fotoUrl = String(formData.get("fotoUrl") ?? "").trim() || null;
+  const precio = Math.max(0, Math.floor(Number(String(formData.get("precio") ?? "0").replace(/\D/g, "")) || 0));
+  const stockIni = Math.max(0, Math.floor(Number(String(formData.get("stock") ?? "0").replace(/\D/g, "")) || 0));
+
+  const prod = await prisma.producto.create({
+    data: {
+      nombre, linea, formato, tipo,
+      seccion: tipo === "reventa" ? "distribucion" : "propio",
+      soloLocal: tipo === "reventa",
+      fotoUrl, activo: true,
+    },
+  });
+
+  // Precio de venta en la lista "Sala de Ventas" (para que aparezca en la Caja/POS).
+  const salaLista = (await prisma.listaPrecio.findFirst({ where: { canal: "sala" } })) ?? (await prisma.listaPrecio.findFirst({ where: { activo: true } }));
+  if (salaLista && precio > 0) {
+    await prisma.precioProducto.create({ data: { productoId: prod.id, listaId: salaLista.id, cantidadMinima: 1, precio } });
+  }
+  // Stock inicial en la Sala de Ventas (inventario del local), con su movimiento auditable.
+  const salaUbic = (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } })) ?? (await prisma.ubicacion.findFirst());
+  if (salaUbic && stockIni > 0) {
+    await prisma.stock.create({ data: { productoId: prod.id, ubicacionId: salaUbic.id, cantidad: stockIni } });
+    await prisma.movimientoStock.create({ data: { productoId: prod.id, tipo: "ingreso", ubicacionDestinoId: salaUbic.id, cantidad: stockIni } });
+  }
+  revalidatePath("/caja");
+  revalidatePath("/admin/productos");
+  redirect("/caja");
+}

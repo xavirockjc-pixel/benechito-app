@@ -33,6 +33,7 @@ export default async function CajaLayout({ children }: { children: React.ReactNo
       <nav className="flex gap-2 border-b border-slate-200 bg-white px-4 py-2 text-sm">
         <Link href="/caja" className="rounded-lg px-3 py-1.5 font-bold text-slate-700">🛒 Caja</Link>
         <AvisoPedidos />
+        <Link href="/caja/nuevo-producto" className="rounded-lg px-3 py-1.5 font-bold text-slate-700">➕ Producto</Link>
         <Link href="/caja/checklist" className="rounded-lg px-3 py-1.5 font-bold text-slate-700">🌡️ Higiene</Link>
       </nav>
       <main className="flex-1 p-4">{children}</main>
