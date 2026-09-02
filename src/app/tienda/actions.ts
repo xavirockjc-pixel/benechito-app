@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { mpConfigurado, crearPreferencia } from "@/lib/mercadopago";
+import { notificarTelegram } from "@/lib/telegram";
 
 type LineaCarro = { productoId: string; cantidad: number; sabor?: string };
 
@@ -102,6 +103,16 @@ export async function crearPedidoTienda(formData: FormData) {
   await prisma.actividad.create({
     data: { negocioId, tipo: "pedido", descripcion: `Pedido web (${tipoEntrega}) por la tienda online` },
   }).catch(() => {});
+
+  // Aviso automático al dueño por Telegram (si está configurado el bot).
+  {
+    const lineasMsg = pedido.items.map((it) => `• ${it.cantidad}x ${it.producto.nombre}`).join("\n");
+    const totalMsg = pedido.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0);
+    const entregaMsg = entrega === "despacho" && direccion ? `🛵 Despacho a: ${direccion}` : "🏪 Retira en local";
+    await notificarTelegram(
+      `🛒 *Nuevo pedido web · Benechito*\n\n👤 ${nombre}${telefono ? ` · ${telefono}` : ""}\n${entregaMsg}\n\n${lineasMsg}\n\n💰 Total: $${totalMsg.toLocaleString("es-CL")}\n🐝 Míralo en benechito.com/admin/pedidos`,
+    );
+  }
 
   ["/admin/retiros", "/admin/pedidos", "/caja"].forEach((r) => revalidatePath(r));
 
