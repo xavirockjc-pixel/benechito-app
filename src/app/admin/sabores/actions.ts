@@ -10,6 +10,27 @@ function codigoDe(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "otro";
 }
 
+/**
+ * Guarda la foto y/o la descripción de un sabor (para la tienda). La foto llega
+ * como data URL comprimida desde el navegador. Ambos campos son opcionales.
+ */
+export async function guardarSabor(formData: FormData) {
+  const id = val(formData, "id");
+  if (!id) return;
+  const fotoUrl = String(formData.get("fotoUrl") ?? "");
+  const descripcion = String(formData.get("descripcion") ?? "").trim();
+  const data: { fotoUrl?: string | null; descripcion?: string | null } = {};
+  // Solo actualiza la foto si vino algo (data URL / http); "__keep__" = no tocar.
+  if (fotoUrl && fotoUrl !== "__keep__") {
+    data.fotoUrl = fotoUrl.startsWith("data:image/") || fotoUrl.startsWith("http") ? fotoUrl : null;
+  }
+  if (formData.has("descripcion")) data.descripcion = descripcion || null;
+  if (Object.keys(data).length === 0) return;
+  await prisma.sabor.update({ where: { id }, data });
+  revalidatePath("/admin/sabores");
+  revalidatePath("/tienda");
+}
+
 // ---------------------------------------------------------------- TIPOS
 /** Crea un tipo dentro de una sección (dulce/helado o una nueva). */
 export async function crearTipo(formData: FormData) {

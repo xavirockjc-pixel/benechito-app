@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import AgregarSaborVoz from "./AgregarSaborVoz";
+import EditarSabor from "./EditarSabor";
 import { crearTipo, eliminarTipo, moverTipoSeccion, eliminarSabor, crearFormato, eliminarFormato, precargarBase } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -78,13 +79,22 @@ export default async function SaboresPage() {
                         {/* Sabores */}
                         <div>
                           <p className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">Sabores</p>
-                          <div className="flex flex-wrap gap-1.5">
-                            {ss.length === 0 && <span className="text-xs text-slate-400">Sin sabores aún.</span>}
+                          {ss.length === 0 && <span className="text-xs text-slate-400">Sin sabores aún.</span>}
+                          <div className="grid gap-2 sm:grid-cols-2">
                             {ss.map((s) => (
-                              <span key={s.id} className="inline-flex items-center gap-1 rounded-full bg-slate-100 py-1 pl-3 pr-1 text-sm text-slate-700">
-                                {s.nombre}
-                                <form action={eliminarSabor} className="inline"><input type="hidden" name="id" value={s.id} /><button className="grid h-5 w-5 place-items-center rounded-full bg-slate-200 text-xs text-slate-500 hover:bg-red-500 hover:text-white">✕</button></form>
-                              </span>
+                              <div key={s.id} className="rounded-lg border border-slate-200 bg-white p-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                                    {s.fotoUrl && (
+                                      // eslint-disable-next-line @next/next/no-img-element
+                                      <img src={s.fotoUrl} alt={s.nombre} className="h-7 w-7 rounded object-cover" />
+                                    )}
+                                    {s.nombre}
+                                  </span>
+                                  <form action={eliminarSabor} className="inline"><input type="hidden" name="id" value={s.id} /><button className="grid h-5 w-5 place-items-center rounded-full bg-slate-200 text-xs text-slate-500 hover:bg-red-500 hover:text-white">✕</button></form>
+                                </div>
+                                <EditarSabor id={s.id} nombre={s.nombre} fotoUrl={s.fotoUrl} descripcion={s.descripcion} />
+                              </div>
                             ))}
                           </div>
                           <AgregarSaborVoz linea={t.codigo} />
