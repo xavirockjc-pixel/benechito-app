@@ -5,6 +5,42 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { esEstado, estadoMeta, type Estado } from "@/lib/estados";
 
+/**
+ * Resuelve un link de Google Maps (o texto "lat,lng") a coordenadas.
+ * Funciona con links largos y con los CORTOS (maps.app.goo.gl / goo.gl/maps):
+ * los sigue en el servidor (sin CORS) y saca lat/lng de la URL final o del contenido.
+ */
+export async function resolverLinkMapa(link: string): Promise<{ lat: number; lng: number } | null> {
+  const buscar = (s: string): { lat: number; lng: number } | null => {
+    const pats = [
+      /@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+      /!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/,
+      /[?&](?:q|ll|daddr|destination)=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+      /\/(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/,
+    ];
+    for (const p of pats) { const m = s.match(p); if (m) return { lat: Number(m[1]), lng: Number(m[2]) }; }
+    return null;
+  };
+  const t = (link ?? "").trim();
+  if (!t) return null;
+  // Texto plano "lat, lng".
+  const plano = t.match(/^\s*(-?\d{1,3}\.\d+)\s*,\s*(-?\d{1,3}\.\d+)\s*$/);
+  if (plano) return { lat: Number(plano[1]), lng: Number(plano[2]) };
+  // Intento directo por si el link ya trae coords.
+  const directo = buscar(t);
+  if (directo) return directo;
+  if (!/^https?:\/\//i.test(t)) return null;
+  try {
+    const res = await fetch(t, { redirect: "follow", headers: { "User-Agent": "Mozilla/5.0" } });
+    const porUrl = buscar(res.url);
+    if (porUrl) return porUrl;
+    const body = await res.text();
+    return buscar(body);
+  } catch {
+    return null;
+  }
+}
+
 /** Alta manual de un negocio desde el panel. */
 export async function crearNegocio(formData: FormData) {
   const get = (k: string) => {

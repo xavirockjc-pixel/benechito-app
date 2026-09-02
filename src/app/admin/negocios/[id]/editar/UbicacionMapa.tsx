@@ -3,6 +3,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import "leaflet/dist/leaflet.css";
+import { resolverLinkMapa } from "../../actions";
 
 /**
  * Ubicación en un MAPA real (Leaflet + OpenStreetMap, sin llave de Google).
@@ -18,8 +19,10 @@ export default function UbicacionMapa({ defaultLat, defaultLng }: { defaultLat: 
   const [lat, setLat] = useState<number | null>(defaultLat);
   const [lng, setLng] = useState<number | null>(defaultLng);
   const [q, setQ] = useState("");
+  const [linkMaps, setLinkMaps] = useState("");
   const [estado, setEstado] = useState("");
   const [buscando, setBuscando] = useState(false);
+  const [resolviendo, setResolviendo] = useState(false);
 
   useEffect(() => {
     let cancelado = false;
@@ -68,6 +71,16 @@ export default function UbicacionMapa({ defaultLat, defaultLng }: { defaultLat: 
     setBuscando(false);
   };
 
+  const usarLink = async () => {
+    const t = linkMaps.trim();
+    if (!t) return;
+    setResolviendo(true); setEstado("Leyendo el link de Google Maps…");
+    const coord = await resolverLinkMapa(t);
+    setResolviendo(false);
+    if (coord) { mover(coord.lat, coord.lng, 17); setLinkMaps(""); setEstado("✅ Ubicación tomada del link. Recuerda Guardar cambios."); }
+    else setEstado("No pude leer ese link. Asegúrate de pegar el que da 'Compartir' en Google Maps.");
+  };
+
   const miUbicacion = () => {
     if (!("geolocation" in navigator)) { setEstado("Este dispositivo no permite ubicación."); return; }
     setEstado("Obteniendo tu ubicación…");
@@ -83,6 +96,21 @@ export default function UbicacionMapa({ defaultLat, defaultLng }: { defaultLat: 
   return (
     <div className="mt-4 rounded-xl border border-crema-2 bg-crema/30 p-4">
       <p className="text-sm font-bold text-navy">📍 Ubicación en el mapa <span className="font-normal text-choco-2">(para la ruta)</span></p>
+
+      {/* Pegar link de Google Maps (lo más fácil desde el celular) */}
+      <div className="mt-2 rounded-xl border border-naranja/40 bg-naranja/5 p-3">
+        <p className="text-xs font-bold text-navy">📲 Lo más fácil: pega el link de Google Maps</p>
+        <p className="text-[11px] text-choco-2">En Google Maps: <b>Compartir → Copiar enlace</b>, y pégalo aquí (sirve el link corto).</p>
+        <div className="mt-2 flex gap-2">
+          <input value={linkMaps} onChange={(e) => setLinkMaps(e.target.value)} placeholder="https://maps.app.goo.gl/…"
+            className={inputCls} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); usarLink(); } }} />
+          <button type="button" onClick={usarLink} disabled={resolviendo} className="shrink-0 rounded-xl bg-naranja px-4 py-2 text-sm font-bold text-white active:scale-95 disabled:opacity-50">
+            {resolviendo ? "…" : "Usar"}
+          </button>
+        </div>
+      </div>
+
+      <p className="mt-3 text-center text-[11px] font-semibold text-choco-2">— o busca / toca el mapa —</p>
 
       {/* Buscar */}
       <div className="mt-2 flex gap-2">
