@@ -20,7 +20,7 @@ export default async function PedidosLocal() {
     where: { estado: { notIn: ["entregado", "finalizado"] } },
     orderBy: { createdAt: "asc" },
     include: {
-      negocio: { select: { nombreNegocio: true, whatsapp: true } },
+      negocio: { select: { nombreNegocio: true, whatsapp: true, latitud: true, longitud: true, direccion: true } },
       items: { include: { producto: { select: { nombre: true } } } },
     },
   });
@@ -85,6 +85,9 @@ export default async function PedidosLocal() {
                           : "🛵 Entregar / despachar"}
                       </button>
                     </form>
+                  )}
+                  {p.negocio?.latitud != null && p.negocio?.longitud != null && (
+                    <a href={`https://www.google.com/maps?q=${p.negocio.latitud},${p.negocio.longitud}`} target="_blank" rel="noopener" className="shrink-0 rounded-lg bg-[#1479c4] px-3 py-2.5 text-sm font-bold text-white" title="Ubicación del cliente">📍</a>
                   )}
                   {p.negocio?.whatsapp && (
                     <a href={`https://wa.me/${p.negocio.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener" className="shrink-0 rounded-lg bg-[#25D366] px-3 py-2.5 text-sm font-bold text-white">💬</a>

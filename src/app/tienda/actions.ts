@@ -24,6 +24,10 @@ export async function crearPedidoTienda(formData: FormData) {
   const entrega = String(formData.get("entrega") ?? "retiro").trim(); // retiro | despacho
   const direccion = String(formData.get("direccion") ?? "").trim();
   const notasCliente = String(formData.get("notas") ?? "").trim();
+  // Ubicación GPS que compartió el cliente (para el despacho).
+  const lat = Number(String(formData.get("lat") ?? "").trim());
+  const lng = Number(String(formData.get("lng") ?? "").trim());
+  const tieneUbic = Number.isFinite(lat) && Number.isFinite(lng) && lat !== 0 && lng !== 0;
   // Agenda: fecha + hora que eligió el cliente (opcional).
   const fechaStr = String(formData.get("fecha") ?? "").trim();
   const horaStr = String(formData.get("hora") ?? "").trim();
@@ -81,9 +85,17 @@ export async function crearPedidoTienda(formData: FormData) {
         nombreContacto: nombre, nombreNegocio: nombre, whatsapp: telefono, comuna: "—",
         tipoCliente: "consumidor", origen: "web", compra: null,
         estado: "nuevo",
+        direccion: direccion || null,
+        latitud: tieneUbic ? lat : null, longitud: tieneUbic ? lng : null,
       },
     });
     negocioId = nuevo.id;
+  } else if (tieneUbic || direccion) {
+    // Cliente conocido: actualiza su ubicación/dirección con lo del pedido.
+    await prisma.negocio.update({
+      where: { id: negocioId },
+      data: { ...(tieneUbic ? { latitud: lat, longitud: lng } : {}), ...(direccion ? { direccion } : {}) },
+    }).catch(() => {});
   }
 
   const tipoEntrega = entrega === "despacho" ? "delivery" : "retiro";
@@ -113,7 +125,8 @@ export async function crearPedidoTienda(formData: FormData) {
   {
     const lineasMsg = pedido.items.map((it) => `• ${it.cantidad}x ${it.producto.nombre}`).join("\n");
     const totalMsg = pedido.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0);
-    const entregaMsg = entrega === "despacho" && direccion ? `🛵 Despacho a: ${direccion}` : "🏪 Retira en local";
+    const ubicMsg = tieneUbic ? `\n📍 Ubicación: https://www.google.com/maps?q=${lat},${lng}` : "";
+    const entregaMsg = entrega === "despacho" ? `🛵 Despacho${direccion ? ` a: ${direccion}` : ""}${ubicMsg}` : "🏪 Retira en local";
     const agendaMsg = fechaAgenda && !isNaN(fechaAgenda.getTime())
       ? `\n📅 Para: ${fechaAgenda.toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" })} ${fechaAgenda.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}`
       : "";

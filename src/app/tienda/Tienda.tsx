@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { whatsappLink } from "@/lib/config";
 import { crearPedidoTienda } from "./actions";
+import UbicacionCliente from "./UbicacionCliente";
 
 type SaborInfo = { nombre: string; desc: string | null; foto: string | null };
 type Prod = { id: string; nombre: string; descripcion: string | null; formato: string | null; seccion: string; fotoUrl: string | null; precios: Record<string, number>; sabores: SaborInfo[]; grupo: string; min: number; max: number };
@@ -308,7 +309,10 @@ export default function Tienda({
               </div>
               <input type="hidden" name="entrega" value={entrega} />
               {entrega === "despacho" && (
-                <input name="direccion" placeholder="Dirección de despacho" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
+                <>
+                  <input name="direccion" placeholder="Dirección de despacho" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
+                  <UbicacionCliente />
+                </>
               )}
               {/* Agendar cuándo lo quiere */}
               <div className="rounded-xl bg-crema/40 p-3 ring-1 ring-crema-2">
