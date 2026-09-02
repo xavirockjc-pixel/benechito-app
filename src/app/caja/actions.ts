@@ -139,3 +139,8 @@ export async function cerrarCaja(formData: FormData) {
   revalidatePath("/caja");
   redirect("/caja");
 }
+
+/** Cuenta los pedidos que faltan por preparar/entregar (para el aviso en vivo del local). */
+export async function contarPedidosPendientes(): Promise<number> {
+  return prisma.pedido.count({ where: { estado: { notIn: ["entregado", "finalizado"] } } });
+}

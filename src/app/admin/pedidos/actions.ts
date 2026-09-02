@@ -130,4 +130,5 @@ export async function cambiarEstadoPedido(formData: FormData) {
   await prisma.pedido.update({ where: { id: pedidoId }, data: { estado } });
   revalidatePath(`/admin/pedidos/${pedidoId}`);
   revalidatePath("/admin/pedidos");
+  revalidatePath("/caja/pedidos");
 }
