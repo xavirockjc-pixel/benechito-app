@@ -9,7 +9,8 @@ import {
   eliminarNegocio,
   actualizarClasificacion,
 } from "../actions";
-import { registrarDeuda } from "@/app/vendedor/actions";
+import { registrarDeuda, abonarCuenta, registrarVentaSimple, registrarCobro } from "@/app/vendedor/actions";
+import { MEDIOS_PAGO, medioPagoLabel } from "@/lib/dominio/ventas";
 import { TIPOS_CLIENTE, tipoClienteLabel, canalLabel, COMPRA_TIPOS, compraLabel } from "@/lib/dominio/precios";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 
@@ -193,17 +194,64 @@ export default async function FichaNegocio({
               </div>
             )}
 
+            {/* Acciones de cuenta: cobrar (abono), vender y registrar deuda */}
+            <div className="mt-4 grid gap-3 border-t border-crema pt-4 sm:grid-cols-2">
+              {/* Cobrar / abono a la cuenta (reparte entre las ventas pendientes) */}
+              <form action={abonarCuenta} className="rounded-xl bg-verde/5 p-3 ring-1 ring-verde/20">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-verde">💵 Registrar pago / abono</p>
+                <input type="hidden" name="negocioId" value={negocio.id} />
+                <input type="hidden" name="volver" value={`/admin/negocios/${negocio.id}`} />
+                <div className="mt-2 flex flex-wrap items-end gap-2">
+                  <label className="text-xs font-bold text-choco-2">Monto
+                    <input name="monto" inputMode="numeric" required placeholder="Ej: 20000" className="mt-1 w-28 rounded-lg border border-crema bg-white px-2 py-2 text-sm" />
+                  </label>
+                  <label className="text-xs font-bold text-choco-2">Medio
+                    <select name="medio" defaultValue="efectivo" className="mt-1 rounded-lg border border-crema bg-white px-2 py-2 text-sm">
+                      {MEDIOS_PAGO.filter((m) => m !== "credito").map((m) => <option key={m} value={m}>{medioPagoLabel[m] ?? m}</option>)}
+                    </select>
+                  </label>
+                  <button className="rounded-lg bg-verde px-4 py-2 text-sm font-bold text-white">Cobrar</button>
+                </div>
+                <p className="mt-1 text-[10px] text-choco-2">Se descuenta de la deuda más antigua.</p>
+              </form>
+
+              {/* Registrar una venta por monto (pagada o a crédito) */}
+              <form action={registrarVentaSimple} className="rounded-xl bg-azul/5 p-3 ring-1 ring-azul/20">
+                <p className="text-xs font-extrabold uppercase tracking-wide text-azul">🧾 Registrar venta</p>
+                <input type="hidden" name="negocioId" value={negocio.id} />
+                <input type="hidden" name="volver" value={`/admin/negocios/${negocio.id}`} />
+                <div className="mt-2 flex flex-wrap items-end gap-2">
+                  <label className="text-xs font-bold text-choco-2">Monto
+                    <input name="monto" inputMode="numeric" required placeholder="Ej: 35000" className="mt-1 w-28 rounded-lg border border-crema bg-white px-2 py-2 text-sm" />
+                  </label>
+                  <label className="text-xs font-bold text-choco-2">Cómo paga
+                    <select name="modo" defaultValue="pagado" className="mt-1 rounded-lg border border-crema bg-white px-2 py-2 text-sm">
+                      <option value="pagado">Pagada</option>
+                      <option value="credito">A crédito (fía)</option>
+                    </select>
+                  </label>
+                  <label className="text-xs font-bold text-choco-2">Medio
+                    <select name="medio" defaultValue="efectivo" className="mt-1 rounded-lg border border-crema bg-white px-2 py-2 text-sm">
+                      {MEDIOS_PAGO.filter((m) => m !== "credito").map((m) => <option key={m} value={m}>{medioPagoLabel[m] ?? m}</option>)}
+                    </select>
+                  </label>
+                  <input name="concepto" placeholder="Concepto (opcional)" className="min-w-0 flex-1 rounded-lg border border-crema bg-white px-2 py-2 text-sm" />
+                  <button className="rounded-lg bg-azul px-4 py-2 text-sm font-bold text-white">Registrar</button>
+                </div>
+              </form>
+            </div>
+
             {/* Registrar deuda directa (saldo anterior / cargo a cuenta) */}
-            <form action={registrarDeuda} className="mt-4 flex flex-wrap items-end gap-2 border-t border-crema pt-4">
+            <form action={registrarDeuda} className="mt-3 flex flex-wrap items-end gap-2">
               <input type="hidden" name="negocioId" value={negocio.id} />
               <input type="hidden" name="volver" value={`/admin/negocios/${negocio.id}`} />
-              <label className="text-xs font-bold text-choco-2">Monto que debe
+              <label className="text-xs font-bold text-choco-2">Deuda anterior
                 <input name="monto" inputMode="numeric" required placeholder="Ej: 50000" className="mt-1 w-32 rounded-lg border border-crema bg-white px-2 py-2 text-sm" />
               </label>
               <label className="flex-1 text-xs font-bold text-choco-2">Concepto
                 <input name="motivo" placeholder="Ej: Saldo anterior" className="mt-1 w-full rounded-lg border border-crema bg-white px-2 py-2 text-sm" />
               </label>
-              <button className="rounded-lg bg-rojo px-4 py-2 text-sm font-bold text-white">➕ Registrar deuda</button>
+              <button className="rounded-lg bg-rojo/90 px-4 py-2 text-sm font-bold text-white">➕ Registrar deuda</button>
             </form>
           </Card>
 
@@ -220,6 +268,7 @@ export default async function FichaNegocio({
                       <th className="py-1.5 text-right">Monto</th>
                       <th className="py-1.5 text-right">Pagado</th>
                       <th className="py-1.5 text-right">Saldo</th>
+                      <th className="py-1.5 text-right">Cobrar</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -234,6 +283,20 @@ export default async function FichaNegocio({
                             <td className="py-1.5 text-right font-semibold text-navy">{fmtCLP(Number(v.total))}</td>
                             <td className="py-1.5 text-right text-choco-2">{fmtCLP(pagado)}</td>
                             <td className={`py-1.5 text-right font-semibold ${saldo > 0 ? "text-rojo" : "text-verde"}`}>{fmtCLP(saldo)}</td>
+                            <td className="py-1.5 text-right">
+                              {saldo > 0 ? (
+                                <form action={registrarCobro} className="flex items-center justify-end gap-1">
+                                  <input type="hidden" name="ventaId" value={v.id} />
+                                  <input type="hidden" name="negocioId" value={negocio.id} />
+                                  <input type="hidden" name="medio" value="efectivo" />
+                                  <input type="hidden" name="volver" value={`/admin/negocios/${negocio.id}`} />
+                                  <input name="monto" inputMode="numeric" defaultValue={Math.round(saldo)} className="w-20 rounded border border-crema bg-white px-1.5 py-1 text-right text-xs" />
+                                  <button className="rounded bg-verde px-2 py-1 text-xs font-bold text-white" title="Registrar abono (efectivo)">✓</button>
+                                </form>
+                              ) : (
+                                <span className="text-xs text-verde">✓ Pagada</span>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}

@@ -340,6 +340,7 @@ export async function registrarCobro(formData: FormData) {
   const ventaId = String(formData.get("ventaId") ?? "").trim();
   const negocioId = String(formData.get("negocioId") ?? "").trim();
   const medio = String(formData.get("medio") ?? "efectivo").trim();
+  const volver = String(formData.get("volver") ?? "").trim();
   const monto = Number(String(formData.get("monto") ?? "").trim().replace(",", "."));
   if (!ventaId || !(MEDIOS_PAGO as readonly string[]).includes(medio)) return;
   if (!Number.isFinite(monto) || monto <= 0) return;
@@ -348,12 +349,128 @@ export async function registrarCobro(formData: FormData) {
   await recalcularEstadoPago(ventaId);
   if (negocioId) {
     await prisma.actividad.create({
-      data: { negocioId, tipo: "contacto", descripcion: `Cobranza: abono de $${monto} (${medio})` },
+      data: { negocioId, tipo: "contacto", descripcion: `Cobranza: abono de $${monto.toLocaleString("es-CL")} (${medio})` },
     });
   }
 
   revalidatePath(`/vendedor/cliente/${negocioId}`);
-  redirect(`/vendedor/cliente/${negocioId}`);
+  revalidatePath(`/admin/negocios/${negocioId}`);
+  redirect(volver || `/vendedor/cliente/${negocioId}`);
+}
+
+/**
+ * Abono a la CUENTA del cliente (sin elegir una venta): reparte el pago entre sus
+ * ventas pendientes, de la más antigua a la más nueva (FIFO). Sirve para "me pagó
+ * $X de lo que debe" sin tener que ir venta por venta.
+ */
+export async function abonarCuenta(formData: FormData) {
+  const negocioId = String(formData.get("negocioId") ?? "").trim();
+  const medioRaw = String(formData.get("medio") ?? "efectivo").trim();
+  const medio = (MEDIOS_PAGO as readonly string[]).includes(medioRaw) && medioRaw !== "credito" ? medioRaw : "efectivo";
+  const volver = String(formData.get("volver") ?? "").trim();
+  let monto = Number(String(formData.get("monto") ?? "").trim().replace(/[^0-9.]/g, ""));
+  if (!negocioId || !Number.isFinite(monto) || monto <= 0) return;
+
+  const ventas = await prisma.venta.findMany({
+    where: { negocioId, estadoPago: { in: ["pendiente", "parcial", "vencido"] } },
+    include: { pagos: { select: { monto: true } } },
+    orderBy: { fecha: "asc" },
+  });
+
+  let restante = monto;
+  for (const v of ventas) {
+    if (restante <= 0) break;
+    const pagado = v.pagos.reduce((s, p) => s + Number(p.monto), 0);
+    const saldo = Number(v.total) - pagado;
+    if (saldo <= 0) continue;
+    const aplicar = Math.min(saldo, restante);
+    await prisma.pago.create({ data: { ventaId: v.id, medio, monto: aplicar } });
+    await recalcularEstadoPago(v.id);
+    restante -= aplicar;
+  }
+
+  const aplicado = monto - restante;
+  await prisma.actividad.create({
+    data: {
+      negocioId,
+      tipo: "contacto",
+      descripcion: aplicado > 0
+        ? `Abono a cuenta: $${aplicado.toLocaleString("es-CL")} (${medio})${restante > 0 ? ` · sobrante $${restante.toLocaleString("es-CL")} sin deuda que cubrir` : ""}`
+        : `Abono recibido: $${monto.toLocaleString("es-CL")} (${medio}) — sin deuda pendiente`,
+    },
+  });
+
+  revalidatePath(`/vendedor/cliente/${negocioId}`);
+  revalidatePath(`/admin/negocios/${negocioId}`);
+  redirect(volver || `/vendedor/cliente/${negocioId}`);
+}
+
+/**
+ * Registra una VENTA simple por monto (sin líneas de producto): un cobro/venta
+ * puntual a la cuenta del cliente. Según el modo queda pagada (con su abono) o a
+ * crédito (suma al saldo). No mueve stock — para eso está la venta con productos.
+ */
+export async function registrarVentaSimple(formData: FormData) {
+  const negocioId = String(formData.get("negocioId") ?? "").trim();
+  const modo = String(formData.get("modo") ?? "pagado").trim(); // pagado | credito | abono
+  const concepto = String(formData.get("concepto") ?? "").trim() || "Venta";
+  const volver = String(formData.get("volver") ?? "").trim();
+  const total = Number(String(formData.get("monto") ?? "").trim().replace(/[^0-9.]/g, ""));
+  if (!negocioId || !Number.isFinite(total) || total <= 0) return;
+
+  const ubicacionId =
+    (await miVehiculoId()) ??
+    (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } }))?.id ??
+    (await prisma.ubicacion.findFirst())?.id;
+  if (!ubicacionId) return;
+
+  const medioRaw = String(formData.get("medio") ?? "efectivo").trim();
+  const medio = (MEDIOS_PAGO as readonly string[]).includes(medioRaw) && medioRaw !== "credito" ? medioRaw : "efectivo";
+  let abono = Number(String(formData.get("abono") ?? "").trim().replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(abono) || abono < 0) abono = 0;
+  abono = Math.min(abono, total);
+
+  let estadoPago: string;
+  let pagos: { create: { medio: string; monto: number } } | undefined;
+  if (modo === "credito") {
+    estadoPago = "pendiente";
+    pagos = undefined;
+  } else if (modo === "abono") {
+    estadoPago = estadoPagoDe(total, abono);
+    pagos = abono > 0 ? { create: { medio, monto: abono } } : undefined;
+  } else {
+    estadoPago = "pagado";
+    pagos = { create: { medio, monto: total } };
+  }
+
+  const u = await usuarioActual();
+  await prisma.venta.create({
+    data: {
+      negocioId,
+      ubicacionId,
+      vendedorId: u?.sub ?? null,
+      total,
+      estadoPago,
+      documento: "boleta",
+      etiqueta: concepto,
+      ...(pagos ? { pagos } : {}),
+    },
+  });
+  await prisma.actividad.create({
+    data: {
+      negocioId,
+      tipo: "venta",
+      descripcion: modo === "credito"
+        ? `Venta a crédito por $${total.toLocaleString("es-CL")} (${concepto})`
+        : modo === "abono"
+          ? `Venta $${total.toLocaleString("es-CL")}: abonó $${abono.toLocaleString("es-CL")}, debe $${(total - abono).toLocaleString("es-CL")} (${concepto})`
+          : `Venta por $${total.toLocaleString("es-CL")} (${medio} · ${concepto})`,
+    },
+  });
+
+  revalidatePath(`/vendedor/cliente/${negocioId}`);
+  revalidatePath(`/admin/negocios/${negocioId}`);
+  redirect(volver || `/vendedor/cliente/${negocioId}`);
 }
 
 /** Registra el resultado de la visita (nota + próxima visita opcional). */
