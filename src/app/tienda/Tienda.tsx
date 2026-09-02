@@ -36,6 +36,7 @@ export default function Tienda({
   const [abierto, setAbierto] = useState(false);
   const [entrega, setEntrega] = useState("retiro");
   const [detalleSabor, setDetalleSabor] = useState<SaborInfo | null>(null); // modal "¿cómo es?"
+  const [detalleProd, setDetalleProd] = useState<Prod | null>(null); // ficha del producto
 
   const precioDe = (p: Prod) => p.precios[tarifa] ?? Object.values(p.precios)[0] ?? 0;
   const minOf = (id: string) => Math.max(1, byId.get(id)?.min ?? 1);
@@ -81,18 +82,19 @@ export default function Tienda({
     const saborObj = p.sabores.find((s) => s.nombre === saborSel);
     return (
       <div key={p.id} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-crema-2 transition hover:-translate-y-1 hover:shadow-xl">
-        <div className="relative aspect-square w-full overflow-hidden">
+        <button type="button" onClick={() => setDetalleProd(p)} className="relative aspect-square w-full overflow-hidden bg-white" title="Ver detalle del producto">
           {p.fotoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={p.fotoUrl} alt={p.nombre} className="h-full w-full object-cover transition group-hover:scale-105" />
+            <img src={p.fotoUrl} alt={p.nombre} className="h-full w-full object-contain transition group-hover:scale-105" />
           ) : (
             <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${grad}`}>
               <span className="font-display text-4xl font-extrabold text-white/90">{p.nombre.charAt(0)}</span>
             </div>
           )}
           <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2.5 py-1 text-sm font-extrabold text-tinta shadow">{fmtCLP(precioDe(p))}</span>
-          {enCarro > 0 && <span className="absolute right-2 top-2 rounded-full bg-azul px-2 py-0.5 text-xs font-bold text-white shadow">🛒 {enCarro}</span>}
-        </div>
+          <span className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-tinta/70 text-xs font-bold text-white shadow">ⓘ</span>
+          {enCarro > 0 && <span className="absolute left-2 top-2 rounded-full bg-azul px-2 py-0.5 text-xs font-bold text-white shadow">🛒 {enCarro}</span>}
+        </button>
         <div className="flex flex-1 flex-col p-3">
           <p className="font-bold leading-tight text-tinta">{p.nombre}</p>
           {(p.descripcion || p.formato) && <p className="mt-0.5 line-clamp-2 text-xs text-choco-2">{p.descripcion || p.formato}</p>}
@@ -329,6 +331,53 @@ export default function Tienda({
               </button>
               <p className="text-center text-[11px] text-choco-2">Tu pedido llega a {negocio} y te contactan para confirmar el pago y la entrega.</p>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Ficha del producto: foto grande + características + sabores */}
+      {detalleProd && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={() => setDetalleProd(null)}>
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+            <div className="relative aspect-square w-full bg-white">
+              {detalleProd.fotoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={detalleProd.fotoUrl} alt={detalleProd.nombre} className="h-full w-full object-contain" />
+              ) : (
+                <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${GRAD[detalleProd.seccion] ?? GRAD.propio}`}>
+                  <span className="font-display text-6xl font-extrabold text-white/90">{detalleProd.nombre.charAt(0)}</span>
+                </div>
+              )}
+              <button onClick={() => setDetalleProd(null)} className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-full bg-tinta/70 text-lg font-bold text-white">✕</button>
+            </div>
+            <div className="p-5">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-display text-2xl font-extrabold text-tinta">{detalleProd.nombre}</h3>
+                <span className="shrink-0 rounded-full bg-azul px-3 py-1 text-sm font-extrabold text-white">{fmtCLP(precioDe(detalleProd))}</span>
+              </div>
+              {detalleProd.formato && <p className="mt-0.5 text-sm font-semibold text-naranja">{detalleProd.formato}</p>}
+              <p className="mt-2 text-sm text-choco-2">{detalleProd.descripcion || "Producto artesanal Benechito, hecho con ingredientes reales. 🍫"}</p>
+              {detalleProd.min > 1 && <p className="mt-2 text-xs font-bold text-choco-2">Pedido mínimo: {detalleProd.min}{detalleProd.max > 0 ? ` · máximo ${detalleProd.max}` : ""}</p>}
+              {detalleProd.sabores.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-choco-2">Sabores ({detalleProd.sabores.length})</p>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {detalleProd.sabores.map((sb) => (
+                      <button key={sb.nombre} type="button"
+                        onClick={() => (sb.desc || sb.foto) ? setDetalleSabor(sb) : undefined}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${sb.desc || sb.foto ? "bg-azul/10 text-azul" : "bg-crema text-choco-2"}`}>
+                        {sb.nombre}{(sb.desc || sb.foto) ? " ⓘ" : ""}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={() => { agregar(detalleProd.id, sel[detalleProd.id] ?? (detalleProd.sabores[0]?.nombre ?? "")); setDetalleProd(null); }}
+                className="mt-4 w-full rounded-xl bg-azul py-3 text-sm font-extrabold text-white active:scale-95 hover:bg-azul-2">
+                Agregar al pedido{detalleProd.min > 1 ? ` (${detalleProd.min})` : ""} · {fmtCLP(precioDe(detalleProd))}
+              </button>
+            </div>
           </div>
         </div>
       )}
