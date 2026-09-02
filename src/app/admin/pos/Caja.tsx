@@ -1,11 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { venderPOS } from "./actions";
 
 type Prod = { id: string; nombre: string; formato: string | null; precio: number };
 type Cliente = { id: string; nombreNegocio: string; comuna: string };
+type SpeechRec = {
+  lang: string; interimResults: boolean; continuous: boolean; maxAlternatives: number;
+  start: () => void; stop: () => void;
+  onresult: ((e: { results: { 0: { 0: { transcript: string } } } }) => void) | null;
+  onerror: (() => void) | null; onend: (() => void) | null;
+};
+const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
 export default function Caja({ productos, clientes = [] }: { productos: Prod[]; clientes?: Cliente[] }) {
   const [cart, setCart] = useState<Record<string, number>>({});
@@ -13,6 +20,33 @@ export default function Caja({ productos, clientes = [] }: { productos: Prod[]; 
   const [q, setQ] = useState("");
   const [modo, setModo] = useState("efectivo");
   const [abono, setAbono] = useState("");
+  const [escuchando, setEscuchando] = useState(false);
+  const [vozOk, setVozOk] = useState(false);
+  const recRef = useRef<SpeechRec | null>(null);
+
+  useEffect(() => {
+    const w = window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec };
+    const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    if (!Ctor) return;
+    const rec = new Ctor();
+    rec.lang = "es-CL"; rec.interimResults = false; rec.continuous = false; rec.maxAlternatives = 1;
+    recRef.current = rec; setVozOk(true);
+  }, []);
+
+  const dictarCliente = () => {
+    const rec = recRef.current;
+    if (!rec || escuchando) return;
+    rec.onresult = (e) => {
+      const txt = e.results[0][0].transcript.trim();
+      // Si calza claro con un cliente, lo selecciona directo; si no, deja el texto para elegir.
+      const match = clientes.find((c) => norm(c.nombreNegocio) === norm(txt))
+        ?? clientes.find((c) => norm(c.nombreNegocio).includes(norm(txt)));
+      if (match) { setCliente(match); setQ(""); } else setQ(txt);
+    };
+    rec.onerror = () => setEscuchando(false);
+    rec.onend = () => setEscuchando(false);
+    try { rec.start(); setEscuchando(true); } catch { setEscuchando(false); }
+  };
 
   const clientesFiltrados = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -78,18 +112,29 @@ export default function Caja({ productos, clientes = [] }: { productos: Prod[]; 
         {/* Cliente (para poder dejar deuda / abono) */}
         <div className="mb-3">
           {cliente ? (
-            <div className="flex items-center justify-between rounded-lg bg-slate-50 p-2.5">
+            <div className="flex items-center justify-between gap-2 rounded-lg bg-slate-50 p-2.5">
               <span className="min-w-0 truncate text-sm font-bold text-slate-800">🏪 {cliente.nombreNegocio}</span>
-              <button type="button" onClick={() => { setCliente(null); if (modo === "abono" || modo === "credito") setModo("efectivo"); }} className="shrink-0 text-xs font-semibold text-slate-500">quitar</button>
+              <span className="flex shrink-0 items-center gap-2">
+                <a href={`/admin/negocios/${cliente.id}`} target="_blank" rel="noopener" className="text-xs font-semibold text-naranja">historial ↗</a>
+                <button type="button" onClick={() => { setCliente(null); if (modo === "abono" || modo === "credito") setModo("efectivo"); }} className="text-xs font-semibold text-slate-500">quitar</button>
+              </span>
             </div>
           ) : (
             <>
-              <input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="Cliente (opcional, para dejar deuda)…"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-500"
-              />
+              <div className="flex gap-2">
+                <input
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                  placeholder="Cliente (opcional, para dejar deuda)…"
+                  className="min-w-0 flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-slate-500"
+                />
+                {vozOk && (
+                  <button type="button" onClick={dictarCliente} title="Dictar cliente"
+                    className={`shrink-0 rounded-lg px-3 text-white ${escuchando ? "animate-pulse bg-red-500" : "bg-[#0f766e]"}`}>
+                    🎙️
+                  </button>
+                )}
+              </div>
               {clientesFiltrados.length > 0 && (
                 <div className="mt-1 space-y-1">
                   {clientesFiltrados.map((c) => (

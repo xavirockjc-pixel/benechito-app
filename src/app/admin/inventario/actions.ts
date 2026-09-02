@@ -92,6 +92,28 @@ export async function fijarStock(productoId: string, ubicacionId: string, cantid
   revalidatePath("/admin/inventario");
 }
 
+/**
+ * Borra un movimiento manual (ingreso/merma/ajuste/transferencia) y REVIERTE su efecto
+ * en el stock. Para corregir cargas equivocadas. No toca movimientos de venta/producción
+ * (esos se corrigen borrando la venta o la orden de producción, que ya revierten).
+ */
+export async function eliminarMovimiento(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  const m = await prisma.movimientoStock.findUnique({ where: { id } });
+  if (!m || !["ingreso", "merma", "ajuste", "transferencia"].includes(m.tipo)) return;
+
+  if (m.tipo === "ingreso" && m.ubicacionDestinoId) await aplicarDelta(m.productoId, m.ubicacionDestinoId, -m.cantidad);
+  else if (m.tipo === "merma" && m.ubicacionOrigenId) await aplicarDelta(m.productoId, m.ubicacionOrigenId, m.cantidad);
+  else if (m.tipo === "ajuste" && m.ubicacionDestinoId) await aplicarDelta(m.productoId, m.ubicacionDestinoId, -m.cantidad);
+  else if (m.tipo === "transferencia") {
+    if (m.ubicacionOrigenId) await aplicarDelta(m.productoId, m.ubicacionOrigenId, m.cantidad);
+    if (m.ubicacionDestinoId) await aplicarDelta(m.productoId, m.ubicacionDestinoId, -m.cantidad);
+  }
+  await prisma.movimientoStock.delete({ where: { id } });
+  revalidatePath("/admin/inventario");
+}
+
 // --- Ubicaciones (CRUD) ---
 
 /** Crea una ubicación en la sucursal (la primera disponible). */

@@ -4,6 +4,10 @@ import { fmtCLP } from "@/lib/dominio/pedidos";
 import { fmtCant, unidadLabel, stockBajo } from "@/lib/dominio/materias";
 import AjusteStockVoz from "./AjusteStockVoz";
 import TablaStockEditable from "./TablaStockEditable";
+import { eliminarMovimiento } from "./actions";
+
+const tipoMovLabel: Record<string, string> = { ingreso: "➕ Ingreso", merma: "➖ Merma", ajuste: "🔧 Ajuste", transferencia: "🔄 Transferencia" };
+const fmtMovFecha = (d: Date) => new Date(d).toLocaleDateString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +21,16 @@ export default async function InventarioPage({ searchParams }: { searchParams: P
   const { t } = await searchParams;
   const tab = ["productos", "insumos", "materiales"].includes(t ?? "") ? t! : "productos";
 
-  const [productos, ubicaciones, stock, materias] = await Promise.all([
+  const [productos, ubicaciones, stock, materias, movimientos] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.ubicacion.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
     prisma.stock.findMany(),
     prisma.materiaPrima.findMany({ where: { activo: true }, orderBy: [{ categoria: "asc" }, { nombre: "asc" }] }),
+    prisma.movimientoStock.findMany({
+      where: { tipo: { in: ["ingreso", "merma", "ajuste", "transferencia"] } },
+      orderBy: { fecha: "desc" }, take: 20,
+      include: { producto: { select: { nombre: true } }, ubicacionOrigen: { select: { nombre: true } }, ubicacionDestino: { select: { nombre: true } } },
+    }),
   ]);
 
   const cantObj: Record<string, number> = Object.fromEntries(stock.map((s) => [`${s.productoId}:${s.ubicacionId}`, s.cantidad]));
@@ -79,6 +88,31 @@ export default async function InventarioPage({ searchParams }: { searchParams: P
               ubicaciones={ubicaciones.map((u) => ({ id: u.id, nombre: u.nombre }))}
               stockMap={Object.fromEntries(stock.map((s) => [`${s.productoId}:${s.ubicacionId}`, s.cantidad]))}
             />
+          )}
+
+          {/* Movimientos recientes — corregir cargas equivocadas (revierte el stock) */}
+          {movimientos.length > 0 && (
+            <section className="mt-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <h2 className="mb-1 text-lg font-bold text-slate-900">Movimientos recientes</h2>
+              <p className="mb-3 text-sm text-slate-500">¿Cargaste algo mal? Bórralo y el stock se revierte solo.</p>
+              <ul className="divide-y divide-slate-100 text-sm">
+                {movimientos.map((m) => (
+                  <li key={m.id} className="flex items-center justify-between gap-2 py-2">
+                    <span className="min-w-0">
+                      <span className="font-semibold text-slate-800">{tipoMovLabel[m.tipo] ?? m.tipo}</span>
+                      <span className="text-slate-600"> · {m.producto?.nombre} · {m.cantidad > 0 ? "+" : ""}{m.cantidad}</span>
+                      <span className="block text-[11px] text-slate-400">
+                        {m.ubicacionOrigen ? `de ${m.ubicacionOrigen.nombre} ` : ""}{m.ubicacionDestino ? `→ ${m.ubicacionDestino.nombre} ` : ""}· {fmtMovFecha(m.fecha)}
+                      </span>
+                    </span>
+                    <form action={eliminarMovimiento}>
+                      <input type="hidden" name="id" value={m.id} />
+                      <button className="shrink-0 rounded-lg border border-red-200 px-2.5 py-1 text-xs font-bold text-red-600 hover:bg-red-50">✕ Deshacer</button>
+                    </form>
+                  </li>
+                ))}
+              </ul>
+            </section>
           )}
         </div>
       )}

@@ -124,11 +124,21 @@ export async function actualizarNegocio(formData: FormData) {
   };
   if (!id || !get("nombreContacto") || !get("nombreNegocio")) return;
 
+  // Ubicación GPS (opcional): se puede agregar o corregir después.
+  const parseCoord = (k: string) => {
+    const v = get(k).replace(",", ".");
+    if (!v) return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  };
+
   await prisma.negocio.update({
     where: { id },
     data: {
       nombreContacto: get("nombreContacto"),
       nombreNegocio: get("nombreNegocio"),
+      latitud: parseCoord("latitud"),
+      longitud: parseCoord("longitud"),
       whatsapp: get("whatsapp"),
       comuna: get("comuna"),
       ciudad: get("ciudad") || null,
