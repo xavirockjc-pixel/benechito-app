@@ -161,9 +161,9 @@ export default function Tienda({
                 <span className="rounded-full bg-white px-3 py-1.5 shadow-sm">💳 Pago en línea</span>
               </div>
             </div>
-            {/* Vitrina de productos (helados) */}
+            {/* Vitrina de productos actuales (paletas premium, postres redondos, bandejas de cuchuflís) */}
             <div className="grid grid-cols-3 gap-2 sm:gap-3">
-              {["/productos/tu-y-yo.jpg", "/productos/paletas-leche.jpg", "/productos/paletas-agua.jpg", "/productos/postres.jpg", "/productos/paletas-premium.jpg", "/productos/variedades.jpg"].map((src) => (
+              {["/catalogo/paletas-premium-coleccion.jpg", "/catalogo/postre-kiss-chocolate.jpg", "/catalogo/postre-frutos-rojos.jpg", "/catalogo/cuchufli-bandeja-frambuesa.jpg", "/catalogo/cuchufli-bandeja-manjar.jpg", "/catalogo/paletas-surtidas.jpg"].map((src) => (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img key={src} src={src} alt="Producto Benechito" className="aspect-square w-full rounded-2xl object-cover shadow-lg ring-2 ring-white/70" />
               ))}
