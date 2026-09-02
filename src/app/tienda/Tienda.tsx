@@ -310,6 +310,15 @@ export default function Tienda({
               {entrega === "despacho" && (
                 <input name="direccion" placeholder="Dirección de despacho" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
               )}
+              {/* Agendar cuándo lo quiere */}
+              <div className="rounded-xl bg-crema/40 p-3 ring-1 ring-crema-2">
+                <p className="text-xs font-bold text-tinta">📅 ¿Cuándo lo {entrega === "despacho" ? "recibes" : "retiras"}?</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <input type="date" name="fecha" min={new Date().toLocaleDateString("en-CA")} className="w-full rounded-lg border border-crema-2 bg-white px-3 py-2.5 text-sm outline-none focus:border-naranja" />
+                  <input type="time" name="hora" className="w-full rounded-lg border border-crema-2 bg-white px-3 py-2.5 text-sm outline-none focus:border-naranja" />
+                </div>
+                <p className="mt-1 text-[10px] text-choco-2">Opcional. Si lo dejas en blanco, coordinamos contigo.</p>
+              </div>
               <textarea name="notas" rows={2} placeholder="Notas del pedido (opcional)" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
               <button className="w-full rounded-2xl bg-gradient-to-r from-naranja to-naranja-2 py-4 text-base font-extrabold text-white shadow-lg active:scale-95">
                 Enviar pedido · {fmtCLP(total)}

@@ -24,6 +24,10 @@ export async function crearPedidoTienda(formData: FormData) {
   const entrega = String(formData.get("entrega") ?? "retiro").trim(); // retiro | despacho
   const direccion = String(formData.get("direccion") ?? "").trim();
   const notasCliente = String(formData.get("notas") ?? "").trim();
+  // Agenda: fecha + hora que eligió el cliente (opcional).
+  const fechaStr = String(formData.get("fecha") ?? "").trim();
+  const horaStr = String(formData.get("hora") ?? "").trim();
+  const fechaAgenda = fechaStr ? new Date(`${fechaStr}T${horaStr || "12:00"}:00`) : null;
   const raw = String(formData.get("carro") ?? "[]");
 
   if (!nombre || !telefono) redirect("/tienda?error=datos");
@@ -95,6 +99,7 @@ export async function crearPedidoTienda(formData: FormData) {
     data: {
       negocioId, canal: "online", estado: "solicitud",
       tipoEntrega, destino, listaPrecioId: lista.id, notas,
+      fechaAgenda: fechaAgenda && !isNaN(fechaAgenda.getTime()) ? fechaAgenda : null,
       items: { create: items },
     },
     include: { items: { include: { producto: { select: { nombre: true } } } } },
@@ -109,8 +114,11 @@ export async function crearPedidoTienda(formData: FormData) {
     const lineasMsg = pedido.items.map((it) => `• ${it.cantidad}x ${it.producto.nombre}`).join("\n");
     const totalMsg = pedido.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0);
     const entregaMsg = entrega === "despacho" && direccion ? `🛵 Despacho a: ${direccion}` : "🏪 Retira en local";
+    const agendaMsg = fechaAgenda && !isNaN(fechaAgenda.getTime())
+      ? `\n📅 Para: ${fechaAgenda.toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" })} ${fechaAgenda.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}`
+      : "";
     await notificarTelegram(
-      `🛒 *Nuevo pedido web · Benechito*\n📋 A preparar y despachar\n\n👤 ${nombre}${telefono ? ` · ${telefono}` : ""}\n${entregaMsg}\n\n${lineasMsg}\n\n💰 Total: $${totalMsg.toLocaleString("es-CL")}\n🐝 Gestiónalo en benechito.com/admin/pedidos`,
+      `🛒 *Nuevo pedido web · Benechito*\n📋 A preparar y despachar\n\n👤 ${nombre}${telefono ? ` · ${telefono}` : ""}\n${entregaMsg}${agendaMsg}\n\n${lineasMsg}\n\n💰 Total: $${totalMsg.toLocaleString("es-CL")}\n🐝 Gestiónalo en benechito.com/admin/pedidos`,
     );
   }
 

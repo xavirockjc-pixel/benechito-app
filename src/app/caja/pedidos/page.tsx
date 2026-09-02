@@ -49,7 +49,12 @@ export default async function PedidosLocal() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-bold text-slate-900">{canalIcono[p.canal] ?? "🛒"} {p.negocio?.nombreNegocio ?? "Cliente"}</p>
-                    <p className="text-xs text-slate-500">{(p.tipoEntrega ? (entregaLabel[p.tipoEntrega] ?? p.tipoEntrega) : "—")} · 🕐 {fmtHora(p.createdAt)}{p.notas ? ` · ${p.notas}` : ""}</p>
+                    <p className="text-xs text-slate-500">{(p.tipoEntrega ? (entregaLabel[p.tipoEntrega] ?? p.tipoEntrega) : "—")} · pedido 🕐 {fmtHora(p.createdAt)}{p.notas ? ` · ${p.notas}` : ""}</p>
+                    {p.fechaAgenda && (
+                      <p className="mt-0.5 inline-block rounded-md bg-sky-100 px-2 py-0.5 text-xs font-bold text-sky-800">
+                        📅 Para: {new Date(p.fechaAgenda).toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" })} · {fmtHora(p.fechaAgenda)}
+                      </p>
+                    )}
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
                     <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{ color: c.color, backgroundColor: c.bg }}>{estadoPedidoLabel[p.estado] ?? p.estado}</span>
