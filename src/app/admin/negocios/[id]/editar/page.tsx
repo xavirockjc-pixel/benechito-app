@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { actualizarNegocio } from "../../actions";
-import UbicacionGPS from "./UbicacionGPS";
+import UbicacionMapa from "./UbicacionMapa";
 
 export const dynamic = "force-dynamic";
 
@@ -80,7 +80,7 @@ export default async function EditarNegocio({
           </label>
         </div>
 
-        <UbicacionGPS defaultLat={n.latitud} defaultLng={n.longitud} />
+        <UbicacionMapa defaultLat={n.latitud} defaultLng={n.longitud} />
 
         <label className="mt-4 flex items-center gap-3 text-sm font-semibold text-navy">
           <input type="checkbox" name="interesHelados" value="si" defaultChecked={n.interesHelados} className="h-5 w-5 accent-naranja" />
