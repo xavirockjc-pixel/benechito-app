@@ -44,6 +44,19 @@ export default async function PedidosLocal() {
             const c = estadoPedidoColor[p.estado] ?? { color: "#334155", bg: "#e2e8f0" };
             const sig = siguiente(p.estado);
             const esNuevo = p.estado === "solicitud";
+            // Reparto: mensaje con todos los datos para el repartidor (propio o moto arrendada).
+            const esDelivery = p.tipoEntrega === "delivery" || p.tipoEntrega === "despacho" || p.tipoEntrega === "reparto";
+            const totalPed = p.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0);
+            const mapa = p.negocio?.latitud != null && p.negocio?.longitud != null ? `https://www.google.com/maps?q=${p.negocio.latitud},${p.negocio.longitud}` : "";
+            const msgReparto =
+              `🛵 Reparto Benechito\n` +
+              `👤 ${p.negocio?.nombreNegocio ?? "Cliente"}${p.negocio?.whatsapp ? ` · ${p.negocio.whatsapp}` : ""}\n` +
+              (p.negocio?.direccion ? `🏠 ${p.negocio.direccion}\n` : "") +
+              (mapa ? `📍 ${mapa}\n` : "") +
+              (p.fechaAgenda ? `📅 ${new Date(p.fechaAgenda).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })} ${fmtHora(p.fechaAgenda)}\n` : "") +
+              `📦 Pedido:\n${p.items.map((it) => `• ${it.cantidad}x ${it.producto.nombre}`).join("\n")}\n` +
+              `${p.pagado ? "💰 Pagado" : `⏳ Cobrar $${totalPed.toLocaleString("es-CL")}`}`;
+            const waReparto = `https://wa.me/?text=${encodeURIComponent(msgReparto)}`;
             return (
               <li key={p.id} className={`rounded-2xl border bg-white p-4 shadow-sm ${esNuevo ? "border-amber-400 ring-2 ring-amber-200" : "border-slate-200"}`}>
                 <div className="flex items-start justify-between gap-2">
@@ -85,6 +98,9 @@ export default async function PedidosLocal() {
                           : "🛵 Entregar / despachar"}
                       </button>
                     </form>
+                  )}
+                  {esDelivery && (
+                    <a href={waReparto} target="_blank" rel="noopener" className="shrink-0 rounded-lg bg-[#0f766e] px-3 py-2.5 text-xs font-extrabold text-white" title="Enviar los datos al repartidor (propio o moto)">🛵 A reparto</a>
                   )}
                   {p.negocio?.latitud != null && p.negocio?.longitud != null && (
                     <a href={`https://www.google.com/maps?q=${p.negocio.latitud},${p.negocio.longitud}`} target="_blank" rel="noopener" className="shrink-0 rounded-lg bg-[#1479c4] px-3 py-2.5 text-sm font-bold text-white" title="Ubicación del cliente">📍</a>
