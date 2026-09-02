@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { lineaLabel } from "@/lib/dominio/produccion";
 import { SECCIONES_CATALOGO, seccionCatalogoLabel, seccionCatalogoIcono, seccionCatalogoColor } from "@/lib/dominio/catalogo";
+import SubirFoto from "./SubirFoto";
 
 export const dynamic = "force-dynamic";
 
@@ -95,21 +96,16 @@ export default async function ProductosPage({
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {lista.map((p) => (
                 <div key={p.id} className="group rounded-2xl bg-white p-4 shadow-sm ring-1 ring-slate-200 transition hover:-translate-y-0.5 hover:shadow-md" style={{ borderLeft: `4px solid ${color}` }}>
-                  <div className="flex items-center justify-between gap-2">
+                  {/* Imagen del producto: subir/cambiar aquí mismo (celular o PC) */}
+                  <SubirFoto id={p.id} fotoUrl={p.fotoUrl} nombre={p.nombre} />
+                  <div className="mt-2 flex items-center justify-between gap-2">
                     <p className="font-bold text-slate-900">{p.nombre}</p>
                     {!p.activo && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500">inactivo</span>}
                   </div>
                   <p className="mt-1 text-xs text-slate-500">
                     {lineaLabel[p.linea] ?? p.linea}{p.formato ? ` · ${p.formato}` : ""}
                   </p>
-                  <div className="mt-3 flex gap-2">
-                    <Link href={`/admin/productos/${p.id}`} className="flex-1 rounded-lg bg-slate-100 py-2.5 text-center text-sm font-bold text-slate-700 transition active:scale-95 hover:bg-slate-200">✎ Editar</Link>
-                    {p.fotoUrl ? (
-                      <a href={p.fotoUrl} target="_blank" rel="noopener noreferrer" className="flex-1 rounded-lg py-2.5 text-center text-sm font-bold text-white transition active:scale-95 hover:brightness-110" style={{ backgroundColor: color }}>👁️ Ver</a>
-                    ) : (
-                      <span className="flex-1 rounded-lg bg-slate-50 py-2.5 text-center text-sm font-semibold text-slate-300">sin foto</span>
-                    )}
-                  </div>
+                  <Link href={`/admin/productos/${p.id}`} className="mt-3 block rounded-lg bg-slate-100 py-2.5 text-center text-sm font-bold text-slate-700 transition active:scale-95 hover:bg-slate-200">✎ Editar</Link>
                 </div>
               ))}
             </div>

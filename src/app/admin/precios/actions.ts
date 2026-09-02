@@ -74,3 +74,32 @@ export async function guardarPrecios(formData: FormData) {
   revalidatePath(`/admin/precios/${listaId}`);
   revalidatePath("/admin/precios");
 }
+
+/**
+ * Agrega/actualiza un TRAMO por cantidad (mayoreo): desde `cantidadMinima` unidades,
+ * el producto tiene otro `precio` en esta lista. cantidadMinima debe ser >= 2.
+ */
+export async function agregarTramoPrecio(formData: FormData) {
+  const listaId = String(formData.get("listaId") ?? "").trim();
+  const productoId = String(formData.get("productoId") ?? "").trim();
+  const cantidadMinima = Math.floor(Number(formData.get("cantidadMinima") ?? 0));
+  const precio = Math.max(0, Math.floor(Number(formData.get("precio") ?? 0)));
+  if (!listaId || !productoId || cantidadMinima < 2 || precio <= 0) return;
+  await prisma.precioProducto.upsert({
+    where: { productoId_listaId_cantidadMinima: { productoId, listaId, cantidadMinima } },
+    update: { precio },
+    create: { productoId, listaId, cantidadMinima, precio },
+  });
+  revalidatePath(`/admin/precios/${listaId}`);
+}
+
+/** Borra un tramo por cantidad (no toca el precio base, cantidadMinima = 1). */
+export async function eliminarTramoPrecio(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  const listaId = String(formData.get("listaId") ?? "").trim();
+  if (!id) return;
+  const t = await prisma.precioProducto.findUnique({ where: { id } });
+  if (!t || t.cantidadMinima <= 1) return;
+  await prisma.precioProducto.delete({ where: { id } });
+  if (listaId) revalidatePath(`/admin/precios/${listaId}`);
+}

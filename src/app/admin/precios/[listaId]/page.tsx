@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { canalLabel } from "@/lib/dominio/precios";
-import { guardarPrecios, actualizarLista, eliminarLista } from "../actions";
+import { guardarPrecios, actualizarLista, eliminarLista, agregarTramoPrecio, eliminarTramoPrecio } from "../actions";
 
 const canalesEdit = ["sala", "web", "reparto", "negocio", "punto", "revendedor", "distribuidor", "supermercado"];
 
@@ -25,12 +25,17 @@ export default async function EditarListaPage({
   const lista = await prisma.listaPrecio.findUnique({ where: { id: listaId } });
   if (!lista) notFound();
 
-  const [productos, precios] = await Promise.all([
+  const [productos, precios, tramos] = await Promise.all([
     prisma.producto.findMany({
       where: { activo: true },
       orderBy: [{ linea: "asc" }, { nombre: "asc" }],
     }),
     prisma.precioProducto.findMany({ where: { listaId, cantidadMinima: 1 } }),
+    prisma.precioProducto.findMany({
+      where: { listaId, cantidadMinima: { gt: 1 } },
+      include: { producto: { select: { nombre: true } } },
+      orderBy: [{ productoId: "asc" }, { cantidadMinima: "asc" }],
+    }),
   ]);
 
   // productoId -> precio base actual
@@ -122,6 +127,50 @@ export default async function EditarListaPage({
           </button>
         </div>
       </form>
+
+      {/* Precio por cantidad (mayoreo) — precios especiales al comprar desde N unidades */}
+      <section className="mt-10 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-crema-2">
+        <h2 className="text-lg font-extrabold text-navy">📦 Precio por cantidad (mayoreo)</h2>
+        <p className="mt-1 text-sm text-choco-2">Precio especial al comprar desde cierta cantidad. Ej: “desde 12 unidades: $800 c/u”. Se usa solo, según cuánto lleve el cliente.</p>
+
+        {/* Agregar tramo */}
+        <form action={agregarTramoPrecio} className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end">
+          <input type="hidden" name="listaId" value={lista.id} />
+          <label className="text-xs font-bold text-navy">Producto
+            <select name="productoId" required defaultValue="" className="mt-1 w-full rounded-lg border border-crema-2 bg-crema/40 px-2 py-2 text-sm text-choco outline-none focus:border-naranja">
+              <option value="">Selecciona…</option>
+              {productos.map((p) => <option key={p.id} value={p.id}>{p.nombre}{p.formato ? ` · ${p.formato}` : ""}</option>)}
+            </select>
+          </label>
+          <label className="text-xs font-bold text-navy">Desde (u.)
+            <input type="number" name="cantidadMinima" min="2" step="1" required placeholder="12" className="mt-1 w-24 rounded-lg border border-crema-2 bg-crema/40 px-2 py-2 text-sm text-navy outline-none focus:border-naranja" />
+          </label>
+          <label className="text-xs font-bold text-navy">Precio c/u $
+            <input type="number" name="precio" min="0" step="1" required placeholder="800" className="mt-1 w-28 rounded-lg border border-crema-2 bg-crema/40 px-2 py-2 text-sm text-navy outline-none focus:border-naranja" />
+          </label>
+          <button className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white active:scale-95">+ Agregar</button>
+        </form>
+
+        {/* Tramos existentes */}
+        {tramos.length > 0 ? (
+          <ul className="mt-4 divide-y divide-crema-2 text-sm">
+            {tramos.map((t) => (
+              <li key={t.id} className="flex items-center justify-between gap-2 py-2">
+                <span className="text-navy">
+                  <b>{t.producto?.nombre}</b> · desde <b>{t.cantidadMinima}</b> u. → <b>${Number(t.precio).toLocaleString("es-CL")}</b> c/u
+                </span>
+                <form action={eliminarTramoPrecio}>
+                  <input type="hidden" name="id" value={t.id} />
+                  <input type="hidden" name="listaId" value={lista.id} />
+                  <button className="text-xs font-bold text-rojo/70 hover:text-rojo">✕ quitar</button>
+                </form>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-4 rounded-xl border border-dashed border-crema-2 p-4 text-center text-xs text-choco-2">Sin tramos de mayoreo. Agrega uno arriba para vender más barato por cantidad.</p>
+        )}
+      </section>
     </div>
   );
 }

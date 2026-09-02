@@ -11,7 +11,8 @@ export default function SubirFoto({ id, fotoUrl, nombre }: { id: string; fotoUrl
   const [preview, setPreview] = useState<string | null>(fotoUrl);
   const [cargando, setCargando] = useState(false);
   const [pending, startTransition] = useTransition();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const camRef = useRef<HTMLInputElement>(null);   // cámara
+  const galRef = useRef<HTMLInputElement>(null);   // galería / archivos
 
   const procesar = async (file: File) => {
     setCargando(true);
@@ -31,7 +32,7 @@ export default function SubirFoto({ id, fotoUrl, nombre }: { id: string; fotoUrl
     <div className="flex flex-col items-center gap-2">
       <button
         type="button"
-        onClick={() => inputRef.current?.click()}
+        onClick={() => camRef.current?.click()}
         className="relative aspect-square w-full overflow-hidden rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 transition hover:border-[#1479c4]"
       >
         {preview ? (
@@ -40,19 +41,22 @@ export default function SubirFoto({ id, fotoUrl, nombre }: { id: string; fotoUrl
         ) : (
           <span className="flex h-full flex-col items-center justify-center gap-1 text-slate-400">
             <span className="text-3xl">📷</span>
-            <span className="text-xs font-semibold">Subir foto</span>
+            <span className="text-xs font-semibold">Agregar foto</span>
           </span>
         )}
         {(cargando || pending) && <span className="absolute inset-0 flex items-center justify-center bg-white/70 text-xs font-bold text-slate-600">Guardando…</span>}
       </button>
-      {preview && <button type="button" onClick={() => inputRef.current?.click()} className="text-xs font-semibold text-[#1479c4]">Cambiar</button>}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) procesar(f); }}
-      />
+      {/* Dos opciones: tomar con la cámara o elegir de la galería */}
+      <div className="flex w-full gap-2">
+        <button type="button" onClick={() => camRef.current?.click()} className="flex-1 rounded-lg bg-[#1479c4] py-1.5 text-xs font-bold text-white active:scale-95">📷 Tomar foto</button>
+        <button type="button" onClick={() => galRef.current?.click()} className="flex-1 rounded-lg bg-slate-100 py-1.5 text-xs font-bold text-slate-700 active:scale-95">🖼️ Galería</button>
+      </div>
+      {/* Cámara trasera del celular */}
+      <input ref={camRef} type="file" accept="image/*" capture="environment" className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) procesar(f); e.target.value = ""; }} />
+      {/* Galería / archivos */}
+      <input ref={galRef} type="file" accept="image/*" className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) procesar(f); e.target.value = ""; }} />
     </div>
   );
 }
