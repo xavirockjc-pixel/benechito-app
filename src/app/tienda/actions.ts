@@ -110,7 +110,7 @@ export async function crearPedidoTienda(formData: FormData) {
     const totalMsg = pedido.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0);
     const entregaMsg = entrega === "despacho" && direccion ? `🛵 Despacho a: ${direccion}` : "🏪 Retira en local";
     await notificarTelegram(
-      `🛒 *Nuevo pedido web · Benechito*\n\n👤 ${nombre}${telefono ? ` · ${telefono}` : ""}\n${entregaMsg}\n\n${lineasMsg}\n\n💰 Total: $${totalMsg.toLocaleString("es-CL")}\n🐝 Míralo en benechito.com/admin/pedidos`,
+      `🛒 *Nuevo pedido web · Benechito*\n📋 A preparar y despachar\n\n👤 ${nombre}${telefono ? ` · ${telefono}` : ""}\n${entregaMsg}\n\n${lineasMsg}\n\n💰 Total: $${totalMsg.toLocaleString("es-CL")}\n🐝 Gestiónalo en benechito.com/admin/pedidos`,
     );
   }
 
