@@ -587,3 +587,29 @@ export async function devolverTodoABodega() {
 
   revalidatePath("/vendedor/camion");
 }
+
+/**
+ * El vendedor agrega un producto al catálogo (nombre, línea, formato, tipo).
+ * NO fija precios ni costos: eso lo carga la central (privacidad por rol).
+ * Queda activo para que se vea de inmediato.
+ */
+export async function agregarProductoVendedor(formData: FormData) {
+  const nombre = String(formData.get("nombre") ?? "").trim();
+  const linea = String(formData.get("linea") ?? "").trim();
+  if (!nombre || !linea) return;
+  const tipo = String(formData.get("tipo") ?? "") === "reventa" ? "reventa" : "propio";
+  const formato = String(formData.get("formato") ?? "").trim() || null;
+  await prisma.producto.create({
+    data: {
+      nombre, linea, formato, tipo,
+      // Reventa suele vivir en distribución/local; lo propio, en fabricación.
+      seccion: tipo === "reventa" ? "distribucion" : "propio",
+      soloLocal: tipo === "reventa",
+      activo: true,
+    },
+  });
+  revalidatePath("/vendedor/productos");
+  revalidatePath("/admin/productos");
+  revalidatePath("/admin/precios");
+  redirect("/vendedor/productos");
+}

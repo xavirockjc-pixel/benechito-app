@@ -54,6 +54,9 @@ export default async function VendedorLayout({
         <Link href="/vendedor/camion" className="flex flex-col items-center gap-0.5 px-2 py-1 font-semibold text-slate-700">
           <span className="text-lg">📦</span> Camión
         </Link>
+        <Link href="/vendedor/productos" className="flex flex-col items-center gap-0.5 px-2 py-1 font-semibold text-slate-700">
+          <span className="text-lg">🍫</span> Productos
+        </Link>
         <Link href="/vendedor/vehiculo" className="flex flex-col items-center gap-0.5 px-2 py-1 font-semibold text-slate-700">
           <span className="text-lg">🚙</span> Vehículo
         </Link>
