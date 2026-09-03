@@ -1,7 +1,9 @@
 // Plantillas por rubro: el MISMO sistema con el nombre de cada negocio.
 // Cambia cómo se llaman las áreas/módulos y qué se muestra; el motor no cambia.
 
-export type RubroId = "fabrica" | "panaderia" | "comida_rapida" | "restaurante";
+export type RubroId =
+  | "fabrica" | "panaderia" | "comida_rapida" | "restaurante"
+  | "heladeria" | "distribuidora" | "almacen" | "construccion" | "manufactura" | "consultoria";
 
 /** Etiquetas configurables por rubro (nombres de áreas y módulos). */
 export type Etiquetas = {
@@ -116,6 +118,79 @@ export const RUBROS: Record<RubroId, Rubro> = {
       pos: "Salón / Caja",
     },
     ocultar: ["/admin/rutas", "/admin/reposiciones"],
+  },
+  heladeria: {
+    id: "heladeria",
+    nombre: "Heladería / Dulces",
+    emoji: "🍦",
+    tema: { primario: "#1479c4", acento: "#ff7aa2", degradado: ["#33abe6", "#1479c4"] },
+    labels: { ...BASE, caja: "Local / Caja" },
+    ocultar: [], // ecosistema completo (el caso demo)
+  },
+  distribuidora: {
+    id: "distribuidora",
+    nombre: "Distribuidora / Mayorista",
+    emoji: "🚚",
+    tema: { primario: "#2563eb", acento: "#f59e0b", degradado: ["#1d4ed8", "#3b82f6"] },
+    labels: {
+      ...BASE,
+      bodega: "Bodega central",
+      vendedor: "Vendedor",
+      caja: "Local",
+      rutas: "Rutas",
+      reposiciones: "Reposición a clientes",
+    },
+    // No fabrica: se ocultan las áreas de producción/recetas.
+    ocultar: ["/admin/produccion", "/admin/materias", "/admin/control-calidad", "/admin/higiene", "/admin/sabores"],
+  },
+  almacen: {
+    id: "almacen",
+    nombre: "Almacén / Minimarket",
+    emoji: "🏪",
+    tema: { primario: "#16a34a", acento: "#f59e0b", degradado: ["#15803d", "#22c55e"] },
+    labels: { ...BASE, caja: "Caja / Mostrador", pos: "Mostrador" },
+    // Solo vende y controla stock: sin producción, rutas ni reposiciones.
+    ocultar: ["/admin/produccion", "/admin/materias", "/admin/control-calidad", "/admin/higiene",
+      "/admin/formularios", "/admin/capacitaciones", "/admin/sabores", "/admin/reposiciones",
+      "/admin/rutas", "/admin/repartos", "/admin/preventa"],
+  },
+  construccion: {
+    id: "construccion",
+    nombre: "Construcción",
+    emoji: "🏗️",
+    tema: { primario: "#ea580c", acento: "#facc15", degradado: ["#c2410c", "#f97316"] },
+    labels: {
+      ...BASE,
+      bodega: "Bodega de materiales",
+      vendedor: "Terreno",
+      caja: "Oficina",
+      rutas: "Despachos",
+      retiros: "Solicitudes",
+      pos: "Oficina",
+    },
+    // Materiales, clientes/deudas, cotización y facturación (no fabricación de alimentos).
+    ocultar: ["/admin/produccion", "/admin/sabores", "/admin/materias", "/admin/control-calidad",
+      "/admin/higiene", "/admin/formularios", "/admin/capacitaciones", "/admin/reposiciones"],
+  },
+  manufactura: {
+    id: "manufactura",
+    nombre: "Manufactura",
+    emoji: "🏭",
+    tema: { primario: "#475569", acento: "#f59e0b", degradado: ["#334155", "#64748b"] },
+    labels: { ...BASE, sabores: "Líneas / SKU", surtidos: "Ensambles" },
+    // Produce en serie con recetas y trazabilidad; sin rutas/reposiciones de terreno.
+    ocultar: ["/admin/reposiciones", "/admin/rutas", "/admin/preventa"],
+  },
+  consultoria: {
+    id: "consultoria",
+    nombre: "Consultoría / Servicios",
+    emoji: "💼",
+    tema: { primario: "#7c3aed", acento: "#f59e0b", degradado: ["#6d28d9", "#8b5cf6"] },
+    labels: { ...BASE, caja: "Recepción", vendedor: "Terreno", pos: "Recepción" },
+    // Servicios con agenda: sin inventario/producción/reparto; foco en agenda, clientes y cobro.
+    ocultar: ["/admin/produccion", "/admin/materias", "/admin/control-calidad", "/admin/higiene",
+      "/admin/sabores", "/admin/inventario", "/admin/reposiciones", "/admin/rutas", "/admin/repartos",
+      "/admin/preventa", "/admin/pos", "/admin/retiros", "/admin/productos", "/admin/precios", "/admin/novedades"],
   },
 };
 

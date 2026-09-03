@@ -95,6 +95,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/equipo", label: "Equipo", icon: "👥" },
         { href: "/admin/usuarios", label: "Usuarios", icon: "🔑" },
+        { href: "/admin/configuracion", label: "Configuración", icon: "⚙️" },
       ],
     },
   ];
