@@ -61,6 +61,8 @@ model Negocio {
   proximaReposicion DateTime?
   // Notas internas del equipo
   notas             String?
+  // Token de acceso al portal del cliente (link único, sin clave). Se comparte por WhatsApp.
+  portalToken       String?      @unique
 
   productos    PuntoProducto[]
   reposiciones Reposicion[]
@@ -1146,4 +1148,20 @@ model Mejora {
 
   @@index([estado])
   @@index([fechaObjetivo])
+}
+
+/// Novedad para el Portal del Cliente: promociones, nuevos productos y nuevos
+/// sabores que el dueño publica y ven todos los clientes en su "Mi Benechito".
+model Novedad {
+  id          String   @id @default(cuid())
+  tipo        String   @default("promo") // promo | nuevo | sabor
+  titulo      String
+  descripcion String?
+  fotoUrl     String?  // imagen (data URL comprimida o http)
+  cta         String?  // texto del botón (ej: "Pedir ahora")
+  activo      Boolean  @default(true)
+  orden       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([activo])
 }

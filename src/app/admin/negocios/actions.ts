@@ -1,9 +1,25 @@
 "use server";
 
+import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { esEstado, estadoMeta, type Estado } from "@/lib/estados";
+
+/**
+ * Genera (si no existe) el token del Portal del Cliente para este negocio.
+ * El link resultante (/portal/cliente/<token>) se comparte por WhatsApp y el
+ * cliente entra sin clave a ver su cuenta y a pedir con su precio.
+ */
+export async function generarLinkPortal(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  const neg = await prisma.negocio.findUnique({ where: { id }, select: { portalToken: true } });
+  if (!neg?.portalToken) {
+    await prisma.negocio.update({ where: { id }, data: { portalToken: randomBytes(12).toString("hex") } });
+  }
+  revalidatePath(`/admin/negocios/${id}`);
+}
 
 /**
  * Resuelve un link de Google Maps (o texto "lat,lng") a coordenadas.

@@ -10,6 +10,7 @@ import {
   actualizarClasificacion,
 } from "../actions";
 import { registrarDeuda, abonarCuenta, registrarVentaSimple, registrarCobro } from "@/app/vendedor/actions";
+import { generarLinkPortal } from "../actions";
 import { MEDIOS_PAGO, medioPagoLabel } from "@/lib/dominio/ventas";
 import { TIPOS_CLIENTE, tipoClienteLabel, canalLabel, COMPRA_TIPOS, compraLabel } from "@/lib/dominio/precios";
 import { fmtCLP } from "@/lib/dominio/pedidos";
@@ -424,6 +425,34 @@ export default async function FichaNegocio({
 
         {/* Columna derecha: historial + nota */}
         <div className="space-y-5">
+          {/* Portal del cliente */}
+          <Card titulo="Portal del cliente">
+            {negocio.portalToken ? (
+              (() => {
+                const base = process.env.APP_URL || "https://benechito.com";
+                const url = `${base}/portal/cliente/${negocio.portalToken}`;
+                const waMsg = `¡Hola ${negocio.nombreContacto}! 🐝 Este es tu portal Benechito para pedir con tu precio y ver tu cuenta:\n${url}`;
+                const waShare = `https://wa.me/${negocio.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(waMsg)}`;
+                return (
+                  <div className="space-y-2">
+                    <p className="text-sm text-choco-2">Su enlace personal (sin clave). Compártelo por WhatsApp.</p>
+                    <p className="break-all rounded-lg bg-crema/50 px-3 py-2 text-xs font-semibold text-navy ring-1 ring-crema-2">{url}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <a href={waShare} target="_blank" rel="noopener noreferrer" className="rounded-full bg-[#25d366] px-4 py-2 text-sm font-bold text-white active:scale-95">💬 Enviar por WhatsApp</a>
+                      <a href={`/portal/cliente/${negocio.portalToken}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-navy px-4 py-2 text-sm font-bold text-white active:scale-95">👁️ Ver</a>
+                    </div>
+                  </div>
+                );
+              })()
+            ) : (
+              <form action={generarLinkPortal}>
+                <input type="hidden" name="id" value={negocio.id} />
+                <p className="mb-2 text-sm text-choco-2">Crea el enlace “Mi Benechito” para que este cliente pida con su precio y vea su cuenta.</p>
+                <button className="rounded-full bg-azul px-4 py-2 text-sm font-bold text-white active:scale-95">🔗 Crear link del portal</button>
+              </form>
+            )}
+          </Card>
+
           <Card titulo="Agregar nota">
             <form action={agregarNota} className="space-y-2">
               <input type="hidden" name="id" value={negocio.id} />

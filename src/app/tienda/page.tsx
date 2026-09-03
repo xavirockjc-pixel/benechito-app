@@ -12,7 +12,7 @@ export const TARIFAS_TIENDA = [
 ] as const;
 
 // Foto por defecto (assets de la web) según el producto, si no subió una propia.
-function imagenDefault(nombre: string): string | null {
+export function imagenDefault(nombre: string): string | null {
   const n = nombre.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
   if (n.includes("paleta de leche")) return "/productos/paletas-leche.jpg";
   if (n.includes("paleta de agua")) return "/productos/paletas-agua.jpg";
@@ -27,8 +27,15 @@ function imagenDefault(nombre: string): string | null {
   return null;
 }
 
-export default async function TiendaPage() {
+export default async function TiendaPage({ searchParams }: { searchParams: Promise<{ t?: string; c?: string }> }) {
+  const { t, c } = await searchParams;
   const empresa = await prisma.empresa.findFirst();
+
+  // Si llega desde el portal del cliente (?t=tarifa&c=token): precio y datos precargados.
+  const tarifaInicial = TARIFAS_TIENDA.some((x) => x.codigo === t) ? t : undefined;
+  const clientePrefill = c
+    ? await prisma.negocio.findUnique({ where: { portalToken: c }, select: { nombreNegocio: true, whatsapp: true } })
+    : null;
 
   // Listas por tarifa (por canal). Guarda qué tarifa corresponde a cada lista.
   const listas = await prisma.listaPrecio.findMany({ where: { canal: { in: TARIFAS_TIENDA.map((t) => t.canal) }, activo: true } });
@@ -103,6 +110,8 @@ export default async function TiendaPage() {
       productos={productos}
       tarifas={tarifas}
       sinConfig={listaIds.length === 0 || productos.length === 0}
+      tarifaInicial={tarifaInicial}
+      clientePrefill={clientePrefill ? { nombre: clientePrefill.nombreNegocio, telefono: clientePrefill.whatsapp } : null}
     />
   );
 }

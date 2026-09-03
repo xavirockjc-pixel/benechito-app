@@ -25,14 +25,15 @@ const GRAD: Record<string, string> = {
 const KEY = (id: string, sabor: string) => `${id}::${sabor}`;
 
 export default function Tienda({
-  negocio, logoUrl, productos, tarifas = [], sinConfig,
+  negocio, logoUrl, productos, tarifas = [], sinConfig, tarifaInicial, clientePrefill,
 }: {
   negocio: string; logoUrl?: string; productos: Prod[]; tarifas?: Tarifa[]; sinConfig: boolean;
+  tarifaInicial?: string; clientePrefill?: { nombre: string; telefono: string } | null;
 }) {
   const byId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
   const [cart, setCart] = useState<Record<string, number>>({}); // key = id::sabor -> cantidad
   const [sel, setSel] = useState<Record<string, string>>({}); // sabor elegido por producto
-  const [tarifa, setTarifa] = useState(tarifas[0]?.codigo ?? "detalle");
+  const [tarifa, setTarifa] = useState(tarifaInicial ?? tarifas[0]?.codigo ?? "detalle");
   const [abierto, setAbierto] = useState(false);
   const [entrega, setEntrega] = useState("retiro");
   const [detalleSabor, setDetalleSabor] = useState<SaborInfo | null>(null); // modal "¿cómo es?"
@@ -303,8 +304,8 @@ export default function Tienda({
             <form action={crearPedidoTienda} className="mt-4 space-y-2.5">
               <input type="hidden" name="carro" value={carroJSON} />
               <input type="hidden" name="tarifa" value={tarifa} />
-              <input name="nombre" required placeholder="Tu nombre" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
-              <input name="telefono" required inputMode="tel" placeholder="Tu WhatsApp / teléfono" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
+              <input name="nombre" required defaultValue={clientePrefill?.nombre ?? ""} placeholder="Tu nombre" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
+              <input name="telefono" required inputMode="tel" defaultValue={clientePrefill?.telefono ?? ""} placeholder="Tu WhatsApp / teléfono" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
               <div className="grid grid-cols-2 gap-2">
                 <button type="button" onClick={() => setEntrega("retiro")} className={`rounded-xl py-3 text-sm font-bold transition ${entrega === "retiro" ? "bg-azul text-white shadow" : "bg-crema text-choco-2 ring-1 ring-crema-2"}`}>🏪 Retiro en local</button>
                 <button type="button" onClick={() => setEntrega("despacho")} className={`rounded-xl py-3 text-sm font-bold transition ${entrega === "despacho" ? "bg-azul text-white shadow" : "bg-crema text-choco-2 ring-1 ring-crema-2"}`}>🛵 Despacho</button>

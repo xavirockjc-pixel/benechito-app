@@ -55,6 +55,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
         { href: "/admin/negocios/duplicados", label: "Duplicados", icon: "🔁" },
+        { href: "/admin/novedades", label: "Novedades & Promos", icon: "🔥" },
         { href: "/admin/productos", label: "Catálogo", icon: "🍫" },
         { href: "/admin/precios", label: "Precios", icon: "🏷️" },
         { href: "/admin/inventario", label: "Inventario", icon: "📦" },
