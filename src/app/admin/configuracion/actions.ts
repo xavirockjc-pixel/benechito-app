@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { RUBROS, type RubroId } from "@/lib/dominio/rubros";
 import { empresaActual } from "@/lib/dominio/empresa";
+import { precargarRubro } from "@/lib/dominio/seed-rubro";
 
 /**
  * Actualiza la configuración del negocio (Empresa): su nombre y su RUBRO.
@@ -25,4 +27,16 @@ export async function actualizarEmpresa(formData: FormData) {
   // El rubro afecta menú, etiquetas y tema → revalidar todo el panel.
   revalidatePath("/admin", "layout");
   revalidatePath("/admin/configuracion");
+}
+
+/**
+ * Precarga los datos base del rubro actual (sucursal, ubicaciones, listas de
+ * precio y tipos/formatos). Idempotente: no duplica si ya existen.
+ */
+export async function precargarDatosRubro() {
+  const empresa = await empresaActual();
+  const rubro = (empresa.rubro in RUBROS ? empresa.rubro : "fabrica") as RubroId;
+  await precargarRubro(empresa.id, rubro);
+  revalidatePath("/admin", "layout");
+  redirect("/admin/configuracion?seed=ok");
 }
