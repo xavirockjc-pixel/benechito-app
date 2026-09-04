@@ -19,7 +19,7 @@ export default async function SupercerebroPage() {
   const hace30 = new Date(ahora - 30 * 864e5);
 
   const [
-    notasAlta, notasAbiertas, notasResueltas30, notasPorAreaRaw,
+    notasAlta, notasAbiertas, notasResueltas30, notasPorAreaRaw, accionesSugeridas,
     mejPend, mejVenc, mejHechas,
     ventasCobrar, ventasVencidas, ventas30,
     pedidosAtascados,
@@ -31,6 +31,7 @@ export default async function SupercerebroPage() {
     prisma.nota.count({ where: { estado: "abierta" } }),
     prisma.nota.count({ where: { estado: "hecha", hechaEn: { gte: hace30 } } }),
     prisma.nota.groupBy({ by: ["area"], _count: true, where: { estado: "abierta" } }),
+    prisma.nota.count({ where: { accionEstado: "sugerida" } }),
     prisma.mejora.count({ where: { estado: "pendiente" } }),
     prisma.mejora.count({ where: { estado: { not: "hecha" }, fechaObjetivo: { lt: hoy } } }),
     prisma.mejora.count({ where: { estado: "hecha" } }),
@@ -63,6 +64,7 @@ export default async function SupercerebroPage() {
   // ---- FALENCIAS (debilidades a atacar) ----
   const falencias: Senal[] = [
     { clave: "notasAlta", icon: "🔴", titulo: "Notas urgentes sin resolver", detalle: `${notasAlta} nota(s) de prioridad alta abiertas`, valor: notasAlta, sev: 3, accion: "Resolver ahora", href: "/admin/notas?tipo=" },
+    { clave: "acciones", icon: "⚡", titulo: "Acciones por confirmar", detalle: `${accionesSugeridas} nota(s) esperan un clic para mover stock`, valor: accionesSugeridas, sev: 2, accion: "Revisar bandeja", href: "/admin/notas" },
     { clave: "ventasVencidas", icon: "💸", titulo: "Cobros vencidos", detalle: `${ventasVencidas} venta(s) con pago vencido · ${ventasCobrar} por cobrar en total`, valor: ventasVencidas, sev: 3, accion: "Gestionar cobranza", href: "/admin/finanzas" },
     { clave: "stockBajo", icon: "📦", titulo: "Stock bajo el mínimo", detalle: `${stockBajo} producto(s) bajo su stock mínimo`, valor: stockBajo, sev: 3, accion: "Reponer / producir", href: "/admin/inventario" },
     { clave: "mejVenc", icon: "⏰", titulo: "Mejoras vencidas", detalle: `${mejVenc} mejora(s) pasaron su fecha objetivo`, valor: mejVenc, sev: 3, accion: "Repriorizar", href: "/admin/mejoras" },

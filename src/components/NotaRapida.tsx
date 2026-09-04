@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { crearNota } from "@/app/notas/actions";
 import {
   TIPOS_NOTA, tipoNotaLabel, tipoNotaIcono,
-  AREAS_NOTA, areaNotaLabel, areaNotaIcono,
-  detectaTipoNota, detectaAreaNota, detectaPrioridadNota, normalizaTexto,
+  AREAS_NOTA, areaNotaLabel, areaNotaIcono, ACCIONES_NOTA,
+  detectaTipoNota, detectaAreaNota, detectaPrioridadNota, detectaAccionNota, detectaCantidad, normalizaTexto,
 } from "@/lib/dominio/notas";
 import { PRIORIDADES, prioridadLabel } from "@/lib/dominio/mejoras";
 
@@ -76,6 +76,11 @@ export default function NotaRapida({ area = "general", autor = "" }: { area?: st
     }
   }
 
+  // Vista previa de la acción detectada (solo informativa; el servidor la confirma).
+  const nprev = normalizaTexto(texto);
+  const accPrev = texto.trim() ? detectaAccionNota(nprev) : "ninguna";
+  const cantPrev = detectaCantidad(nprev);
+
   return (
     <>
       {/* Botón flotante */}
@@ -116,6 +121,14 @@ export default function NotaRapida({ area = "general", autor = "" }: { area?: st
               </button>
             )}
           </div>
+
+          {accPrev !== "ninguna" && (
+            <div className="mt-2 rounded-lg bg-emerald-50 px-2 py-1.5 text-[11px] font-semibold text-emerald-700">
+              ⚡ Detecté: {ACCIONES_NOTA[accPrev].icon} {ACCIONES_NOTA[accPrev].label}
+              {(accPrev === "stock_entrada" || accPrev === "stock_salida") && cantPrev ? ` · ${cantPrev} u.` : ""}
+              {(accPrev === "stock_entrada" || accPrev === "stock_salida") ? " — quedará lista para aplicar a stock" : " — irá a Pendientes"}
+            </div>
+          )}
 
           <div className="mt-2 grid grid-cols-3 gap-2 text-xs">
             <label className="flex flex-col gap-1">

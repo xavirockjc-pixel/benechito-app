@@ -1176,9 +1176,18 @@ model Nota {
   autor     String? // rol o nombre de quien la dejó
   prioridad String    @default("media")        // alta|media|baja
   estado    String    @default("abierta")      // abierta | hecha
+  // --- Acción inteligente detectada (para automatizar sin enredar) ---
+  accion        String    @default("ninguna") // ninguna | stock_entrada | stock_salida | reponer
+  accionEstado  String    @default("na")      // na | sugerida | aplicada | descartada
+  productoId    String? // producto del catálogo al que apunta la acción (si se detectó)
+  itemNombre    String? // nombre libre del ítem detectado (si no calzó con el catálogo)
+  cantidad      Int? // cantidad detectada para la acción de stock
+  fechaObjetivo DateTime? // para tareas/recordatorios programados (cae a Pendientes)
+  refMovimientoId String? // MovimientoStock creado al aplicar la acción
   createdAt DateTime  @default(now())
   hechaEn   DateTime?
 
   @@index([estado])
   @@index([area])
+  @@index([accionEstado])
 }
