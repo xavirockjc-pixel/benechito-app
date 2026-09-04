@@ -82,7 +82,7 @@ export default function NotaRapida({ area = "general", autor = "" }: { area?: st
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
-        className="fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full bg-amber-500 px-4 py-3 text-white shadow-lg shadow-amber-500/30 hover:bg-amber-600 active:scale-95 transition"
+        className="fixed bottom-20 right-4 z-50 flex items-center gap-2 rounded-full bg-amber-500 px-4 py-3 text-white shadow-lg shadow-amber-500/30 hover:bg-amber-600 active:scale-95 transition md:bottom-6"
         aria-label="Nota rápida"
       >
         <span className="text-lg">📝</span>
@@ -91,7 +91,7 @@ export default function NotaRapida({ area = "general", autor = "" }: { area?: st
 
       {/* Panel */}
       {abierto && (
-        <div className="fixed bottom-20 right-5 z-50 w-[min(92vw,22rem)] rounded-2xl border border-amber-200 bg-white p-4 shadow-2xl">
+        <div className="fixed bottom-36 right-4 z-50 w-[min(92vw,22rem)] rounded-2xl border border-amber-200 bg-white p-4 shadow-2xl md:bottom-24">
           <div className="mb-2 flex items-center justify-between">
             <h3 className="text-sm font-bold text-slate-800">📝 Nota rápida</h3>
             <button onClick={() => setAbierto(false)} className="text-slate-400 hover:text-slate-700" aria-label="Cerrar">✕</button>
