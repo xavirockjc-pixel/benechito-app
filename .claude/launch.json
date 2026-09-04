@@ -1,6 +1,6 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "benechito", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000, "autoPort": true }
+    { "name": "benechito", "runtimeExecutable": "cmd", "runtimeArgs": ["/c", "npm", "run", "dev"], "port": 3000, "autoPort": true }
   ]
 }

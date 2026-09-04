@@ -349,6 +349,7 @@ model Trabajador {
   activo     Boolean  @default(true)
   usuarioId  String? // si tiene login (para cruzar ventas por vendedorId)
   valorHora  Decimal? @db.Decimal(12, 2) // referencia interna (no es liquidación)
+  sueldoBase Decimal? @db.Decimal(12, 2) // sueldo base mensual (si no, se estima por horas)
   notas      String?
   createdAt  DateTime @default(now())
 

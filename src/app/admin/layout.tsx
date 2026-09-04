@@ -35,6 +35,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/mejoras", label: "Mejoras y proyecciones", icon: "🚀" },
         { href: "/admin/notas", label: "Notas del equipo", icon: "📝" },
         { href: "/admin/supercerebro", label: "Supercerebro", icon: "🧠" },
+        { href: "/admin/socio", label: "Socio administrativo", icon: "🐝" },
         { href: "/admin/recordatorios", label: "Recordatorios", icon: "🔔" },
       ],
     },
@@ -79,6 +80,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       activo: true,
       items: [
         { href: "/admin/finanzas", label: "Finanzas", icon: "💰" },
+        { href: "/admin/sueldos", label: "Sueldos y liquidación", icon: "👥" },
         { href: "/admin/caja", label: "Cierres de caja", icon: "🧾" },
         { href: "/admin/facturacion", label: "Facturación", icon: "🧾" },
       ],
