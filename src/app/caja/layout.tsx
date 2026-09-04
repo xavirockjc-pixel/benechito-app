@@ -4,6 +4,7 @@ import { usuarioActual } from "@/lib/auth";
 import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
 import AvisoPedidos from "./AvisoPedidos";
+import NotaRapida from "@/components/NotaRapida";
 
 export const metadata: Metadata = {
   title: "Benechito Caja",
@@ -18,6 +19,7 @@ export default async function CajaLayout({ children }: { children: React.ReactNo
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col bg-slate-50">
+      <NotaRapida area="caja" autor={usuario?.nombre ?? ""} />
       <header className="sticky top-0 z-10 flex items-center justify-between bg-[#0f7a44] px-4 py-3 text-white shadow">
         <span className="flex items-center gap-2">
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/20 text-sm font-extrabold">B</span>

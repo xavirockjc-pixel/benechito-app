@@ -4,6 +4,7 @@ import { usuarioActual } from "@/lib/auth";
 import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
 import RegistrarSW from "./RegistrarSW";
+import NotaRapida from "@/components/NotaRapida";
 
 export const metadata: Metadata = {
   title: "Benechito Vendedor",
@@ -24,6 +25,7 @@ export default async function VendedorLayout({
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-50">
       <RegistrarSW />
+      <NotaRapida area="ventas" autor={usuario?.nombre ?? ""} />
 
       {/* Barra superior */}
       <header className="sticky top-0 z-10 flex items-center justify-between bg-[#1479c4] px-4 py-3 text-white shadow">

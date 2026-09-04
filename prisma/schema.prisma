@@ -1165,3 +1165,20 @@ model Novedad {
 
   @@index([activo])
 }
+
+/// Nota rápida (asistida por voz) desde cualquier app: tarea, observación,
+/// recordatorio o idea. Alimenta el Supercerebro para priorizar mejoras.
+model Nota {
+  id        String    @id @default(cuid())
+  texto     String
+  tipo      String    @default("observacion") // tarea | observacion | recordatorio | idea
+  area      String    @default("general")      // general|produccion|ventas|reparto|inventario|caja|equipo|calidad|marketing
+  autor     String? // rol o nombre de quien la dejó
+  prioridad String    @default("media")        // alta|media|baja
+  estado    String    @default("abierta")      // abierta | hecha
+  createdAt DateTime  @default(now())
+  hechaEn   DateTime?
+
+  @@index([estado])
+  @@index([area])
+}

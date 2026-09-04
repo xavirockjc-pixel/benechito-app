@@ -6,6 +6,7 @@ import type { Etiquetas } from "@/lib/dominio/rubros";
 import { logout } from "./actions";
 import RegistrarSW from "./RegistrarSW";
 import MenuMovil from "./MenuMovil";
+import NotaRapida from "@/components/NotaRapida";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
@@ -32,6 +33,8 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/voz", label: "Asistente voz", icon: "🎙️" },
         { href: "/admin/agenda", label: "Agenda", icon: "📅" },
         { href: "/admin/mejoras", label: "Mejoras y proyecciones", icon: "🚀" },
+        { href: "/admin/notas", label: "Notas del equipo", icon: "📝" },
+        { href: "/admin/supercerebro", label: "Supercerebro", icon: "🧠" },
         { href: "/admin/recordatorios", label: "Recordatorios", icon: "🔔" },
       ],
     },
@@ -130,6 +133,7 @@ export default async function AdminLayout({
   return (
     <div className="flex min-h-screen bg-slate-100 text-slate-800">
       <RegistrarSW />
+      <NotaRapida area="general" autor={usuario?.nombre ?? rol} />
       {/* Sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col justify-between bg-slate-900 p-5 text-slate-300 md:flex">
         <div>
