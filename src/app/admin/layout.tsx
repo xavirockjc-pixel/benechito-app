@@ -59,6 +59,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
         { href: "/admin/negocios/duplicados", label: "Duplicados", icon: "🔁" },
+        { href: "/admin/puntos", label: "Puntos Benechito", icon: "⭐" },
         { href: "/admin/novedades", label: "Novedades & Promos", icon: "🔥" },
         { href: "/admin/productos", label: "Catálogo", icon: "🍫" },
         { href: "/admin/precios", label: "Precios", icon: "🏷️" },
@@ -80,6 +81,8 @@ function construirModulos(L: Etiquetas): Modulo[] {
       activo: true,
       items: [
         { href: "/admin/finanzas", label: "Finanzas", icon: "💰" },
+        { href: "/admin/cobranza", label: "Cobranza", icon: "💸" },
+        { href: "/admin/rentabilidad", label: "Rentabilidad", icon: "📊" },
         { href: "/admin/sueldos", label: "Sueldos y liquidación", icon: "👥" },
         { href: "/admin/caja", label: "Cierres de caja", icon: "🧾" },
         { href: "/admin/facturacion", label: "Facturación", icon: "🧾" },

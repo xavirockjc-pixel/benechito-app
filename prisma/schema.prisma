@@ -61,6 +61,11 @@ model Negocio {
   proximaReposicion DateTime?
   // Notas internas del equipo
   notas             String?
+  // Fidelización (Puntos Benechito)
+  puntos            Int          @default(0)
+  // Cobranza: en pausa (piloto / producto no validado) → no entra a cobranza.
+  noCobrar          Boolean      @default(false)
+  motivoNoCobrar    String?
   // Token de acceso al portal del cliente (link único, sin clave). Se comparte por WhatsApp.
   portalToken       String?      @unique
 
@@ -74,6 +79,7 @@ model Negocio {
   paradasRuta  ParadaRuta[]
   despachosLote DespachoLote[]
   documentosVenta DocumentoVenta[]
+  movimientosPuntos MovimientoPuntos[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -208,6 +214,9 @@ model Empresa {
   // Secreto de recetas: clave para ver las recetas protegidas + tipos secretos (CSV de líneas).
   recetaClave      String?
   recetasSecretas  String? // "trufa,helado" — tipos cuya receta queda bajo llave
+  // Fidelización (Puntos Benechito)
+  puntosActivo     Boolean    @default(false)
+  puntosPorMonto   Int        @default(1000) // $ que equivalen a 1 punto
   sucursales Sucursal[]
   configFacturacion ConfigFacturacion?
   createdAt  DateTime   @default(now())
@@ -1191,4 +1200,17 @@ model Nota {
   @@index([estado])
   @@index([area])
   @@index([accionEstado])
+}
+
+/// Fidelización: movimientos de "Puntos Benechito" por cliente.
+model MovimientoPuntos {
+  id        String   @id @default(cuid())
+  negocio   Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
+  negocioId String
+  puntos    Int // + gana, − canje
+  tipo      String   @default("gana") // gana | canje | ajuste
+  motivo    String?
+  fecha     DateTime @default(now())
+
+  @@index([negocioId])
 }
