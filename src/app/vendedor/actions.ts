@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { marcarAsistenciaAuto } from "@/lib/asistencia";
 import { prisma } from "@/lib/prisma";
 import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
 import { estadoPagoDe, MEDIOS_PAGO, faltaParaFactura, documentoLegacy } from "@/lib/dominio/ventas";
@@ -136,6 +137,8 @@ export async function venderTerreno(formData: FormData) {
       ...(pagos ? { pagos } : {}),
     },
   });
+
+  await marcarAsistenciaAuto(u?.sub, "Venta en terreno"); // asistencia automática
 
   // Descuenta del camión y registra el movimiento por cada línea.
   for (const it of items) {
@@ -275,6 +278,8 @@ export async function ventaRapida(formData: FormData) {
     },
   });
 
+  await marcarAsistenciaAuto(u?.sub, "Venta en terreno"); // asistencia automática
+
   if (clienteReal) {
     const desc = esAbono
       ? `Venta rápida $${total.toLocaleString("es-CL")}: abonó $${abono.toLocaleString("es-CL")}, debe $${(total - abono).toLocaleString("es-CL")}`
@@ -326,6 +331,7 @@ export async function registrarDeuda(formData: FormData) {
       documento: "deuda",
     },
   });
+  await marcarAsistenciaAuto(u?.sub, "Venta en terreno"); // asistencia automática
   await prisma.actividad.create({
     data: { negocioId, tipo: "contacto", descripcion: `Deuda registrada: $${monto.toLocaleString("es-CL")} (${motivo})` },
   });
@@ -456,6 +462,7 @@ export async function registrarVentaSimple(formData: FormData) {
       ...(pagos ? { pagos } : {}),
     },
   });
+  await marcarAsistenciaAuto(u?.sub, "Venta en terreno"); // asistencia automática
   await prisma.actividad.create({
     data: {
       negocioId,

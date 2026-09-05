@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
+import { marcarAsistenciaAuto } from "@/lib/asistencia";
 
 /** Desbloquea UN tipo si su clave coincide (cookie con la lista de tipos abiertos, 8h). */
 export async function desbloquearRecetas(formData: FormData) {
@@ -206,6 +207,7 @@ export async function registrarProduccion(formData: FormData) {
     });
   }
 
+  await marcarAsistenciaAuto(u?.sub, "Producción registrada"); // asistencia automática
   revalidatePath("/produccion");
   redirect("/produccion?ok=1");
 }
@@ -263,6 +265,7 @@ export async function cumplirOrden(formData: FormData) {
     });
   }
 
+  await marcarAsistenciaAuto(u?.sub, "Producción registrada"); // asistencia automática
   revalidatePath("/produccion");
   redirect("/produccion?ok=1");
 }
