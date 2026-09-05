@@ -947,6 +947,10 @@ model Gasto {
   categoria String?  // insumos | sueldos | arriendo | transporte | servicios | otros
   fecha     DateTime @default(now())
   notas     String?
+  // IVA / compras (ayudante F29): si la compra tiene factura, guarda el IVA crédito.
+  conFactura   Boolean  @default(false)
+  iva          Decimal? @db.Decimal(12, 2) // IVA crédito recuperable (si conFactura)
+  proveedor    String?
   createdAt DateTime @default(now())
 
   @@index([fecha])
