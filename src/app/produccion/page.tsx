@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { usuarioActual } from "@/lib/auth";
 import ProduccionForm from "./ProduccionForm";
 import RecetaChecklist from "./RecetaChecklist";
 import { fechaCorta } from "@/lib/dominio/agenda";
@@ -68,6 +69,15 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   }
 
   const totalHoy = registroHoy.reduce((s, m) => s + m.cantidad, 0);
+
+  // Equipo que se paga por TRATO (con usuario enlazado) → para marcar quiénes trabajaron el turno.
+  const yo = await usuarioActual();
+  const equipoTratoRaw = await prisma.trabajador.findMany({
+    where: { activo: true, modalidadPago: "por_trato", usuarioId: { not: null } },
+    select: { usuarioId: true, nombre: true },
+    orderBy: { nombre: "asc" },
+  });
+  const equipoTrato = equipoTratoRaw.map((t) => ({ usuarioId: t.usuarioId as string, nombre: t.nombre }));
 
   // Receta base agrupada por tipo/línea (común a todos los sabores de ese tipo).
   const basePorLinea: Record<string, { id: string; nombre: string; unidad: string; cantidad: number; grupo: string | null }[]> = {};
@@ -175,7 +185,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
       <section className="rounded-2xl border border-teal-200 bg-white p-4 shadow-sm">
         <h2 className="mb-1 text-sm font-extrabold text-teal-800">✍️ Anota lo que hiciste</h2>
         <p className="mb-2 text-xs text-slate-500">Cuántos salieron por tipo y sabor.</p>
-        <ProduccionForm saboresPorLinea={saboresProd} />
+        <ProduccionForm saboresPorLinea={saboresProd} equipo={equipoTrato} yoId={yo?.sub} />
       </section>
 
       {/* Reporte del turno */}

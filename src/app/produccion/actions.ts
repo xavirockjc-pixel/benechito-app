@@ -182,6 +182,10 @@ export async function registrarProduccion(formData: FormData) {
   if (!bod) return;
   const u = await usuarioActual();
 
+  // Quiénes trabajaron el turno (para dividir el pago por trato). Por defecto, quien registra.
+  const partRaw = String(formData.get("participantes") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const participantes = (partRaw.length > 0 ? [...new Set(partRaw)] : (u?.sub ? [u.sub] : [])).join(",") || null;
+
   for (const it of items) {
     let saborId = it.saborId?.trim();
     if (!saborId) {
@@ -197,7 +201,7 @@ export async function registrarProduccion(formData: FormData) {
       data: {
         zona: "produccion", ubicacionId: bod, tipo: "entrada", clase: "sabor",
         refId: saborId, nombre: `${it.nombre.trim()} (${linea})`, cantidad: it.cantidad,
-        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null, participantes,
       },
     });
   }

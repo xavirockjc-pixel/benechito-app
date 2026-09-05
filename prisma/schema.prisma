@@ -609,6 +609,8 @@ model MovimientoBodega {
   cantidad      Int
   usuarioId     String?
   nombreUsuario String?
+  // Quiénes trabajaron el turno (CSV de usuarioId). Si hay varios, el pago por trato se divide.
+  participantes String?
   fecha         DateTime @default(now())
 
   @@index([fecha])

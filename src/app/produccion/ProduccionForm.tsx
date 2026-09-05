@@ -41,8 +41,15 @@ function parsearProduccion(texto: string): { nombre: string; cantidad: number }[
  * Anota lo que se produjo: eliges el TIPO y agregas líneas "sabor + cuántos".
  * Los sabores del tipo aparecen para elegir (o se escribe/dicta uno nuevo).
  */
-export default function ProduccionForm({ saboresPorLinea = {} }: { saboresPorLinea?: Record<string, string[]> }) {
+export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId }: {
+  saboresPorLinea?: Record<string, string[]>;
+  equipo?: { usuarioId: string; nombre: string }[];
+  yoId?: string;
+}) {
   const [linea, setLinea] = useState<string>(LINEAS_PRODUCCION[0]);
+  // Quiénes trabajaron este turno (para dividir el pago por trato). Por defecto: yo.
+  const [sel, setSel] = useState<string[]>(yoId && equipo.some((e) => e.usuarioId === yoId) ? [yoId] : []);
+  const toggleSel = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   const saboresTipo = saboresPorLinea[linea] ?? [];
   const [filas, setFilas] = useState<Fila[]>([{ key: 1, nombre: "", cantidad: "" }]);
   const recRef = useRef<SpeechRec | null>(null);
@@ -86,6 +93,7 @@ export default function ProduccionForm({ saboresPorLinea = {} }: { saboresPorLin
     <form action={registrarProduccion} className="space-y-3">
       <input type="hidden" name="linea" value={linea} />
       <input type="hidden" name="items" value={JSON.stringify(items)} />
+      <input type="hidden" name="participantes" value={sel.join(",")} />
 
       <label className="block text-sm font-bold text-slate-700">Tipo de producto
         <select value={linea} onChange={(e) => setLinea(e.target.value)}
@@ -118,6 +126,25 @@ export default function ProduccionForm({ saboresPorLinea = {} }: { saboresPorLin
       <button type="button" onClick={addFila} className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 active:bg-slate-200">
         + Otro sabor
       </button>
+
+      {/* Quiénes trabajaron el turno (pago por trato se divide entre los marcados) */}
+      {equipo.length > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+          <p className="mb-2 text-xs font-bold text-slate-600">👥 ¿Quiénes trabajaron este turno?</p>
+          <div className="flex flex-wrap gap-2">
+            {equipo.map((e) => {
+              const on = sel.includes(e.usuarioId);
+              return (
+                <button key={e.usuarioId} type="button" onClick={() => toggleSel(e.usuarioId)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${on ? "border-[#0f766e] bg-[#0f766e] text-white" : "border-slate-300 bg-white text-slate-600"}`}>
+                  {on ? "✓ " : ""}{e.nombre}{e.usuarioId === yoId ? " (tú)" : ""}
+                </button>
+              );
+            })}
+          </div>
+          {sel.length > 1 && <p className="mt-2 text-[11px] font-semibold text-amber-600">El pago por trato se divide entre {sel.length} personas.</p>}
+        </div>
+      )}
 
       <button disabled={total === 0}
         className="w-full rounded-xl bg-[#0f766e] py-3 text-base font-extrabold text-white shadow active:brightness-95 disabled:opacity-40">

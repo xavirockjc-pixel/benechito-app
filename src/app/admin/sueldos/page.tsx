@@ -17,7 +17,7 @@ export default async function SueldosPage({ searchParams }: { searchParams: Prom
   const off = Number.isFinite(Number(sp.off)) ? parseInt(sp.off ?? "0", 10) : 0;
   const { inicio, fin, label, semanas, esSemana } = rangoPeriodo(periodo, off);
 
-  const [trabajadores, tarifasRaw] = await Promise.all([
+  const [trabajadores, tarifasRaw, prodEventos] = await Promise.all([
     prisma.trabajador.findMany({
       where: { activo: true },
       orderBy: { nombre: "asc" },
@@ -27,8 +27,23 @@ export default async function SueldosPage({ searchParams }: { searchParams: Prom
       },
     }),
     prisma.tarifaTrato.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
+    // Producción registrada por voz en el período (para el pago por trato automático).
+    prisma.movimientoBodega.findMany({
+      where: { zona: "produccion", tipo: "entrada", fecha: { gte: inicio, lt: fin } },
+      select: { cantidad: true, usuarioId: true, participantes: true },
+    }),
   ]);
   const tarifas = tarifasRaw.map((t) => ({ id: t.id, nombre: t.nombre, valorUnit: Number(t.valorUnit) }));
+  // Unidades atribuidas a cada usuario: si un turno lo trabajaron N personas, se divide entre N.
+  const prodMap = new Map<string, number>();
+  for (const e of prodEventos) {
+    const ids = e.participantes && e.participantes.trim()
+      ? e.participantes.split(",").map((s) => s.trim()).filter(Boolean)
+      : e.usuarioId ? [e.usuarioId] : [];
+    if (ids.length === 0) continue;
+    const share = e.cantidad / ids.length;
+    for (const id of ids) prodMap.set(id, (prodMap.get(id) ?? 0) + share);
+  }
 
   const filas = trabajadores.map((t) => {
     const dias = t.asistencias.filter((a) => a.presente).length;
@@ -36,13 +51,15 @@ export default async function SueldosPage({ searchParams }: { searchParams: Prom
     const movimientos = t.movimientos.map((m) => ({ tipo: m.tipo, monto: Number(m.monto) }));
     const tratoMonto = movimientos.filter((m) => m.tipo === "trato").reduce((s, m) => s + m.monto, 0);
     const pagado = movimientos.filter((m) => m.tipo === "pago").reduce((s, m) => s + m.monto, 0);
+    // Producción propia (por voz) en el período — para el pago por trato automático.
+    const unidadesProduccion = t.usuarioId ? (prodMap.get(t.usuarioId) ?? 0) : 0;
     // tarifa con retrocompatibilidad
     const tarifa = t.tarifa != null
       ? Number(t.tarifa)
       : t.modalidadPago === "por_hora" ? num(t.valorHora)
       : t.modalidadPago === "mensual" ? num(t.sueldoBase) : 0;
-    const liq = liquidar({ modalidad: t.modalidadPago, tarifa, dias, horas, semanas, tratoMonto, movimientos });
-    return { t, liq, pagado, dias, horas };
+    const liq = liquidar({ modalidad: t.modalidadPago, tarifa, dias, horas, semanas, tratoMonto, unidadesProduccion, movimientos });
+    return { t, liq, pagado, dias, horas, unidadesProduccion };
   });
 
   const costoTotal = filas.reduce((s, f) => s + f.liq.liquido, 0);
@@ -87,14 +104,15 @@ export default async function SueldosPage({ searchParams }: { searchParams: Prom
       </div>
 
       <p className="mt-4 rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-800">
-        💡 Es un <b>registro de pagos</b>: el monto calculado es una <b>sugerencia</b> según la forma de cada persona (lo puedes ajustar al pagar). Una <b>jornada = 6 h</b>; el <b>trato</b> suma lo que registres (cantidad × valor). Para quienes sí están <b>contratados</b>, las imposiciones (AFP/salud/Previred) van aparte con tu contador.
+        💡 Es un <b>registro de pagos</b>: el monto es una <b>sugerencia</b> según la forma de cada persona (ajustable al pagar). Una <b>jornada = 6 h</b>. El <b>por trato</b> se calcula <b>solo</b>: lo que el trabajador dicta en Producción × el valor que le pongas (necesita su usuario enlazado). Las imposiciones de los contratados van aparte con tu contador.
       </p>
 
       {/* Filas */}
       <div className="mt-4 space-y-3">
         {filas.length === 0 && <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-400">No hay trabajadores activos. Agrégalos en <Link href="/admin/equipo" className="font-semibold text-slate-600 underline">Equipo</Link>.</p>}
-        {filas.map(({ t, liq, pagado, dias, horas }) => {
-          const sinTarifa = t.tarifa == null && t.modalidadPago !== "por_trato" && !(t.modalidadPago === "por_hora" && t.valorHora) && !(t.modalidadPago === "mensual" && t.sueldoBase);
+        {filas.map(({ t, liq, pagado, dias, horas, unidadesProduccion }) => {
+          const esTrato = t.modalidadPago === "por_trato";
+          const sinTarifa = t.tarifa == null && !esTrato && !(t.modalidadPago === "por_hora" && t.valorHora) && !(t.modalidadPago === "mensual" && t.sueldoBase);
           return (
             <div key={t.id} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="flex items-center justify-between gap-2">
@@ -111,6 +129,9 @@ export default async function SueldosPage({ searchParams }: { searchParams: Prom
 
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
                 <span>🕒 {horas.toFixed(0)} h · 📅 {dias} día(s) trabajados</span>
+                {esTrato && t.usuarioId && <span className="font-semibold text-amber-600">🏭 {Number.isInteger(unidadesProduccion) ? unidadesProduccion : unidadesProduccion.toFixed(1)} u. producidas (automático, ya dividido si fue en equipo)</span>}
+                {esTrato && !t.usuarioId && <span className="font-semibold text-rose-600">⚠️ enlaza su usuario en <Link href={`/admin/equipo/${t.id}`} className="underline">Equipo</Link> para que la producción se sume sola</span>}
+                {esTrato && t.usuarioId && t.tarifa == null && <span className="font-semibold text-amber-600">⚠️ define el valor por unidad ↓</span>}
                 {pagado > 0 && <span className="font-semibold text-emerald-600">✓ pagado en este período: {CLP(pagado)}</span>}
                 {sinTarifa && <span className="font-semibold text-amber-600">⚠️ falta definir la tarifa ↓</span>}
               </div>

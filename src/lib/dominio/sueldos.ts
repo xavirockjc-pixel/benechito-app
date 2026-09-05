@@ -21,7 +21,7 @@ export const tarifaLabel: Record<string, string> = {
   por_dia: "$ por día",
   por_hora: "$ por hora",
   por_jornada: "$ por jornada",
-  por_trato: "(se registra cada trato)",
+  por_trato: "$ por unidad producida",
 };
 
 export type MovLiq = { tipo: string; monto: number };
@@ -42,14 +42,15 @@ const clp = (n: number) => "$" + Math.round(n).toLocaleString("es-CL");
  */
 export function liquidar(input: {
   modalidad: string;
-  tarifa: number;           // valor de la tarifa (según modalidad)
-  dias: number;             // días trabajados en el período
-  horas: number;            // horas en el período
-  semanas: number;          // nº de semanas del período (1 si es vista semana)
-  tratoMonto: number;       // suma de "trato" registrado en el período
-  movimientos: MovLiq[];    // bonos/adelantos/etc del período
+  tarifa: number;             // valor de la tarifa (según modalidad; en por_trato = $ por unidad)
+  dias: number;               // días trabajados en el período
+  horas: number;              // horas en el período
+  semanas: number;            // nº de semanas del período (1 si es vista semana)
+  tratoMonto: number;         // suma de "trato" registrado a mano en el período
+  unidadesProduccion: number; // unidades que el trabajador produjo (por voz) en el período
+  movimientos: MovLiq[];      // bonos/adelantos/etc del período
 }): Liquidacion {
-  const { modalidad, tarifa, dias, horas, semanas, tratoMonto, movimientos } = input;
+  const { modalidad, tarifa, dias, horas, semanas, tratoMonto, unidadesProduccion, movimientos } = input;
   const jornadas = HORAS_JORNADA > 0 ? horas / HORAS_JORNADA : 0;
 
   let base = 0;
@@ -71,10 +72,16 @@ export function liquidar(input: {
       base = Math.round(tarifa * semanas);
       detalleBase = semanas === 1 ? `1 semana × ${clp(tarifa)}` : `${semanas} semanas × ${clp(tarifa)}`;
       break;
-    case "por_trato":
-      base = tratoMonto;
-      detalleBase = `producción registrada`;
+    case "por_trato": {
+      // Automático: unidades producidas (por voz, divididas si trabajaron varios) × valor + trato manual.
+      const auto = Math.round(tarifa * unidadesProduccion);
+      base = auto + tratoMonto;
+      const uFmt = Number.isInteger(unidadesProduccion) ? String(unidadesProduccion) : unidadesProduccion.toFixed(1);
+      detalleBase = unidadesProduccion > 0
+        ? `${uFmt} u. × ${clp(tarifa)}${tratoMonto ? ` + trato ${clp(tratoMonto)}` : ""}`
+        : (tratoMonto ? `trato registrado ${clp(tratoMonto)}` : `sin producción en el período`);
       break;
+    }
     case "mensual":
     default:
       base = Math.round(tarifa * (semanas > 0 ? 1 : 1)); // el mes completo
