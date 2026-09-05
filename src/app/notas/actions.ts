@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import {
   AREAS_NOTA, TIPOS_NOTA, normalizaTexto,
   detectaAccionNota, detectaCantidad, detectaFechaNota, matchProducto,
+  detectaHoras, matchTrabajador,
 } from "@/lib/dominio/notas";
 import { PRIORIDADES } from "@/lib/dominio/mejoras";
 
@@ -48,7 +49,7 @@ export async function crearNota(formData: FormData) {
 
   const n = normalizaTexto(texto);
   const accion = detectaAccionNota(n);
-  const cantidad = detectaCantidad(n);
+  let cantidad = detectaCantidad(n);
   let productoId: string | null = null;
   let itemNombre: string | null = null;
   let fechaObjetivo: Date | null = null;
@@ -61,6 +62,15 @@ export async function crearNota(formData: FormData) {
     itemNombre = m?.nombre ?? null;
     accionEstado = "sugerida"; // queda a un clic de aplicarse
     if (tipo === "observacion") tipo = "tarea";
+  } else if (accion === "asistencia") {
+    const equipo = await prisma.trabajador.findMany({ where: { activo: true }, select: { id: true, nombre: true } });
+    const m = matchTrabajador(n, equipo);
+    productoId = m?.id ?? null; // reutilizamos productoId como referencia genérica (trabajador)
+    itemNombre = m?.nombre ?? null;
+    fechaObjetivo = detectaFechaNota(n) ?? new Date();
+    cantidad = detectaHoras(n); // horas trabajadas (opcional)
+    accionEstado = "sugerida";
+    tipo = "tarea";
   } else if (accion === "reponer") {
     tipo = "tarea";
     if (prioridad === "media") prioridad = "alta";
@@ -104,6 +114,26 @@ export async function aplicarAccionNota(formData: FormData) {
   if (!id) return;
   const nota = await prisma.nota.findUnique({ where: { id } });
   if (!nota || nota.accionEstado !== "sugerida") return;
+
+  // Asistencia: registra un día trabajado (alimenta el calendario del equipo y su pago).
+  if (nota.accion === "asistencia") {
+    const trabajadorId = String(formData.get("trabajadorId") ?? "").trim() || nota.productoId || "";
+    if (!trabajadorId) return;
+    const fechaStr = String(formData.get("fecha") ?? "").trim();
+    const fecha = fechaStr ? new Date(fechaStr) : (nota.fechaObjetivo ?? new Date());
+    const horas = Number(String(formData.get("horas") ?? nota.cantidad ?? "0").replace(/[^\d.]/g, "")) || 0;
+    await prisma.asistencia.create({
+      data: { trabajadorId, fecha: isNaN(fecha.getTime()) ? new Date() : fecha, presente: true, tipo: "trabajo", horas },
+    });
+    await prisma.nota.update({
+      where: { id },
+      data: { accionEstado: "aplicada", estado: "hecha", hechaEn: new Date(), productoId: trabajadorId, cantidad: Math.round(horas) || null },
+    });
+    revalidar();
+    revalidatePath(`/admin/equipo/${trabajadorId}`);
+    revalidatePath("/admin/sueldos");
+    return;
+  }
 
   const cantidad = Math.abs(Number(String(formData.get("cantidad") ?? nota.cantidad ?? "").trim()));
   if (!Number.isFinite(cantidad) || cantidad <= 0) return;

@@ -62,11 +62,14 @@ export const ACCIONES_NOTA = {
   stock_entrada: { label: "Sumar a stock", icon: "📥", verbo: "Sumar" },
   stock_salida: { label: "Descontar de stock", icon: "📤", verbo: "Descontar" },
   reponer: { label: "Reponer / comprar", icon: "🔁", verbo: "Reponer" },
+  asistencia: { label: "Registrar asistencia", icon: "📅", verbo: "Registrar" },
 } as const;
 export type AccionNota = keyof typeof ACCIONES_NOTA;
 
-/** Detecta si la nota implica una acción de stock o una reposición. */
+/** Detecta si la nota implica una acción (asistencia, stock o reposición). */
 export function detectaAccionNota(t: string): AccionNota {
+  // Asistencia: "Isaías trabajó el lunes", "vino a trabajar", "hizo turno"
+  if (/(trabaj[oó]|vino a trabajar|hizo (el )?turno|estuvo trabajando|asisti[oó]|jornada de)/.test(t)) return "asistencia";
   // Entra mercadería
   if (/(llego|llegaron|recibi|recibimos|entro|entraron|compre|compramos|me trajeron|ingreso de|nos dejaron)/.test(t)) return "stock_entrada";
   // Sale / se vendió / se usó
@@ -74,6 +77,30 @@ export function detectaAccionNota(t: string): AccionNota {
   // Se acaba / falta / hay que reponer
   if (/(se termin|se acab|falta|faltan|quedan pocos|casi no queda|hay que comprar|hay que pedir|reponer|se agot|por acabar|ultim(a|o)s? )/.test(t)) return "reponer";
   return "ninguna";
+}
+
+/** Extrae las horas mencionadas ("8 horas", "6 h"). */
+export function detectaHoras(t: string): number | null {
+  const m = t.match(/(\d+)\s*(h\b|horas?|hrs?)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+/** Calza un nombre de persona dictado con un trabajador (por palabra completa). */
+export function matchTrabajador(
+  textoNorm: string,
+  trabajadores: { id: string; nombre: string }[],
+): { id: string; nombre: string } | null {
+  const palabras = new Set(textoNorm.split(/[^a-z0-9]+/).filter(Boolean));
+  let mejor: { id: string; nombre: string } | null = null;
+  let mejorLen = 0;
+  for (const w of trabajadores) {
+    for (const tok of normalizaTexto(w.nombre).split(/[^a-z0-9]+/).filter((x) => x.length >= 3)) {
+      if (palabras.has(tok) && tok.length > mejorLen) {
+        mejorLen = tok.length; mejor = { id: w.id, nombre: w.nombre };
+      }
+    }
+  }
+  return mejor;
 }
 
 const NUM_PALABRA: Record<string, number> = {

@@ -20,10 +20,12 @@ export default async function NotasPage({ searchParams }: { searchParams: Promis
   const fTipo = TIPOS_NOTA.includes((sp.tipo ?? "") as never) ? sp.tipo : "";
 
   const where = { ...(fArea ? { area: fArea } : {}), ...(fTipo ? { tipo: fTipo } : {}) };
-  const [notas, productos] = await Promise.all([
+  const [notas, productos, trabajadores] = await Promise.all([
     prisma.nota.findMany({ where, orderBy: [{ estado: "asc" }, { prioridad: "asc" }, { createdAt: "desc" }] }),
     prisma.producto.findMany({ where: { activo: true }, select: { id: true, nombre: true }, orderBy: { nombre: "asc" } }),
+    prisma.trabajador.findMany({ where: { activo: true }, select: { id: true, nombre: true }, orderBy: { nombre: "asc" } }),
   ]);
+  const hoyISO = new Date().toLocaleDateString("en-CA");
 
   const sugeridas = notas.filter((n) => n.accionEstado === "sugerida");
   const abiertas = notas.filter((n) => n.estado !== "hecha" && n.accionEstado !== "sugerida");
@@ -62,27 +64,49 @@ export default async function NotasPage({ searchParams }: { searchParams: Promis
               return (
                 <li key={n.id} className="rounded-xl border border-amber-200 bg-white p-3 shadow-sm">
                   <p className="text-sm font-semibold text-slate-900"><span className="mr-1">{acc.icon}</span>{n.texto}</p>
-                  <form action={aplicarAccionNota} className="mt-2 flex flex-wrap items-end gap-2">
-                    <input type="hidden" name="id" value={n.id} />
-                    <label className="flex flex-col gap-0.5">
-                      <span className="text-[10px] font-bold uppercase text-slate-400">{acc.verbo}</span>
-                      <input type="number" name="cantidad" defaultValue={n.cantidad ?? undefined} min={1} placeholder="cant." className="w-20 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" required />
-                    </label>
-                    <label className="flex min-w-[9rem] flex-1 flex-col gap-0.5">
-                      <span className="text-[10px] font-bold uppercase text-slate-400">Producto</span>
-                      <select name="productoId" defaultValue={n.productoId ?? ""} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
-                        <option value="">— elegir / crear abajo —</option>
-                        {productos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
-                      </select>
-                    </label>
-                    {!n.productoId && (
+                  {n.accion === "asistencia" ? (
+                    <form action={aplicarAccionNota} className="mt-2 flex flex-wrap items-end gap-2">
+                      <input type="hidden" name="id" value={n.id} />
                       <label className="flex min-w-[9rem] flex-1 flex-col gap-0.5">
-                        <span className="text-[10px] font-bold uppercase text-slate-400">…o crear nuevo</span>
-                        <input name="nuevoProducto" defaultValue={n.itemNombre ?? ""} placeholder="nombre del producto" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+                        <span className="text-[10px] font-bold uppercase text-slate-400">Trabajador</span>
+                        <select name="trabajadorId" defaultValue={n.productoId ?? ""} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" required>
+                          <option value="">— elegir —</option>
+                          {trabajadores.map((w) => <option key={w.id} value={w.id}>{w.nombre}</option>)}
+                        </select>
                       </label>
-                    )}
-                    <button className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-extrabold text-white active:scale-95">{acc.icon} Aplicar</button>
-                  </form>
+                      <label className="flex flex-col gap-0.5">
+                        <span className="text-[10px] font-bold uppercase text-slate-400">Día</span>
+                        <input type="date" name="fecha" defaultValue={n.fechaObjetivo ? new Date(n.fechaObjetivo).toLocaleDateString("en-CA") : hoyISO} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+                      </label>
+                      <label className="flex flex-col gap-0.5">
+                        <span className="text-[10px] font-bold uppercase text-slate-400">Horas</span>
+                        <input type="number" name="horas" defaultValue={n.cantidad ?? undefined} min={0} placeholder="h" className="w-16 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+                      </label>
+                      <button className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-extrabold text-white active:scale-95">📅 Registrar</button>
+                    </form>
+                  ) : (
+                    <form action={aplicarAccionNota} className="mt-2 flex flex-wrap items-end gap-2">
+                      <input type="hidden" name="id" value={n.id} />
+                      <label className="flex flex-col gap-0.5">
+                        <span className="text-[10px] font-bold uppercase text-slate-400">{acc.verbo}</span>
+                        <input type="number" name="cantidad" defaultValue={n.cantidad ?? undefined} min={1} placeholder="cant." className="w-20 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" required />
+                      </label>
+                      <label className="flex min-w-[9rem] flex-1 flex-col gap-0.5">
+                        <span className="text-[10px] font-bold uppercase text-slate-400">Producto</span>
+                        <select name="productoId" defaultValue={n.productoId ?? ""} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm">
+                          <option value="">— elegir / crear abajo —</option>
+                          {productos.map((p) => <option key={p.id} value={p.id}>{p.nombre}</option>)}
+                        </select>
+                      </label>
+                      {!n.productoId && (
+                        <label className="flex min-w-[9rem] flex-1 flex-col gap-0.5">
+                          <span className="text-[10px] font-bold uppercase text-slate-400">…o crear nuevo</span>
+                          <input name="nuevoProducto" defaultValue={n.itemNombre ?? ""} placeholder="nombre del producto" className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+                        </label>
+                      )}
+                      <button className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-extrabold text-white active:scale-95">{acc.icon} Aplicar</button>
+                    </form>
+                  )}
                   <div className="mt-1 flex items-center gap-2 text-[11px] text-slate-400">
                     <span>{areaNotaIcono[n.area]} {areaNotaLabel[n.area]}</span>
                     <span>· {fmt(n.createdAt)}</span>
