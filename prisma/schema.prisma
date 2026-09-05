@@ -1211,6 +1211,18 @@ model Nota {
   @@index([accionEstado])
 }
 
+/// Flete cobrado aparte (ej: dejar producto a un distribuidor). Ingreso del reparto.
+model Flete {
+  id        String   @id @default(cuid())
+  fecha     DateTime @default(now())
+  monto     Decimal  @db.Decimal(12, 2)
+  destino   String? // distribuidor / cliente / ruta
+  notas     String?
+  createdAt DateTime @default(now())
+
+  @@index([fecha])
+}
+
 /// Tarifas de "trato" (pago a destajo): valor por unidad producida, por tipo de producto.
 model TarifaTrato {
   id        String   @id @default(cuid())
