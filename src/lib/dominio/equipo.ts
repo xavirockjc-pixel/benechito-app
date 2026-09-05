@@ -26,7 +26,7 @@ export function rolesDeCargo(cargo: string): string[] {
 }
 
 // Movimientos de la cuenta del trabajador.
-export const TIPOS_MOV_TRABAJADOR = ["pago", "adelanto", "deuda", "hora_extra", "bono", "descuento"] as const;
+export const TIPOS_MOV_TRABAJADOR = ["pago", "adelanto", "deuda", "hora_extra", "bono", "descuento", "trato"] as const;
 export type TipoMovTrabajador = (typeof TIPOS_MOV_TRABAJADOR)[number];
 export const tipoMovTrabajadorLabel: Record<string, string> = {
   pago: "Pago",
@@ -35,6 +35,7 @@ export const tipoMovTrabajadorLabel: Record<string, string> = {
   hora_extra: "Horas extra",
   bono: "Bono",
   descuento: "Descuento",
+  trato: "Trato (producción)",
 };
 export const tipoMovTrabajadorIcono: Record<string, string> = {
   pago: "💵",
@@ -43,6 +44,7 @@ export const tipoMovTrabajadorIcono: Record<string, string> = {
   hora_extra: "⏱️",
   bono: "🎁",
   descuento: "➖",
+  trato: "🍫",
 };
 
 /**
@@ -52,7 +54,7 @@ export const tipoMovTrabajadorIcono: Record<string, string> = {
  * (pago = se le pagó; adelanto = recibió antes; deuda = el trabajador debe; descuento = se le resta)
  */
 export function signoMovTrabajador(tipo: string): 1 | -1 {
-  return tipo === "hora_extra" || tipo === "bono" ? 1 : -1;
+  return tipo === "hora_extra" || tipo === "bono" || tipo === "trato" ? 1 : -1;
 }
 
 // Asistencia: tipo de jornada del día.
