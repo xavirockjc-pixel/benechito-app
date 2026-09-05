@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { ROLES, rolLabel, ROLES_ADMIN } from "@/lib/dominio/usuarios";
-import { crearUsuario, cambiarPassword, actualizarUsuario, eliminarUsuario } from "./actions";
+import { crearUsuario, actualizarUsuario, eliminarUsuario } from "./actions";
+import CambiarPasswordForm from "./CambiarPasswordForm";
 
 export const dynamic = "force-dynamic";
 
@@ -86,14 +87,8 @@ export default async function UsuariosPage() {
                 <button className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white">Guardar</button>
               </form>
 
-              {/* Cambiar contraseña */}
-              <form action={cambiarPassword} className="mt-2 flex items-end gap-2">
-                <input type="hidden" name="id" value={u.id} />
-                <label className="text-xs font-bold text-slate-600">Nueva contraseña
-                  <input name="password" type="text" minLength={6} placeholder="mín. 6 caracteres" className={`mt-1 ${inputCls}`} />
-                </label>
-                <button className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-bold text-white">Cambiar clave</button>
-              </form>
+              {/* Cambiar contraseña (con confirmación visible) */}
+              <CambiarPasswordForm id={u.id} inputCls={inputCls} />
 
               {!soyYo && (
                 <form action={eliminarUsuario} className="mt-2">

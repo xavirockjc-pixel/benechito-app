@@ -36,16 +36,20 @@ export async function crearUsuario(formData: FormData) {
   revalidatePath("/admin/usuarios");
 }
 
-/** Cambia la contraseña de un usuario. */
-export async function cambiarPassword(formData: FormData) {
-  if (!(await soloAdmin())) return;
+export type CambioPassState = { ok: boolean; msg: string } | null;
+
+/** Cambia la contraseña de un usuario. Devuelve estado para mostrar confirmación. */
+export async function cambiarPassword(_prev: CambioPassState, formData: FormData): Promise<CambioPassState> {
+  if (!(await soloAdmin())) return { ok: false, msg: "Sin permiso para cambiar contraseñas." };
 
   const id = val(formData, "id");
   const password = val(formData, "password");
-  if (!id || password.length < 6) return;
+  if (!id) return { ok: false, msg: "Falta el usuario." };
+  if (password.length < 6) return { ok: false, msg: "La contraseña debe tener al menos 6 caracteres." };
 
   await prisma.usuario.update({ where: { id }, data: { passwordHash: await bcrypt.hash(password, 10) } });
   revalidatePath("/admin/usuarios");
+  return { ok: true, msg: "✓ Contraseña actualizada" };
 }
 
 /** Actualiza nombre, rol y estado (activo) de un usuario. */
