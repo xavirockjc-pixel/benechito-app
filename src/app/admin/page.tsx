@@ -37,7 +37,7 @@ export default async function Panel() {
   const montos = [
     { label: "Ventas de hoy", valor: fmtCLP(totalHoy), href: "/admin/ventas", color: "#1479c4", icon: "💰" },
     { label: "Ventas del mes", valor: fmtCLP(totalMes), href: "/admin/ventas", color: "#f28a1e", icon: "📅" },
-    { label: "Por cobrar", valor: fmtCLP(porCobrar), href: "/admin/ventas", color: "#e23b2c", icon: "⏳" },
+    { label: "Por cobrar", valor: fmtCLP(porCobrar), href: "/admin/cobranza", color: "#e23b2c", icon: "⏳" },
     ...canalMes
       .filter((c) => Number(c._sum.total ?? 0) > 0)
       .map((c, i) => ({
@@ -72,6 +72,7 @@ export default async function Panel() {
         </div>
         <div className="flex gap-2">
           <Link href="/admin/pos" className="rounded-2xl bg-[#1479c4] px-5 py-2.5 text-sm font-extrabold text-white shadow-md transition hover:brightness-110">🛒 Vender</Link>
+          <Link href="/admin/cobranza" className="rounded-2xl bg-[#e23b2c] px-5 py-2.5 text-sm font-extrabold text-white shadow-md transition hover:brightness-110">💸 Cobrar</Link>
           <Link href="/admin/negocios/nuevo" className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-extrabold text-slate-700 transition hover:-translate-y-0.5">＋ Cliente</Link>
         </div>
       </div>
