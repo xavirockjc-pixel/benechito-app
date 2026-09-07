@@ -51,6 +51,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/retiros", label: L.retiros, icon: "📥" },
         { href: "/admin/rutas", label: L.rutas, icon: "🗺️" },
         { href: "/admin/repartos", label: "Vehículo y reparto", icon: "🚚" },
+        { href: "/admin/repartidores", label: "Repartidores (mapa)", icon: "📍" },
       ],
     },
     {

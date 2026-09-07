@@ -562,6 +562,14 @@ export async function registrarVisitaVoz(formData: FormData) {
   redirect(`/vendedor/cliente/${negocioId}`);
 }
 
+/** El vendedor/repartidor reporta su posición GPS (para verlo en la central). */
+export async function reportarUbicacion(lat: number, lng: number) {
+  const u = await usuarioActual();
+  if (!u) return;
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+  await prisma.usuario.update({ where: { id: u.sub }, data: { ultimaLat: lat, ultimaLng: lng, ubicacionEn: new Date() } });
+}
+
 /** Registra el resultado de la visita (nota + próxima visita opcional). */
 export async function registrarResultado(formData: FormData) {
   const negocioId = String(formData.get("negocioId") ?? "").trim();

@@ -194,6 +194,11 @@ model Usuario {
   vehiculo     Ubicacion? @relation("UsuarioVehiculo", fields: [vehiculoId], references: [id])
   vehiculoId   String?
 
+  // Última posición GPS reportada por su app (para ver al repartidor en la central).
+  ultimaLat    Float?
+  ultimaLng    Float?
+  ubicacionEn  DateTime?
+
   // --- v2: back-relations ---
   clientesAsignados Negocio[]   @relation("VendedorClientes")
   ventasRegistradas Venta[]     @relation("VendedorVentas")
