@@ -1216,6 +1216,21 @@ model Nota {
   @@index([accionEstado])
 }
 
+/// Caja Vecina: movimientos de giro/depósito/pago. SEPARADO de las ventas del negocio,
+/// solo para registro y análisis del efectivo de este servicio.
+model MovimientoCajaVecina {
+  id            String   @id @default(cuid())
+  fecha         DateTime @default(now())
+  tipo          String // apertura | deposito | pago | comision | giro | retiro | ajuste
+  monto         Decimal  @db.Decimal(12, 2)
+  detalle       String?
+  foto          String? // pantallazo del comprobante (data URI comprimido)
+  usuarioId     String?
+  nombreUsuario String?
+
+  @@index([fecha])
+}
+
 /// Flete cobrado aparte (ej: dejar producto a un distribuidor). Ingreso del reparto.
 model Flete {
   id        String   @id @default(cuid())
