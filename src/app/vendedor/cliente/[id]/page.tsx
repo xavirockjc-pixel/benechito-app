@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { tipoClienteLabel } from "@/lib/dominio/precios";
 import GuardarUbicacionAqui from "../../GuardarUbicacionAqui";
+import ResultadoVozForm from "./ResultadoVozForm";
 import { registrarDeuda } from "../../actions";
 
 export const dynamic = "force-dynamic";
@@ -111,6 +112,11 @@ export default async function ClienteRuta({
         <Link href={`/vendedor/cliente/${cliente.id}/reponer`} className="rounded-2xl border-2 border-slate-200 bg-white py-6 text-center text-base font-extrabold text-slate-700 active:bg-slate-50">
           🍫<br />Reponer
         </Link>
+      </div>
+
+      {/* Registro de visita por voz (compra/abono/factura/agenda, todo centralizado) */}
+      <div className="mt-4">
+        <ResultadoVozForm negocioId={cliente.id} />
       </div>
 
       {/* Agendar entrega para hoy/mañana */}

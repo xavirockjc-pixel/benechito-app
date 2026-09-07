@@ -480,6 +480,88 @@ export async function registrarVentaSimple(formData: FormData) {
   redirect(volver || `/vendedor/cliente/${negocioId}`);
 }
 
+/**
+ * Registro de visita por voz (centralizado): en una sola pasada guarda lo que pasó
+ * en la visita — nota, compra, abono, si quiere factura y próxima visita agendada.
+ */
+export async function registrarVisitaVoz(formData: FormData) {
+  const negocioId = String(formData.get("negocioId") ?? "").trim();
+  if (!negocioId) return;
+  const u = await usuarioActual();
+  const n = (k: string) => Number(String(formData.get(k) ?? "").replace(/[^0-9]/g, "")) || 0;
+
+  const nota = String(formData.get("nota") ?? "").trim();
+  const compra = n("compra");
+  const abono = n("abono");
+  const quiereFactura = String(formData.get("factura") ?? "") === "on" || String(formData.get("factura") ?? "") === "true";
+  const medioRaw = String(formData.get("medio") ?? "efectivo").trim();
+  const medio = (MEDIOS_PAGO as readonly string[]).includes(medioRaw) && medioRaw !== "credito" ? medioRaw : "efectivo";
+  const proximaStr = String(formData.get("proxima") ?? "").trim();
+
+  const partes: string[] = [];
+  if (nota) partes.push(nota);
+
+  // 1) Compra → venta (queda pendiente; si abonó, se aplica abajo).
+  if (compra > 0) {
+    const ubicacionId =
+      (await miVehiculoId()) ??
+      (await prisma.ubicacion.findFirst({ where: { tipo: "vehiculo" } }))?.id ??
+      (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } }))?.id ??
+      (await prisma.ubicacion.findFirst())?.id;
+    if (ubicacionId) {
+      await prisma.venta.create({
+        data: { negocioId, ubicacionId, vendedorId: u?.sub ?? null, total: compra, estadoPago: "pendiente", documento: quiereFactura ? "factura" : "boleta", canal: "ruta", etiqueta: "Venta en visita" },
+      });
+      partes.push(`compró ${"$" + compra.toLocaleString("es-CL")}`);
+    }
+  }
+
+  // 2) Abono → se aplica a las deudas más antiguas (incluye la compra recién creada).
+  if (abono > 0) {
+    const ventas = await prisma.venta.findMany({
+      where: { negocioId, estadoPago: { in: ["pendiente", "parcial", "vencido"] } },
+      include: { pagos: { select: { monto: true } } },
+      orderBy: { fecha: "asc" },
+    });
+    let restante = abono;
+    for (const v of ventas) {
+      if (restante <= 0) break;
+      const saldo = Number(v.total) - v.pagos.reduce((s, p) => s + Number(p.monto), 0);
+      if (saldo <= 0) continue;
+      const aplicar = Math.min(saldo, restante);
+      await prisma.pago.create({ data: { ventaId: v.id, medio, monto: aplicar } });
+      await recalcularEstadoPago(v.id);
+      restante -= aplicar;
+    }
+    partes.push(`abonó ${"$" + abono.toLocaleString("es-CL")} (${medio})`);
+  }
+
+  // 3) Quiere factura → deja marcado al cliente.
+  if (quiereFactura) {
+    await prisma.negocio.update({ where: { id: negocioId }, data: { requiereFactura: true, tipoDocumentoDefault: "factura" } });
+    partes.push("quiere factura");
+  }
+
+  // 4) Próxima visita → agenda + próxima reposición.
+  if (proximaStr) {
+    const f = new Date(proximaStr);
+    if (!isNaN(f.getTime())) {
+      await prisma.agenda.create({ data: { titulo: "Visita a cliente", fecha: f, tipo: "visita", negocioId, estado: "pendiente" } });
+      await prisma.negocio.update({ where: { id: negocioId }, data: { proximaReposicion: f } });
+      partes.push(`agendado ${f.toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}`);
+    }
+  }
+
+  if (partes.length) {
+    await prisma.actividad.create({ data: { negocioId, tipo: "contacto", descripcion: `Visita: ${partes.join(" · ")}` } });
+  }
+
+  await marcarAsistenciaAuto(u?.sub, "Visita en terreno");
+  revalidatePath(`/vendedor/cliente/${negocioId}`);
+  revalidatePath(`/admin/negocios/${negocioId}`);
+  redirect(`/vendedor/cliente/${negocioId}`);
+}
+
 /** Registra el resultado de la visita (nota + próxima visita opcional). */
 export async function registrarResultado(formData: FormData) {
   const negocioId = String(formData.get("negocioId") ?? "").trim();
