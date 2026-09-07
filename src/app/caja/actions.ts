@@ -50,8 +50,9 @@ export async function abrirCaja(formData: FormData) {
   if (!sala) return;
   const u = await usuarioActual();
 
+  const desglose = String(formData.get("fondo_desglose") ?? "").trim() || null;
   await prisma.sesionCaja.create({
-    data: { ubicacionId: sala, usuarioId: u?.sub ?? null, fondoInicial: fondo, estado: "abierta" },
+    data: { ubicacionId: sala, usuarioId: u?.sub ?? null, fondoInicial: fondo, estado: "abierta", desgloseApertura: desglose },
   });
   revalidatePath("/caja");
 }
@@ -132,6 +133,7 @@ export async function cerrarCaja(formData: FormData) {
     data: {
       estado: "cerrada",
       efectivoContado: contado,
+      desgloseCierre: String(formData.get("efectivoContado_desglose") ?? "").trim() || null,
       fechaCierre: new Date(),
       notas: String(formData.get("notas") ?? "").trim() || null,
     },

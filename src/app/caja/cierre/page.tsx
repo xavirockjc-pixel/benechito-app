@@ -4,6 +4,7 @@ import { fmtCLP } from "@/lib/dominio/pedidos";
 import { medioPagoLabel } from "@/lib/dominio/ventas";
 import { movimientoCaja, sesionAbierta } from "../actions";
 import CierreCajaForm from "./CierreCajaForm";
+import EnviarWhatsApp from "@/components/EnviarWhatsApp";
 
 export const dynamic = "force-dynamic";
 
@@ -33,6 +34,18 @@ export default async function CierreCajaPage() {
   const egresos = movimientos.filter((m) => m.tipo === "egreso").reduce((s, m) => s + Number(m.monto), 0);
   const esperado = fondo + efectivoVentas + ingresos - egresos;
   const otrosMedios = Object.entries(porMedio).filter(([m]) => m !== "efectivo");
+  const totalVentas = ventas.reduce((s, v) => s + Number(v.total), 0);
+
+  const hoyTxt = new Date().toLocaleDateString("es-CL", { weekday: "long", day: "2-digit", month: "long" });
+  const resumenCierre =
+    `🧾 Cierre de caja — ${hoyTxt}\n\n` +
+    `Ventas del día: ${fmtCLP(totalVentas)} (${ventas.length})\n` +
+    `Fondo inicial: ${fmtCLP(fondo)}\n` +
+    `Ventas efectivo: ${fmtCLP(efectivoVentas)}\n` +
+    otrosMedios.map(([m, v]) => `Ventas ${medioPagoLabel[m] ?? m}: ${fmtCLP(v)}`).join("\n") + (otrosMedios.length ? "\n" : "") +
+    (ingresos > 0 ? `Ingresos: ${fmtCLP(ingresos)}\n` : "") +
+    (egresos > 0 ? `Egresos: ${fmtCLP(egresos)}\n` : "") +
+    `\n💵 Efectivo esperado en caja: ${fmtCLP(esperado)}`;
 
   return (
     <div className="mx-auto max-w-md">
@@ -68,6 +81,11 @@ export default async function CierreCajaPage() {
       <section className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="mb-2 font-bold text-slate-900">Arqueo</h2>
         <CierreCajaForm esperado={esperado} />
+      </section>
+
+      {/* Enviar cierre por WhatsApp (queda registrado al cerrar) */}
+      <section className="mt-4">
+        <EnviarWhatsApp texto={resumenCierre} />
       </section>
     </div>
   );

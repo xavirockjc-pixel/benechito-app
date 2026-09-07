@@ -46,6 +46,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/pos", label: L.pos, icon: "🛒" },
         { href: "/admin/ventas", label: "Ventas", icon: "💵" },
+        { href: "/admin/ventas-local", label: "Ventas Local (análisis)", icon: "🏪" },
         { href: "/admin/pedidos", label: "Pedidos", icon: "🧾" },
         { href: "/admin/preventa", label: "Preventa", icon: "📲" },
         { href: "/admin/retiros", label: L.retiros, icon: "📥" },
