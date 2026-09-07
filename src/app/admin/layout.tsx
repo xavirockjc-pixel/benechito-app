@@ -58,6 +58,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       activo: true,
       items: [
         { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
+        { href: "/admin/clientes-dashboard", label: "Dashboard clientes", icon: "📊" },
         { href: "/admin/negocios/duplicados", label: "Duplicados", icon: "🔁" },
         { href: "/admin/puntos", label: "Puntos Benechito", icon: "⭐" },
         { href: "/admin/novedades", label: "Novedades & Promos", icon: "🔥" },
