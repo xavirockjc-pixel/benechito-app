@@ -29,6 +29,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       activo: true,
       items: [
         { href: "/admin", label: "Panel", icon: "📊" },
+        { href: "/admin/panorama", label: "Panorama general", icon: "🌎" },
         { href: "/admin/socio", label: "Socio administrativo", icon: "🐝" },
         { href: "/admin/supercerebro", label: "Supercerebro", icon: "🧠" },
         { href: "/admin/notas", label: "Notas y acciones", icon: "📝" },
