@@ -170,7 +170,7 @@ export const RUBROS: Record<RubroId, Rubro> = {
     },
     // Materiales, clientes/deudas, cotización y facturación (no fabricación de alimentos).
     ocultar: ["/admin/produccion", "/admin/sabores", "/admin/materias", "/admin/control-calidad",
-      "/admin/higiene", "/admin/formularios", "/admin/capacitaciones", "/admin/reposiciones"],
+      "/admin/higiene", "/admin/formularios", "/admin/capacitaciones", "/admin/reposiciones", "/admin/puntos"],
   },
   manufactura: {
     id: "manufactura",
@@ -190,7 +190,8 @@ export const RUBROS: Record<RubroId, Rubro> = {
     // Servicios con agenda: sin inventario/producción/reparto; foco en agenda, clientes y cobro.
     ocultar: ["/admin/produccion", "/admin/materias", "/admin/control-calidad", "/admin/higiene",
       "/admin/sabores", "/admin/inventario", "/admin/reposiciones", "/admin/rutas", "/admin/repartos",
-      "/admin/preventa", "/admin/pos", "/admin/retiros", "/admin/productos", "/admin/precios", "/admin/novedades"],
+      "/admin/preventa", "/admin/pos", "/admin/retiros", "/admin/productos", "/admin/precios", "/admin/novedades",
+      "/admin/puntos", "/admin/rentabilidad", "/admin/balance-ruta"],
   },
 };
 

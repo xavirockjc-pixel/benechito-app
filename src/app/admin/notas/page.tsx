@@ -12,12 +12,15 @@ export const dynamic = "force-dynamic";
 const fmt = (d: Date) => new Date(d).toLocaleDateString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 const fmtDia = (d: Date) => new Date(d).toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" });
 
-type SP = { area?: string; tipo?: string };
+type SP = { area?: string; tipo?: string; vista?: string; mes?: string };
 
 export default async function NotasPage({ searchParams }: { searchParams: Promise<SP> }) {
   const sp = await searchParams;
   const fArea = AREAS_NOTA.includes((sp.area ?? "") as never) ? sp.area : "";
   const fTipo = TIPOS_NOTA.includes((sp.tipo ?? "") as never) ? sp.tipo : "";
+  const vista = sp.vista === "calendario" ? "calendario" : "lista";
+  const hoyD = new Date();
+  const mes = /^\d{4}-\d{2}$/.test(sp.mes ?? "") ? sp.mes! : `${hoyD.getFullYear()}-${String(hoyD.getMonth() + 1).padStart(2, "0")}`;
 
   const where = { ...(fArea ? { area: fArea } : {}), ...(fTipo ? { tipo: fTipo } : {}) };
   const [notas, productos, trabajadores] = await Promise.all([
@@ -39,13 +42,35 @@ export default async function NotasPage({ searchParams }: { searchParams: Promis
   const hechas = notas.filter((n) => n.estado === "hecha");
 
   const qs = (patch: Partial<SP>) => {
-    const merged = { area: fArea, tipo: fTipo, ...patch };
+    const merged = { area: fArea, tipo: fTipo, vista, mes, ...patch };
     const params = new URLSearchParams();
     if (merged.area) params.set("area", merged.area);
     if (merged.tipo) params.set("tipo", merged.tipo);
+    if (merged.vista && merged.vista !== "lista") params.set("vista", merged.vista);
+    if (merged.vista === "calendario" && merged.mes) params.set("mes", merged.mes);
     const s = params.toString();
     return s ? `/admin/notas?${s}` : "/admin/notas";
   };
+
+  // Calendario: agrupa notas por día (por fecha objetivo, o cuándo se creó).
+  const [cy, cm] = mes.split("-").map(Number);
+  const primero = new Date(cy, cm - 1, 1);
+  const diasMes = new Date(cy, cm, 0).getDate();
+  const offset = (primero.getDay() + 6) % 7; // lunes = 0
+  const porDia = new Map<number, typeof notas>();
+  for (const n of notas) {
+    const d = n.fechaObjetivo ? new Date(n.fechaObjetivo) : new Date(n.createdAt);
+    if (d.getFullYear() === cy && d.getMonth() === cm - 1) {
+      const arr = porDia.get(d.getDate()) ?? [];
+      arr.push(n); porDia.set(d.getDate(), arr);
+    }
+  }
+  const celdas: (number | null)[] = [...Array(offset).fill(null), ...Array.from({ length: diasMes }, (_, i) => i + 1)];
+  while (celdas.length % 7 !== 0) celdas.push(null);
+  const mesLabel = primero.toLocaleDateString("es-CL", { month: "long", year: "numeric" });
+  const sumaMes = (n: number) => { const d = new Date(cy, cm - 1 + n, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
+  const hoyNum = (hoyD.getFullYear() === cy && hoyD.getMonth() === cm - 1) ? hoyD.getDate() : -1;
+  const priColor = (p: string) => (p === "alta" ? "#e23b2c" : p === "media" ? "#f28a1e" : "#94a3b8");
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -120,21 +145,73 @@ export default async function NotasPage({ searchParams }: { searchParams: Promis
         </section>
       )}
 
-      {/* Filtros */}
-      <div className="mt-4 space-y-2">
-        <div className="flex flex-wrap gap-1.5">
-          <FiltroChip href={qs({ tipo: "" })} activo={!fTipo} label="Todos los tipos" />
-          {TIPOS_NOTA.map((t) => <FiltroChip key={t} href={qs({ tipo: fTipo === t ? "" : t })} activo={fTipo === t} label={`${tipoNotaIcono[t]} ${tipoNotaLabel[t]}`} />)}
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          <FiltroChip href={qs({ area: "" })} activo={!fArea} label="Todas las áreas" />
-          {AREAS_NOTA.map((a) => <FiltroChip key={a} href={qs({ area: fArea === a ? "" : a })} activo={fArea === a} label={`${areaNotaIcono[a]} ${areaNotaLabel[a]}`} />)}
-        </div>
+      {/* Toggle Lista / Calendario */}
+      <div className="mt-4 flex items-center justify-center gap-2">
+        <Link href={qs({ vista: "lista" })} className={`rounded-lg px-3 py-1.5 text-sm font-bold ${vista === "lista" ? "bg-slate-900 text-white" : "border border-slate-300 bg-white text-slate-600"}`}>📋 Lista</Link>
+        <Link href={qs({ vista: "calendario" })} className={`rounded-lg px-3 py-1.5 text-sm font-bold ${vista === "calendario" ? "bg-slate-900 text-white" : "border border-slate-300 bg-white text-slate-600"}`}>📅 Calendario</Link>
       </div>
 
-      <Seccion titulo="📌 Pendientes" items={pendientes} vacia="Nada pendiente por ahora." conFecha />
-      <Seccion titulo="👁️ Observaciones e ideas" items={observaciones} vacia="Sin observaciones abiertas." />
-      <Seccion titulo="✅ Resueltas" items={hechas} vacia="Aún no hay notas resueltas." tachado />
+      {vista === "calendario" ? (
+        <section className="mt-4">
+          {/* Nav de mes */}
+          <div className="mb-2 flex items-center justify-center gap-3">
+            <Link href={qs({ vista: "calendario", mes: sumaMes(-1) })} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-bold text-slate-600 hover:bg-slate-50">←</Link>
+            <span className="min-w-[10rem] text-center text-sm font-extrabold capitalize text-slate-800">{mesLabel}</span>
+            <Link href={qs({ vista: "calendario", mes: sumaMes(1) })} className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-sm font-bold text-slate-600 hover:bg-slate-50">→</Link>
+          </div>
+          {/* Leyenda */}
+          <div className="mb-2 flex flex-wrap justify-center gap-2 text-[11px] font-bold">
+            <span className="rounded px-1.5 py-0.5" style={{ background: "#fde2df", color: "#e23b2c" }}>● Urgente</span>
+            <span className="rounded px-1.5 py-0.5" style={{ background: "#fcecd2", color: "#b8730a" }}>● Media</span>
+            <span className="rounded px-1.5 py-0.5" style={{ background: "#eef2f6", color: "#64748b" }}>● Baja</span>
+          </div>
+          {/* Grilla */}
+          <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold uppercase text-slate-400">
+            {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => <div key={d} className="py-1">{d}</div>)}
+          </div>
+          <div className="grid grid-cols-7 gap-1">
+            {celdas.map((dia, i) => {
+              if (dia === null) return <div key={i} className="min-h-[68px] rounded-lg bg-transparent" />;
+              const items = porDia.get(dia) ?? [];
+              const esHoy = dia === hoyNum;
+              return (
+                <div key={i} className={`min-h-[68px] rounded-lg border p-1 ${esHoy ? "border-amber-400 bg-amber-50" : "border-slate-200 bg-white"}`}>
+                  <div className={`text-right text-[10px] font-bold ${esHoy ? "text-amber-700" : "text-slate-400"}`}>{dia}</div>
+                  <div className="mt-0.5 space-y-0.5">
+                    {items.slice(0, 3).map((n) => (
+                      <div key={n.id} className={`truncate rounded px-1 py-0.5 text-left text-[10px] ${n.estado === "hecha" ? "line-through opacity-50" : ""}`}
+                        style={{ borderLeft: `3px solid ${priColor(n.prioridad)}`, background: "var(--surface-2, #f8fafc)" }}
+                        title={n.texto}>
+                        {tipoNotaIcono[n.tipo]} {n.texto}
+                      </div>
+                    ))}
+                    {items.length > 3 && <div className="text-[9px] font-bold text-slate-400">+{items.length - 3} más</div>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-center text-[11px] text-slate-400">📅 Las tareas/recordatorios salen en su fecha; el resto, el día que se anotaron. El borde rojo = urgente.</p>
+        </section>
+      ) : (
+        <>
+          {/* Filtros */}
+          <div className="mt-4 space-y-2">
+            <div className="flex flex-wrap gap-1.5">
+              <FiltroChip href={qs({ tipo: "" })} activo={!fTipo} label="Todos los tipos" />
+              {TIPOS_NOTA.map((t) => <FiltroChip key={t} href={qs({ tipo: fTipo === t ? "" : t })} activo={fTipo === t} label={`${tipoNotaIcono[t]} ${tipoNotaLabel[t]}`} />)}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              <FiltroChip href={qs({ area: "" })} activo={!fArea} label="Todas las áreas" />
+              {AREAS_NOTA.map((a) => <FiltroChip key={a} href={qs({ area: fArea === a ? "" : a })} activo={fArea === a} label={`${areaNotaIcono[a]} ${areaNotaLabel[a]}`} />)}
+            </div>
+          </div>
+
+          <Seccion titulo="📌 Pendientes" items={pendientes} vacia="Nada pendiente por ahora." conFecha />
+          <Seccion titulo="👁️ Observaciones e ideas" items={observaciones} vacia="Sin observaciones abiertas." />
+          <Seccion titulo="✅ Resueltas" items={hechas} vacia="Aún no hay notas resueltas." tachado />
+        </>
+      )}
     </div>
   );
 }
