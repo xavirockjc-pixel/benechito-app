@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
-import { marcarFacturada, desmarcarFacturada } from "./actions";
+import { desmarcarFacturada } from "./actions";
+import FacturaPendiente from "./FacturaPendiente";
 
 export const dynamic = "force-dynamic";
 
 const fmt = (d: Date) => new Date(d).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" });
+const waNum = (w: string) => { const d = (w || "").replace(/\D/g, ""); return d.startsWith("56") ? d : d.length === 9 ? "56" + d : d; };
 
 export default async function FacturacionPage() {
   // Ventas con documento factura (o cliente con RUT) que aún no se han facturado.
@@ -12,7 +14,9 @@ export default async function FacturacionPage() {
     where: { OR: [{ documento: "factura" }, { negocio: { rut: { not: null } } }] },
     orderBy: { fecha: "desc" },
     take: 200,
-    include: { negocio: { select: { nombreNegocio: true, rut: true, razonSocial: true } } },
+    include: {
+      negocio: { select: { nombreNegocio: true, rut: true, razonSocial: true, giro: true, direccionFacturacion: true, emailFacturacion: true, whatsapp: true } },
+    },
   });
 
   const pendientes = ventas.filter((v) => !v.facturada && v.negocio.rut);
@@ -40,21 +44,8 @@ export default async function FacturacionPage() {
       ) : (
         <div className="space-y-2">
           {pendientes.map((v) => (
-            <div key={v.id} className="rounded-2xl border-2 border-amber-200 bg-white p-4 shadow-sm">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="font-extrabold text-slate-900">{v.negocio.razonSocial || v.negocio.nombreNegocio}</p>
-                  <p className="text-xs text-slate-500">RUT {v.negocio.rut} · {fmt(v.fecha)} · <b className="text-slate-800">{fmtCLP(Number(v.total))}</b></p>
-                </div>
-              </div>
-              <form action={marcarFacturada} className="mt-3 flex items-end gap-2">
-                <input type="hidden" name="ventaId" value={v.id} />
-                <label className="text-xs font-bold text-slate-600">Folio (opcional)
-                  <input name="folio" placeholder="N° factura" className="mt-1 block w-32 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
-                </label>
-                <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-bold text-white active:brightness-95">✓ Marcar facturada</button>
-              </form>
-            </div>
+            <FacturaPendiente key={v.id} ventaId={v.id} total={Number(v.total)} fecha={fmt(v.fecha)}
+              cliente={{ nombre: v.negocio.nombreNegocio, rut: v.negocio.rut, razonSocial: v.negocio.razonSocial, giro: v.negocio.giro, dir: v.negocio.direccionFacturacion, email: v.negocio.emailFacturacion }} />
           ))}
         </div>
       )}
@@ -84,14 +75,23 @@ export default async function FacturacionPage() {
       {emitidas.length > 0 && (
         <>
           <h2 className="mb-2 mt-6 text-sm font-bold uppercase tracking-wide text-slate-500">Emitidas ({emitidas.length})</h2>
-          <div className="space-y-1">
-            {emitidas.slice(0, 40).map((v) => (
-              <div key={v.id} className="flex items-center justify-between rounded-xl bg-slate-100 px-4 py-2.5 text-sm">
-                <span className="truncate font-semibold text-slate-600">{v.negocio.razonSocial || v.negocio.nombreNegocio} · {fmtCLP(Number(v.total))}{v.folioFactura ? ` · folio ${v.folioFactura}` : ""}</span>
-                <form action={desmarcarFacturada}><input type="hidden" name="ventaId" value={v.id} /><button className="ml-2 shrink-0 text-xs font-semibold text-slate-400">deshacer</button></form>
-              </div>
-            ))}
+          <div className="space-y-1.5">
+            {emitidas.slice(0, 40).map((v) => {
+              const nombre = v.negocio.razonSocial || v.negocio.nombreNegocio;
+              const msg = `Hola ${nombre} 👋, aquí está tu factura${v.folioFactura ? ` N° ${v.folioFactura}` : ""} por ${fmtCLP(Number(v.total))} de Benechito 🐝. ¡Gracias!`;
+              const wa = v.negocio.whatsapp ? `https://wa.me/${waNum(v.negocio.whatsapp)}?text=${encodeURIComponent(msg)}` : null;
+              const mail = v.negocio.emailFacturacion ? `mailto:${v.negocio.emailFacturacion}?subject=${encodeURIComponent("Tu factura Benechito")}&body=${encodeURIComponent(msg)}` : null;
+              return (
+                <div key={v.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm">
+                  <span className="min-w-0 flex-1 truncate font-semibold text-slate-600">{nombre} · {fmtCLP(Number(v.total))}{v.folioFactura ? ` · folio ${v.folioFactura}` : ""}</span>
+                  {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white">📲 WhatsApp</a>}
+                  {mail && <a href={mail} className="shrink-0 rounded-lg bg-sky-600 px-2.5 py-1 text-xs font-bold text-white">✉️ Email</a>}
+                  <form action={desmarcarFacturada}><input type="hidden" name="ventaId" value={v.id} /><button className="shrink-0 text-xs font-semibold text-slate-400">deshacer</button></form>
+                </div>
+              );
+            })}
           </div>
+          <p className="mt-2 text-[11px] text-slate-400">📎 El mensaje va listo; adjunta el PDF de la factura (el que bajas del SII) al enviarlo. Cuando conectemos un proveedor DTE, se enviará solo con el PDF.</p>
         </>
       )}
     </div>
