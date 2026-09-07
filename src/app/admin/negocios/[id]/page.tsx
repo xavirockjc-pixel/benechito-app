@@ -48,6 +48,16 @@ export default async function FichaNegocio({
     0,
   );
   const ccSaldo = ccTotal - ccPagado;
+
+  // --- Vida del cliente (métricas para dashboard/análisis futuro) ---
+  const comprasReales = negocio.ventas.filter((v) => Number(v.total) > 0);
+  const nCompras = comprasReales.length;
+  const ultimaCompra = comprasReales[0]?.fecha ?? null; // ventas vienen ordenadas desc
+  const ticketProm = nCompras > 0 ? ccTotal / nCompras : 0;
+  const clienteDesde = negocio.fechaIngreso ?? negocio.createdAt;
+  const diasSinComprar = ultimaCompra ? Math.floor((Date.now() - new Date(ultimaCompra).getTime()) / 864e5) : null;
+  const fMes = (d: Date | null) => (d ? new Date(d).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "2-digit" }) : "—");
+
   const meta = estadoMeta[negocio.estado as Estado];
   const waLink = `https://wa.me/${negocio.whatsapp.replace(/[^0-9]/g, "")}`;
 
@@ -110,6 +120,22 @@ export default async function FichaNegocio({
             {meta?.label ?? negocio.estado}
           </span>
         </div>
+      </div>
+
+      {/* Vida del cliente (resumen para análisis) */}
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 className="mb-3 text-sm font-extrabold uppercase tracking-wide text-slate-500">🧬 Vida del cliente</h2>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <VidaKpi label="Total comprado" valor={fmtCLP(ccTotal)} color="#2f9e44" />
+          <VidaKpi label="Compras" valor={String(nCompras)} sub={`ticket ${fmtCLP(ticketProm)}`} color="#1479c4" />
+          <VidaKpi label="Saldo (debe)" valor={fmtCLP(ccSaldo)} color={ccSaldo > 0 ? "#e23b2c" : "#94a3b8"} />
+          <VidaKpi label="⭐ Puntos" valor={String(negocio.puntos ?? 0)} color="#f28a1e" />
+          <VidaKpi label="Cliente desde" valor={fMes(clienteDesde)} color="#7c3aed" />
+          <VidaKpi label="Última compra" valor={fMes(ultimaCompra)} color="#0f766e" />
+          <VidaKpi label="Sin comprar" valor={diasSinComprar !== null ? `${diasSinComprar} d` : "—"} color={diasSinComprar !== null && diasSinComprar > 30 ? "#e23b2c" : "#64748b"} />
+          <VidaKpi label="Estado" valor={meta?.label ?? negocio.estado} color={meta?.color ?? "#64748b"} />
+        </div>
+        <p className="mt-3 text-[11px] text-slate-400">📊 Estos datos alimentarán un dashboard de clientes (mejores, dormidos, por reactivar…).</p>
       </div>
 
       {/* Acciones rápidas */}
@@ -488,6 +514,16 @@ export default async function FichaNegocio({
           </form>
         </div>
       </div>
+    </div>
+  );
+}
+
+function VidaKpi({ label, valor, sub, color }: { label: string; valor: string; sub?: string; color: string }) {
+  return (
+    <div className="rounded-xl border border-slate-100 bg-slate-50 p-2.5 text-center">
+      <p className="truncate text-base font-extrabold" style={{ color }} title={valor}>{valor}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
+      {sub && <p className="text-[10px] text-slate-400">{sub}</p>}
     </div>
   );
 }
