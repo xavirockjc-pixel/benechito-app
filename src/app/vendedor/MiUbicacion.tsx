@@ -1,7 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { reportarUbicacion } from "./actions";
+
+// Reporta la posición vía ruta API estable (no Server Action) para no romperse al Implementar.
+function reportarUbicacion(lat: number, lng: number) {
+  return fetch("/api/ubicacion", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ lat, lng }),
+    keepalive: true,
+  });
+}
 
 /** GPS del vendedor: sigue la posición en vivo y la reporta a la central (throttle ~45s). */
 export default function MiUbicacion() {
