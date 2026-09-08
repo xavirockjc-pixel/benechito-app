@@ -5,8 +5,10 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { crearDocumentoVenta } from "@/lib/facturacion";
 import { MEDIOS_PAGO, estadoPagoDe } from "@/lib/dominio/ventas";
+import { CANALES_VENTA, type CanalVenta } from "@/lib/dominio/venta-voz";
 
 type LineaPOS = { productoId: string; cantidad: number; precioUnit: number };
+type LineaVoz = { nombre?: string; productoId?: string; cantidad: number; precioUnit: number };
 
 /** Cliente genérico de mostrador (walk-in). Se crea una vez y se reutiliza. */
 async function clienteMostrador() {
@@ -25,6 +27,112 @@ async function clienteMostrador() {
     });
   }
   return c;
+}
+
+/** Busca un producto por nombre (match simple) o lo crea al vuelo. */
+async function buscarOCrearProducto(nombreRaw: string) {
+  const nombre = nombreRaw.trim();
+  if (!nombre) return null;
+  const norm = nombre.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+  const activos = await prisma.producto.findMany({ where: { activo: true }, select: { id: true, nombre: true } });
+  // Match por cobertura de palabras (≥3 letras).
+  let mejor: { id: string } | null = null, mejorScore = 0;
+  for (const p of activos) {
+    const toks = p.nombre.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").split(/\s+/).filter((w) => w.length >= 3);
+    if (!toks.length) continue;
+    const aciertos = toks.filter((w) => norm.includes(w)).length;
+    const score = aciertos / toks.length;
+    if (aciertos > 0 && score > mejorScore) { mejorScore = score; mejor = { id: p.id }; }
+  }
+  if (mejor) return mejor.id;
+  // No existe → lo crea (se asume que se está agregando al catálogo).
+  const creado = await prisma.producto.create({
+    data: { nombre: nombre.charAt(0).toUpperCase() + nombre.slice(1), linea: "otros", tipo: "propio", seccion: "propio", activo: true },
+  });
+  return creado.id;
+}
+
+/**
+ * Venta por VOZ: recibe canal (local/ruta/distribuidor) y líneas dictadas.
+ * Busca o crea cada producto, aplica el precio del canal (o el editado), descuenta
+ * stock (aunque quede negativo: se asume reposición) y registra la venta en finanzas.
+ */
+export async function venderVoz(formData: FormData) {
+  const canalKey = String(formData.get("canal") ?? "local").trim() as CanalVenta;
+  const canal = CANALES_VENTA[canalKey] ?? CANALES_VENTA.local;
+  const modo = String(formData.get("modo") ?? "efectivo").trim(); // efectivo|transferencia|fiado
+  const negocioIdSel = String(formData.get("negocioId") ?? "").trim();
+
+  let lineas: LineaVoz[] = [];
+  try { lineas = JSON.parse(String(formData.get("items") ?? "[]")); } catch { return; }
+  lineas = lineas.filter((l) => (l.productoId || l.nombre) && l.cantidad > 0);
+  if (lineas.length === 0) return;
+
+  const ubicacion =
+    (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } })) ?? (await prisma.ubicacion.findFirst());
+  if (!ubicacion) return;
+
+  const lista = (await prisma.listaPrecio.findFirst({ where: { canal: canal.lista, activo: true } }))
+    ?? (await prisma.listaPrecio.findFirst({ where: { activo: true } }));
+
+  // Resuelve producto + precio de cada línea.
+  const items: LineaPOS[] = [];
+  for (const l of lineas) {
+    const productoId = l.productoId || (await buscarOCrearProducto(l.nombre ?? ""));
+    if (!productoId) continue;
+    let precioUnit = Number(l.precioUnit) || 0;
+    // Si no vino precio, intenta tomar el del canal.
+    if (precioUnit <= 0 && lista) {
+      const pp = await prisma.precioProducto.findFirst({ where: { productoId, listaId: lista.id, cantidadMinima: 1 } });
+      if (pp) precioUnit = Number(pp.precio);
+    }
+    // Si se dictó un precio y el producto aún no lo tenía en el canal, lo aprende.
+    if (precioUnit > 0 && lista) {
+      const existe = await prisma.precioProducto.findFirst({ where: { productoId, listaId: lista.id, cantidadMinima: 1 } });
+      if (!existe) await prisma.precioProducto.create({ data: { productoId, listaId: lista.id, cantidadMinima: 1, precio: precioUnit } });
+    }
+    items.push({ productoId, cantidad: Number(l.cantidad), precioUnit });
+  }
+  if (items.length === 0) return;
+
+  const total = items.reduce((s, i) => s + i.precioUnit * i.cantidad, 0);
+
+  const cliente = negocioIdSel
+    ? (await prisma.negocio.findUnique({ where: { id: negocioIdSel } })) ?? (await clienteMostrador())
+    : await clienteMostrador();
+  const clienteReal = cliente.nombreNegocio !== "Consumidor Final";
+
+  const fiado = modo === "fiado" && clienteReal;
+  const medio = ["efectivo", "transferencia"].includes(modo) ? modo : "efectivo";
+
+  const venta = await prisma.venta.create({
+    data: {
+      negocioId: cliente.id,
+      ubicacionId: ubicacion.id,
+      total,
+      estadoPago: fiado ? "pendiente" : "pagado",
+      documento: "boleta",
+      canal: canal.ventaCanal,
+      ...(fiado ? {} : { pagos: { create: { medio, monto: total } } }),
+    },
+  });
+
+  for (const it of items) {
+    await prisma.stock.upsert({
+      where: { productoId_ubicacionId: { productoId: it.productoId, ubicacionId: ubicacion.id } },
+      update: { cantidad: { decrement: it.cantidad } },
+      create: { productoId: it.productoId, ubicacionId: ubicacion.id, cantidad: -it.cantidad },
+    });
+    await prisma.movimientoStock.create({
+      data: { productoId: it.productoId, tipo: "venta", ubicacionOrigenId: ubicacion.id, cantidad: it.cantidad, referencia: venta.id },
+    });
+  }
+
+  await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: "boleta", total });
+
+  revalidatePath("/admin/ventas");
+  revalidatePath("/admin/inventario");
+  redirect(`/admin/ventas/${venta.id}`);
 }
 
 /**
