@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { signoCV, cvLabel, cvIcono } from "@/lib/dominio/caja-vecina";
 import { eliminarMovCajaVecina } from "./actions";
 import MovCajaVecinaForm from "./MovCajaVecinaForm";
+import AbrirCajaVecinaForm from "./AbrirCajaVecinaForm";
 import EnviarWhatsApp from "@/components/EnviarWhatsApp";
 
 export const dynamic = "force-dynamic";
@@ -14,7 +15,10 @@ export default async function CajaVecinaPage() {
   const hoy0 = new Date(); hoy0.setHours(0, 0, 0, 0);
   const movs = await prisma.movimientoCajaVecina.findMany({ where: { fecha: { gte: hoy0 } }, orderBy: { fecha: "desc" } });
 
+  const apertura = movs.find((m) => m.tipo === "apertura");
+  const abierta = Boolean(apertura);
   const efectivo = movs.reduce((s, m) => s + signoCV(m.tipo) * num(m.monto), 0);
+  const saldoMaquina = apertura ? num(apertura.saldoMaquina) : 0;
   const giros = movs.filter((m) => m.tipo === "giro").reduce((s, m) => s + num(m.monto), 0);
   const paraDepositar = movs.filter((m) => m.tipo === "deposito" || m.tipo === "pago").reduce((s, m) => s + num(m.monto), 0);
   const comision = movs.filter((m) => m.tipo === "comision").reduce((s, m) => s + num(m.monto), 0);
@@ -23,6 +27,7 @@ export default async function CajaVecinaPage() {
   const resumen =
     `🏧 Caja Vecina — ${hoyTxt}\n\n` +
     `💵 Efectivo disponible: ${CLP(efectivo)}\n` +
+    (abierta ? `🏧 Saldo máquina (apertura): ${CLP(saldoMaquina)}\n` : "") +
     `📤 Giros: ${CLP(giros)}\n` +
     `📥 Para depositar: ${CLP(paraDepositar)}\n` +
     `🎁 Comisión: ${CLP(comision)}\n` +
@@ -36,12 +41,27 @@ export default async function CajaVecinaPage() {
       </div>
 
       {/* KPIs */}
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Kpi label="Efectivo disponible" valor={CLP(efectivo)} color="#0f7a44" />
+        <Kpi label="Saldo máquina" valor={abierta ? CLP(saldoMaquina) : "—"} color="#7c3aed" />
         <Kpi label="Giros (sale)" valor={CLP(giros)} color="#e23b2c" />
         <Kpi label="Para depositar" valor={CLP(paraDepositar)} color="#1479c4" />
         <Kpi label="Comisión" valor={CLP(comision)} color="#f28a1e" />
       </div>
+
+      {/* Apertura del día: primero se abre con efectivo + saldo de la máquina */}
+      {!abierta ? (
+        <div className="mt-4"><AbrirCajaVecinaForm /></div>
+      ) : (
+        <div className="mt-4 flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
+          <span className="font-extrabold text-emerald-700">🔓 Caja abierta hoy</span>
+          <span className="text-slate-500">·</span>
+          <span className="text-slate-600">Efectivo inicial <b className="text-slate-800">{CLP(num(apertura!.monto))}</b></span>
+          <span className="text-slate-500">·</span>
+          <span className="text-slate-600">Máquina <b className="text-slate-800">{CLP(saldoMaquina)}</b></span>
+          {apertura!.nombreUsuario && <span className="text-slate-400">· abrió {apertura!.nombreUsuario}</span>}
+        </div>
+      )}
 
       <div className="mt-4"><MovCajaVecinaForm /></div>
 

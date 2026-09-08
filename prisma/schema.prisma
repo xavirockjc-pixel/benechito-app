@@ -1225,6 +1225,7 @@ model MovimientoCajaVecina {
   fecha         DateTime @default(now())
   tipo          String // apertura | deposito | pago | comision | giro | retiro | ajuste
   monto         Decimal  @db.Decimal(12, 2)
+  saldoMaquina  Decimal? @db.Decimal(12, 2) // solo en apertura: cupo/saldo de la máquina
   detalle       String?
   foto          String? // pantallazo del comprobante (data URI comprimido)
   usuarioId     String?

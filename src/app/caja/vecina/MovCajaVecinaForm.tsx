@@ -79,7 +79,7 @@ export default function MovCajaVecinaForm() {
       <div className="grid grid-cols-2 gap-2">
         <label className="col-span-2 flex flex-col gap-0.5"><span className="text-[10px] font-bold uppercase text-slate-400">Tipo</span>
           <select name="tipo" value={tipo} onChange={(e) => setTipo(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-2 text-sm">
-            {TIPOS_CV.map((t) => <option key={t} value={t}>{cvIcono[t]} {cvLabel[t]}</option>)}
+            {TIPOS_CV.filter((t) => t !== "apertura").map((t) => <option key={t} value={t}>{cvIcono[t]} {cvLabel[t]}</option>)}
           </select>
         </label>
         <label className="flex flex-col gap-0.5"><span className="text-[10px] font-bold uppercase text-slate-400">Monto $</span>

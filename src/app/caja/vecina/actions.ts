@@ -28,6 +28,26 @@ export async function registrarMovCajaVecina(formData: FormData) {
   revalidatePath("/admin/caja-vecina");
 }
 
+/** Abre la Caja Vecina del día: efectivo disponible + saldo/cupo de la máquina. */
+export async function abrirCajaVecina(formData: FormData) {
+  const efectivo = numero(val(formData, "efectivo"));
+  const saldoMaquina = numero(val(formData, "saldoMaquina"));
+  if ((!Number.isFinite(efectivo) || efectivo < 0) && (!Number.isFinite(saldoMaquina) || saldoMaquina < 0)) return;
+  const desglose = val(formData, "efectivo_desglose");
+  const u = await usuarioActual();
+  await prisma.movimientoCajaVecina.create({
+    data: {
+      tipo: "apertura",
+      monto: efectivo || 0,
+      saldoMaquina: Number.isFinite(saldoMaquina) ? saldoMaquina : null,
+      detalle: desglose ? `Billetes/monedas: ${desglose}` : null,
+      usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+    },
+  });
+  revalidatePath("/caja/vecina");
+  revalidatePath("/admin/caja-vecina");
+}
+
 /** Borra un movimiento de Caja Vecina. */
 export async function eliminarMovCajaVecina(formData: FormData) {
   const id = val(formData, "id");
