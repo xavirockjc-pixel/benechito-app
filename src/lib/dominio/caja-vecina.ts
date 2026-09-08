@@ -1,6 +1,6 @@
 // Caja Vecina: tipos de movimiento, signo sobre el efectivo, y detección por voz.
 
-export const TIPOS_CV = ["apertura", "deposito", "pago", "comision", "giro", "retiro", "ajuste"] as const;
+export const TIPOS_CV = ["apertura", "deposito", "pago", "comision", "giro", "retiro", "ajuste", "cierre"] as const;
 export type TipoCV = (typeof TIPOS_CV)[number];
 
 export const cvLabel: Record<string, string> = {
@@ -11,14 +11,17 @@ export const cvLabel: Record<string, string> = {
   giro: "Giro (sale efectivo)",
   retiro: "Retiro a banco (sale efectivo)",
   ajuste: "Ajuste",
+  cierre: "Cierre del día",
 };
 export const cvIcono: Record<string, string> = {
-  apertura: "🔓", deposito: "📥", pago: "💵", comision: "🎁", giro: "📤", retiro: "🏦", ajuste: "⚙️",
+  apertura: "🔓", deposito: "📥", pago: "💵", comision: "🎁", giro: "📤", retiro: "🏦", ajuste: "⚙️", cierre: "🔒",
 };
 
-/** Signo sobre el EFECTIVO en caja: entra (+) o sale (−). */
-export function signoCV(tipo: string): 1 | -1 {
-  return tipo === "giro" || tipo === "retiro" ? -1 : 1;
+/** Signo sobre el EFECTIVO en caja: entra (+), sale (−) o neutro (0). */
+export function signoCV(tipo: string): 1 | -1 | 0 {
+  if (tipo === "giro" || tipo === "retiro") return -1;
+  if (tipo === "cierre") return 0; // el cierre no mueve el efectivo, solo registra
+  return 1;
 }
 
 /** Detecta el tipo de movimiento por lo dictado. */

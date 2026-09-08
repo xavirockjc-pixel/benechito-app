@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { TIPOS_CV } from "@/lib/dominio/caja-vecina";
@@ -46,6 +47,31 @@ export async function abrirCajaVecina(formData: FormData) {
   });
   revalidatePath("/caja/vecina");
   revalidatePath("/admin/caja-vecina");
+}
+
+/** Cierra la Caja Vecina del día: cuadra efectivo (contado vs esperado) y máquina (final vs apertura). */
+export async function cerrarCajaVecina(formData: FormData) {
+  const efectivoContado = numero(val(formData, "efectivoContado"));
+  const saldoMaquinaFinal = numero(val(formData, "saldoMaquinaFinal"));
+  const notas = val(formData, "notas");
+  const u = await usuarioActual();
+
+  const detalle =
+    `Efectivo contado: ${efectivoContado} · Saldo máquina final: ${saldoMaquinaFinal}` +
+    (notas ? ` · ${notas}` : "");
+
+  await prisma.movimientoCajaVecina.create({
+    data: {
+      tipo: "cierre",
+      monto: 0, // el cierre no mueve el efectivo, solo deja registro
+      saldoMaquina: Number.isFinite(saldoMaquinaFinal) ? saldoMaquinaFinal : null,
+      detalle,
+      usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+    },
+  });
+  revalidatePath("/caja/vecina");
+  revalidatePath("/admin/caja-vecina");
+  redirect("/caja/vecina");
 }
 
 /** Borra un movimiento de Caja Vecina. */

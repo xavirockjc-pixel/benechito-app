@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { signoCV, cvLabel, cvIcono } from "@/lib/dominio/caja-vecina";
 import { eliminarMovCajaVecina } from "./actions";
@@ -17,6 +18,7 @@ export default async function CajaVecinaPage() {
 
   const apertura = movs.find((m) => m.tipo === "apertura");
   const abierta = Boolean(apertura);
+  const cerrada = movs.some((m) => m.tipo === "cierre");
   const efectivo = movs.reduce((s, m) => s + signoCV(m.tipo) * num(m.monto), 0);
   const saldoMaquina = apertura ? num(apertura.saldoMaquina) : 0;
   const giros = movs.filter((m) => m.tipo === "giro").reduce((s, m) => s + num(m.monto), 0);
@@ -60,6 +62,13 @@ export default async function CajaVecinaPage() {
           <span className="text-slate-500">·</span>
           <span className="text-slate-600">Máquina <b className="text-slate-800">{CLP(saldoMaquina)}</b></span>
           {apertura!.nombreUsuario && <span className="text-slate-400">· abrió {apertura!.nombreUsuario}</span>}
+          <div className="ml-auto">
+            {cerrada ? (
+              <span className="rounded-lg bg-slate-200 px-3 py-1.5 text-xs font-extrabold text-slate-600">🔒 Caja cerrada</span>
+            ) : (
+              <Link href="/caja/vecina/cierre" className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-extrabold text-white active:brightness-110">🔒 Cerrar caja</Link>
+            )}
+          </div>
         </div>
       )}
 
