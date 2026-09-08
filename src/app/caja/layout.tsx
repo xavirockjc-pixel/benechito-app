@@ -4,6 +4,7 @@ import { usuarioActual } from "@/lib/auth";
 import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
 import AvisoPedidos from "./AvisoPedidos";
+import AvisoAperturas from "./AvisoAperturas";
 import NotaRapida from "@/components/NotaRapida";
 
 export const metadata: Metadata = {
@@ -40,6 +41,7 @@ export default async function CajaLayout({ children }: { children: React.ReactNo
         <Link href="/caja/sabores" className="shrink-0 rounded-lg px-3 py-1.5 font-bold text-slate-700">🍧 Sabores</Link>
         <Link href="/caja/checklist" className="shrink-0 rounded-lg px-3 py-1.5 font-bold text-slate-700">🌡️ Higiene</Link>
       </nav>
+      <AvisoAperturas />
       <main className="flex-1 p-4">{children}</main>
     </div>
   );

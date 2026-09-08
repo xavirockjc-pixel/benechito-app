@@ -91,6 +91,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/balance-ruta", label: "Balance de reparto", icon: "🚚" },
         { href: "/admin/sueldos", label: "Pagos al equipo", icon: "💵" },
         { href: "/admin/caja", label: "Cierres de caja", icon: "🧾" },
+        { href: "/admin/cuadratura", label: "Cuadratura diaria", icon: "⚖️" },
         { href: "/admin/caja-vecina", label: "Caja Vecina (aparte)", icon: "🏧" },
         { href: "/admin/facturacion", label: "Facturación", icon: "🧾" },
       ],
