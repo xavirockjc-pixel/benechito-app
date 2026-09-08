@@ -33,6 +33,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/socio", label: "Socio administrativo", icon: "🐝" },
         { href: "/admin/supercerebro", label: "Supercerebro", icon: "🧠" },
         { href: "/admin/notas", label: "Notas y acciones", icon: "📝" },
+        { href: "/admin/correcciones", label: "Correcciones (deshacer)", icon: "🧹" },
         { href: "/admin/recordatorios", label: "Recordatorios (clientes)", icon: "🔔" },
         { href: "/admin/agenda", label: "Agenda", icon: "📅" },
         { href: "/admin/mejoras", label: "Mejoras y proyecciones", icon: "🚀" },

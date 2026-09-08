@@ -104,11 +104,41 @@ export async function terminarOP(formData: FormData) {
   revalidatePath("/admin/inventario");
 }
 
-/** Elimina una OP (no revierte stock ya ingresado). */
+/** Elimina una OP y REVIERTE el stock que había ingresado (si estaba terminada). */
 export async function eliminarOP(formData: FormData) {
   const id = val(formData, "id");
+  const volver = val(formData, "volver"); // "correcciones" para volver a esa pantalla
   if (!id) return;
+
+  await revertirStockOP(id);
   await prisma.ordenProduccion.delete({ where: { id } });
+
   revalidatePath("/admin/produccion");
-  redirect("/admin/produccion");
+  revalidatePath("/admin/inventario");
+  revalidatePath("/admin/correcciones");
+  if (volver !== "correcciones") redirect("/admin/produccion");
+}
+
+/** Devuelve al inventario lo que una OP terminada había ingresado (producto o sabor). */
+export async function revertirStockOP(id: string) {
+  const op = await prisma.ordenProduccion.findUnique({ where: { id } });
+  if (!op || op.estado !== "terminada") return;
+  const cant = Number(op.cantidadReal ?? 0);
+  const destinoId = op.ubicacionDestinoId;
+  if (!destinoId || cant <= 0) return;
+
+  if (op.saborId) {
+    await prisma.stockSabor.upsert({
+      where: { saborId_ubicacionId: { saborId: op.saborId, ubicacionId: destinoId } },
+      update: { cantidad: { decrement: cant } },
+      create: { saborId: op.saborId, ubicacionId: destinoId, cantidad: -cant },
+    });
+  } else if (op.productoId) {
+    await prisma.stock.upsert({
+      where: { productoId_ubicacionId: { productoId: op.productoId, ubicacionId: destinoId } },
+      update: { cantidad: { decrement: cant } },
+      create: { productoId: op.productoId, ubicacionId: destinoId, cantidad: -cant },
+    });
+    await prisma.movimientoStock.deleteMany({ where: { referencia: op.id, tipo: "produccion" } });
+  }
 }
