@@ -961,6 +961,7 @@ model Gasto {
   conFactura   Boolean  @default(false)
   iva          Decimal? @db.Decimal(12, 2) // IVA crédito recuperable (si conFactura)
   proveedor    String?
+  origen       String? // de dónde salió: "caja_local" (compra/pago del local), etc.
   createdAt DateTime @default(now())
 
   @@index([fecha])

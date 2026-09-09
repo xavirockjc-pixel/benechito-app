@@ -4,6 +4,7 @@ import { fmtCLP } from "@/lib/dominio/pedidos";
 import { abrirCaja, sesionAbierta } from "./actions";
 import CajaPOS from "./CajaPOS";
 import ContadorEfectivo from "./ContadorEfectivo";
+import MovCajaLocalForm from "./MovCajaLocalForm";
 import RetirosDepto from "@/app/_shared/RetirosDepto";
 
 export const dynamic = "force-dynamic";
@@ -82,6 +83,8 @@ export default async function CajaPage() {
       </div>
 
       <CajaPOS productos={productos} listas={listasPOS} listaInicialId={listaSalaId} />
+
+      <div className="mt-4"><MovCajaLocalForm /></div>
 
       <RetirosDepto destino="local" acento="#0f7a44" />
     </div>

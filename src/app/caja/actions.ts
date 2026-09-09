@@ -108,7 +108,11 @@ export async function venderCaja(formData: FormData) {
   revalidatePath("/caja");
 }
 
-/** Registra un retiro/ingreso de efectivo de la caja (ej: pagar algo del cajón). */
+/**
+ * Registra un movimiento de efectivo de la caja (entra o sale) con un motivo.
+ * Si es una compra/pago (esGasto), además lo deja como GASTO del local para que
+ * quede centralizado en el cierre y en finanzas, atribuido solo al local.
+ */
 export async function movimientoCaja(formData: FormData) {
   const sesion = await sesionAbierta();
   if (!sesion) return;
@@ -118,6 +122,17 @@ export async function movimientoCaja(formData: FormData) {
   if (!["ingreso", "egreso"].includes(tipo) || !concepto || !Number.isFinite(monto) || monto <= 0) return;
 
   await prisma.movimientoCaja.create({ data: { sesionCajaId: sesion.id, tipo, concepto, monto } });
+
+  // Compra/pago del local → también queda como gasto del local (finanzas).
+  const esGasto = String(formData.get("esGasto") ?? "") === "1" && tipo === "egreso";
+  if (esGasto) {
+    const categoria = String(formData.get("categoria") ?? "otros").trim() || "otros";
+    await prisma.gasto.create({
+      data: { concepto, monto, categoria, origen: "caja_local", notas: "Caja Local" },
+    });
+    revalidatePath("/admin/finanzas");
+    revalidatePath("/admin/panorama");
+  }
   revalidatePath("/caja");
 }
 
