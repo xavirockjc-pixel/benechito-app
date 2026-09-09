@@ -14,6 +14,30 @@ export default async function AvisoAccesoAdmin() {
   const roles = (emp?.accesoRoles ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   if (roles.length === 0 || !emp?.accesoHasta) return null;
 
+  // Solicitudes de acceso pendientes (última hora).
+  const haceUnaHora = new Date(Date.now() - 60 * 60000);
+  const solicitudes = await prisma.solicitudAcceso.findMany({
+    where: { estado: "pendiente", fecha: { gte: haceUnaHora } },
+    orderBy: { fecha: "desc" }, take: 5,
+  });
+  if (solicitudes.length > 0) {
+    return (
+      <div className="mt-4 rounded-2xl border border-sky-300 bg-sky-50 px-4 py-3">
+        <p className="text-sm font-extrabold text-sky-800">🙋 Piden permiso de acceso:</p>
+        <ul className="mt-1 space-y-0.5 text-sm text-sky-900">
+          {solicitudes.map((s) => (
+            <li key={s.id}>
+              <b>{s.nombreUsuario ?? "Alguien"}</b> ({ROL_LABEL[s.rol] ?? s.rol}) — {hhmm(s.fecha)}
+            </li>
+          ))}
+        </ul>
+        <Link href="/admin/configuracion#acceso" className="mt-2 inline-block rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-extrabold text-white hover:brightness-110">
+          Autorizar acceso →
+        </Link>
+      </div>
+    );
+  }
+
   const dentro = dentroDeHorario(emp.accesoDesde, emp.accesoHasta);
   const faltan = minutosHastaCierre(emp.accesoHasta);
   const permisoVigente = emp.accesoExtraHasta && new Date() < new Date(emp.accesoExtraHasta);

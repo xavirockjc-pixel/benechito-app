@@ -6,6 +6,7 @@ import { ROLES_FULL } from "@/lib/dominio/permisos";
 import { dentroDeHorario, horaChile, hayPermisoExtra } from "@/lib/dominio/horario";
 import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
+import PedirAccesoBtn from "./PedirAccesoBtn";
 import AvisoPedidos from "./AvisoPedidos";
 import AvisoAperturas from "./AvisoAperturas";
 import NotaRapida from "@/components/NotaRapida";
@@ -36,6 +37,7 @@ export default async function CajaLayout({ children }: { children: React.ReactNo
           El acceso al local está habilitado de <b>{emp?.accesoDesde}</b> a <b>{emp?.accesoHasta}</b>.
           <br />Ahora son las <b>{horaChile().hhmm}</b>.
         </p>
+        <PedirAccesoBtn />
         <form action={logout}>
           <button className="rounded-xl bg-slate-700 px-5 py-2.5 text-sm font-bold text-white active:brightness-110">Cerrar sesión</button>
         </form>

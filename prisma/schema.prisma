@@ -1242,6 +1242,20 @@ model MovimientoCajaVecina {
   @@index([fecha])
 }
 
+/// Solicitud de acceso fuera de horario que un trabajador manda al administrador.
+model SolicitudAcceso {
+  id            String   @id @default(cuid())
+  fecha         DateTime @default(now())
+  rol           String
+  usuarioId     String?
+  nombreUsuario String?
+  motivo        String?
+  estado        String   @default("pendiente") // pendiente | atendida
+  createdAt     DateTime @default(now())
+
+  @@index([estado])
+}
+
 /// Flete cobrado aparte (ej: dejar producto a un distribuidor). Ingreso del reparto.
 model Flete {
   id        String   @id @default(cuid())

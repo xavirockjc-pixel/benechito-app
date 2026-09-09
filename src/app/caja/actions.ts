@@ -15,6 +15,22 @@ export async function logout() {
   redirect("/login");
 }
 
+/** El trabajador pide permiso de acceso al administrador (fuera de horario). */
+export async function solicitarAcceso() {
+  const u = await usuarioActual();
+  if (!u) return;
+  // Evita duplicar: si ya hay una pendiente reciente de este usuario, no crea otra.
+  const hace15 = new Date(Date.now() - 15 * 60000);
+  const existe = await prisma.solicitudAcceso.findFirst({
+    where: { usuarioId: u.sub, estado: "pendiente", fecha: { gte: hace15 } },
+  });
+  if (existe) return;
+  await prisma.solicitudAcceso.create({
+    data: { rol: u.rol, usuarioId: u.sub, nombreUsuario: u.nombre },
+  });
+  revalidatePath("/admin");
+}
+
 /** Ubicación de la sala (donde vive la caja). */
 async function salaId(): Promise<string | null> {
   const s = (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } })) ??

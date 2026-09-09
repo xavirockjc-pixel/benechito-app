@@ -57,6 +57,11 @@ export async function autorizarAccesoExtra(formData: FormData) {
     where: { id: empresa.id },
     data: { accesoExtraHasta: hasta, accesoExtraRoles: rolesCsv },
   });
+  // Da por atendidas las solicitudes pendientes de esos roles.
+  await prisma.solicitudAcceso.updateMany({
+    where: { estado: "pendiente", rol: { in: rolesCsv.split(",").map((s) => s.trim()) } },
+    data: { estado: "atendida" },
+  });
   revalidatePath("/admin/configuracion");
   revalidatePath("/admin");
   redirect("/admin/configuracion?permiso=ok");
