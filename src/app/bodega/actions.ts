@@ -178,6 +178,48 @@ export async function armarMixto(formData: FormData) {
  * Crea un producto de distribución (reventa) desde el local, indicando tipo y sabor,
  * y opcionalmente recibe una cantidad inicial en la sala. Nombre = "Tipo Sabor Formato".
  */
+/**
+ * Crea un producto NUEVO desde la app Bodega (con foto y voz) e ingresa su stock
+ * inicial a la bodega. Registra el movimiento para el registro del día.
+ */
+export async function crearProductoBodega(formData: FormData) {
+  const nombre = String(formData.get("nombre") ?? "").trim();
+  const linea = String(formData.get("linea") ?? "").trim() || "reventa";
+  const formato = String(formData.get("formato") ?? "").trim() || null;
+  const tipo = String(formData.get("tipo") ?? "") === "propio" ? "propio" : "reventa";
+  const fotoUrl = String(formData.get("fotoUrl") ?? "").trim() || null;
+  const cantidad = Math.max(0, Math.floor(Number(String(formData.get("cantidad") ?? "0").replace(/\D/g, "")) || 0));
+  const stockMinimo = Math.max(0, Math.floor(Number(String(formData.get("stockMinimo") ?? "0").replace(/\D/g, "")) || 0));
+  if (!nombre) return;
+
+  // Evita duplicar por nombre.
+  let producto = await prisma.producto.findFirst({ where: { nombre } });
+  if (!producto) {
+    producto = await prisma.producto.create({
+      data: { nombre: nombre.charAt(0).toUpperCase() + nombre.slice(1), linea, formato, tipo, seccion: tipo === "reventa" ? "distribucion" : "propio", activo: true, fotoUrl, stockMinimo },
+    });
+  }
+
+  const bodega = await ubicacionDeZona("bodega");
+  if (bodega && cantidad > 0) {
+    const u = await usuarioActual();
+    await prisma.stock.upsert({
+      where: { productoId_ubicacionId: { productoId: producto.id, ubicacionId: bodega } },
+      update: { cantidad: { increment: cantidad } },
+      create: { productoId: producto.id, ubicacionId: bodega, cantidad },
+    });
+    await prisma.movimientoStock.create({
+      data: { productoId: producto.id, tipo: "ingreso", ubicacionDestinoId: bodega, cantidad, referencia: "bodega-app" },
+    });
+    await prisma.movimientoBodega.create({
+      data: { zona: "bodega", ubicacionId: bodega, tipo: "entrada", clase: "producto", refId: producto.id, nombre, cantidad, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+    });
+  }
+
+  revalidatePath("/bodega");
+  redirect("/bodega?ok=1");
+}
+
 export async function crearProductoDistribucion(formData: FormData) {
   const tipo = String(formData.get("tipoProducto") ?? "").trim(); // ej: Bebida, Snack
   const sabor = String(formData.get("saborProducto") ?? "").trim(); // ej: Coca, Naranja

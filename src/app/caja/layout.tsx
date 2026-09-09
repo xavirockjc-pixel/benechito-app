@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
+import { ROLES_FULL } from "@/lib/dominio/permisos";
+import { dentroDeHorario, horaChile } from "@/lib/dominio/horario";
 import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
 import AvisoPedidos from "./AvisoPedidos";
@@ -17,6 +20,27 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 export default async function CajaLayout({ children }: { children: React.ReactNode }) {
   const usuario = await usuarioActual();
   const rubro = await rubroActivo();
+
+  // Horario de acceso: si el rol tiene horario y está fuera de la ventana, se bloquea.
+  const emp = await prisma.empresa.findFirst({ select: { accesoDesde: true, accesoHasta: true, accesoRoles: true } });
+  const rol = usuario?.rol ?? "";
+  const rolesConHorario = (emp?.accesoRoles ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  const aplicaHorario = rolesConHorario.includes(rol) && !ROLES_FULL.includes(rol);
+  if (aplicaHorario && !dentroDeHorario(emp?.accesoDesde, emp?.accesoHasta)) {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-900 p-6 text-center text-white">
+        <span className="text-6xl">🔒</span>
+        <h1 className="font-display text-2xl font-extrabold">Fuera de horario</h1>
+        <p className="max-w-xs text-sm text-slate-300">
+          El acceso al local está habilitado de <b>{emp?.accesoDesde}</b> a <b>{emp?.accesoHasta}</b>.
+          <br />Ahora son las <b>{horaChile().hhmm}</b>.
+        </p>
+        <form action={logout}>
+          <button className="rounded-xl bg-slate-700 px-5 py-2.5 text-sm font-bold text-white active:brightness-110">Cerrar sesión</button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col bg-slate-50">

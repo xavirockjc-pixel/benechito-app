@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import MovimientoBodegaVoz from "./MovimientoBodegaVoz";
+import NuevoProductoBodega from "./NuevoProductoBodega";
 import RetirosDepto from "@/app/_shared/RetirosDepto";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +49,9 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
       </div>
 
       {ok && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Stock actualizado</p>}
+
+      {/* Crear producto nuevo (foto + voz) */}
+      <NuevoProductoBodega />
 
       {/* Entró */}
       <section className="rounded-2xl border border-green-200 bg-green-50/50 p-4 shadow-sm">
