@@ -3,9 +3,10 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { ROLES_FULL } from "@/lib/dominio/permisos";
-import { dentroDeHorario, horaChile } from "@/lib/dominio/horario";
+import { dentroDeHorario, horaChile, minutosHastaCierre } from "@/lib/dominio/horario";
 import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
+import AvisoCierreHorario from "@/app/_shared/AvisoCierreHorario";
 import AvisoPedidos from "./AvisoPedidos";
 import AvisoAperturas from "./AvisoAperturas";
 import NotaRapida from "@/components/NotaRapida";
@@ -42,8 +43,11 @@ export default async function CajaLayout({ children }: { children: React.ReactNo
     );
   }
 
+  const minutosCierre = aplicaHorario ? minutosHastaCierre(emp?.accesoHasta) : null;
+
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col bg-slate-50">
+      {minutosCierre != null && emp?.accesoHasta && <AvisoCierreHorario minutos={minutosCierre} hasta={emp.accesoHasta} />}
       <NotaRapida area="caja" autor={usuario?.nombre ?? ""} />
       <header className="sticky top-0 z-10 flex items-center justify-between bg-[#0f7a44] px-4 py-3 text-white shadow">
         <span className="flex items-center gap-2">

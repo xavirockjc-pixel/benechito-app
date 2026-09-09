@@ -23,3 +23,12 @@ export function dentroDeHorario(desde?: string | null, hasta?: string | null): b
   const { min } = horaChile();
   return min >= d && min <= h;
 }
+
+/** Minutos que faltan para el cierre (o null si no aplica / ya pasó). */
+export function minutosHastaCierre(hasta?: string | null): number | null {
+  const h = aMin(hasta);
+  if (h == null) return null;
+  const { min } = horaChile();
+  const falta = h - min;
+  return falta > 0 ? falta : null;
+}

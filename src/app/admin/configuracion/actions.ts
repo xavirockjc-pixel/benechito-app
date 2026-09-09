@@ -29,6 +29,22 @@ export async function actualizarEmpresa(formData: FormData) {
   revalidatePath("/admin/configuracion");
 }
 
+/** Guarda el horario de acceso de los trabajadores (no aplica a propietario/admin). */
+export async function actualizarHorarioAcceso(formData: FormData) {
+  const empresa = await empresaActual();
+  const hhmm = (v: string) => (/^\d{1,2}:\d{2}$/.test(v) ? v : null);
+  const desde = hhmm(String(formData.get("accesoDesde") ?? "").trim());
+  const hasta = hhmm(String(formData.get("accesoHasta") ?? "").trim());
+  const roles = formData.getAll("accesoRoles").map((r) => String(r)).filter(Boolean).join(",");
+
+  await prisma.empresa.update({
+    where: { id: empresa.id },
+    data: { accesoDesde: desde, accesoHasta: hasta, accesoRoles: roles },
+  });
+  revalidatePath("/admin/configuracion");
+  redirect("/admin/configuracion?horario=ok");
+}
+
 /**
  * Precarga los datos base del rubro actual (sucursal, ubicaciones, listas de
  * precio y tipos/formatos). Idempotente: no duplica si ya existen.

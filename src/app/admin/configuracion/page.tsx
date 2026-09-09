@@ -1,14 +1,22 @@
 import { empresaActual } from "@/lib/dominio/empresa";
 import { RUBROS_LISTA } from "@/lib/dominio/rubros";
 import { SEED } from "@/lib/dominio/seed-rubro";
-import { actualizarEmpresa, precargarDatosRubro } from "./actions";
+import { actualizarEmpresa, precargarDatosRubro, actualizarHorarioAcceso } from "./actions";
+
+const ROLES_HORARIO = [
+  { id: "caja", label: "🛒 Local (caja)" },
+  { id: "bodega", label: "📦 Bodega" },
+  { id: "produccion", label: "🏭 Producción" },
+  { id: "vendedor", label: "🚚 Vendedor / reparto" },
+];
 
 export const dynamic = "force-dynamic";
 
-export default async function ConfiguracionPage({ searchParams }: { searchParams: Promise<{ seed?: string }> }) {
-  const { seed } = await searchParams;
+export default async function ConfiguracionPage({ searchParams }: { searchParams: Promise<{ seed?: string; horario?: string }> }) {
+  const { seed, horario } = await searchParams;
   const empresa = await empresaActual();
   const seedRubro = SEED[empresa.rubro as keyof typeof SEED] ?? SEED.fabrica;
+  const rolesActivos = new Set((empresa.accesoRoles ?? "").split(",").map((s) => s.trim()).filter(Boolean));
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -79,6 +87,42 @@ export default async function ConfiguracionPage({ searchParams }: { searchParams
         <form action={precargarDatosRubro} className="mt-3">
           <button className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-125">
             ⚡ Precargar datos de este rubro
+          </button>
+        </form>
+      </div>
+
+      {/* Horario de acceso de trabajadores */}
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-slate-900">🔒 Horario de acceso</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Los roles marcados solo pueden usar su app dentro de este horario (hora de Chile). Fuera de él se les
+          bloquea la app. <b>Tú (propietario/admin) nunca te bloqueas.</b> Deja las horas vacías para no limitar.
+        </p>
+        {horario === "ok" && (
+          <p className="mt-3 rounded-xl bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 ring-1 ring-green-200">✅ Horario guardado.</p>
+        )}
+        <form action={actualizarHorarioAcceso} className="mt-3 space-y-4">
+          <div className="grid grid-cols-2 gap-3 sm:max-w-xs">
+            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">Desde
+              <input type="time" name="accesoDesde" defaultValue={empresa.accesoDesde ?? ""} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
+            </label>
+            <label className="text-xs font-bold uppercase tracking-wide text-slate-500">Hasta
+              <input type="time" name="accesoHasta" defaultValue={empresa.accesoHasta ?? ""} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
+            </label>
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Aplicar a</p>
+            <div className="grid grid-cols-2 gap-2">
+              {ROLES_HORARIO.map((r) => (
+                <label key={r.id} className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm has-[:checked]:border-[#1479c4] has-[:checked]:bg-blue-50">
+                  <input type="checkbox" name="accesoRoles" value={r.id} defaultChecked={rolesActivos.has(r.id)} className="h-4 w-4" />
+                  <span className="font-semibold text-slate-700">{r.label}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          <button className="rounded-full bg-[#1479c4] px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:brightness-110">
+            Guardar horario
           </button>
         </form>
       </div>
