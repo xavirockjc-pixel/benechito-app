@@ -226,6 +226,9 @@ model Empresa {
   accesoDesde      String?    @default("11:00") // HH:MM
   accesoHasta      String?    @default("19:35") // HH:MM
   accesoRoles      String?    @default("caja") // roles con horario, CSV: "caja,bodega,produccion,vendedor"
+  // Permiso temporal: el admin autoriza acceso fuera de horario hasta cierta hora.
+  accesoExtraHasta  DateTime? // hasta cuándo vale el permiso
+  accesoExtraRoles  String? // roles autorizados, CSV
   sucursales Sucursal[]
   configFacturacion ConfigFacturacion?
   createdAt  DateTime   @default(now())

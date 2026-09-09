@@ -45,6 +45,32 @@ export async function actualizarHorarioAcceso(formData: FormData) {
   redirect("/admin/configuracion?horario=ok");
 }
 
+/** Autoriza acceso fuera de horario por N minutos a los roles indicados. */
+export async function autorizarAccesoExtra(formData: FormData) {
+  const empresa = await empresaActual();
+  const minutos = Math.max(5, Math.min(600, parseInt(String(formData.get("minutos") ?? "60"), 10) || 60));
+  const roles = formData.getAll("roles").map((r) => String(r)).filter(Boolean);
+  const rolesCsv = roles.length ? roles.join(",") : (empresa.accesoRoles ?? "caja");
+  const hasta = new Date(Date.now() + minutos * 60000);
+
+  await prisma.empresa.update({
+    where: { id: empresa.id },
+    data: { accesoExtraHasta: hasta, accesoExtraRoles: rolesCsv },
+  });
+  revalidatePath("/admin/configuracion");
+  revalidatePath("/admin");
+  redirect("/admin/configuracion?permiso=ok");
+}
+
+/** Revoca cualquier permiso de acceso extra vigente. */
+export async function revocarAccesoExtra() {
+  const empresa = await empresaActual();
+  await prisma.empresa.update({ where: { id: empresa.id }, data: { accesoExtraHasta: null, accesoExtraRoles: null } });
+  revalidatePath("/admin/configuracion");
+  revalidatePath("/admin");
+  redirect("/admin/configuracion?permiso=revocado");
+}
+
 /**
  * Precarga los datos base del rubro actual (sucursal, ubicaciones, listas de
  * precio y tipos/formatos). Idempotente: no duplica si ya existen.

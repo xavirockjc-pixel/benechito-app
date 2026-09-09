@@ -3,10 +3,9 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { ROLES_FULL } from "@/lib/dominio/permisos";
-import { dentroDeHorario, horaChile, minutosHastaCierre } from "@/lib/dominio/horario";
+import { dentroDeHorario, horaChile, hayPermisoExtra } from "@/lib/dominio/horario";
 import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
-import AvisoCierreHorario from "@/app/_shared/AvisoCierreHorario";
 import AvisoPedidos from "./AvisoPedidos";
 import AvisoAperturas from "./AvisoAperturas";
 import NotaRapida from "@/components/NotaRapida";
@@ -23,11 +22,12 @@ export default async function CajaLayout({ children }: { children: React.ReactNo
   const rubro = await rubroActivo();
 
   // Horario de acceso: si el rol tiene horario y está fuera de la ventana, se bloquea.
-  const emp = await prisma.empresa.findFirst({ select: { accesoDesde: true, accesoHasta: true, accesoRoles: true } });
+  const emp = await prisma.empresa.findFirst({ select: { accesoDesde: true, accesoHasta: true, accesoRoles: true, accesoExtraHasta: true, accesoExtraRoles: true } });
   const rol = usuario?.rol ?? "";
   const rolesConHorario = (emp?.accesoRoles ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const aplicaHorario = rolesConHorario.includes(rol) && !ROLES_FULL.includes(rol);
-  if (aplicaHorario && !dentroDeHorario(emp?.accesoDesde, emp?.accesoHasta)) {
+  const permisoExtra = hayPermisoExtra(rol, emp?.accesoExtraHasta, emp?.accesoExtraRoles);
+  if (aplicaHorario && !dentroDeHorario(emp?.accesoDesde, emp?.accesoHasta) && !permisoExtra) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-slate-900 p-6 text-center text-white">
         <span className="text-6xl">🔒</span>
@@ -43,11 +43,8 @@ export default async function CajaLayout({ children }: { children: React.ReactNo
     );
   }
 
-  const minutosCierre = aplicaHorario ? minutosHastaCierre(emp?.accesoHasta) : null;
-
   return (
     <div className="mx-auto flex min-h-screen max-w-3xl flex-col bg-slate-50">
-      {minutosCierre != null && emp?.accesoHasta && <AvisoCierreHorario minutos={minutosCierre} hasta={emp.accesoHasta} />}
       <NotaRapida area="caja" autor={usuario?.nombre ?? ""} />
       <header className="sticky top-0 z-10 flex items-center justify-between bg-[#0f7a44] px-4 py-3 text-white shadow">
         <span className="flex items-center gap-2">

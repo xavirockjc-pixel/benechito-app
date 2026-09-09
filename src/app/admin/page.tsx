@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { getCanalMaps } from "@/lib/dominio/canales";
 import PanelMontos from "./PanelMontos";
+import AvisoAccesoAdmin from "./AvisoAccesoAdmin";
 
 export const dynamic = "force-dynamic";
 
@@ -62,6 +63,7 @@ export default async function Panel() {
 
   return (
     <div>
+      <AvisoAccesoAdmin />
       {/* Encabezado */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>

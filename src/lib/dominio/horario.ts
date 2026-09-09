@@ -24,6 +24,14 @@ export function dentroDeHorario(desde?: string | null, hasta?: string | null): b
   return min >= d && min <= h;
 }
 
+/** ¿Hay un permiso temporal vigente para este rol? */
+export function hayPermisoExtra(rol: string, hasta?: Date | null, roles?: string | null): boolean {
+  if (!hasta) return false;
+  if (new Date() >= new Date(hasta)) return false;
+  const lista = (roles ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+  return lista.includes(rol);
+}
+
 /** Minutos que faltan para el cierre (o null si no aplica / ya pasó). */
 export function minutosHastaCierre(hasta?: string | null): number | null {
   const h = aMin(hasta);
