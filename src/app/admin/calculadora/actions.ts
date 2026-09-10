@@ -22,6 +22,8 @@ export async function guardarCalculo(formData: FormData) {
     precioVenta: decOrNull(val(formData, "precioVenta")),
     rendimiento: val(formData, "rendimiento") ? Math.max(1, Math.floor(dec(val(formData, "rendimiento")))) : null,
     costoExtra: decOrNull(val(formData, "costoExtra")),
+    costoCompra: decOrNull(val(formData, "costoCompra")),
+    metaUnidades: val(formData, "metaUnidades") ? Math.max(0, Math.floor(dec(val(formData, "metaUnidades")))) : null,
     items: val(formData, "items") || null,
     inversion: decOrNull(val(formData, "inversion")),
     retornoMensual: decOrNull(val(formData, "retornoMensual")),

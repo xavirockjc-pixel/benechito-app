@@ -985,6 +985,8 @@ model Calculo {
   precioVenta    Decimal?  @db.Decimal(12, 2)
   rendimiento    Int? // unidades que salen de la receta (lote)
   costoExtra     Decimal?  @db.Decimal(12, 2) // mano de obra, empaque, etc. por lote
+  costoCompra    Decimal?  @db.Decimal(12, 2) // reventa: costo de compra por unidad (a fábrica)
+  metaUnidades   Int? // meta esperada de venta por mes (para comparar estimado vs real)
   items          String? // JSON: [{ nombre, cantidad, costoUnit }]
   // Proyecto / inversión
   inversion      Decimal?  @db.Decimal(12, 2)

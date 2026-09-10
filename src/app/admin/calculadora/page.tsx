@@ -12,7 +12,8 @@ type Item = { nombre: string; cantidad: number; costoUnit: number };
 function parseItems(s: string | null): Item[] {
   try { const a = JSON.parse(s ?? "[]"); return Array.isArray(a) ? a : []; } catch { return []; }
 }
-function costoUnidadDe(c: { items: string | null; costoExtra: unknown; rendimiento: number | null }) {
+function costoUnidadDe(c: { items: string | null; costoExtra: unknown; rendimiento: number | null; costoCompra: unknown }) {
+  if (c.costoCompra != null) return num(c.costoCompra); // reventa
   const receta = parseItems(c.items).reduce((s, it) => s + num(it.cantidad) * num(it.costoUnit), 0) + num(c.costoExtra);
   const rend = Math.max(1, c.rendimiento ?? 1);
   return receta / rend;
@@ -21,17 +22,22 @@ function costoUnidadDe(c: { items: string | null; costoExtra: unknown; rendimien
 export default async function CalculadoraPage({ searchParams }: { searchParams: Promise<{ edit?: string }> }) {
   const { edit } = await searchParams;
 
-  const [productos, calculos, editCalc] = await Promise.all([
+  const [productos, insumosRaw, calculos, editCalc] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true }, orderBy: { nombre: "asc" }, select: { id: true, nombre: true } }),
+    prisma.materiaPrima.findMany({ where: { activo: true }, orderBy: { nombre: "asc" }, select: { nombre: true, costo: true, unidad: true } }),
     prisma.calculo.findMany({ orderBy: { createdAt: "desc" } }),
     edit ? prisma.calculo.findUnique({ where: { id: edit } }) : Promise.resolve(null),
   ]);
+
+  const insumos = insumosRaw.map((m) => ({ nombre: m.nombre, costo: num(m.costo), unidad: m.unidad }));
 
   const inicial: CalcInicial | undefined = editCalc
     ? {
         id: editCalc.id, tipo: editCalc.tipo, nombre: editCalc.nombre, productoId: editCalc.productoId,
         precioVenta: editCalc.precioVenta != null ? num(editCalc.precioVenta) : null,
         rendimiento: editCalc.rendimiento, costoExtra: editCalc.costoExtra != null ? num(editCalc.costoExtra) : null,
+        costoCompra: editCalc.costoCompra != null ? num(editCalc.costoCompra) : null,
+        metaUnidades: editCalc.metaUnidades,
         items: parseItems(editCalc.items),
         inversion: editCalc.inversion != null ? num(editCalc.inversion) : null,
         retornoMensual: editCalc.retornoMensual != null ? num(editCalc.retornoMensual) : null,
@@ -56,7 +62,7 @@ export default async function CalculadoraPage({ searchParams }: { searchParams: 
       </div>
 
       <div className="mt-4">
-        <CalculadoraForm productos={productos} inicial={inicial} />
+        <CalculadoraForm productos={productos} insumos={insumos} inicial={inicial} />
         {edit && <Link href="/admin/calculadora" className="mt-2 inline-block text-xs font-semibold text-slate-500 underline">Cancelar edición / nuevo cálculo</Link>}
       </div>
 
@@ -102,12 +108,15 @@ export default async function CalculadoraPage({ searchParams }: { searchParams: 
                   <div className="mt-3 rounded-xl bg-slate-50 p-3">
                     <p className="mb-1 text-xs font-extrabold uppercase tracking-wide text-slate-500">📈 Informe de ventas (este mes)</p>
                     {unidades > 0 ? (
-                      <div className="grid grid-cols-2 gap-2 text-center text-sm sm:grid-cols-4">
-                        <Mini label="Vendidas" valor={`${unidades} u.`} />
-                        <Mini label="Ingreso" valor={CLP(ingreso)} />
-                        <Mini label="Costo" valor={CLP(costoTot)} />
-                        <Mini label="Utilidad" valor={CLP(utilTot)} color={utilTot >= 0 ? "#15803d" : "#b91c1c"} />
-                      </div>
+                      <>
+                        <div className="grid grid-cols-2 gap-2 text-center text-sm sm:grid-cols-4">
+                          <Mini label="Vendidas" valor={`${unidades} u.${c.metaUnidades ? ` / meta ${c.metaUnidades}` : ""}`} />
+                          <Mini label="Ingreso" valor={CLP(ingreso)} />
+                          <Mini label="Costo" valor={CLP(costoTot)} />
+                          <Mini label="Utilidad" valor={CLP(utilTot)} color={utilTot >= 0 ? "#15803d" : "#b91c1c"} />
+                        </div>
+                        <Veredicto utilUnidad={util} unidades={unidades} meta={c.metaUnidades ?? 0} />
+                      </>
                     ) : (
                       <p className="text-sm text-slate-400">Sin ventas de este producto en el mes.</p>
                     )}
@@ -132,6 +141,23 @@ function Cabecera({ nombre, id }: { nombre: string; id: string }) {
       </div>
     </div>
   );
+}
+
+function Veredicto({ utilUnidad, unidades, meta }: { utilUnidad: number; unidades: number; meta: number }) {
+  let tono = "bg-slate-100 text-slate-700", texto = "";
+  if (utilUnidad <= 0) {
+    tono = "bg-red-100 text-red-700";
+    texto = `🔴 Estás perdiendo ${CLP(-utilUnidad)} por unidad. Sube el precio o baja el costo antes de seguir vendiendo.`;
+  } else if (meta > 0 && unidades >= meta) {
+    tono = "bg-green-100 text-green-700";
+    texto = `✅ Superó la meta (${unidades}/${meta}) y hay buena utilidad → puedes dar un bono al vendedor.`;
+  } else if (meta > 0) {
+    tono = "bg-amber-100 text-amber-700";
+    texto = `⚠️ Va bajo la meta (${unidades}/${meta}). Aplica un aumento de precio o impulsa la venta para que rinda.`;
+  } else {
+    texto = `Cada unidad deja ${CLP(utilUnidad)}. Define una meta para comparar y decidir aumentos o bonos.`;
+  }
+  return <p className={`mt-2 rounded-lg px-3 py-2 text-xs font-bold ${tono}`}>{texto}</p>;
 }
 
 function Mini({ label, valor, color }: { label: string; valor: string; color?: string }) {
