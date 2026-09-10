@@ -86,6 +86,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       activo: true,
       items: [
         { href: "/admin/finanzas", label: "Finanzas", icon: "💰" },
+        { href: "/admin/estado-financiero", label: "Estado financiero", icon: "📋" },
         { href: "/admin/iva", label: "Ayudante de IVA", icon: "🧾" },
         { href: "/admin/cobranza", label: "Cobranza", icon: "💸" },
         { href: "/admin/rentabilidad", label: "Rentabilidad", icon: "📊" },

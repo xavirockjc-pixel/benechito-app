@@ -969,9 +969,26 @@ model Gasto {
   iva          Decimal? @db.Decimal(12, 2) // IVA crédito recuperable (si conFactura)
   proveedor    String?
   origen       String? // de dónde salió: "caja_local" (compra/pago del local), etc.
+  personal     Boolean  @default(false) // gasto fuera del trabajo (personal), no del negocio
   createdAt DateTime @default(now())
 
   @@index([fecha])
+}
+
+/// Deuda que el negocio o el dueño DEBE pagar (proveedor, préstamo, personal, etc.).
+model Deuda {
+  id         String   @id @default(cuid())
+  acreedor   String // a quién se le debe
+  motivo     String?
+  monto      Decimal  @db.Decimal(12, 2)
+  pagado     Decimal  @default(0) @db.Decimal(12, 2)
+  personal   Boolean  @default(false) // true = deuda personal (fuera del trabajo)
+  categoria  String?
+  fechaVence DateTime?
+  estado     String   @default("pendiente") // pendiente | pagada
+  createdAt  DateTime @default(now())
+
+  @@index([estado])
 }
 
 // ===========================================================================

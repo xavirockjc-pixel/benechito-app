@@ -13,7 +13,7 @@ export default async function PanoramaPage() {
 
   const [ventas, gastos, pagosTrab, fletes, cvComision, porCobrarAgg] = await Promise.all([
     prisma.venta.findMany({ where: { fecha: { gte: inicio6 } }, select: { total: true, fecha: true, canal: true } }),
-    prisma.gasto.findMany({ where: { fecha: { gte: inicio6 } }, select: { monto: true, fecha: true, categoria: true } }),
+    prisma.gasto.findMany({ where: { fecha: { gte: inicio6 }, personal: false }, select: { monto: true, fecha: true, categoria: true } }),
     prisma.movimientoTrabajador.findMany({ where: { tipo: "pago", fecha: { gte: inicio6 } }, select: { monto: true, fecha: true } }),
     prisma.flete.findMany({ where: { fecha: { gte: inicio6 } }, select: { monto: true, fecha: true } }),
     prisma.movimientoCajaVecina.findMany({ where: { tipo: "comision", fecha: { gte: inicio6 } }, select: { monto: true, fecha: true } }),
