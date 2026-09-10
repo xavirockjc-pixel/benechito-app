@@ -7,7 +7,7 @@ import { ventaRapida } from "../actions";
 import ControlVoz from "../ControlVoz";
 import type { CambioVoz } from "@/lib/dominio/voz";
 
-type Prod = { id: string; nombre: string; formato: string | null; precio: number };
+type Prod = { id: string; nombre: string; formato: string | null; precio: number; fotoUrl?: string | null };
 type Cliente = { id: string; nombreNegocio: string; comuna: string };
 
 export default function VentaRapida({ productos, clientes = [] }: { productos: Prod[]; clientes?: Cliente[] }) {
@@ -61,8 +61,8 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
 
       {productos.length > 0 && <ControlVoz productos={productos} onCambios={aplicarVoz} />}
 
-      {/* Productos */}
-      <div className="grid grid-cols-2 gap-2">
+      {/* Catálogo con fotos (para mostrar al cliente y seleccionar) */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {productos.map((p) => {
           const n = cart[p.id] ?? 0;
           return (
@@ -70,13 +70,21 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
               key={p.id}
               type="button"
               onClick={() => add(p.id)}
-              className={`rounded-xl border p-3 text-left shadow-sm active:brightness-95 ${n > 0 ? "border-[#1479c4] bg-blue-50" : "border-slate-200 bg-white"}`}
+              className={`overflow-hidden rounded-2xl border text-left shadow-sm active:brightness-95 ${n > 0 ? "border-[#1479c4] ring-2 ring-blue-200" : "border-slate-200 bg-white"}`}
             >
-              <span className="block truncate font-semibold text-slate-900">{p.nombre}</span>
-              <span className="block text-xs text-slate-400">{p.formato ?? ""}</span>
-              <span className="mt-1 flex items-center justify-between">
+              <span className="relative block aspect-square w-full bg-slate-100">
+                {p.fotoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={p.fotoUrl} alt={p.nombre} className="h-full w-full object-cover" />
+                ) : (
+                  <span className="flex h-full items-center justify-center text-3xl text-slate-300">🍫</span>
+                )}
+                {n > 0 && <span className="absolute right-1 top-1 grid h-6 min-w-6 place-items-center rounded-full bg-[#1479c4] px-1.5 text-xs font-extrabold text-white">{n}</span>}
+              </span>
+              <span className="block p-2">
+                <span className="block truncate text-sm font-semibold text-slate-900">{p.nombre}</span>
+                <span className="block text-[11px] text-slate-400">{p.formato ?? ""}</span>
                 <span className="font-bold text-[#1479c4]">{fmtCLP(p.precio)}</span>
-                {n > 0 && <span className="rounded-full bg-[#1479c4] px-2 text-xs font-bold text-white">{n}</span>}
               </span>
             </button>
           );
@@ -153,6 +161,12 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
                   </button>
                 ))}
               </div>
+            )}
+            {q.trim().length >= 2 && clientesFiltrados.length === 0 && (
+              <a href={`/vendedor/nuevo?nombre=${encodeURIComponent(q.trim())}`}
+                className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-emerald-400 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700 active:brightness-95">
+                ＋ Crear cliente «{q.trim()}»
+              </a>
             )}
             {(modo === "abono" || modo === "credito") && (
               <input

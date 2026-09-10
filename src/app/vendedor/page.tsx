@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { tipoClienteLabel } from "@/lib/dominio/precios";
 import MiUbicacion from "./MiUbicacion";
+import CatalogoVenta from "./CatalogoVenta";
 
 export const dynamic = "force-dynamic";
 
@@ -14,14 +15,37 @@ const saldoDe = (ventas: { total: unknown; pagos: { monto: unknown }[] }[]) =>
 export default async function VendedorHome({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; sector?: string; vista?: string; vendido?: string }>;
+  searchParams: Promise<{ q?: string; sector?: string; vista?: string; vendido?: string; t?: string }>;
 }) {
   const sp = await searchParams;
   const busca = (sp.q ?? "").trim();
   const sector = (sp.sector ?? "").trim();
   const vista = sp.vista === "todos" ? "todos" : "dia";
   const filtrando = !!busca || !!sector || vista === "todos";
+  const tab = sp.t === "dia" ? "dia" : "cat"; // inicio = catálogo por defecto
   const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+
+  // Pestañas del inicio.
+  const Tabs = (
+    <div className="mb-3 grid grid-cols-2 gap-2">
+      <Link href="/vendedor" className={`rounded-xl py-2.5 text-center text-sm font-extrabold ${tab === "cat" ? "bg-[#1479c4] text-white shadow" : "border border-slate-200 bg-white text-slate-500"}`}>🛍️ Catálogo / Vender</Link>
+      <Link href="/vendedor?t=dia" className={`rounded-xl py-2.5 text-center text-sm font-extrabold ${tab === "dia" ? "bg-[#1479c4] text-white shadow" : "border border-slate-200 bg-white text-slate-500"}`}>📋 Del día / clientes</Link>
+    </div>
+  );
+
+  // ---- Inicio = catálogo con fotos + venta por voz ----
+  if (tab === "cat") {
+    return (
+      <div>
+        <div className="mb-3"><MiUbicacion /></div>
+        {sp.vendido && <p className="mb-3 rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Venta registrada</p>}
+        {Tabs}
+        <h1 className="mb-2 text-lg font-extrabold text-slate-900">🛍️ Catálogo</h1>
+        <p className="mb-3 text-xs text-slate-500">Muéstralo al cliente, elige por voz o tocando, y cierra la venta (boleta/factura, paga o queda debiendo).</p>
+        <CatalogoVenta />
+      </div>
+    );
+  }
 
   // Sectores (comunas) para el filtro rápido.
   const comunasRaw = await prisma.negocio.groupBy({ by: ["comuna"], _count: true });
@@ -75,24 +99,22 @@ export default async function VendedorHome({
   const qs = (patch: { q?: string; sector?: string; vista?: string }) => {
     const m = { q: busca, sector, vista, ...patch };
     const p = new URLSearchParams();
+    p.set("t", "dia");
     if (m.q) p.set("q", m.q);
     if (m.sector) p.set("sector", m.sector);
     if (m.vista && m.vista !== "dia") p.set("vista", m.vista);
-    const s = p.toString();
-    return s ? `/vendedor?${s}` : "/vendedor";
+    return `/vendedor?${p.toString()}`;
   };
 
   return (
     <div>
       <div className="mb-3"><MiUbicacion /></div>
       {sp.vendido && <p className="mb-3 rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Venta registrada</p>}
-
-      <Link href="/vendedor/venta-rapida" className="mb-3 flex items-center justify-center gap-2 rounded-2xl bg-green-600 py-4 text-base font-extrabold text-white shadow active:brightness-95">
-        ⚡ Venta rápida (sin cliente)
-      </Link>
+      {Tabs}
 
       {/* Buscador */}
       <form className="flex gap-2">
+        <input type="hidden" name="t" value="dia" />
         <input name="q" defaultValue={busca} placeholder="🔎 Buscar cliente…" className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 outline-none focus:border-[#1479c4]" />
         {sector && <input type="hidden" name="sector" value={sector} />}
         <button className="rounded-xl bg-[#1479c4] px-4 font-bold text-white">Ir</button>
@@ -104,7 +126,7 @@ export default async function VendedorHome({
         {comunas.map((c) => (
           <Link key={c} href={qs({ sector: sector === c ? "" : c, vista: "todos" })} className={`rounded-full border px-2.5 py-1 text-xs font-bold ${sector === c ? "border-[#1479c4] bg-blue-50 text-[#1479c4]" : "border-slate-200 bg-white text-slate-500"}`}>📍 {c}</Link>
         ))}
-        {filtrando && <Link href="/vendedor" className="rounded-full px-2.5 py-1 text-xs font-bold text-slate-400">✕ Ver del día</Link>}
+        {filtrando && <Link href="/vendedor?t=dia" className="rounded-full px-2.5 py-1 text-xs font-bold text-slate-400">✕ Ver del día</Link>}
       </div>
 
       {filtrando ? (
