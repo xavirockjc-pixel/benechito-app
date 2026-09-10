@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { estadoPagoDe } from "@/lib/dominio/ventas";
 
 const val = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 
@@ -12,6 +13,47 @@ export async function ejecutarComando(formData: FormData) {
   const clase = val(formData, "clase"); // producto | sabor
   const refId = val(formData, "refId");
   const cantidad = Number(val(formData, "cantidad"));
+  const monto = Number(val(formData, "monto"));
+  const okRedirect = (msg: string) => redirect("/admin/voz?ok=" + encodeURIComponent(msg));
+
+  // ---- Finanzas por voz ----
+  if (intent === "gasto") {
+    if (!Number.isFinite(monto) || monto <= 0) return;
+    await prisma.gasto.create({ data: { concepto: val(formData, "concepto") || "Gasto", monto, categoria: "otros" } });
+    revalidatePath("/admin/finanzas"); revalidatePath("/admin/panorama");
+    okRedirect("Gasto registrado");
+  }
+  if (intent === "deuda") {
+    if (!Number.isFinite(monto) || monto <= 0) return;
+    await prisma.deuda.create({ data: { acreedor: val(formData, "acreedor") || "—", monto } });
+    revalidatePath("/admin/estado-financiero");
+    okRedirect("Deuda registrada");
+  }
+  if (intent === "pago") {
+    const trabajadorId = val(formData, "trabajadorId");
+    if (!trabajadorId || !Number.isFinite(monto) || monto <= 0) return;
+    await prisma.movimientoTrabajador.create({ data: { trabajadorId, tipo: "pago", monto, notas: "Por voz" } });
+    revalidatePath("/admin/sueldos"); revalidatePath("/admin/panorama");
+    okRedirect("Pago registrado");
+  }
+  if (intent === "abono") {
+    const negocioId = val(formData, "negocioId");
+    if (!negocioId || !Number.isFinite(monto) || monto <= 0) return;
+    let resto = monto;
+    const ventas = await prisma.venta.findMany({ where: { negocioId }, include: { pagos: { select: { monto: true } } }, orderBy: { fecha: "asc" } });
+    for (const v of ventas) {
+      if (resto <= 0) break;
+      const pagado = v.pagos.reduce((s, p) => s + Number(p.monto), 0);
+      const saldo = Number(v.total) - pagado;
+      if (saldo <= 0) continue;
+      const aplicar = Math.min(saldo, resto);
+      await prisma.pago.create({ data: { ventaId: v.id, medio: "efectivo", monto: aplicar } });
+      await prisma.venta.update({ where: { id: v.id }, data: { estadoPago: estadoPagoDe(Number(v.total), pagado + aplicar) } });
+      resto -= aplicar;
+    }
+    revalidatePath("/admin/cobranza"); revalidatePath("/admin/ventas");
+    okRedirect("Abono registrado");
+  }
 
   if (intent === "orden") {
     if (!refId || !Number.isFinite(cantidad) || cantidad <= 0) return;

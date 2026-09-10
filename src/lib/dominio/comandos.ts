@@ -4,10 +4,15 @@
 //     "agenda entrega dos surtido para el viernes" -> agenda entrega ...
 
 export type ItemCat = { clase: "producto" | "sabor"; id: string; nombre: string; linea?: string };
+export type Persona = { id: string; nombre: string };
 
 export type Comando =
   | { intent: "orden"; clase: "producto" | "sabor"; refId: string; nombre: string; cantidad: number }
   | { intent: "agenda"; tipo: string; clase?: "producto" | "sabor"; refId?: string; nombre?: string; cantidad?: number; fecha: string; titulo: string }
+  | { intent: "gasto"; concepto: string; monto: number }
+  | { intent: "pago"; trabajadorId: string; nombre: string; monto: number }
+  | { intent: "deuda"; acreedor: string; monto: number }
+  | { intent: "abono"; negocioId: string; nombre: string; monto: number }
   | { intent: "navegar"; ruta: string; label: string }
   | { intent: "desconocido"; texto: string };
 
@@ -53,11 +58,33 @@ const TIPOS_AGENDA: Record<string, string> = { apartar: "apartar", aparta: "apar
 
 // Palabras que NO son nombre de producto (verbos, conectores, fechas…).
 const RELLENO = new Set([
-  "de", "el", "la", "los", "las", "un", "una", "y", "con", "para", "porfavor", "favor", "por",
+  "de", "del", "el", "la", "los", "las", "un", "una", "y", "con", "para", "porfavor", "favor", "por", "a", "al",
   "orden", "ordenes", "produccion", "produce", "producir", "fabricar", "fabrica", "fabriquen",
   "agenda", "agendar", "agendame", "apartar", "aparta", "mezclar", "mezcla", "entrega", "entregar",
   "en", "bodega", "hoy", "manana", "pasado", "dia", "hazme", "haz", "quiero", "necesito", "anota", "registra",
+  // Finanzas (para que no ensucien el concepto/nombre):
+  "gasto", "gaste", "gastar", "gastamos", "compre", "pagale", "pagarle", "pago", "pagar", "paga", "sueldo",
+  "deuda", "debemos", "debo", "abona", "abono", "abonar", "cobra", "cobro", "cobrar", "pesos", "plata", "mil",
 ]);
+
+const PALABRAS_GASTO = ["gasto", "gaste", "gastar", "gastamos", "compre"];
+const PALABRAS_PAGO = ["pagale", "pagarle", "sueldo"]; // pago a trabajador
+const PALABRAS_DEUDA = ["deuda", "debemos", "debo"];
+const PALABRAS_ABONO = ["abona", "abono", "abonar", "cobra", "cobro", "cobrar"]; // abono/cobro a cliente
+
+/** Empareja una persona (trabajador/cliente) con los tokens restantes. */
+function matchPersona(tokens: string[], lista: Persona[]): Persona | null {
+  const limpios = tokens.filter((w) => !RELLENO.has(w) && !(w in NUM) && !/^\d+$/.test(w));
+  if (limpios.length === 0) return null;
+  let mejor: { p: Persona; score: number } | null = null;
+  for (const p of lista) {
+    const nomTokens = norm(p.nombre).split(" ").filter((w) => !RELLENO.has(w));
+    let score = 0;
+    for (const nt of nomTokens) if (limpios.some((l) => coincide(l, nt))) score++;
+    if (score > 0 && (!mejor || score > mejor.score)) mejor = { p, score };
+  }
+  return mejor?.p ?? null;
+}
 
 function numeroDeTokens(tokens: string[]): number | null {
   let total = 0, current = 0, hubo = false;
@@ -89,6 +116,25 @@ function extraerCantidad(words: string[]): { valor: number; usados: Set<number> 
   const usados = new Set<number>();
   for (let i = start; i <= end; i++) usados.add(i);
   return { valor, usados };
+}
+
+/** Extrae el MONTO (para finanzas): el grupo numérico de mayor valor (la plata),
+ * ignorando artículos sueltos como "un/una". Devuelve valor e índices usados. */
+function extraerMonto(words: string[]): { valor: number; usados: Set<number> } | null {
+  const grupos: { valor: number; ini: number; fin: number }[] = [];
+  let start = -1, end = -1;
+  const esNum = (w: string) => /^\d+$/.test(w) || w in NUM;
+  for (let i = 0; i < words.length; i++) {
+    if (esNum(words[i]) || (words[i] === "y" && start >= 0 && esNum(words[i + 1] ?? ""))) {
+      if (start < 0) start = i; end = i;
+    } else if (start >= 0) { grupos.push({ valor: numeroDeTokens(words.slice(start, end + 1)) ?? 0, ini: start, fin: end }); start = -1; }
+  }
+  if (start >= 0) grupos.push({ valor: numeroDeTokens(words.slice(start, end + 1)) ?? 0, ini: start, fin: end });
+  if (grupos.length === 0) return null;
+  const mejor = grupos.reduce((a, b) => (b.valor > a.valor ? b : a));
+  const usados = new Set<number>();
+  for (let i = mejor.ini; i <= mejor.fin; i++) usados.add(i);
+  return { valor: mejor.valor, usados };
 }
 
 /** Fecha del comando (hoy, mañana, pasado mañana, un día de la semana, o "el 25"). */
@@ -169,10 +215,39 @@ function detectarNavegacion(frase: string, words: string[]): Comando | null {
 }
 
 /** Interpreta la frase dictada y devuelve una acción estructurada. */
-export function interpretarComando(texto: string, catalogo: ItemCat[]): Comando {
+export function interpretarComando(
+  texto: string,
+  catalogo: ItemCat[],
+  extra?: { trabajadores?: Persona[]; clientes?: Persona[] },
+): Comando {
   const frase = norm(texto);
   const words = frase.split(" ").filter(Boolean);
   if (words.length === 0) return { intent: "desconocido", texto };
+
+  // ---- Finanzas por voz (requieren un monto) ----
+  const cantMonto = extraerMonto(words);
+  const monto = cantMonto?.valor ?? 0;
+  const restoFin = words.filter((_, i) => !cantMonto?.usados.has(i));
+  const has = (arr: string[]) => words.some((w) => arr.includes(w));
+
+  if (monto > 0 && has(PALABRAS_GASTO)) {
+    const concepto = restoFin.filter((w) => !RELLENO.has(w)).join(" ").trim();
+    return { intent: "gasto", concepto: concepto || "Gasto", monto };
+  }
+  if (monto > 0 && has(PALABRAS_DEUDA)) {
+    const acreedor = restoFin.filter((w) => !RELLENO.has(w)).join(" ").trim();
+    return { intent: "deuda", acreedor: acreedor || "—", monto };
+  }
+  if (monto > 0 && has(PALABRAS_PAGO)) {
+    const t = matchPersona(restoFin, extra?.trabajadores ?? []);
+    if (t) return { intent: "pago", trabajadorId: t.id, nombre: t.nombre, monto };
+    return { intent: "desconocido", texto };
+  }
+  if (monto > 0 && has(PALABRAS_ABONO)) {
+    const c = matchPersona(restoFin, extra?.clientes ?? []);
+    if (c) return { intent: "abono", negocioId: c.id, nombre: c.nombre, monto };
+    return { intent: "desconocido", texto };
+  }
 
   const esAgenda = words.some((w) => PALABRAS_AGENDA.includes(w));
   const esOrden = !esAgenda && words.some((w) => PALABRAS_ORDEN.includes(w));

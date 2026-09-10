@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { interpretarComando, type Comando, type ItemCat } from "@/lib/dominio/comandos";
+import { interpretarComando, type Comando, type ItemCat, type Persona } from "@/lib/dominio/comandos";
 import { ejecutarComando } from "./actions";
+
+const CLP = (n: number) => "$" + Math.round(n).toLocaleString("es-CL");
 
 type SpeechRec = {
   lang: string; interimResults: boolean; continuous: boolean; maxAlternatives: number;
@@ -14,7 +16,7 @@ type SpeechRec = {
 
 const tipoLabel: Record<string, string> = { apartar: "Apartar en bodega", mezclar: "Mandar a mezclar", fabricar: "Mandar a fabricar", entrega: "Entrega", otro: "Agenda" };
 
-export default function ConsolaVoz({ catalogo }: { catalogo: ItemCat[] }) {
+export default function ConsolaVoz({ catalogo, trabajadores = [], clientes = [] }: { catalogo: ItemCat[]; trabajadores?: Persona[]; clientes?: Persona[] }) {
   const recRef = useRef<SpeechRec | null>(null);
   const [soportado, setSoportado] = useState(true);
   const [escuchando, setEscuchando] = useState(false);
@@ -32,7 +34,7 @@ export default function ConsolaVoz({ catalogo }: { catalogo: ItemCat[] }) {
 
   const interpretar = (texto: string) => {
     setDijo(texto);
-    setCmd(interpretarComando(texto, catalogo));
+    setCmd(interpretarComando(texto, catalogo, { trabajadores, clientes }));
   };
 
   const escuchar = () => {
@@ -106,6 +108,38 @@ export default function ConsolaVoz({ catalogo }: { catalogo: ItemCat[] }) {
             intent: "agenda", tipo: cmd.tipo, titulo: cmd.titulo, fecha: cmd.fecha,
             clase: cmd.clase ?? "", refId: cmd.refId ?? "", cantidad: cmd.cantidad ? String(cmd.cantidad) : "",
           }} />
+        </PreviewCard>
+      )}
+
+      {cmd && cmd.intent === "gasto" && (
+        <PreviewCard color="teal">
+          <p className="text-xs font-bold uppercase tracking-wide text-teal-700">Registrar gasto</p>
+          <p className="mt-1 text-lg font-extrabold text-slate-900">{CLP(cmd.monto)} · {cmd.concepto}</p>
+          <ConfirmForm fields={{ intent: "gasto", concepto: cmd.concepto, monto: String(cmd.monto) }} />
+        </PreviewCard>
+      )}
+
+      {cmd && cmd.intent === "deuda" && (
+        <PreviewCard color="teal">
+          <p className="text-xs font-bold uppercase tracking-wide text-teal-700">Registrar deuda por pagar</p>
+          <p className="mt-1 text-lg font-extrabold text-slate-900">{CLP(cmd.monto)} · a {cmd.acreedor}</p>
+          <ConfirmForm fields={{ intent: "deuda", acreedor: cmd.acreedor, monto: String(cmd.monto) }} />
+        </PreviewCard>
+      )}
+
+      {cmd && cmd.intent === "pago" && (
+        <PreviewCard color="teal">
+          <p className="text-xs font-bold uppercase tracking-wide text-teal-700">Pago al equipo</p>
+          <p className="mt-1 text-lg font-extrabold text-slate-900">{CLP(cmd.monto)} · a {cmd.nombre}</p>
+          <ConfirmForm fields={{ intent: "pago", trabajadorId: cmd.trabajadorId, monto: String(cmd.monto) }} />
+        </PreviewCard>
+      )}
+
+      {cmd && cmd.intent === "abono" && (
+        <PreviewCard color="blue">
+          <p className="text-xs font-bold uppercase tracking-wide text-blue-700">Abono / cobro de cliente</p>
+          <p className="mt-1 text-lg font-extrabold text-slate-900">{CLP(cmd.monto)} · {cmd.nombre}</p>
+          <ConfirmForm fields={{ intent: "abono", negocioId: cmd.negocioId, monto: String(cmd.monto) }} />
         </PreviewCard>
       )}
     </div>
