@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { puedeAccederAdmin, ROLES_FULL } from "@/lib/dominio/permisos";
 import { rubroActivo } from "@/lib/dominio/empresa";
@@ -31,14 +32,12 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin", label: "Panel", icon: "📊" },
         { href: "/admin/panorama", label: "Panorama general", icon: "🌎" },
         { href: "/admin/socio", label: "Socio administrativo", icon: "🐝" },
-        { href: "/admin/supercerebro", label: "Supercerebro", icon: "🧠" },
         { href: "/admin/notas", label: "Notas y acciones", icon: "📝" },
         { href: "/admin/correcciones", label: "Correcciones (deshacer)", icon: "🧹" },
         { href: "/admin/recordatorios", label: "Recordatorios (clientes)", icon: "🔔" },
         { href: "/admin/agenda", label: "Agenda", icon: "📅" },
         { href: "/admin/mejoras", label: "Mejoras y proyecciones", icon: "🚀" },
         { href: "/admin/calculadora", label: "Calculadora (producto/proyecto)", icon: "🧮" },
-        { href: "/admin/dashboard", label: "Tablero", icon: "📈" },
         { href: "/admin/voz", label: "Asistente voz", icon: "🎙️" },
       ],
     },
@@ -49,11 +48,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/pos", label: L.pos, icon: "🛒" },
         { href: "/admin/ventas", label: "Ventas", icon: "💵" },
-        { href: "/admin/ventas-local", label: "Ventas Local (análisis)", icon: "🏪" },
         { href: "/admin/pedidos", label: "Pedidos", icon: "🧾" },
-        { href: "/admin/preventa", label: "Preventa", icon: "📲" },
-        { href: "/admin/retiros", label: L.retiros, icon: "📥" },
-        { href: "/admin/rutas", label: L.rutas, icon: "🗺️" },
         { href: "/admin/repartos", label: "Vehículo y reparto", icon: "🚚" },
         { href: "/admin/repartidores", label: "Repartidores (mapa)", icon: "📍" },
       ],
@@ -64,9 +59,6 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
         { href: "/admin/clientes-dashboard", label: "Dashboard clientes", icon: "📊" },
-        { href: "/admin/negocios/duplicados", label: "Duplicados", icon: "🔁" },
-        { href: "/admin/puntos", label: "Puntos Benechito", icon: "⭐" },
-        { href: "/admin/novedades", label: "Novedades & Promos", icon: "🔥" },
         { href: "/admin/productos", label: "Catálogo", icon: "🍫" },
         { href: "/admin/precios", label: "Precios", icon: "🏷️" },
         { href: "/admin/inventario", label: "Inventario", icon: "📦" },
@@ -78,7 +70,6 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/produccion", label: L.produccion, icon: "🏭" },
         { href: "/admin/materias", label: L.materias, icon: "🧪" },
-        { href: "/admin/control-calidad", label: "Control calidad y turnos", icon: "✅" },
         { href: "/admin/sabores", label: L.sabores, icon: "🍫" },
       ],
     },
@@ -88,24 +79,11 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/finanzas", label: "Finanzas", icon: "💰" },
         { href: "/admin/estado-financiero", label: "Estado financiero", icon: "📋" },
-        { href: "/admin/iva", label: "Ayudante de IVA", icon: "🧾" },
         { href: "/admin/cobranza", label: "Cobranza", icon: "💸" },
-        { href: "/admin/rentabilidad", label: "Rentabilidad", icon: "📊" },
         { href: "/admin/balance-ruta", label: "Balance de reparto", icon: "🚚" },
         { href: "/admin/sueldos", label: "Pagos al equipo", icon: "💵" },
-        { href: "/admin/caja", label: "Cierres de caja", icon: "🧾" },
         { href: "/admin/cuadratura", label: "Cuadratura diaria", icon: "⚖️" },
         { href: "/admin/caja-vecina", label: "Caja Vecina (aparte)", icon: "🏧" },
-        { href: "/admin/facturacion", label: "Facturación", icon: "🧾" },
-      ],
-    },
-    {
-      titulo: "Calidad y BPM",
-      activo: true,
-      items: [
-        { href: "/admin/formularios", label: "Checklists / BPM", icon: "✅" },
-        { href: "/admin/capacitaciones", label: "Capacitaciones", icon: "🎓" },
-        { href: "/admin/higiene", label: "Higiene y EPP", icon: "🧴" },
       ],
     },
     {
@@ -115,6 +93,31 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/equipo", label: "Equipo", icon: "👥" },
         { href: "/admin/usuarios", label: "Usuarios", icon: "🔑" },
         { href: "/admin/configuracion", label: "Configuración", icon: "⚙️" },
+      ],
+    },
+    {
+      // Duplicados y módulos que quizá se implementen/ajusten a futuro. Vivos, para revisar.
+      titulo: "🧪 Extras / En revisión",
+      activo: true,
+      items: [
+        { href: "/admin/dashboard", label: "Tablero", icon: "📈" },
+        { href: "/admin/supercerebro", label: "Supercerebro", icon: "🧠" },
+        { href: "/admin/ventas-local", label: "Ventas Local (análisis)", icon: "🏪" },
+        { href: "/admin/rentabilidad", label: "Rentabilidad", icon: "📊" },
+        { href: "/admin/rutas", label: L.rutas, icon: "🗺️" },
+        { href: "/admin/retiros", label: L.retiros, icon: "📥" },
+        { href: "/admin/preventa", label: "Preventa", icon: "📲" },
+        { href: "/admin/caja", label: "Cierres de caja", icon: "🧾" },
+        { href: "/admin/puntos", label: "Puntos Benechito", icon: "⭐" },
+        { href: "/admin/novedades", label: "Novedades & Promos", icon: "🔥" },
+        { href: "/admin/negocios/duplicados", label: "Duplicados", icon: "🔁" },
+        { href: "/admin/reposiciones", label: "Reposiciones", icon: "🔁" },
+        { href: "/admin/control-calidad", label: "Control calidad y turnos", icon: "✅" },
+        { href: "/admin/iva", label: "Ayudante de IVA", icon: "🧾" },
+        { href: "/admin/facturacion", label: "Facturación", icon: "🧾" },
+        { href: "/admin/formularios", label: "Checklists / BPM", icon: "✅" },
+        { href: "/admin/capacitaciones", label: "Capacitaciones", icon: "🎓" },
+        { href: "/admin/higiene", label: "Higiene y EPP", icon: "🧴" },
       ],
     },
   ];
@@ -131,13 +134,16 @@ export default async function AdminLayout({
 
   // Menú según la plantilla del rubro activo (renombra áreas y oculta módulos).
   const rubro = await rubroActivo();
+  const empresa = await prisma.empresa.findFirst({ select: { modoSimple: true } });
+  const modoSimple = empresa?.modoSimple ?? true;
   const modulos = construirModulos(rubro.labels);
   const ocultos = new Set(rubro.ocultar);
   const tema = rubro.tema;
   const gradMarca = `linear-gradient(135deg, ${tema.degradado[0]}, ${tema.degradado[1]})`;
 
-  // Filtra el menú según el rol y el rubro.
+  // Filtra el menú según el rol y el rubro. En modo simple se oculta el grupo "Extras / En revisión".
   const modulosVisibles = modulos
+    .filter((m) => !(modoSimple && m.titulo.includes("Extras")))
     .map((m) => ({
       ...m,
       items: m.items.filter(

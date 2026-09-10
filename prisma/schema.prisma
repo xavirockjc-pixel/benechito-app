@@ -229,6 +229,8 @@ model Empresa {
   // Permiso temporal: el admin autoriza acceso fuera de horario hasta cierta hora.
   accesoExtraHasta  DateTime? // hasta cuándo vale el permiso
   accesoExtraRoles  String? // roles autorizados, CSV
+  // Menú: modo simple oculta el grupo "Extras / En revisión"; completo lo muestra.
+  modoSimple        Boolean    @default(true)
   sucursales Sucursal[]
   configFacturacion ConfigFacturacion?
   createdAt  DateTime   @default(now())

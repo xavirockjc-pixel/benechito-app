@@ -29,6 +29,15 @@ export async function actualizarEmpresa(formData: FormData) {
   revalidatePath("/admin/configuracion");
 }
 
+/** Cambia el menú entre modo simple (solo núcleo) y completo (con Extras / En revisión). */
+export async function cambiarModoMenu(formData: FormData) {
+  const empresa = await empresaActual();
+  const simple = String(formData.get("modo") ?? "simple") !== "completo";
+  await prisma.empresa.update({ where: { id: empresa.id }, data: { modoSimple: simple } });
+  revalidatePath("/admin", "layout");
+  redirect("/admin/configuracion?menu=ok");
+}
+
 /** Guarda el horario de acceso de los trabajadores (no aplica a propietario/admin). */
 export async function actualizarHorarioAcceso(formData: FormData) {
   const empresa = await empresaActual();

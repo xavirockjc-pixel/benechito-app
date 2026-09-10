@@ -1,7 +1,7 @@
 import { empresaActual } from "@/lib/dominio/empresa";
 import { RUBROS_LISTA } from "@/lib/dominio/rubros";
 import { SEED } from "@/lib/dominio/seed-rubro";
-import { actualizarEmpresa, precargarDatosRubro, actualizarHorarioAcceso, autorizarAccesoExtra, revocarAccesoExtra } from "./actions";
+import { actualizarEmpresa, precargarDatosRubro, actualizarHorarioAcceso, autorizarAccesoExtra, revocarAccesoExtra, cambiarModoMenu } from "./actions";
 
 const ROLES_HORARIO = [
   { id: "caja", label: "🛒 Local (caja)" },
@@ -12,8 +12,8 @@ const ROLES_HORARIO = [
 
 export const dynamic = "force-dynamic";
 
-export default async function ConfiguracionPage({ searchParams }: { searchParams: Promise<{ seed?: string; horario?: string; permiso?: string }> }) {
-  const { seed, horario, permiso } = await searchParams;
+export default async function ConfiguracionPage({ searchParams }: { searchParams: Promise<{ seed?: string; horario?: string; permiso?: string; menu?: string }> }) {
+  const { seed, horario, permiso, menu } = await searchParams;
   const empresa = await empresaActual();
   const seedRubro = SEED[empresa.rubro as keyof typeof SEED] ?? SEED.fabrica;
   const rolesActivos = new Set((empresa.accesoRoles ?? "").split(",").map((s) => s.trim()).filter(Boolean));
@@ -90,6 +90,27 @@ export default async function ConfiguracionPage({ searchParams }: { searchParams
           <button className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white transition hover:brightness-125">
             ⚡ Precargar datos de este rubro
           </button>
+        </form>
+      </div>
+
+      {/* Modo del menú: simple o completo */}
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <h2 className="text-lg font-bold text-slate-900">🧭 Modo del menú</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          <b>Simple</b>: solo el núcleo que usas a diario. <b>Completo</b>: agrega el grupo <b>🧪 Extras / En revisión</b> (duplicados y módulos por implementar/ajustar). Nada se borra.
+        </p>
+        {menu === "ok" && <p className="mt-2 rounded-lg bg-green-50 px-3 py-2 text-xs font-semibold text-green-700 ring-1 ring-green-200">✅ Menú actualizado.</p>}
+        <form action={cambiarModoMenu} className="mt-3 flex flex-wrap gap-2">
+          {[["simple", "🟢 Simple (recomendado)"], ["completo", "🧪 Completo (con Extras)"]].map(([v, lbl]) => {
+            const activo = v === "simple" ? empresa.modoSimple : !empresa.modoSimple;
+            return (
+              <label key={v} className="cursor-pointer">
+                <input type="radio" name="modo" value={v} defaultChecked={activo} className="peer sr-only" />
+                <span className="block rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-600 peer-checked:border-[#1479c4] peer-checked:bg-blue-50 peer-checked:text-[#1479c4]">{lbl}</span>
+              </label>
+            );
+          })}
+          <button className="rounded-full bg-[#1479c4] px-5 py-2 text-sm font-bold text-white shadow-sm hover:brightness-110">Aplicar</button>
         </form>
       </div>
 
