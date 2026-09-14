@@ -68,7 +68,7 @@ export default function MovimientoBodegaVoz({
                 key={p.id}
                 type="button"
                 onClick={() => add(p.id)}
-                className={`rounded-lg border p-2 text-left text-sm active:brightness-95 ${n > 0 ? "border-[#b45309] bg-amber-50" : "border-slate-200 bg-white"}`}
+                className={`rounded-lg border p-3 text-left text-sm active:brightness-95 ${n > 0 ? "border-[#b45309] bg-amber-50" : "border-slate-200 bg-white"}`}
               >
                 <span className="block truncate font-semibold text-slate-800">{p.nombre}</span>
                 {n > 0 && <span className="text-xs font-bold text-[#b45309]">× {n}</span>}
@@ -87,9 +87,9 @@ export default function MovimientoBodegaVoz({
               <li key={l.id} className="flex items-center justify-between py-2 text-sm">
                 <span className="min-w-0 truncate font-semibold text-slate-800">{l.nombre}</span>
                 <span className="flex items-center gap-2">
-                  <button type="button" onClick={() => sub(l.id)} className="h-7 w-7 rounded bg-slate-100 font-bold">−</button>
-                  <span className="w-6 text-center font-semibold">{l.cantidad}</span>
-                  <button type="button" onClick={() => add(l.id)} className="h-7 w-7 rounded bg-slate-100 font-bold">+</button>
+                  <button type="button" onClick={() => sub(l.id)} className="h-9 w-9 rounded-lg bg-slate-100 text-lg font-bold active:bg-slate-200">−</button>
+                  <span className="w-8 text-center text-base font-bold">{l.cantidad}</span>
+                  <button type="button" onClick={() => add(l.id)} className="h-9 w-9 rounded-lg bg-slate-100 text-lg font-bold active:bg-slate-200">+</button>
                 </span>
               </li>
             ))}

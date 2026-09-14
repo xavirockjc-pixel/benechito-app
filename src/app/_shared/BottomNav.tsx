@@ -22,8 +22,16 @@ export default function BottomNav({ items, acento = "#0f766e" }: { items: NavIte
     return mejor;
   }, null);
 
+  // Con muchos destinos (p. ej. Vendedor) la barra se desliza en horizontal;
+  // con pocos, reparte el ancho en partes iguales.
+  const scroll = items.length > 5;
+
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 mx-auto flex max-w-md items-stretch justify-around border-t border-slate-200 bg-white pb-[max(0.25rem,env(safe-area-inset-bottom))] text-[11px]">
+    <nav
+      className={`fixed inset-x-0 bottom-0 z-20 mx-auto flex max-w-md items-stretch border-t border-slate-200 bg-white pb-[max(0.25rem,env(safe-area-inset-bottom))] text-[11px] ${
+        scroll ? "gap-0.5 overflow-x-auto px-1" : "justify-around"
+      }`}
+    >
       {items.map((it) => {
         const activo = it.href === activoHref;
         return (
@@ -31,7 +39,9 @@ export default function BottomNav({ items, acento = "#0f766e" }: { items: NavIte
             key={it.href}
             href={it.href}
             aria-current={activo ? "page" : undefined}
-            className={`flex min-w-0 flex-1 flex-col items-center gap-0.5 pt-2 pb-1 font-semibold transition active:scale-95 ${activo ? "" : "text-slate-500"}`}
+            className={`flex flex-col items-center gap-0.5 pt-2 pb-1 font-semibold transition active:scale-95 ${
+              scroll ? "w-[4.25rem] shrink-0" : "min-w-0 flex-1"
+            } ${activo ? "" : "text-slate-500"}`}
             style={activo ? { color: acento } : undefined}
           >
             <span className={`text-xl leading-none ${activo ? "" : "opacity-70"}`}>{it.icon}</span>

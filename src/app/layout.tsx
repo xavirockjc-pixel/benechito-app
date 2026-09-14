@@ -49,6 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="es"
+      suppressHydrationWarning
       className={`${baloo.variable} ${nunito.variable} ${pacifico.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-papel">

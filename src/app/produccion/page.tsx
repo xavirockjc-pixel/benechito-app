@@ -146,13 +146,13 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
                     <input type="hidden" name="id" value={o.id} />
                     <label className="text-xs font-bold text-slate-600">Hice
                       <input type="number" name="cantidadReal" min="0" step="1" defaultValue={o.cantidadPlan} inputMode="numeric"
-                        className="mt-1 w-20 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+                        className="mt-1 w-20 rounded-lg border border-slate-300 px-3 py-2.5 text-base" />
                     </label>
                     <label className="text-xs font-bold text-slate-600">Merma
                       <input type="number" name="merma" min="0" step="1" defaultValue="0" inputMode="numeric"
-                        className="mt-1 w-16 rounded-lg border border-slate-300 px-2 py-2 text-sm" />
+                        className="mt-1 w-16 rounded-lg border border-slate-300 px-2 py-2.5 text-base" />
                     </label>
-                    <button className="rounded-lg bg-[#0f766e] px-4 py-2 text-sm font-bold text-white active:brightness-95">Cumplir</button>
+                    <button className="rounded-xl bg-[#0f766e] px-5 py-3 text-base font-extrabold text-white active:brightness-95">Cumplir</button>
                   </form>
                 </li>
               );
@@ -161,10 +161,14 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
         )}
       </section>
 
-      {/* 2 — Control de calidad (receta) */}
-      <section className="rounded-2xl border border-teal-200 bg-teal-50/40 p-4 shadow-sm">
-        <h2 className="mb-1 text-sm font-extrabold text-teal-800">🧪 Control de calidad — receta</h2>
-        <p className="mb-2 text-xs text-slate-500">Receta base por tipo + agregados pesados. Marca lo que echaste y se descuenta solo.</p>
+      {/* 2 — Control de calidad (receta). Colapsable: se abre solo al mezclar (menos scroll). */}
+      <details className="group rounded-2xl border border-teal-200 bg-teal-50/40 p-4 shadow-sm">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 text-sm font-extrabold text-teal-800">
+          <span>🧪 Control de calidad — receta</span>
+          <span className="shrink-0 rounded-full bg-teal-100 px-2 py-0.5 text-[11px] font-bold text-teal-700 group-open:hidden">tocar para abrir ▾</span>
+          <span className="hidden shrink-0 text-teal-600 group-open:inline">▲</span>
+        </summary>
+        <p className="mt-2 mb-2 text-xs text-slate-500">Receta base por tipo + agregados pesados. Marca lo que echaste y se descuenta solo.</p>
 
         {hayProtegidas && abiertas.size > 0 && (
           <div className="mb-3 flex items-center justify-between rounded-lg bg-green-50 px-3 py-2 text-xs">
@@ -179,7 +183,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
           modoPorLinea={modoPorLinea}
           onDesbloquear={desbloquearRecetas} claveIncorrecta={desbloqueo === "0"}
         />
-      </section>
+      </details>
 
       {/* 3 — Anota lo que hiciste (voz o escrito) */}
       <section className="rounded-2xl border border-teal-200 bg-white p-4 shadow-sm">

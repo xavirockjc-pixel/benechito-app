@@ -87,11 +87,11 @@ export default function NotaRapida({ area = "general", autor = "" }: { area?: st
       <button
         type="button"
         onClick={() => setAbierto((v) => !v)}
-        className="fixed bottom-32 right-4 z-[60] flex items-center gap-2 rounded-full bg-amber-500 px-4 py-3 text-white shadow-lg shadow-amber-500/30 hover:bg-amber-600 active:scale-95 transition md:bottom-20"
+        className="fixed right-3 bottom-[calc(74px+env(safe-area-inset-bottom))] z-[55] flex items-center gap-2 rounded-full bg-amber-500 p-2.5 text-white shadow-lg shadow-amber-500/30 opacity-95 transition hover:bg-amber-600 active:scale-95 sm:p-3 md:right-4 md:bottom-20"
         aria-label="Nota rápida"
       >
-        <span className="text-lg">📝</span>
-        <span className="hidden sm:inline text-sm font-semibold">Nota</span>
+        <span className="text-lg leading-none">📝</span>
+        <span className="hidden text-sm font-semibold sm:inline">Nota</span>
       </button>
 
       {/* Panel */}

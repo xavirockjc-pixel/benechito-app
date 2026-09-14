@@ -117,13 +117,13 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId
               className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-800" />
             <input value={f.cantidad} onChange={(e) => setFila(f.key, { cantidad: e.target.value })} inputMode="numeric" placeholder="Cant."
               className="w-20 rounded-lg border border-slate-300 px-2 py-2.5 text-right text-sm font-semibold" />
-            <button type="button" onClick={() => delFila(f.key)} className="shrink-0 text-xs font-bold text-red-500">✕</button>
+            <button type="button" onClick={() => delFila(f.key)} aria-label="Quitar fila" className="grid h-9 w-9 shrink-0 place-items-center rounded-lg text-base font-bold text-red-500 active:bg-red-50">✕</button>
           </div>
         ))}
       </div>
       {saboresTipo.length > 0 && <p className="text-[11px] text-slate-400">💡 {saboresTipo.length} sabores de {lineaLabel[linea] ?? linea} disponibles al tocar el campo.</p>}
 
-      <button type="button" onClick={addFila} className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 active:bg-slate-200">
+      <button type="button" onClick={addFila} className="rounded-lg bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 active:bg-slate-200">
         + Otro sabor
       </button>
 

@@ -5,6 +5,7 @@ import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
 import RegistrarSW from "./RegistrarSW";
 import NotaRapida from "@/components/NotaRapida";
+import BottomNav from "@/app/_shared/BottomNav";
 
 export const metadata: Metadata = {
   title: "Benechito Vendedor",
@@ -43,29 +44,18 @@ export default async function VendedorLayout({
       <main className="flex-1 p-4 pb-24">{children}</main>
 
       {/* Barra inferior (navegación) */}
-      <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md items-center gap-1 overflow-x-auto border-t border-slate-200 bg-white px-2 py-2 text-xs">
-        <Link href="/vendedor" className="flex shrink-0 flex-col items-center gap-0.5 px-3 py-1 font-semibold text-slate-700">
-          <span className="text-lg">🏪</span> Clientes
-        </Link>
-        <Link href="/vendedor/entregas" className="flex shrink-0 flex-col items-center gap-0.5 px-3 py-1 font-semibold text-slate-700">
-          <span className="text-lg">🛵</span> Entregas
-        </Link>
-        <Link href="/vendedor/agenda" className="flex flex-col items-center gap-0.5 px-3 py-1 font-semibold text-slate-700">
-          <span className="text-lg">📅</span> Agenda
-        </Link>
-        <Link href="/vendedor/ruta" className="flex flex-col items-center gap-0.5 px-2 py-1 font-semibold text-slate-700">
-          <span className="text-lg">🗺️</span> Ruta
-        </Link>
-        <Link href="/vendedor/camion" className="flex flex-col items-center gap-0.5 px-2 py-1 font-semibold text-slate-700">
-          <span className="text-lg">📦</span> Camión
-        </Link>
-        <Link href="/vendedor/vehiculo" className="flex flex-col items-center gap-0.5 px-2 py-1 font-semibold text-slate-700">
-          <span className="text-lg">🚙</span> Vehículo
-        </Link>
-        <Link href="/vendedor/nuevo" className="flex flex-col items-center gap-0.5 px-2 py-1 font-semibold text-slate-700">
-          <span className="text-lg">➕</span> Nuevo
-        </Link>
-      </nav>
+      <BottomNav
+        acento="#1479c4"
+        items={[
+          { href: "/vendedor", label: "Clientes", icon: "🏪" },
+          { href: "/vendedor/entregas", label: "Entregas", icon: "🛵" },
+          { href: "/vendedor/agenda", label: "Agenda", icon: "📅" },
+          { href: "/vendedor/ruta", label: "Ruta", icon: "🗺️" },
+          { href: "/vendedor/camion", label: "Camión", icon: "📦" },
+          { href: "/vendedor/vehiculo", label: "Vehículo", icon: "🚙" },
+          { href: "/vendedor/nuevo", label: "Nuevo", icon: "➕" },
+        ]}
+      />
     </div>
   );
 }

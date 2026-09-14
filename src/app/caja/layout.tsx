@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { ROLES_FULL } from "@/lib/dominio/permisos";
@@ -10,6 +9,7 @@ import PedirAccesoBtn from "./PedirAccesoBtn";
 import AvisoPedidos from "./AvisoPedidos";
 import AvisoAperturas from "./AvisoAperturas";
 import NotaRapida from "@/components/NotaRapida";
+import NavLink from "@/app/_shared/NavLink";
 
 export const metadata: Metadata = {
   title: "Benechito Caja",
@@ -60,13 +60,13 @@ export default async function CajaLayout({ children }: { children: React.ReactNo
           <form action={logout}><button className="text-xs font-semibold text-white/80">Salir</button></form>
         </span>
       </header>
-      <nav className="flex gap-2 overflow-x-auto border-b border-slate-200 bg-white px-4 py-2 text-sm">
-        <Link href="/caja" className="shrink-0 rounded-lg px-3 py-1.5 font-bold text-slate-700">🛒 Caja</Link>
+      <nav className="flex items-center gap-2 overflow-x-auto border-b border-slate-200 bg-white px-4 py-2 text-sm">
+        <NavLink href="/caja" exact>🛒 Caja</NavLink>
         <AvisoPedidos />
-        <Link href="/caja/vecina" className="shrink-0 rounded-lg px-3 py-1.5 font-bold text-slate-700">🏧 Caja Vecina</Link>
-        <Link href="/caja/inventario" className="shrink-0 rounded-lg px-3 py-1.5 font-bold text-slate-700">🍫 Productos</Link>
-        <Link href="/caja/sabores" className="shrink-0 rounded-lg px-3 py-1.5 font-bold text-slate-700">🍧 Sabores</Link>
-        <Link href="/caja/checklist" className="shrink-0 rounded-lg px-3 py-1.5 font-bold text-slate-700">🌡️ Higiene</Link>
+        <NavLink href="/caja/vecina">🏧 Caja Vecina</NavLink>
+        <NavLink href="/caja/inventario">🍫 Productos</NavLink>
+        <NavLink href="/caja/sabores">🍧 Sabores</NavLink>
+        <NavLink href="/caja/checklist">🌡️ Higiene</NavLink>
       </nav>
       <AvisoAperturas />
       <main className="flex-1 p-4">{children}</main>

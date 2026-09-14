@@ -28,6 +28,8 @@ export default function ThemeToggle() {
     setDark(!dark);
   }
 
+  const icono = listo ? (dark ? "☀️" : "🌙") : "🌗";
+  const etiqueta = listo ? (dark ? "Claro" : "Oscuro") : "Tema";
   return (
     <button
       type="button"
@@ -36,7 +38,8 @@ export default function ThemeToggle() {
       aria-label="Cambiar entre modo claro y oscuro"
       title="Modo claro / oscuro"
     >
-      {listo ? (dark ? "☀️ Claro" : "🌙 Oscuro") : "🌗 Tema"}
+      <span className="theme-fab__ic" aria-hidden>{icono}</span>
+      <span className="theme-fab__tx">{etiqueta}</span>
     </button>
   );
 }
