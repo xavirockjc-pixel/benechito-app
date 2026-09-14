@@ -4,6 +4,7 @@ import { usuarioActual } from "@/lib/auth";
 import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
 import NotaRapida from "@/components/NotaRapida";
+import BottomNav from "@/app/_shared/BottomNav";
 
 export const metadata: Metadata = {
   title: "Benechito Bodega",
@@ -34,20 +35,15 @@ export default async function BodegaLayout({ children }: { children: React.React
       <main className="flex-1 p-4 pb-24">{children}</main>
 
       {/* Barra inferior (navegación) */}
-      <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md items-center justify-around border-t border-slate-200 bg-white px-2 py-2 text-xs">
-        <Link href="/bodega" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
-          <span className="text-lg">📦</span> {rubro.labels.bodega}
-        </Link>
-        <Link href="/bodega/surtidos" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
-          <span className="text-lg">🍬</span> {rubro.labels.surtidos}
-        </Link>
-        <Link href="/bodega/insumos" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
-          <span className="text-lg">🧪</span> Insumos
-        </Link>
-        <Link href="/bodega/checklist" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
-          <span className="text-lg">🧼</span> Higiene
-        </Link>
-      </nav>
+      <BottomNav
+        acento="#b45309"
+        items={[
+          { href: "/bodega", label: rubro.labels.bodega, icon: "📦" },
+          { href: "/bodega/surtidos", label: rubro.labels.surtidos, icon: "🍬" },
+          { href: "/bodega/insumos", label: "Insumos", icon: "🧪" },
+          { href: "/bodega/checklist", label: "Higiene", icon: "🧼" },
+        ]}
+      />
     </div>
   );
 }

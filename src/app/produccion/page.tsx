@@ -142,7 +142,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
                     <span className="rounded-full bg-teal-50 px-2 py-0.5 text-xs font-bold text-teal-700">Hacer {o.cantidadPlan}</span>
                   </div>
                   {o.notas && <p className="mt-0.5 text-xs text-slate-500">📝 {o.notas}</p>}
-                  <form action={cumplirOrden} className="mt-2 flex items-end gap-2">
+                  <form action={cumplirOrden} className="mt-2 flex flex-wrap items-end gap-2">
                     <input type="hidden" name="id" value={o.id} />
                     <label className="text-xs font-bold text-slate-600">Hice
                       <input type="number" name="cantidadReal" min="0" step="1" defaultValue={o.cantidadPlan} inputMode="numeric"

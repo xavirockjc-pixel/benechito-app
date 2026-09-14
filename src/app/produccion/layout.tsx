@@ -4,6 +4,7 @@ import { usuarioActual } from "@/lib/auth";
 import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
 import NotaRapida from "@/components/NotaRapida";
+import BottomNav from "@/app/_shared/BottomNav";
 
 export const metadata: Metadata = {
   title: "Benechito Producción",
@@ -27,7 +28,6 @@ export default async function ProduccionLayout({ children }: { children: React.R
           </span>
         </Link>
         <span className="flex items-center gap-3">
-          <Link href="/produccion/capacitaciones" className="text-xs font-semibold text-white/90">🎓 Capacitaciones</Link>
           <span className="hidden text-xs text-white/80 sm:inline">{usuario?.nombre}</span>
           <form action={logout}><button className="text-xs font-semibold text-white/80">Salir</button></form>
         </span>
@@ -35,20 +35,15 @@ export default async function ProduccionLayout({ children }: { children: React.R
       <main className="flex-1 p-4 pb-24">{children}</main>
 
       {/* Barra inferior (navegación) */}
-      <nav className="fixed inset-x-0 bottom-0 mx-auto flex max-w-md items-center justify-around border-t border-slate-200 bg-white px-2 py-2 text-xs">
-        <Link href="/produccion" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
-          <span className="text-lg">🏭</span> {rubro.labels.produccion}
-        </Link>
-        <Link href="/produccion/insumos" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
-          <span className="text-lg">🧪</span> Insumos
-        </Link>
-        <Link href="/produccion/checklist" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
-          <span className="text-lg">🧼</span> Higiene
-        </Link>
-        <Link href="/produccion/capacitaciones" className="flex flex-col items-center gap-0.5 px-6 py-1 font-semibold text-slate-700">
-          <span className="text-lg">🎓</span> Capacita
-        </Link>
-      </nav>
+      <BottomNav
+        acento="#0f766e"
+        items={[
+          { href: "/produccion", label: rubro.labels.produccion, icon: "🏭" },
+          { href: "/produccion/insumos", label: "Insumos", icon: "🧪" },
+          { href: "/produccion/checklist", label: "Higiene", icon: "🧼" },
+          { href: "/produccion/capacitaciones", label: "Capacita", icon: "🎓" },
+        ]}
+      />
     </div>
   );
 }
