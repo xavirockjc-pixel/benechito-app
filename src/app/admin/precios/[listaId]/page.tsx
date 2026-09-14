@@ -41,6 +41,14 @@ export default async function EditarListaPage({
   // productoId -> precio base actual
   const precioDe = new Map(precios.map((p) => [p.productoId, p.precio.toString()]));
 
+  // productoId -> tramos por cantidad (ordenados por cantidad), para mostrar la escala
+  const tramosByProd = new Map<string, typeof tramos>();
+  for (const t of tramos) {
+    const arr = tramosByProd.get(t.productoId) ?? [];
+    arr.push(t);
+    tramosByProd.set(t.productoId, arr);
+  }
+
   const porLinea = productos.reduce<Record<string, typeof productos>>((acc, p) => {
     (acc[p.linea] ??= []).push(p);
     return acc;
@@ -128,47 +136,56 @@ export default async function EditarListaPage({
         </div>
       </form>
 
-      {/* Precio por cantidad (mayoreo) — precios especiales al comprar desde N unidades */}
+      {/* Precio por cantidad (mayoreo) — agrupado por producto: cada uno con su escala */}
       <section className="mt-10 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-crema-2">
         <h2 className="text-lg font-extrabold text-navy">📦 Precio por cantidad (mayoreo)</h2>
-        <p className="mt-1 text-sm text-choco-2">Precio especial al comprar desde cierta cantidad. Ej: “desde 12 unidades: $800 c/u”. Se usa solo, según cuánto lleve el cliente.</p>
+        <p className="mt-1 text-sm text-choco-2">
+          Precio especial al comprar desde cierta cantidad, <strong>solo para esta lista/canal</strong>. Se aplica solo, según cuánto lleve el cliente.
+          Ej: base → desde 50: más barato → desde 100: más barato aún.
+        </p>
 
-        {/* Agregar tramo */}
-        <form action={agregarTramoPrecio} className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end">
-          <input type="hidden" name="listaId" value={lista.id} />
-          <label className="text-xs font-bold text-navy">Producto
-            <select name="productoId" required defaultValue="" className="mt-1 w-full rounded-lg border border-crema-2 bg-crema/40 px-2 py-2 text-sm text-choco outline-none focus:border-naranja">
-              <option value="">Selecciona…</option>
-              {productos.map((p) => <option key={p.id} value={p.id}>{p.nombre}{p.formato ? ` · ${p.formato}` : ""}</option>)}
-            </select>
-          </label>
-          <label className="text-xs font-bold text-navy">Desde (u.)
-            <input type="number" name="cantidadMinima" min="2" step="1" required placeholder="12" className="mt-1 w-24 rounded-lg border border-crema-2 bg-crema/40 px-2 py-2 text-sm text-navy outline-none focus:border-naranja" />
-          </label>
-          <label className="text-xs font-bold text-navy">Precio c/u $
-            <input type="number" name="precio" min="0" step="1" required placeholder="800" className="mt-1 w-28 rounded-lg border border-crema-2 bg-crema/40 px-2 py-2 text-sm text-navy outline-none focus:border-naranja" />
-          </label>
-          <button className="rounded-lg bg-navy px-4 py-2 text-sm font-bold text-white active:scale-95">+ Agregar</button>
-        </form>
-
-        {/* Tramos existentes */}
-        {tramos.length > 0 ? (
-          <ul className="mt-4 divide-y divide-crema-2 text-sm">
-            {tramos.map((t) => (
-              <li key={t.id} className="flex items-center justify-between gap-2 py-2">
-                <span className="text-navy">
-                  <b>{t.producto?.nombre}</b> · desde <b>{t.cantidadMinima}</b> u. → <b>${Number(t.precio).toLocaleString("es-CL")}</b> c/u
-                </span>
-                <form action={eliminarTramoPrecio}>
-                  <input type="hidden" name="id" value={t.id} />
+        {/* Productos con precio base: cada uno con su escala de tramos + agregar en línea */}
+        <div className="mt-4 space-y-3">
+          {productos.filter((p) => precioDe.has(p.id)).map((p) => {
+            const base = precioDe.get(p.id);
+            const escala = tramosByProd.get(p.id) ?? [];
+            return (
+              <div key={p.id} className="rounded-2xl border border-crema-2 p-3">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <span className="font-display font-bold text-navy">{p.nombre}</span>
+                  {p.formato && <span className="text-xs text-choco-2">· {p.formato}</span>}
+                  <span className="rounded-full bg-crema/70 px-2 py-0.5 text-xs font-bold text-choco">base ${Number(base).toLocaleString("es-CL")}</span>
+                  {/* Escala de tramos como chips */}
+                  {escala.map((t) => (
+                    <span key={t.id} className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-bold text-green-700 ring-1 ring-green-200">
+                      ≥{t.cantidadMinima} → ${Number(t.precio).toLocaleString("es-CL")}
+                      <form action={eliminarTramoPrecio} className="inline">
+                        <input type="hidden" name="id" value={t.id} />
+                        <input type="hidden" name="listaId" value={lista.id} />
+                        <button className="text-green-600/70 hover:text-rojo" title="Quitar tramo">✕</button>
+                      </form>
+                    </span>
+                  ))}
+                  {escala.length === 0 && <span className="text-xs text-choco-2">sin tramos (precio fijo)</span>}
+                </div>
+                {/* Agregar un tramo a ESTE producto */}
+                <form action={agregarTramoPrecio} className="mt-2 flex flex-wrap items-end gap-2">
                   <input type="hidden" name="listaId" value={lista.id} />
-                  <button className="text-xs font-bold text-rojo/70 hover:text-rojo">✕ quitar</button>
+                  <input type="hidden" name="productoId" value={p.id} />
+                  <label className="text-[11px] font-bold text-choco-2">Desde (u.)
+                    <input type="number" name="cantidadMinima" min="2" step="1" required placeholder="50" className="mt-0.5 block w-20 rounded-lg border border-crema-2 bg-crema/40 px-2 py-1.5 text-sm text-navy outline-none focus:border-naranja" />
+                  </label>
+                  <label className="text-[11px] font-bold text-choco-2">Precio c/u $
+                    <input type="number" name="precio" min="0" step="1" required placeholder="900" className="mt-0.5 block w-24 rounded-lg border border-crema-2 bg-crema/40 px-2 py-1.5 text-sm text-navy outline-none focus:border-naranja" />
+                  </label>
+                  <button className="rounded-lg bg-navy px-3 py-1.5 text-xs font-bold text-white active:scale-95">+ Tramo</button>
                 </form>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="mt-4 rounded-xl border border-dashed border-crema-2 p-4 text-center text-xs text-choco-2">Sin tramos de mayoreo. Agrega uno arriba para vender más barato por cantidad.</p>
+              </div>
+            );
+          })}
+        </div>
+        {[...precioDe.keys()].length === 0 && (
+          <p className="mt-4 rounded-xl border border-dashed border-crema-2 p-4 text-center text-xs text-choco-2">Primero carga precios base arriba; luego podrás agregar tramos por cantidad a cada producto.</p>
         )}
       </section>
     </div>
