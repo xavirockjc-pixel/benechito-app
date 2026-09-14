@@ -15,16 +15,38 @@ async function listaVenta(): Promise<{ id: string; nombre: string } | null> {
 export default async function CatalogoVenta() {
   const lista = await listaVenta();
 
-  const precios = lista
-    ? await prisma.precioProducto.findMany({
-        where: { listaId: lista.id, cantidadMinima: 1 },
-        include: { producto: { select: { id: true, nombre: true, formato: true, fotoUrl: true, activo: true, soloLocal: true } } },
-      })
-    : [];
+  const [precios, tramosRaw] = lista
+    ? await Promise.all([
+        prisma.precioProducto.findMany({
+          where: { listaId: lista.id, cantidadMinima: 1 },
+          include: { producto: { select: { id: true, nombre: true, formato: true, fotoUrl: true, activo: true, soloLocal: true } } },
+        }),
+        // Tramos por volumen (mayoreo): desde N unidades, otro precio.
+        prisma.precioProducto.findMany({
+          where: { listaId: lista.id, cantidadMinima: { gt: 1 } },
+          select: { productoId: true, cantidadMinima: true, precio: true, descuento: true },
+        }),
+      ])
+    : [[], []];
+
+  // productoId -> escalones [{ desde, precio }] ordenados por cantidad.
+  const tramosDe = new Map<string, { desde: number; precio: number }[]>();
+  for (const t of tramosRaw) {
+    const arr = tramosDe.get(t.productoId) ?? [];
+    arr.push({ desde: t.cantidadMinima, precio: Number(t.precio) - Number(t.descuento ?? 0) });
+    tramosDe.set(t.productoId, arr);
+  }
 
   const productos = precios
     .filter((p) => p.producto.activo && !p.producto.soloLocal)
-    .map((p) => ({ id: p.producto.id, nombre: p.producto.nombre, formato: p.producto.formato, fotoUrl: p.producto.fotoUrl, precio: Number(p.precio) }))
+    .map((p) => ({
+      id: p.producto.id,
+      nombre: p.producto.nombre,
+      formato: p.producto.formato,
+      fotoUrl: p.producto.fotoUrl,
+      precio: Number(p.precio),
+      tramos: (tramosDe.get(p.producto.id) ?? []).sort((a, b) => a.desde - b.desde),
+    }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   const clientes = (

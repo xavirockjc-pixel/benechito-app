@@ -7,7 +7,15 @@ import { venderTerreno } from "../../../actions";
 import ControlVoz from "../../../ControlVoz";
 import type { CambioVoz } from "@/lib/dominio/voz";
 
-type Prod = { id: string; nombre: string; formato: string | null; precio: number };
+type Tramo = { desde: number; precio: number };
+type Prod = { id: string; nombre: string; formato: string | null; precio: number; tramos?: Tramo[] };
+
+/** Precio unitario según la cantidad: aplica el tramo de mayor volumen que alcance. */
+function precioUnitDe(p: Prod, cantidad: number): number {
+  let precio = p.precio;
+  for (const t of p.tramos ?? []) if (cantidad >= t.desde) precio = t.precio;
+  return precio;
+}
 
 export default function VenderTerreno({
   negocioId,
@@ -32,6 +40,13 @@ export default function VenderTerreno({
       else next[id] = n;
       return next;
     });
+  const setQty = (id: string, n: number) =>
+    setCart((c) => {
+      const next = { ...c };
+      if (!Number.isFinite(n) || n <= 0) delete next[id];
+      else next[id] = Math.floor(n);
+      return next;
+    });
   const aplicarVoz = (cambios: CambioVoz[]) =>
     setCart((c) => {
       const next = { ...c };
@@ -50,7 +65,8 @@ export default function VenderTerreno({
   const porId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
   const lineas = Object.entries(cart).map(([id, cantidad]) => {
     const p = porId.get(id)!;
-    return { productoId: id, nombre: p.nombre, cantidad, precioUnit: p.precio };
+    const precioUnit = precioUnitDe(p, cantidad); // aplica tramo por volumen
+    return { productoId: id, nombre: p.nombre, cantidad, precioUnit, precioBase: p.precio };
   });
   const total = lineas.reduce((s, l) => s + l.precioUnit * l.cantidad, 0);
   const abonoNum = Math.min(Math.max(Number(abono.replace(/[^0-9]/g, "")) || 0, 0), total);
@@ -80,7 +96,7 @@ export default function VenderTerreno({
               <span className="block truncate font-semibold text-slate-900">{p.nombre}</span>
               <span className="block text-xs text-slate-400">{p.formato ?? ""}</span>
               <span className="mt-1 flex items-center justify-between">
-                <span className="font-bold text-[#1479c4]">{fmtCLP(p.precio)}</span>
+                <span className="font-bold text-[#1479c4]">{fmtCLP(p.precio)}{p.tramos && p.tramos.length > 0 && <span className="ml-1 text-[10px] font-bold text-green-600">📉 x mayor</span>}</span>
                 {n > 0 && <span className="rounded-full bg-[#1479c4] px-2 text-xs font-bold text-white">{n}</span>}
               </span>
             </button>
@@ -98,11 +114,19 @@ export default function VenderTerreno({
           <ul className="divide-y divide-slate-100">
             {lineas.map((l) => (
               <li key={l.productoId} className="flex items-center justify-between py-2 text-sm">
-                <span className="min-w-0 truncate font-semibold text-slate-800">{l.nombre}</span>
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold text-slate-800">{l.nombre}</span>
+                  <span className="text-[11px] text-slate-400">
+                    {fmtCLP(l.precioUnit)} c/u
+                    {l.precioUnit < l.precioBase && <span className="ml-1 font-bold text-green-600">📉 mayoreo</span>}
+                  </span>
+                </span>
                 <span className="flex items-center gap-2">
-                  <button type="button" onClick={() => sub(l.productoId)} className="h-7 w-7 rounded bg-slate-100 font-bold">−</button>
-                  <span className="w-6 text-center font-semibold">{l.cantidad}</span>
-                  <button type="button" onClick={() => add(l.productoId)} className="h-7 w-7 rounded bg-slate-100 font-bold">+</button>
+                  <button type="button" onClick={() => sub(l.productoId)} className="h-9 w-9 rounded-lg bg-slate-100 text-lg font-bold active:bg-slate-200">−</button>
+                  <input type="number" inputMode="numeric" min={1} value={l.cantidad}
+                    onChange={(e) => setQty(l.productoId, Number(e.target.value))}
+                    className="w-14 rounded-lg border border-slate-300 py-1 text-center text-base font-bold text-slate-900 outline-none focus:border-[#1479c4]" />
+                  <button type="button" onClick={() => add(l.productoId)} className="h-9 w-9 rounded-lg bg-slate-100 text-lg font-bold active:bg-slate-200">+</button>
                   <span className="w-16 text-right font-semibold text-slate-900">{fmtCLP(l.precioUnit * l.cantidad)}</span>
                 </span>
               </li>

@@ -23,16 +23,35 @@ export default async function VenderPage({
   const listaId = await listaParaCliente(id);
   const lista = listaId ? await prisma.listaPrecio.findUnique({ where: { id: listaId } }) : null;
 
-  const precios = listaId
-    ? await prisma.precioProducto.findMany({
-        where: { listaId, cantidadMinima: 1 },
-        include: { producto: { select: { id: true, nombre: true, formato: true, activo: true, soloLocal: true } } },
-      })
-    : [];
+  const [precios, tramosRaw] = listaId
+    ? await Promise.all([
+        prisma.precioProducto.findMany({
+          where: { listaId, cantidadMinima: 1 },
+          include: { producto: { select: { id: true, nombre: true, formato: true, activo: true, soloLocal: true } } },
+        }),
+        prisma.precioProducto.findMany({
+          where: { listaId, cantidadMinima: { gt: 1 } },
+          select: { productoId: true, cantidadMinima: true, precio: true, descuento: true },
+        }),
+      ])
+    : [[], []];
+
+  const tramosDe = new Map<string, { desde: number; precio: number }[]>();
+  for (const t of tramosRaw) {
+    const arr = tramosDe.get(t.productoId) ?? [];
+    arr.push({ desde: t.cantidadMinima, precio: Number(t.precio) - Number(t.descuento ?? 0) });
+    tramosDe.set(t.productoId, arr);
+  }
 
   const productos = precios
     .filter((p) => p.producto.activo && !p.producto.soloLocal)
-    .map((p) => ({ id: p.producto.id, nombre: p.producto.nombre, formato: p.producto.formato, precio: Number(p.precio) }))
+    .map((p) => ({
+      id: p.producto.id,
+      nombre: p.producto.nombre,
+      formato: p.producto.formato,
+      precio: Number(p.precio),
+      tramos: (tramosDe.get(p.producto.id) ?? []).sort((a, b) => a.desde - b.desde),
+    }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   const canales = (await getCanales(true)).map((c) => ({ codigo: c.codigo, nombre: c.nombre }));
