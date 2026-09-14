@@ -8,6 +8,7 @@ import {
   estadoRevisionLabel, estadoRevisionColor,
 } from "@/lib/dominio/vehiculo";
 import { registrarGastoVehiculo, guardarRevisionVehiculo } from "./actions";
+import MicDictado from "@/components/MicDictado";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +39,12 @@ export default async function VehiculoPage() {
         <Link href="/vendedor" className="text-sm font-semibold text-[#1479c4]">← Inicio</Link>
         <h1 className="mt-1 text-xl font-extrabold text-slate-900">🚚 Mi vehículo</h1>
         <p className="text-xs text-slate-500">{vehiculo?.nombre ?? "Sin vehículo asignado"} · gastos y revisión del reparto.</p>
+      </div>
+
+      {/* Asistencia por voz: toca un campo (km, monto, observaciones) y dicta. */}
+      <div className="flex items-center justify-between gap-2 rounded-xl bg-blue-50 px-3 py-2">
+        <span className="text-xs font-semibold text-[#1479c4]">🎤 Toca un campo y dicta (km, monto, observaciones)</span>
+        <MicDictado etiqueta="🎤 Dictar" />
       </div>
 
       {/* Resumen del mes */}

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { crearClienteRuta } from "../actions";
 import CapturarUbicacion from "../CapturarUbicacion";
 import BuscadorDuplicados from "@/components/BuscadorDuplicados";
+import MicDictado from "@/components/MicDictado";
 
 const inputCls = "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]";
 
@@ -13,7 +14,13 @@ export default async function NuevoClienteRuta({ searchParams }: { searchParams:
       <h1 className="mt-1 text-xl font-extrabold text-slate-900">Nuevo cliente</h1>
       <p className="text-xs text-slate-500">Captación en terreno. Con el nombre del negocio basta para empezar.</p>
 
-      <form action={crearClienteRuta} className="mt-4 space-y-3">
+      {/* Asistencia por voz: toca un campo y dicta para llenarlo hablando. */}
+      <div className="mt-4 flex items-center justify-between gap-2 rounded-xl bg-blue-50 px-3 py-2">
+        <span className="text-xs font-semibold text-[#1479c4]">🎤 Toca un campo y dicta para llenarlo por voz</span>
+        <MicDictado etiqueta="🎤 Dictar" />
+      </div>
+
+      <form action={crearClienteRuta} className="mt-3 space-y-3">
         <label className="block text-sm font-bold text-slate-700">Nombre del negocio *
           <input name="nombreNegocio" required defaultValue={nombre ?? ""} className={`mt-1 ${inputCls}`} />
         </label>
