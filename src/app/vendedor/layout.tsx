@@ -47,7 +47,7 @@ export default async function VendedorLayout({
       <BottomNav
         acento="#1479c4"
         items={[
-          { href: "/vendedor", label: "Clientes", icon: "🏪" },
+          { href: "/vendedor", label: "Inicio", icon: "🏠" },
           { href: "/vendedor/entregas", label: "Entregas", icon: "🛵" },
           { href: "/vendedor/agenda", label: "Agenda", icon: "📅" },
           { href: "/vendedor/ruta", label: "Ruta", icon: "🗺️" },
