@@ -10,6 +10,7 @@ import MenuMovil from "./MenuMovil";
 import SidebarNav from "./SidebarNav";
 import NotaRapida from "@/components/NotaRapida";
 import BottomNav from "@/app/_shared/BottomNav";
+import MicDictado from "@/components/MicDictado";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
@@ -182,6 +183,11 @@ export default async function AdminLayout({
 
         {/* Usuario */}
         <div className="border-t border-slate-800 pt-4">
+          {/* Voz global: enfoca un campo y dicta. */}
+          <div className="mb-3 flex items-center justify-between gap-2 rounded-lg bg-slate-800 px-3 py-2">
+            <span className="text-xs font-semibold text-slate-300">🎤 Dictar en un campo</span>
+            <MicDictado etiqueta="🎤" />
+          </div>
           <Link
             href="/vendedor"
             className="mb-3 flex items-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
@@ -203,12 +209,16 @@ export default async function AdminLayout({
         {/* Barra móvil */}
         <div className="flex items-center justify-between gap-2 bg-slate-900 px-4 py-3 text-white md:hidden">
           <MenuMovil modulos={modulosVisibles} />
-          <span className="font-display text-sm font-extrabold">
+          <span className="min-w-0 flex-1 truncate font-display text-sm font-extrabold">
             Benechito <span className="font-normal text-slate-400">· Administración</span>
           </span>
-          <form action={logout}>
-            <button className="text-sm font-semibold text-slate-300">Salir</button>
-          </form>
+          <span className="flex shrink-0 items-center gap-3">
+            {/* Voz global: enfoca un campo y dicta para llenarlo por voz. */}
+            <MicDictado etiqueta="🎤" />
+            <form action={logout}>
+              <button className="text-sm font-semibold text-slate-300">Salir</button>
+            </form>
+          </span>
         </div>
 
         <main className="mx-auto max-w-5xl p-4 pb-24 md:p-8 md:pb-8">{children}</main>
