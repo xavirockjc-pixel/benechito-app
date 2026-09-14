@@ -181,6 +181,11 @@ export default async function VendedorHome({
             ➕ Crear cliente nuevo
           </Link>
         </section>
+
+        {/* Cerrar turno: total vendido y cuadre de mercadería */}
+        <Link href="/vendedor/cierre" className="block rounded-2xl bg-slate-900 py-4 text-center text-base font-extrabold text-white shadow active:brightness-110">
+          🧾 Cerrar turno del día
+        </Link>
       </div>
     );
   }

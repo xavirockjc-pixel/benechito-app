@@ -26,14 +26,43 @@ export default async function CierrePage() {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
-  const [ventasHoy, pagosHoy, stockCamion] = await Promise.all([
+  const [ventasHoy, pagosHoy, stockCamion, movsHoy] = await Promise.all([
     prisma.venta.findMany({
       where: { ubicacionId: vehId, fecha: { gte: hoy } },
       include: { pagos: { select: { monto: true } } },
     }),
     prisma.pago.findMany({ where: { fecha: { gte: hoy }, venta: { ubicacionId: vehId } } }),
     prisma.stock.findMany({ where: { ubicacionId: vehId, cantidad: { gt: 0 } }, include: { producto: { select: { nombre: true } } } }),
+    prisma.movimientoStock.findMany({
+      where: { fecha: { gte: hoy }, OR: [{ ubicacionOrigenId: vehId }, { ubicacionDestinoId: vehId }] },
+      include: { producto: { select: { nombre: true } } },
+    }),
   ]);
+
+  // ---- Cuadre de mercadería: lo que se llevó (cargó) vs vendió vs volvió vs queda ----
+  type FilaCuadre = { nombre: string; cargo: number; vendio: number; volvio: number; queda: number };
+  const cuadre = new Map<string, FilaCuadre>();
+  const filaDe = (id: string, nombre: string) => {
+    let f = cuadre.get(id);
+    if (!f) { f = { nombre, cargo: 0, vendio: 0, volvio: 0, queda: 0 }; cuadre.set(id, f); }
+    return f;
+  };
+  for (const m of movsHoy) {
+    const f = filaDe(m.productoId, m.producto.nombre);
+    if (m.tipo === "transferencia" && m.ubicacionDestinoId === vehId) f.cargo += m.cantidad;      // cargó al camión
+    else if (m.tipo === "venta" && m.ubicacionOrigenId === vehId) f.vendio += m.cantidad;          // vendió desde el camión
+    else if (m.tipo === "transferencia" && m.ubicacionOrigenId === vehId) f.volvio += m.cantidad;  // devolvió a bodega
+  }
+  for (const s of stockCamion) filaDe(s.productoId, s.producto.nombre).queda += s.cantidad;         // aún en el camión
+  const filasCuadre = [...cuadre.values()]
+    .map((f) => ({ ...f, falta: f.cargo - f.vendio - f.volvio - f.queda }))
+    .filter((f) => f.cargo || f.vendio || f.volvio || f.queda)
+    .sort((a, b) => b.falta - a.falta || a.nombre.localeCompare(b.nombre));
+  const totCargo = filasCuadre.reduce((s, f) => s + f.cargo, 0);
+  const totVendio = filasCuadre.reduce((s, f) => s + f.vendio, 0);
+  const totVolvio = filasCuadre.reduce((s, f) => s + f.volvio, 0);
+  const totQueda = filasCuadre.reduce((s, f) => s + f.queda, 0);
+  const totFalta = totCargo - totVendio - totVolvio - totQueda;
 
   // Dinero
   const vendido = ventasHoy.reduce((s, v) => s + Number(v.total), 0);
@@ -79,6 +108,59 @@ export default async function CierrePage() {
         </div>
       </section>
 
+      {/* Cuadre de mercadería: cargó vs vendió vs volvió */}
+      <section className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 className="text-sm font-bold text-slate-900">📦 Cuadre de mercadería</h2>
+        <p className="mb-3 text-xs text-slate-500">Cargó − Vendió − Volvió − Queda = lo que falta.</p>
+
+        {filasCuadre.length === 0 ? (
+          <p className="text-sm text-slate-500">Aún no cargaste mercadería hoy.</p>
+        ) : (
+          <>
+            {/* Totales */}
+            <div className="grid grid-cols-4 gap-1.5 text-center">
+              <TotCol label="Cargó" valor={totCargo} color="#1479c4" />
+              <TotCol label="Vendió" valor={totVendio} color="#16a34a" />
+              <TotCol label="Volvió" valor={totVolvio} color="#64748b" />
+              <TotCol label="Queda" valor={totQueda} color="#64748b" />
+            </div>
+            <div className={`mt-2 flex items-center justify-between rounded-xl px-3 py-2.5 text-sm font-extrabold ${totFalta === 0 ? "bg-green-50 text-green-700" : totFalta > 0 ? "bg-red-50 text-red-700" : "bg-amber-50 text-amber-700"}`}>
+              <span>{totFalta === 0 ? "✅ Cuadra perfecto" : totFalta > 0 ? "⚠️ Falta mercadería" : "❔ Sobra (revisar)"}</span>
+              <span>{totFalta === 0 ? "0" : `${Math.abs(totFalta)} u.`}</span>
+            </div>
+
+            {/* Detalle por producto */}
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-[11px] uppercase tracking-wide text-slate-400">
+                    <th className="py-1 text-left font-bold">Producto</th>
+                    <th className="py-1 text-right font-bold">Cargó</th>
+                    <th className="py-1 text-right font-bold">Vendió</th>
+                    <th className="py-1 text-right font-bold">Volvió</th>
+                    <th className="py-1 text-right font-bold">Falta</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {filasCuadre.map((f) => (
+                    <tr key={f.nombre}>
+                      <td className="py-1.5 pr-2 font-semibold text-slate-800">{f.nombre}</td>
+                      <td className="py-1.5 text-right text-slate-700">{f.cargo}</td>
+                      <td className="py-1.5 text-right font-semibold text-green-700">{f.vendio}</td>
+                      <td className="py-1.5 text-right text-slate-500">{f.volvio + f.queda}</td>
+                      <td className={`py-1.5 text-right font-extrabold ${f.falta === 0 ? "text-slate-400" : f.falta > 0 ? "text-red-600" : "text-amber-600"}`}>
+                        {f.falta === 0 ? "—" : f.falta > 0 ? f.falta : `+${-f.falta}`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-2 text-[11px] leading-tight text-slate-400">“Volvió” junta lo ya devuelto a bodega y lo que aún queda en el camión.</p>
+          </>
+        )}
+      </section>
+
       {/* Mercadería */}
       <section className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="mb-2 text-sm font-bold text-slate-900">Mercadería en el camión ({quedan} u.)</h2>
@@ -115,6 +197,15 @@ function Stat({ label, valor, rojo }: { label: string; valor: string; rojo?: boo
     <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
       <p className={`text-lg font-extrabold ${rojo ? "text-red-600" : "text-slate-900"}`}>{valor}</p>
       <p className="text-xs text-slate-500">{label}</p>
+    </div>
+  );
+}
+
+function TotCol({ label, valor, color }: { label: string; valor: number; color: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-2">
+      <p className="text-xl font-extrabold" style={{ color }}>{valor}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
     </div>
   );
 }
