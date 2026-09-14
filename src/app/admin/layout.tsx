@@ -7,7 +7,9 @@ import type { Etiquetas } from "@/lib/dominio/rubros";
 import { logout } from "./actions";
 import RegistrarSW from "./RegistrarSW";
 import MenuMovil from "./MenuMovil";
+import SidebarNav from "./SidebarNav";
 import NotaRapida from "@/components/NotaRapida";
+import BottomNav from "@/app/_shared/BottomNav";
 import type { Metadata, Viewport } from "next";
 
 export const metadata: Metadata = {
@@ -174,41 +176,8 @@ export default async function AdminLayout({
             </div>
           </div>
 
-          {/* Módulos */}
-          <nav className="space-y-6">
-            {modulosVisibles.map((m) => (
-              <div key={m.titulo}>
-                <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-                  {m.titulo}
-                  {!m.activo && (
-                    <span className="ml-2 rounded bg-slate-800 px-1.5 py-0.5 text-[9px] font-semibold text-slate-400">
-                      pronto
-                    </span>
-                  )}
-                </p>
-                <div className="space-y-0.5">
-                  {m.items.map((n) =>
-                    m.activo ? (
-                      <Link
-                        key={n.label}
-                        href={n.href}
-                        className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-semibold text-slate-300 transition hover:translate-x-0.5 hover:bg-slate-800 hover:text-white"
-                      >
-                        <span className="text-lg">{n.icon}</span> {n.label}
-                      </Link>
-                    ) : (
-                      <span
-                        key={n.label}
-                        className="flex cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-slate-600"
-                      >
-                        <span className="opacity-50">{n.icon}</span> {n.label}
-                      </span>
-                    ),
-                  )}
-                </div>
-              </div>
-            ))}
-          </nav>
+          {/* Módulos (resalta la sección activa) */}
+          <SidebarNav modulos={modulosVisibles} />
         </div>
 
         {/* Usuario */}
@@ -245,13 +214,17 @@ export default async function AdminLayout({
         <main className="mx-auto max-w-5xl p-4 pb-24 md:p-8 md:pb-8">{children}</main>
 
         {/* Barra inferior tipo app (solo celular) para administrar rápido */}
-        <nav className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-around border-t border-slate-200 bg-white px-1 py-1.5 text-[11px] md:hidden">
-          <Link href="/admin" className="flex flex-1 flex-col items-center gap-0.5 py-1 font-bold text-slate-700"><span className="text-xl">📊</span> Panel</Link>
-          <Link href="/admin/pos" className="flex flex-1 flex-col items-center gap-0.5 py-1 font-bold text-slate-700"><span className="text-xl">🛒</span> Vender</Link>
-          <Link href="/admin/ventas" className="flex flex-1 flex-col items-center gap-0.5 py-1 font-bold text-slate-700"><span className="text-xl">💵</span> Ventas</Link>
-          <Link href="/admin/negocios" className="flex flex-1 flex-col items-center gap-0.5 py-1 font-bold text-slate-700"><span className="text-xl">🏪</span> Clientes</Link>
-          <Link href="/admin/inventario" className="flex flex-1 flex-col items-center gap-0.5 py-1 font-bold text-slate-700"><span className="text-xl">📦</span> Stock</Link>
-        </nav>
+        <BottomNav
+          acento="#1479c4"
+          desktopHidden
+          items={[
+            { href: "/admin", label: "Panel", icon: "📊", exact: true },
+            { href: "/admin/pos", label: "Vender", icon: "🛒" },
+            { href: "/admin/ventas", label: "Ventas", icon: "💵" },
+            { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
+            { href: "/admin/inventario", label: "Stock", icon: "📦" },
+          ]}
+        />
       </div>
     </div>
   );

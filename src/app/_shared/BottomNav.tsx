@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-export type NavItem = { href: string; label: string; icon: string };
+export type NavItem = { href: string; label: string; icon: string; exact?: boolean };
 
 /**
  * Barra inferior tipo app, reutilizable en las apps de operario (bodega,
@@ -11,11 +11,11 @@ export type NavItem = { href: string; label: string; icon: string };
  * celulares angostos), marca la pestaña activa y respeta el área segura del
  * iPhone. El color de acento lo pone cada app.
  */
-export default function BottomNav({ items, acento = "#0f766e" }: { items: NavItem[]; acento?: string }) {
+export default function BottomNav({ items, acento = "#0f766e", desktopHidden = false }: { items: NavItem[]; acento?: string; desktopHidden?: boolean }) {
   const pathname = usePathname();
-  // Coincidencia exacta para el inicio; por prefijo para las subsecciones.
+  // Coincidencia exacta para los ítems marcados; por prefijo para el resto.
   const activoHref = items.reduce<string | null>((mejor, it) => {
-    const coincide = pathname === it.href || pathname.startsWith(it.href + "/");
+    const coincide = it.exact ? pathname === it.href : pathname === it.href || pathname.startsWith(it.href + "/");
     if (!coincide) return mejor;
     // Se queda con la ruta más específica (más larga) que coincide.
     if (!mejor || it.href.length > mejor.length) return it.href;
@@ -30,7 +30,7 @@ export default function BottomNav({ items, acento = "#0f766e" }: { items: NavIte
     <nav
       className={`fixed inset-x-0 bottom-0 z-20 mx-auto flex max-w-md items-stretch border-t border-slate-200 bg-white pb-[max(0.25rem,env(safe-area-inset-bottom))] text-[11px] ${
         scroll ? "gap-0.5 overflow-x-auto px-1" : "justify-around"
-      }`}
+      } ${desktopHidden ? "md:hidden" : ""}`}
     >
       {items.map((it) => {
         const activo = it.href === activoHref;
