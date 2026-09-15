@@ -45,10 +45,15 @@ export async function actualizarHorarioAcceso(formData: FormData) {
   const desde = hhmm(String(formData.get("accesoDesde") ?? "").trim());
   const hasta = hhmm(String(formData.get("accesoHasta") ?? "").trim());
   const roles = formData.getAll("accesoRoles").map((r) => String(r)).filter(Boolean).join(",");
+  const dias = formData.getAll("accesoDias")
+    .map((d) => parseInt(String(d), 10))
+    .filter((n) => n >= 0 && n <= 6)
+    .sort((a, b) => a - b)
+    .join(",");
 
   await prisma.empresa.update({
     where: { id: empresa.id },
-    data: { accesoDesde: desde, accesoHasta: hasta, accesoRoles: roles },
+    data: { accesoDesde: desde, accesoHasta: hasta, accesoDias: dias, accesoRoles: roles },
   });
   revalidatePath("/admin/configuracion");
   redirect("/admin/configuracion?horario=ok");

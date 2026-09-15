@@ -2,6 +2,7 @@ import { empresaActual } from "@/lib/dominio/empresa";
 import { RUBROS_LISTA } from "@/lib/dominio/rubros";
 import { SEED } from "@/lib/dominio/seed-rubro";
 import { actualizarEmpresa, precargarDatosRubro, actualizarHorarioAcceso, autorizarAccesoExtra, revocarAccesoExtra, cambiarModoMenu } from "./actions";
+import { DIAS_SEMANA } from "@/lib/dominio/horario";
 
 const ROLES_HORARIO = [
   { id: "caja", label: "🛒 Local (caja)" },
@@ -17,6 +18,7 @@ export default async function ConfiguracionPage({ searchParams }: { searchParams
   const empresa = await empresaActual();
   const seedRubro = SEED[empresa.rubro as keyof typeof SEED] ?? SEED.fabrica;
   const rolesActivos = new Set((empresa.accesoRoles ?? "").split(",").map((s) => s.trim()).filter(Boolean));
+  const diasActivos = new Set((empresa.accesoDias ?? "").split(",").map((s) => parseInt(s.trim(), 10)).filter((n) => n >= 0 && n <= 6));
   const permisoVigente = empresa.accesoExtraHasta && new Date() < new Date(empresa.accesoExtraHasta);
   const permisoHasta = empresa.accesoExtraHasta ? new Date(empresa.accesoExtraHasta).toLocaleTimeString("es-CL", { timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit" }) : "";
 
@@ -132,6 +134,18 @@ export default async function ConfiguracionPage({ searchParams }: { searchParams
             <label className="text-xs font-bold uppercase tracking-wide text-slate-500">Hasta
               <input type="time" name="accesoHasta" defaultValue={empresa.accesoHasta ?? ""} className="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
             </label>
+          </div>
+          <div>
+            <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Días habilitados</p>
+            <div className="flex flex-wrap gap-2">
+              {[1, 2, 3, 4, 5, 6, 0].map((d) => (
+                <label key={d} className="flex cursor-pointer items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm has-[:checked]:border-[#1479c4] has-[:checked]:bg-blue-50">
+                  <input type="checkbox" name="accesoDias" value={d} defaultChecked={diasActivos.has(d)} className="h-4 w-4" />
+                  <span className="font-semibold text-slate-700">{DIAS_SEMANA[d]}</span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-1 text-[11px] text-slate-400">Sin marcar ninguno = todos los días. (Por defecto: lunes a sábado.)</p>
           </div>
           <div>
             <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">Aplicar a</p>

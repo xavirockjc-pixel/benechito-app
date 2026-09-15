@@ -16,6 +16,35 @@ const aMin = (s?: string | null) => {
   return h * 60 + m;
 };
 
+/** Día de la semana en Chile: 0=Domingo … 6=Sábado. */
+export function diaChile(): number {
+  const wd = new Intl.DateTimeFormat("en-US", { timeZone: "America/Santiago", weekday: "short" }).format(new Date());
+  return ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].indexOf(wd);
+}
+
+/** Nombres de días (0=Dom … 6=Sáb). */
+export const DIAS_SEMANA = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+/**
+ * ¿Hoy es un día habilitado? `diasCsv` = números separados por coma, 0=Dom … 6=Sáb
+ * (ej. "1,2,3,4,5,6" = lunes a sábado). Vacío/nulo = todos los días permitidos.
+ */
+export function diaPermitido(diasCsv?: string | null): boolean {
+  const set = (diasCsv ?? "").split(",").map((s) => parseInt(s.trim(), 10)).filter((n) => Number.isFinite(n));
+  if (set.length === 0) return true;
+  return set.includes(diaChile());
+}
+
+/** Etiqueta legible de los días habilitados (ej. "Lun a Sáb", "Lun, Mié, Vie"). */
+export function diasLabel(diasCsv?: string | null): string {
+  const dias = (diasCsv ?? "").split(",").map((s) => parseInt(s.trim(), 10)).filter((n) => n >= 0 && n <= 6).sort((a, b) => a - b);
+  if (dias.length === 0 || dias.length === 7) return "todos los días";
+  // Rango corrido → "Lun a Sáb"; si no, lista.
+  const corrido = dias.every((d, i) => i === 0 || d === dias[i - 1] + 1);
+  if (corrido && dias.length >= 3) return `${DIAS_SEMANA[dias[0]]} a ${DIAS_SEMANA[dias[dias.length - 1]]}`;
+  return dias.map((d) => DIAS_SEMANA[d]).join(", ");
+}
+
 /** ¿La hora de Chile está dentro de [desde, hasta]? */
 export function dentroDeHorario(desde?: string | null, hasta?: string | null): boolean {
   const d = aMin(desde), h = aMin(hasta);
