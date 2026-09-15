@@ -4,6 +4,8 @@ import { fmtCLP } from "@/lib/dominio/pedidos";
 import { getCanalMaps } from "@/lib/dominio/canales";
 import PanelMontos from "./PanelMontos";
 import AvisoAccesoAdmin from "./AvisoAccesoAdmin";
+import EmpezarNuevoDia from "@/app/_shared/EmpezarNuevoDia";
+import { empezarNuevoDia } from "@/app/bodega/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -99,6 +101,13 @@ export default async function Panel() {
           <p className="kpi-lab">Ver tablero completo</p>
           <p className="kpi-val" style={{ fontSize: "18px" }}>Abrir →</p>
         </Link>
+      </div>
+
+      {/* Empezar nuevo día para Bodega y Producción (oculta lo anterior, no borra) */}
+      <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:max-w-md">
+        <p className="text-sm font-bold text-slate-900">🔄 Empezar nuevo día (Bodega y Producción)</p>
+        <p className="mt-0.5 text-xs text-slate-500">Reinicia el conteo del día de Bodega y Producción desde cero. Lo anterior queda guardado (oculto), no se borra.</p>
+        <EmpezarNuevoDia action={empezarNuevoDia} label="Empezar nuevo día / nuevo cómputo" />
       </div>
 
       {/* Más vendidos del mes: dulces vs helados */}

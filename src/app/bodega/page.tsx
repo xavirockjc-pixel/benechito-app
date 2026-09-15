@@ -1,7 +1,10 @@
 import { prisma } from "@/lib/prisma";
+import { inicioDelDia } from "@/lib/dominio/empresa";
 import MovimientoBodegaVoz from "./MovimientoBodegaVoz";
 import NuevoProductoBodega from "./NuevoProductoBodega";
 import RetirosDepto from "@/app/_shared/RetirosDepto";
+import EmpezarNuevoDia from "@/app/_shared/EmpezarNuevoDia";
+import { empezarNuevoDia } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +25,7 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
     );
   }
 
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  const hoy = await inicioDelDia();
 
   const [productos, sabores, stockProd, stockSab, registroHoy] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true, soloLocal: false }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
@@ -126,6 +128,7 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
         <p className="mt-2 text-[11px] leading-tight text-slate-400">
           Solo ves lo del día. Los totales y las ventas del mes se ven únicamente en el panel.
         </p>
+        <EmpezarNuevoDia action={empezarNuevoDia} />
       </section>
 
       <RetirosDepto destino="bodega" acento="#b45309" />

@@ -226,6 +226,9 @@ model Empresa {
   accesoDesde      String?    @default("08:00") // HH:MM
   accesoHasta      String?    @default("23:59") // HH:MM
   accesoDias       String?    @default("1,2,3,4,5,6") // días habilitados CSV, 0=Dom … 6=Sáb (lunes a sábado)
+  // Inicio del "día/cómputo" actual. El botón "Empezar nuevo día" lo mueve a ahora:
+  // lo anterior queda oculto del conteo del día (NO se borra), y se recuenta desde cero.
+  periodoDesde     DateTime?
   accesoRoles      String?    @default("caja") // roles con horario, CSV: "caja,bodega,produccion,vendedor"
   // Permiso temporal: el admin autoriza acceso fuera de horario hasta cierta hora.
   accesoExtraHasta  DateTime? // hasta cuándo vale el permiso

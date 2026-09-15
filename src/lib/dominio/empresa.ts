@@ -11,6 +11,19 @@ export async function empresaActual() {
   return prisma.empresa.create({ data: { nombre: "Mi negocio", rubro: "fabrica" } });
 }
 
+/**
+ * Inicio del "día / cómputo" actual para los conteos del día. Es `periodoDesde`
+ * si el admin/bodeguero apretó "Empezar nuevo día"; si no, la medianoche de hoy.
+ * Lo anterior a esta fecha queda fuera del conteo del día (pero sigue en la base).
+ */
+export async function inicioDelDia(): Promise<Date> {
+  const e = await prisma.empresa.findFirst({ select: { periodoDesde: true } });
+  if (e?.periodoDesde) return new Date(e.periodoDesde);
+  const hoy = new Date();
+  hoy.setHours(0, 0, 0, 0);
+  return hoy;
+}
+
 /** Rubro activo (con sus etiquetas y módulos ocultos). */
 export async function rubroActivo(): Promise<Rubro> {
   const e = await empresaActual();

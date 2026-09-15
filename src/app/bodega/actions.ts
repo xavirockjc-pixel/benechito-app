@@ -11,6 +11,18 @@ export async function logout() {
   redirect("/login");
 }
 
+/**
+ * Empezar nuevo día / nuevo cómputo: mueve el inicio del período a ahora.
+ * Lo anterior queda oculto del conteo del día (NO se borra), y se recuenta desde cero.
+ */
+export async function empezarNuevoDia() {
+  const emp = await prisma.empresa.findFirst({ select: { id: true } });
+  if (emp) await prisma.empresa.update({ where: { id: emp.id }, data: { periodoDesde: new Date() } });
+  revalidatePath("/bodega");
+  revalidatePath("/produccion");
+  revalidatePath("/admin");
+}
+
 /** Ubicación de una zona operativa: "bodega" o "sala" (local). */
 async function ubicacionDeZona(zona: string): Promise<string | null> {
   const tipo = zona === "sala" ? "sala" : "bodega";

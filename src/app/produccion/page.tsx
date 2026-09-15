@@ -5,6 +5,7 @@ import ProduccionForm from "./ProduccionForm";
 import RecetaChecklist from "./RecetaChecklist";
 import { fechaCorta } from "@/lib/dominio/agenda";
 import { lineaLabel as lineaLbl } from "@/lib/dominio/produccion";
+import { inicioDelDia } from "@/lib/dominio/empresa";
 import { cumplirOrden, enviarReporteTurno, desbloquearRecetas, bloquearRecetas } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -33,8 +34,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
     );
   }
 
-  const hoy = new Date();
-  hoy.setHours(0, 0, 0, 0);
+  const hoy = await inicioDelDia();
 
   const [ordenes, agendaFab, recetaItems, registroHoy, materiales, guias, medidas, recetaBases] = await Promise.all([
     prisma.ordenProduccion.findMany({
