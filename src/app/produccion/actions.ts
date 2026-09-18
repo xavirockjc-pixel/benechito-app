@@ -6,6 +6,7 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
 import { marcarAsistenciaAuto } from "@/lib/asistencia";
+import { rendimientoAprendido } from "@/lib/dominio/fabricacion";
 
 /** Desbloquea UN tipo si su clave coincide (cookie con la lista de tipos abiertos, 8h). */
 export async function desbloquearRecetas(formData: FormData) {
@@ -291,56 +292,71 @@ export async function enviarReporteTurno() {
   redirect("/produccion?reporte=1");
 }
 
+
 /**
- * Fabricación editable: una tanda con su preparador y su reparto por depósitos
- * (para dividir sabores en distintos recipientes). Con los kilos de base:
- *  1) descuenta los insumos de la receta (escalados por kilos) → costo/consumo,
- *  2) suma las unidades por sabor a bodega,
- *  3) queda registrada → de ahí el rendimiento se APRENDE solo (unidades/kilo).
+ * Fabricación editable, medida por LITROS por depósito. Como en varios productos
+ * (ej. Tú y yo) no se puede contar la unidad exacta, se mide el volumen de cada
+ * depósito y el sistema ESTIMA las unidades con el rendimiento aprendido
+ * (unidades por litro). Si igual se contó el total real, se usa y se reparte por litros.
+ *  - descuenta insumos de la receta escalados por los litros totales (consumo/costo),
+ *  - suma a bodega las unidades (estimadas o reales) por sabor,
+ *  - registra la tanda → de ahí el rendimiento se AFINA solo.
  */
 export async function crearFabricacion(formData: FormData) {
   const linea = String(formData.get("linea") ?? "").trim();
-  const base = Number(String(formData.get("base") ?? "").replace(",", ".")) || 0; // kilos/litros de base
-  const baseUnidad = String(formData.get("baseUnidad") ?? "l").trim() === "kg" ? "kg" : "l";
   const preparador = String(formData.get("preparador") ?? "").trim() || null;
   const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
+  const porLitroForm = Number(String(formData.get("porLitro") ?? "").replace(",", ".")) || 0; // estimado manual si aún no aprende
+  const unidadesReales = Math.floor(Number(String(formData.get("unidadesReales") ?? "").replace(/[^0-9]/g, "")) || 0);
 
-  type Dep = { deposito?: string; sabor: string; unidades: number };
+  type Dep = { deposito?: string; sabor: string; litros: number };
   let depositos: Dep[] = [];
   try { depositos = JSON.parse(String(formData.get("depositos") ?? "[]")); } catch { depositos = []; }
-  depositos = depositos.filter((d) => d && d.sabor?.trim() && Number.isFinite(d.unidades) && d.unidades > 0);
+  depositos = depositos.filter((d) => d && d.sabor?.trim() && Number.isFinite(d.litros) && d.litros > 0);
   if (!linea || depositos.length === 0) return;
 
   const bod = await bodegaId();
   if (!bod) return;
   const u = await usuarioActual();
-  const totalUnidades = depositos.reduce((s, d) => s + Math.floor(d.unidades), 0);
 
-  // 1) Consumir insumos de la receta base (fijos), escalados por los kilos.
-  if (base > 0) {
+  const totalLitros = depositos.reduce((s, d) => s + d.litros, 0);
+  const rend = await rendimientoAprendido(linea);
+  const porLitro = rend.porKilo > 0 ? rend.porKilo : porLitroForm;
+
+  const estPorDep = depositos.map((d) => ({ ...d, est: Math.max(0, Math.round(d.litros * porLitro)) }));
+  const totalEst = estPorDep.reduce((s, d) => s + d.est, 0);
+  const usarReal = unidadesReales > 0;
+
+  // Unidades finales por sabor: estimadas, o el conteo real repartido por litros.
+  const porSabor = new Map<string, number>();
+  for (const d of estPorDep) {
+    const frac = totalEst > 0 ? d.est / totalEst : d.litros / totalLitros;
+    const uds = usarReal ? Math.round(unidadesReales * frac) : d.est;
+    const s = d.sabor.trim();
+    porSabor.set(s, (porSabor.get(s) ?? 0) + uds);
+  }
+  const totalUnidades = [...porSabor.values()].reduce((a, b) => a + b, 0);
+
+  // 1) Consumir insumos de la receta base, escalados por los litros totales.
+  if (totalLitros > 0) {
     const ref = await prisma.recetaBase.findUnique({ where: { linea } });
     const baseRef = ref && ref.baseRef > 0 ? ref.baseRef : 1;
     const items = await prisma.recetaItem.findMany({ where: { linea, grupo: null } });
     for (const it of items) {
-      const usar = it.cantidad * (base / baseRef);
+      const usar = it.cantidad * (totalLitros / baseRef);
       if (usar <= 0) continue;
       await prisma.materiaPrima.update({ where: { id: it.materiaPrimaId }, data: { stock: { decrement: usar } } });
       await prisma.movimientoMateria.create({
         data: {
           materiaPrimaId: it.materiaPrimaId, tipo: "consumo", cantidad: usar,
-          motivo: `Fabricación · ${linea} · ${base} ${baseUnidad}`,
+          motivo: `Fabricación · ${linea} · ${totalLitros} L`,
           usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
         },
       });
     }
   }
 
-  // 2) Producir: sumar unidades por sabor a bodega (StockSabor) + registro del turno.
-  const porSabor = new Map<string, number>();
-  for (const d of depositos) {
-    const s = d.sabor.trim();
-    porSabor.set(s, (porSabor.get(s) ?? 0) + Math.floor(d.unidades));
-  }
+  // 2) Producir a bodega (unidades estimadas o reales) por sabor.
   for (const [sabor, unidades] of porSabor) {
     if (unidades <= 0) continue;
     let saborId = (await prisma.sabor.findFirst({ where: { nombre: sabor, linea } }))?.id;
@@ -359,13 +375,15 @@ export async function crearFabricacion(formData: FormData) {
     });
   }
 
-  // 3) Registrar la fabricación → de aquí el rendimiento se aprende (unidades ÷ kilos).
+  // 3) Registrar la tanda → de aquí aprende (unidades ÷ litros).
   await prisma.controlCalidad.create({
     data: {
-      clase: "linea", refId: linea, nombre: `${[...porSabor.keys()].join(", ")} · ${linea}`.slice(0, 180),
-      cantidad: totalUnidades, base: base > 0 ? base : null, baseUnidad: base > 0 ? baseUnidad : null,
-      preparador, depositos: JSON.stringify(depositos), operarios: preparador, observaciones,
-      usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+      clase: "linea", refId: linea,
+      nombre: `${[...porSabor.keys()].join(", ")} · ${linea}`.slice(0, 180),
+      cantidad: usarReal ? unidadesReales : totalUnidades,
+      base: totalLitros, baseUnidad: "l",
+      preparador, operarios: preparador, depositos: JSON.stringify(estPorDep),
+      observaciones, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
     },
   });
 
