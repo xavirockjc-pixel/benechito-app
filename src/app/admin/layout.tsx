@@ -23,9 +23,10 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 // Sistema de administración organizado por módulos (ver ARQUITECTURA-ECOSYSTEM.md).
 // Identidad propia de "sistema operativo": tonos sobrios slate, distinta de la web pública.
 type Item = { href: string; label: string; icon: string };
-type Modulo = { titulo: string; activo: boolean; items: Item[] };
+type Modulo = { titulo: string; activo: boolean; items: Item[]; avanzado?: boolean };
 
 // El menú se construye con las etiquetas del rubro activo (plantilla).
+// Menú del día a día arriba; lo poco usado queda en "Más herramientas" (oculto en modo simple).
 function construirModulos(L: Etiquetas): Modulo[] {
   return [
     {
@@ -33,15 +34,9 @@ function construirModulos(L: Etiquetas): Modulo[] {
       activo: true,
       items: [
         { href: "/admin", label: "Panel", icon: "📊" },
-        { href: "/admin/panorama", label: "Panorama general", icon: "🌎" },
-        { href: "/admin/socio", label: "Socio administrativo", icon: "🐝" },
         { href: "/admin/notas", label: "Notas y acciones", icon: "📝" },
-        { href: "/admin/correcciones", label: "Correcciones (deshacer)", icon: "🧹" },
-        { href: "/admin/recordatorios", label: "Recordatorios (clientes)", icon: "🔔" },
         { href: "/admin/agenda", label: "Agenda", icon: "📅" },
         { href: "/admin/mejoras", label: "Mejoras y proyecciones", icon: "🚀" },
-        { href: "/admin/calculadora", label: "Calculadora (producto/proyecto)", icon: "🧮" },
-        { href: "/admin/voz", label: "Asistente voz", icon: "🎙️" },
       ],
     },
     {
@@ -61,7 +56,6 @@ function construirModulos(L: Etiquetas): Modulo[] {
       activo: true,
       items: [
         { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
-        { href: "/admin/clientes-dashboard", label: "Dashboard clientes", icon: "📊" },
         { href: "/admin/productos", label: "Catálogo", icon: "🍫" },
         { href: "/admin/precios", label: "Precios", icon: "🏷️" },
         { href: "/admin/inventario", label: "Inventario", icon: "📦" },
@@ -87,7 +81,6 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/balance-ruta", label: "Balance de reparto", icon: "🚚" },
         { href: "/admin/sueldos", label: "Pagos al equipo", icon: "💵" },
         { href: "/admin/cuadratura", label: "Cuadratura diaria", icon: "⚖️" },
-        { href: "/admin/caja-vecina", label: "Caja Vecina (aparte)", icon: "🏧" },
       ],
     },
     {
@@ -96,32 +89,42 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/equipo", label: "Equipo", icon: "👥" },
         { href: "/admin/usuarios", label: "Usuarios", icon: "🔑" },
+        { href: "/admin/correcciones", label: "Correcciones (deshacer)", icon: "🧹" },
         { href: "/admin/configuracion", label: "Configuración", icon: "⚙️" },
       ],
     },
     {
-      // Duplicados y módulos que quizá se implementen/ajusten a futuro. Vivos, para revisar.
-      titulo: "🧪 Extras / En revisión",
+      // Herramientas de uso ocasional. Ocultas en modo simple (Configuración lo activa/desactiva).
+      titulo: "Más herramientas",
       activo: true,
+      avanzado: true,
       items: [
-        { href: "/admin/dashboard", label: "Tablero", icon: "📈" },
-        { href: "/admin/supercerebro", label: "Supercerebro", icon: "🧠" },
-        { href: "/admin/ventas-local", label: "Ventas Local (análisis)", icon: "🏪" },
-        { href: "/admin/rentabilidad", label: "Rentabilidad", icon: "📊" },
-        { href: "/admin/rutas", label: L.rutas, icon: "🗺️" },
-        { href: "/admin/retiros", label: L.retiros, icon: "📥" },
-        { href: "/admin/preventa", label: "Preventa", icon: "📲" },
-        { href: "/admin/caja", label: "Cierres de caja", icon: "🧾" },
-        { href: "/admin/puntos", label: "Puntos Benechito", icon: "⭐" },
-        { href: "/admin/novedades", label: "Novedades & Promos", icon: "🔥" },
-        { href: "/admin/negocios/duplicados", label: "Duplicados", icon: "🔁" },
-        { href: "/admin/reposiciones", label: "Reposiciones", icon: "🔁" },
-        { href: "/admin/control-calidad", label: "Control calidad y turnos", icon: "✅" },
-        { href: "/admin/iva", label: "Ayudante de IVA", icon: "🧾" },
-        { href: "/admin/facturacion", label: "Facturación", icon: "🧾" },
+        { href: "/admin/panorama", label: "Panorama general", icon: "🌎" },
+        { href: "/admin/socio", label: "Socio administrativo", icon: "🐝" },
+        { href: "/admin/recordatorios", label: "Recordatorios (clientes)", icon: "🔔" },
+        { href: "/admin/clientes-dashboard", label: "Dashboard clientes", icon: "📊" },
+        { href: "/admin/calculadora", label: "Calculadora (producto/proyecto)", icon: "🧮" },
+        { href: "/admin/voz", label: "Asistente voz", icon: "🎙️" },
         { href: "/admin/formularios", label: "Checklists / BPM", icon: "✅" },
         { href: "/admin/capacitaciones", label: "Capacitaciones", icon: "🎓" },
         { href: "/admin/higiene", label: "Higiene y EPP", icon: "🧴" },
+        { href: "/admin/caja", label: "Cierres de caja", icon: "🧾" },
+        { href: "/admin/caja-vecina", label: "Caja Vecina (aparte)", icon: "🏧" },
+        { href: "/admin/rentabilidad", label: "Rentabilidad", icon: "📊" },
+        { href: "/admin/ventas-local", label: "Ventas Local (análisis)", icon: "🏪" },
+        { href: "/admin/rutas", label: L.rutas, icon: "🗺️" },
+        { href: "/admin/retiros", label: L.retiros, icon: "📥" },
+        { href: "/admin/preventa", label: "Preventa", icon: "📲" },
+        { href: "/admin/puntos", label: "Puntos Benechito", icon: "⭐" },
+        { href: "/admin/novedades", label: "Novedades & Promos", icon: "🔥" },
+        { href: "/admin/reposiciones", label: "Reposiciones", icon: "🔁" },
+        { href: "/admin/negocios/duplicados", label: "Duplicados", icon: "🔁" },
+        { href: "/admin/iva", label: "Ayudante de IVA", icon: "🧾" },
+        { href: "/admin/facturacion", label: "Facturación", icon: "🧾" },
+        // Reemplazados por vistas más nuevas, pero accesibles por si acaso.
+        { href: "/admin/dashboard", label: "Tablero (antiguo)", icon: "📈" },
+        { href: "/admin/supercerebro", label: "Supercerebro", icon: "🧠" },
+        { href: "/admin/control-calidad", label: "Control calidad y turnos", icon: "✅" },
       ],
     },
   ];
@@ -145,9 +148,9 @@ export default async function AdminLayout({
   const tema = rubro.tema;
   const gradMarca = `linear-gradient(135deg, ${tema.degradado[0]}, ${tema.degradado[1]})`;
 
-  // Filtra el menú según el rol y el rubro. En modo simple se oculta el grupo "Extras / En revisión".
+  // Filtra el menú según el rol y el rubro. En modo simple se oculta el grupo avanzado ("Más herramientas").
   const modulosVisibles = modulos
-    .filter((m) => !(modoSimple && m.titulo.includes("Extras")))
+    .filter((m) => !(modoSimple && m.avanzado))
     .map((m) => ({
       ...m,
       items: m.items.filter(

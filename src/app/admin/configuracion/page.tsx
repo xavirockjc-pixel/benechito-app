@@ -99,11 +99,11 @@ export default async function ConfiguracionPage({ searchParams }: { searchParams
       <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-bold text-slate-900">🧭 Modo del menú</h2>
         <p className="mt-1 text-sm text-slate-500">
-          <b>Simple</b>: solo el núcleo que usas a diario. <b>Completo</b>: agrega el grupo <b>🧪 Extras / En revisión</b> (duplicados y módulos por implementar/ajustar). Nada se borra.
+          <b>Simple</b>: solo el núcleo que usas a diario. <b>Completo</b>: agrega el grupo <b>Más herramientas</b> (lo de uso ocasional). Nada se borra.
         </p>
         {menu === "ok" && <p className="mt-2 rounded-lg bg-green-50 px-3 py-2 text-xs font-semibold text-green-700 ring-1 ring-green-200">✅ Menú actualizado.</p>}
         <form action={cambiarModoMenu} className="mt-3 flex flex-wrap gap-2">
-          {[["simple", "🟢 Simple (recomendado)"], ["completo", "🧪 Completo (con Extras)"]].map(([v, lbl]) => {
+          {[["simple", "🟢 Simple (recomendado)"], ["completo", "🧰 Completo (más herramientas)"]].map(([v, lbl]) => {
             const activo = v === "simple" ? empresa.modoSimple : !empresa.modoSimple;
             return (
               <label key={v} className="cursor-pointer">
