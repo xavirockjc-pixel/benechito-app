@@ -6,7 +6,8 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
 import { marcarAsistenciaAuto } from "@/lib/asistencia";
-import { rendimientoAprendido } from "@/lib/dominio/fabricacion";
+import { rendimientoAprendido, resumenTurnoProduccion } from "@/lib/dominio/fabricacion";
+import { inicioDelDia } from "@/lib/dominio/empresa";
 
 /** Desbloquea UN tipo si su clave coincide (cookie con la lista de tipos abiertos, 8h). */
 export async function desbloquearRecetas(formData: FormData) {
@@ -390,4 +391,119 @@ export async function crearFabricacion(formData: FormData) {
   await marcarAsistenciaAuto(u?.sub, "Fabricación registrada");
   revalidatePath("/produccion");
   redirect("/produccion?ok=1");
+}
+
+/**
+ * CIERRE DE TURNO de producción. Al final del turno el operario pone las unidades
+ * REALES que salieron por línea (ej. "salieron 4112 paletas"). El sistema:
+ *  - reparte ese real entre las tandas del turno (por litros) y corrige el estimado,
+ *  - ajusta el stock de bodega por la diferencia (por sabor, según los depósitos),
+ *  - deja un registro con la comparación mezclas↔estimado↔real y los insumos
+ *    consumidos (palitos, bolsas, kg…) por línea → historial para el panel.
+ * Como cada tanda queda con el conteo real, el rendimiento se AFINA solo.
+ */
+export async function cerrarTurnoProduccion(formData: FormData) {
+  const u = await usuarioActual();
+  const bod = await bodegaId();
+  const desde = await inicioDelDia();
+
+  type RealLinea = { linea: string; reales: number };
+  let reales: RealLinea[] = [];
+  try { reales = JSON.parse(String(formData.get("reales") ?? "[]")); } catch { reales = []; }
+  const realPorLinea = new Map<string, number>();
+  for (const r of reales) {
+    const n = Math.max(0, Math.floor(Number(r?.reales) || 0));
+    if (r?.linea && n > 0) realPorLinea.set(String(r.linea).trim(), n);
+  }
+
+  // Snapshot del turno ANTES de reconciliar (litros, estimado, insumos).
+  const resumen = await resumenTurnoProduccion(desde);
+
+  const comparacion: { linea: string; litros: number; sabores: string[]; estimado: number; real: number; rendimiento: number; diferencia: number }[] = [];
+
+  for (const info of resumen.porLinea) {
+    const real = realPorLinea.get(info.linea);
+    if (real === undefined) continue; // línea sin conteo → se deja el estimado
+
+    // Tandas del turno de esta línea (para repartir el real por litros).
+    const tandas = await prisma.controlCalidad.findMany({
+      where: { clase: "linea", refId: info.linea, base: { gt: 0 }, fecha: { gte: desde } },
+      select: { id: true, base: true, cantidad: true, depositos: true },
+    });
+    const litrosLinea = tandas.reduce((s, t) => s + ((t.base as number) ?? 0), 0);
+    if (litrosLinea <= 0) continue;
+
+    // Delta de stock por sabor (real - estimado previo), para corregir bodega.
+    const deltaSabor = new Map<string, number>();
+    let repartidoLinea = 0;
+    for (let i = 0; i < tandas.length; i++) {
+      const t = tandas[i];
+      const litros = (t.base as number) ?? 0;
+      // La última tanda absorbe el redondeo para cuadrar el total exacto.
+      const nuevoTotal = i === tandas.length - 1 ? real - repartidoLinea : Math.round(real * (litros / litrosLinea));
+      repartidoLinea += nuevoTotal;
+
+      let deps: { deposito?: string; sabor?: string; litros?: number; est?: number }[] = [];
+      try { deps = JSON.parse(t.depositos ?? "[]"); } catch { deps = []; }
+      const estTanda = deps.reduce((s, d) => s + (Number(d.est) || 0), 0);
+      const litTanda = deps.reduce((s, d) => s + (Number(d.litros) || 0), 0);
+      // Reparte el nuevo total de la tanda entre sus sabores (por est, o por litros).
+      let repartidoTanda = 0;
+      for (let j = 0; j < deps.length; j++) {
+        const d = deps[j];
+        const sabor = String(d.sabor ?? "").trim();
+        if (!sabor) continue;
+        const frac = estTanda > 0 ? (Number(d.est) || 0) / estTanda : litTanda > 0 ? (Number(d.litros) || 0) / litTanda : 1 / deps.length;
+        const nuevoSab = j === deps.length - 1 ? nuevoTotal - repartidoTanda : Math.round(nuevoTotal * frac);
+        repartidoTanda += nuevoSab;
+        const previo = Math.round((Number(d.est) || 0)); // lo que se sumó a bodega al fabricar
+        deltaSabor.set(sabor, (deltaSabor.get(sabor) ?? 0) + (nuevoSab - previo));
+        d.est = nuevoSab; // deja el depósito con el conteo real
+      }
+      await prisma.controlCalidad.update({
+        where: { id: t.id },
+        data: { cantidad: nuevoTotal, depositos: JSON.stringify(deps), observaciones: "cierre de turno" },
+      });
+    }
+
+    // Corrige el stock de bodega por la diferencia (real vs lo ya sumado al fabricar).
+    if (bod) {
+      for (const [sabor, delta] of deltaSabor) {
+        if (delta === 0) continue;
+        let saborId = (await prisma.sabor.findFirst({ where: { nombre: sabor, linea: info.linea } }))?.id;
+        if (!saborId) saborId = (await prisma.sabor.create({ data: { nombre: sabor, linea: info.linea } })).id;
+        await prisma.stockSabor.upsert({
+          where: { saborId_ubicacionId: { saborId, ubicacionId: bod } },
+          update: { cantidad: { increment: delta } },
+          create: { saborId, ubicacionId: bod, cantidad: Math.max(0, delta) },
+        });
+        await prisma.movimientoBodega.create({
+          data: {
+            zona: "produccion", ubicacionId: bod, tipo: delta >= 0 ? "entrada" : "merma", clase: "sabor",
+            refId: saborId, nombre: `Ajuste cierre · ${sabor} (${info.linea})`, cantidad: Math.abs(delta),
+            detalle: "cuadre de cierre de turno", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+          },
+        });
+      }
+    }
+
+    comparacion.push({
+      linea: info.linea, litros: litrosLinea, sabores: info.sabores, estimado: info.estimado,
+      real, rendimiento: Math.round((real / litrosLinea) * 100) / 100, diferencia: real - info.estimado,
+    });
+  }
+
+  // Registro del cierre → historial para el panel (cruce con stock, ventas, mermas).
+  const detalle = JSON.stringify({
+    fecha: new Date().toISOString(),
+    lineas: comparacion,
+    insumos: resumen.insumos.map((i) => ({ nombre: i.nombre, unidad: i.unidad, categoria: i.categoria, cantidad: Math.round(i.cantidad * 100) / 100, porLinea: i.porLinea })),
+  });
+  await prisma.auditoria.create({
+    data: { usuarioId: u?.sub ?? null, accion: "cierre_produccion", entidad: "Produccion", detalle },
+  });
+
+  await marcarAsistenciaAuto(u?.sub, "Cierre de turno de producción");
+  revalidatePath("/produccion");
+  redirect("/produccion?cierre=1");
 }

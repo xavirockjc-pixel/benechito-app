@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 const fmtHora = (d: Date) => new Date(d).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
 const lineaLabel: Record<string, string> = { trufa: "Trufas", cuchufli: "Cuchuflís", helado: "Helados", paleta: "Paletas", postre: "Postres" };
 
-export default async function ProduccionHome({ searchParams }: { searchParams: Promise<{ ok?: string; reporte?: string; mezcla?: string; desbloqueo?: string }> }) {
-  const { ok, reporte, mezcla, desbloqueo } = await searchParams;
+export default async function ProduccionHome({ searchParams }: { searchParams: Promise<{ ok?: string; reporte?: string; mezcla?: string; desbloqueo?: string; cierre?: string }> }) {
+  const { ok, reporte, mezcla, desbloqueo, cierre } = await searchParams;
   const claves = await prisma.claveReceta.findMany();
   const cookieStore = await cookies();
   const abiertas = new Set((cookieStore.get("recetas_ok")?.value ?? "").split(",").map((s) => s.trim()).filter(Boolean));
@@ -109,12 +109,19 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
       </div>
 
       {/* Fabricación guiada: elige línea → kilos → depósitos; aprende el rendimiento solo */}
-      <Link href="/produccion/fabricar" className="block rounded-2xl bg-[#0f766e] p-4 text-center text-white shadow active:brightness-110">
-        <span className="text-base font-extrabold">🧪 Nueva fabricación</span>
-        <span className="mt-0.5 block text-xs text-white/80">Línea → kilos → depósitos. Descuenta insumos y aprende cuánto rinde.</span>
-      </Link>
+      <div className="grid grid-cols-2 gap-2">
+        <Link href="/produccion/fabricar" className="block rounded-2xl bg-[#0f766e] p-4 text-center text-white shadow active:brightness-110">
+          <span className="block text-sm font-extrabold">🧪 Nueva fabricación</span>
+          <span className="mt-0.5 block text-[11px] text-white/80">Línea → litros → depósitos.</span>
+        </Link>
+        <Link href="/produccion/cierre" className="block rounded-2xl border-2 border-[#0f766e] bg-white p-4 text-center text-[#0f766e] shadow-sm active:bg-teal-50">
+          <span className="block text-sm font-extrabold">🧾 Cerrar turno</span>
+          <span className="mt-0.5 block text-[11px] text-teal-700/70">Recuento real vs estimado.</span>
+        </Link>
+      </div>
 
       {ok && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Producción registrada</p>}
+      {cierre && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Turno cerrado · recuento real guardado y stock cuadrado</p>}
       {mezcla && <p className="rounded-xl bg-teal-100 px-4 py-3 text-center text-sm font-bold text-teal-700">✓ Mezcla confirmada · insumos descontados</p>}
       {reporte && <p className="rounded-xl bg-teal-100 px-4 py-3 text-center text-sm font-bold text-teal-700">✓ Reporte del turno enviado</p>}
 
