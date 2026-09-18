@@ -39,7 +39,6 @@ export default async function ProduccionLayout({ children }: { children: React.R
         acento="#0f766e"
         items={[
           { href: "/produccion", label: rubro.labels.produccion, icon: "🏭" },
-          { href: "/produccion/insumos", label: "Insumos", icon: "🧪" },
           { href: "/produccion/checklist", label: "Higiene", icon: "🧼" },
           { href: "/produccion/bitacora", label: "Bitácora", icon: "📓" },
           { href: "/produccion/capacitaciones", label: "Capacita", icon: "🎓" },

@@ -1,9 +1,46 @@
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
 import { analisisProduccion } from "@/lib/dominio/fabricacion";
 import { lineaLabel } from "@/lib/dominio/produccion";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 
 export const dynamic = "force-dynamic";
+
+/** Unidades producidas por trabajador en el rango + pago estimado por trato. */
+async function pagoVsProduccion(desde: Date, hasta: Date) {
+  const [trabajadores, eventos] = await Promise.all([
+    prisma.trabajador.findMany({
+      where: { activo: true, usuarioId: { not: null } },
+      select: { usuarioId: true, nombre: true, modalidadPago: true, tarifa: true },
+      orderBy: { nombre: "asc" },
+    }),
+    prisma.movimientoBodega.findMany({
+      where: { zona: "produccion", tipo: "entrada", fecha: { gte: desde, lt: hasta } },
+      select: { cantidad: true, usuarioId: true, participantes: true },
+    }),
+  ]);
+  // Unidades atribuidas a cada usuario (divididas si el turno lo trabajaron varios).
+  const prod = new Map<string, number>();
+  for (const e of eventos) {
+    const ids = e.participantes?.trim() ? e.participantes.split(",").map((s) => s.trim()).filter(Boolean) : e.usuarioId ? [e.usuarioId] : [];
+    if (ids.length === 0) continue;
+    const share = e.cantidad / ids.length;
+    for (const id of ids) prod.set(id, (prod.get(id) ?? 0) + share);
+  }
+  const filas = trabajadores
+    .map((t) => {
+      const unidades = t.usuarioId ? (prod.get(t.usuarioId) ?? 0) : 0;
+      const tarifa = t.tarifa != null ? Number(t.tarifa) : 0;
+      const porTrato = t.modalidadPago === "por_trato";
+      const pago = porTrato ? Math.round(tarifa * unidades) : 0;
+      return { nombre: t.nombre, unidades: Math.round(unidades), porTrato, tarifa, pago };
+    })
+    .filter((f) => f.unidades > 0)
+    .sort((a, b) => b.unidades - a.unidades);
+  const totalPago = filas.reduce((s, f) => s + f.pago, 0);
+  const totalUnid = filas.reduce((s, f) => s + f.unidades, 0);
+  return { filas, totalPago, totalUnid };
+}
 
 const RANGOS: Record<string, { label: string; dias: number }> = {
   hoy: { label: "Hoy", dias: 1 },
@@ -26,6 +63,7 @@ export default async function ProduccionAnalisisPage({ searchParams }: { searchP
   desde.setDate(desde.getDate() - (dias - 1));
 
   const { porLinea, insumos, costoTotal, mermas, mermaTotal, cierres } = await analisisProduccion(desde, hasta);
+  const pago = await pagoVsProduccion(desde, hasta);
 
   const litrosTot = porLinea.reduce((s, l) => s + l.litros, 0);
   const unidadesTot = porLinea.reduce((s, l) => s + l.unidades, 0);
@@ -143,6 +181,45 @@ export default async function ProduccionAnalisisPage({ searchParams }: { searchP
                   </tbody>
                 </table>
               </div>
+            </>
+          )}
+
+          {/* Pago vs producción */}
+          {pago.filas.length > 0 && (
+            <>
+              <h2 className="mt-8 mb-1 text-lg font-bold text-slate-900">Pago vs producción</h2>
+              <p className="mb-3 text-xs text-slate-500">Unidades atribuidas a cada trabajador (divididas si el turno lo trabajaron varios) y el pago por trato estimado.</p>
+              <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th className="px-4 py-3">Trabajador</th>
+                      <th className="px-4 py-3 text-right">Unidades</th>
+                      <th className="px-4 py-3 text-right">Tarifa</th>
+                      <th className="px-4 py-3 text-right">Pago estimado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {pago.filas.map((f) => (
+                      <tr key={f.nombre} className="hover:bg-slate-50">
+                        <td className="px-4 py-3 font-semibold text-slate-900">{f.nombre}{!f.porTrato && <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">sueldo fijo</span>}</td>
+                        <td className="px-4 py-3 text-right text-slate-900">{f.unidades.toLocaleString("es-CL")}</td>
+                        <td className="px-4 py-3 text-right text-slate-500">{f.porTrato ? `${fmtCLP(f.tarifa)}/u` : "—"}</td>
+                        <td className="px-4 py-3 text-right font-bold text-teal-700">{f.porTrato ? fmtCLP(f.pago) : "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="border-t border-slate-200 bg-slate-50">
+                    <tr>
+                      <td className="px-4 py-3 font-bold text-slate-900">Total</td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-900">{pago.totalUnid.toLocaleString("es-CL")}</td>
+                      <td className="px-4 py-3 text-right text-xs text-slate-500">costo M.O./u</td>
+                      <td className="px-4 py-3 text-right font-extrabold text-teal-700">{fmtCLP(pago.totalPago)}{pago.totalUnid > 0 && <span className="ml-1 text-[11px] font-semibold text-slate-400">({fmtCLP(pago.totalPago / pago.totalUnid)}/u)</span>}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+              <p className="mt-1 text-xs text-slate-400">El pago por trato sale de la tarifa por unidad de cada trabajador (Pagos al equipo). El pago definitivo se cierra en esa sección.</p>
             </>
           )}
 

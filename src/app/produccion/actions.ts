@@ -190,6 +190,11 @@ export async function registrarProduccion(formData: FormData) {
   const partRaw = String(formData.get("participantes") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const participantes = (partRaw.length > 0 ? [...new Set(partRaw)] : (u?.sub ? [u.sub] : [])).join(",") || null;
 
+  // Datos internos del turno (no se muestran en la app del operario).
+  const turno = String(formData.get("turno") ?? "").trim() || null;
+  const litros = Number(String(formData.get("litros") ?? "").replace(",", ".")) || 0;
+  const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
+
   for (const it of items) {
     let saborId = it.saborId?.trim();
     if (!saborId) {
@@ -208,6 +213,36 @@ export async function registrarProduccion(formData: FormData) {
         usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null, participantes,
       },
     });
+  }
+
+  // Nombres de quienes trabajaron (para el registro interno del turno).
+  const ids = participantes ? participantes.split(",").map((s) => s.trim()).filter(Boolean) : [];
+  let operarios: string | null = u?.nombre ?? null;
+  if (ids.length > 0) {
+    const us = await prisma.usuario.findMany({ where: { id: { in: ids } }, select: { nombre: true } });
+    operarios = us.map((x) => x.nombre).filter(Boolean).join(", ") || operarios;
+  }
+  const total = items.reduce((s, i) => s + i.cantidad, 0);
+  const sabores = items.map((i) => `${i.cantidad} ${i.nombre.trim()}`).join(", ");
+
+  // Registro interno del turno → panel (rendimiento, pago vs producción, historial).
+  // NO se muestra en la app del operario.
+  await prisma.controlCalidad.create({
+    data: {
+      clase: "linea", refId: linea, turno,
+      nombre: `${sabores} · ${linea}`.slice(0, 180),
+      cantidad: total, base: litros > 0 ? litros : null, baseUnidad: litros > 0 ? "l" : null,
+      operarios, preparador: operarios, observaciones,
+      usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+    },
+  });
+
+  // Si anotó un ajuste/falta, queda como nota para la central (ej: faltó edulcorante).
+  if (observaciones) {
+    await prisma.nota.create({
+      data: { texto: observaciones, tipo: "observacion", area: "produccion", prioridad: "media", autor: u?.nombre ?? "Producción" },
+    });
+    revalidatePath("/admin/notas");
   }
 
   await marcarAsistenciaAuto(u?.sub, "Producción registrada"); // asistencia automática
