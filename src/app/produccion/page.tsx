@@ -40,7 +40,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   const saboresPorLinea: Record<string, string[]> = {};
   for (const s of saboresAll) (saboresPorLinea[s.linea] ??= []).push(s.nombre);
   const saboresProd: Record<string, string[]> = {};
-  for (const l of ["tuyyo", "paletas", "paletas_premium", "postres_500", "cassatas", "trufas", "cuchufli"]) {
+  for (const l of ["tuyyo", "paletas", "cremas", "paletas_premium", "postres_500", "cassatas", "trufas", "cuchufli"]) {
     const alias = l === "trufas" ? ["trufas", "trufa"] : [l];
     saboresProd[l] = [...new Set(alias.flatMap((a) => saboresPorLinea[a] ?? []))];
   }

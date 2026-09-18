@@ -21,11 +21,12 @@ export function esEstadoOP(v: string): v is EstadoOP {
 }
 
 // Tipos/líneas de producción, para la receta base y los agregados.
-export const LINEAS_PRODUCCION = ["tuyyo", "paletas", "paletas_premium", "postres_500", "cassatas", "trufas", "cuchufli"] as const;
+export const LINEAS_PRODUCCION = ["tuyyo", "paletas", "cremas", "paletas_premium", "postres_500", "cassatas", "trufas", "cuchufli"] as const;
 
 export const lineaLabel: Record<string, string> = {
   tuyyo: "Tú y yo",
   paletas: "Paletas",
+  cremas: "Cremas (helado batido)",
   paletas_premium: "Paletas premium",
   postres_500: "Postres 500ml",
   cassatas: "Cassatas",
