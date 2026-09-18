@@ -7,6 +7,41 @@ import { prisma } from "@/lib/prisma";
 const val = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const num = (fd: FormData, k: string) => Number(val(fd, k));
 
+/**
+ * Deja una NOTA/recomendación para la app de Producción (sugerencia, no mandato).
+ * Se muestra al operario cuando elige ese tipo/línea a fabricar. `linea` vacío = todas.
+ */
+export async function crearRecomendacion(formData: FormData) {
+  const texto = val(formData, "texto");
+  if (!texto) redirect("/admin/produccion");
+  const linea = val(formData, "linea") || null;
+  await prisma.recomendacionProduccion.create({ data: { texto, linea, activo: true } });
+  revalidatePath("/admin/produccion");
+  revalidatePath("/produccion");
+  redirect("/admin/produccion?rec=1");
+}
+
+/** Activa/desactiva una recomendación (dejar de mostrarla sin borrarla). */
+export async function toggleRecomendacion(formData: FormData) {
+  const id = val(formData, "id");
+  if (!id) redirect("/admin/produccion");
+  const r = await prisma.recomendacionProduccion.findUnique({ where: { id }, select: { activo: true } });
+  if (r) await prisma.recomendacionProduccion.update({ where: { id }, data: { activo: !r.activo } });
+  revalidatePath("/admin/produccion");
+  revalidatePath("/produccion");
+  redirect("/admin/produccion");
+}
+
+/** Borra una recomendación. */
+export async function eliminarRecomendacion(formData: FormData) {
+  const id = val(formData, "id");
+  if (!id) redirect("/admin/produccion");
+  await prisma.recomendacionProduccion.delete({ where: { id } });
+  revalidatePath("/admin/produccion");
+  revalidatePath("/produccion");
+  redirect("/admin/produccion");
+}
+
 /** Crea una orden de producción (planificada). El objetivo es "prod:<id>" o "sab:<id>". */
 export async function crearOP(formData: FormData) {
   const objetivo = val(formData, "objetivo"); // "prod:xxx" | "sab:yyy"

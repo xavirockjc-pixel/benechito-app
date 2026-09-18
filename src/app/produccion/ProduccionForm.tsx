@@ -48,10 +48,11 @@ const TURNOS = [
  * quiénes trabajaron y observaciones (faltó algo / cambiaron la receta).
  * Todo lo interno (rendimiento, costos) se calcula en el panel, no aquí.
  */
-export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId }: {
+export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId, recomendaciones = {} }: {
   saboresPorLinea?: Record<string, string[]>;
   equipo?: { usuarioId: string; nombre: string }[];
   yoId?: string;
+  recomendaciones?: Record<string, string[]>; // por línea + clave "__todas__" para las globales
 }) {
   const [turno, setTurno] = useState("1");
   const [linea, setLinea] = useState<string>(LINEAS_PRODUCCION[0]);
@@ -103,6 +104,8 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId
     .filter((i) => i.nombre && i.cantidad > 0);
   const total = items.reduce((s, i) => s + i.cantidad, 0);
   const listo = total > 0 && lineaFinal.length > 0;
+  // Recomendaciones de la central: las globales + las del producto elegido (solo sugerencia).
+  const notasRec = esNuevo ? [] : [...(recomendaciones["__todas__"] ?? []), ...(recomendaciones[linea] ?? [])];
 
   return (
     <form action={registrarProduccion} className="space-y-4">
@@ -137,6 +140,18 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId
       {esNuevo && (
         <input value={nuevoTipo} onChange={(e) => setNuevoTipo(e.target.value)} placeholder="Nombre del producto nuevo (ej: Sándwich de helado)"
           className="w-full rounded-lg border-2 border-[#0f766e] px-3 py-2.5 text-sm" />
+      )}
+
+      {/* Recomendación de la central (sugerencia, no obligación) */}
+      {notasRec.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <p className="mb-1 text-xs font-extrabold text-amber-700">💡 Recomendación (no obligatorio)</p>
+          <ul className="space-y-0.5">
+            {notasRec.map((n, i) => (
+              <li key={i} className="text-sm font-semibold text-amber-900">• {n}</li>
+            ))}
+          </ul>
+        </div>
       )}
 
       {/* Sabores + cuántos */}

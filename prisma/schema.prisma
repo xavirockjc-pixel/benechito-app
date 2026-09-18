@@ -716,6 +716,22 @@ model OrdenProduccion {
   @@index([estado])
 }
 
+/// Recomendación de la central para la app de Producción. Es una NOTA (sugerencia,
+/// no mandato) que se muestra al operario cuando elige ese tipo/línea a fabricar
+/// (ej: "esta semana priorizar frutilla", "ojo: falta estabilizante"). `linea` null
+/// = para cualquier producto. Se activa/desactiva; solo se muestra si está activa.
+model RecomendacionProduccion {
+  id        String   @id @default(cuid())
+  linea     String? // tipo/línea al que aplica (null = todas)
+  texto     String
+  activo    Boolean  @default(true)
+  autor     String?
+  createdAt DateTime @default(now())
+
+  @@index([linea])
+  @@index([activo])
+}
+
 // ===========================================================================
 //  v2 — RUTA (planificación y ejecución de la ruta del vendedor)
 // ===========================================================================
