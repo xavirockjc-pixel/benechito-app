@@ -27,7 +27,7 @@ export default async function FabricarPage() {
     <div>
       <Link href="/produccion" className="text-sm font-semibold text-[#0f766e]">← Producción</Link>
       <h1 className="mt-1 text-xl font-extrabold text-slate-900">🧪 Nueva fabricación</h1>
-      <p className="text-xs text-slate-500">Elige la línea, pon los kilos y reparte los sabores por depósito. El rendimiento se aprende solo con cada tanda.</p>
+      <p className="text-xs text-slate-500">Elige la línea, pon los litros y reparte los sabores por depósito. El sistema estima las unidades.</p>
 
       {/* Voz: toca un campo y dicta para llenarlo (nivel página para evitar el bug de Turbopack con cliente-en-cliente). */}
       <div className="mt-3 flex items-center justify-between gap-2 rounded-xl bg-teal-50 px-3 py-2">

@@ -8,6 +8,7 @@ import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
 import { marcarAsistenciaAuto } from "@/lib/asistencia";
 import { rendimientoAprendido, resumenTurnoProduccion } from "@/lib/dominio/fabricacion";
 import { inicioDelDia } from "@/lib/dominio/empresa";
+import { normalizaTexto, detectaTipoNota, detectaPrioridadNota, detectaAccionNota, detectaCantidad } from "@/lib/dominio/notas";
 
 /** Desbloquea UN tipo si su clave coincide (cookie con la lista de tipos abiertos, 8h). */
 export async function desbloquearRecetas(formData: FormData) {
@@ -506,4 +507,54 @@ export async function cerrarTurnoProduccion(formData: FormData) {
   await marcarAsistenciaAuto(u?.sub, "Cierre de turno de producción");
   revalidatePath("/produccion");
   redirect("/produccion?cierre=1");
+}
+
+/**
+ * BITÁCORA de producción: el operario deja una observación (por voz o escrita),
+ * ej. "queda poca esencia de vainilla" o "falta estabilizante". Se guarda como
+ * Nota del área producción y, si detecta que falta/hay que reponer algo, la marca
+ * como tarea de prioridad alta para que la central la vea en el panel.
+ */
+export async function crearNotaProduccion(formData: FormData) {
+  const texto = String(formData.get("texto") ?? "").trim();
+  if (!texto) redirect("/produccion/bitacora");
+  const u = await usuarioActual();
+
+  const n = normalizaTexto(texto);
+  let tipo: string = detectaTipoNota(n);
+  let prioridad: string = detectaPrioridadNota(n);
+  const accion = detectaAccionNota(n);
+  const cantidad = detectaCantidad(n);
+  // "Falta / queda poco / reponer" → tarea para la central.
+  if (accion === "reponer" || accion === "stock_entrada" || accion === "stock_salida") {
+    tipo = "tarea";
+    if (prioridad === "media") prioridad = "alta";
+  }
+
+  await prisma.nota.create({
+    data: {
+      texto, tipo, area: "produccion", prioridad,
+      autor: u?.nombre ?? "Producción",
+      accion: accion === "reponer" ? "reponer" : "ninguna",
+      accionEstado: "na", cantidad: cantidad ?? null,
+    },
+  });
+
+  revalidatePath("/produccion/bitacora");
+  revalidatePath("/admin/notas");
+  redirect("/produccion/bitacora?ok=1");
+}
+
+/** Marca una observación de la bitácora como resuelta / la reabre. */
+export async function toggleNotaProduccion(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) redirect("/produccion/bitacora");
+  const actual = await prisma.nota.findUnique({ where: { id }, select: { estado: true } });
+  if (actual) {
+    const hecha = actual.estado !== "hecha";
+    await prisma.nota.update({ where: { id }, data: { estado: hecha ? "hecha" : "abierta", hechaEn: hecha ? new Date() : null } });
+  }
+  revalidatePath("/produccion/bitacora");
+  revalidatePath("/admin/notas");
+  redirect("/produccion/bitacora");
 }

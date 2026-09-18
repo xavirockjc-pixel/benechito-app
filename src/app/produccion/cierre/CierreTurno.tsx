@@ -50,7 +50,7 @@ export default function CierreTurno({
 
               <div className="mt-2 flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2 text-xs">
                 <span className="font-semibold text-slate-600">Estimado por litros</span>
-                <span className="font-bold text-slate-900">≈ {l.estimado} u.{l.rendAprendido > 0 ? ` (${l.rendAprendido} u/L)` : ""}</span>
+                <span className="font-bold text-slate-900">≈ {l.estimado} u.</span>
               </div>
 
               <label className="mt-2 block text-xs font-bold text-slate-600">✅ Salieron (real)
@@ -98,7 +98,7 @@ export default function CierreTurno({
       >
         ✅ Cerrar turno
       </button>
-      <p className="text-center text-[11px] text-slate-400">Guarda el conteo real, cuadra el stock por la diferencia y afina el rendimiento aprendido.</p>
+      <p className="text-center text-[11px] text-slate-400">Guarda el conteo real y cuadra el stock por la diferencia.</p>
     </form>
   );
 }

@@ -120,6 +120,15 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
         </Link>
       </div>
 
+      <div className="grid grid-cols-2 gap-2">
+        <Link href="/produccion/checklist" className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 shadow-sm active:bg-slate-50">
+          🧼 Higiene y BPM
+        </Link>
+        <Link href="/produccion/bitacora" className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 shadow-sm active:bg-slate-50">
+          📓 Bitácora
+        </Link>
+      </div>
+
       {ok && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Producción registrada</p>}
       {cierre && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Turno cerrado · recuento real guardado y stock cuadrado</p>}
       {mezcla && <p className="rounded-xl bg-teal-100 px-4 py-3 text-center text-sm font-bold text-teal-700">✓ Mezcla confirmada · insumos descontados</p>}

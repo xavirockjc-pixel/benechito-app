@@ -34,7 +34,7 @@ export default async function CierrePage() {
     <div>
       <Link href="/produccion" className="text-sm font-semibold text-[#0f766e]">← Producción</Link>
       <h1 className="mt-1 text-xl font-extrabold text-slate-900">🧾 Cierre de turno</h1>
-      <p className="text-xs text-slate-500">Pon las unidades reales que salieron por línea. El sistema compara con lo estimado por los litros mezclados y afina el rendimiento.</p>
+      <p className="text-xs text-slate-500">Pon las unidades reales que salieron por línea. El sistema compara con lo estimado por los litros mezclados y cuadra el stock.</p>
 
       {lineas.length === 0 ? (
         <p className="mt-6 rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">

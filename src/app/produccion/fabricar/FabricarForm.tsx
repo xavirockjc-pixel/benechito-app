@@ -61,9 +61,6 @@ export default function FabricarForm({
               className={`rounded-xl border-2 p-3 text-left ${linea === l.id ? "border-[#0f766e] bg-teal-50" : "border-slate-200 bg-white"}`}
             >
               <span className="block font-bold text-slate-900">{l.label}</span>
-              <span className="block text-[11px] text-slate-400">
-                {l.muestras > 0 ? `≈ ${l.porKilo} u/litro (aprendido)` : "sin datos aún"}
-              </span>
             </button>
           ))}
         </div>
@@ -77,15 +74,10 @@ export default function FabricarForm({
             className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
         </label>
         {aprendido === 0 && (
-          <label className="mt-2 block text-xs font-bold text-slate-600">¿Cuántas unidades salen por litro? (aprox — luego lo aprende solo)
+          <label className="mt-2 block text-xs font-bold text-slate-600">¿Cuántas unidades salen por litro? (aprox)
             <input value={porLitroManual} onChange={(e) => setPorLitroManual(e.target.value)} inputMode="decimal" placeholder="Ej: 12"
               className="mt-1 w-32 rounded-lg border border-slate-300 px-3 py-2.5 text-base" />
           </label>
-        )}
-        {aprendido > 0 && (
-          <p className="mt-2 rounded-lg bg-teal-50 px-3 py-2 text-xs font-bold text-teal-700">
-            📈 Rendimiento aprendido: ≈ {aprendido} unidades por litro ({lineaInfo?.muestras} tandas)
-          </p>
         )}
       </section>
 
@@ -132,7 +124,7 @@ export default function FabricarForm({
       {/* 4 — Conteo real opcional */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="mb-1 text-sm font-extrabold text-slate-900">4 · ¿Contaste el total real? (opcional)</h2>
-        <p className="mb-2 text-[11px] text-slate-500">Si en el envasado contaste las unidades reales, ponlas y el sistema aprende mejor. Si no, deja vacío y usa el estimado.</p>
+        <p className="mb-2 text-[11px] text-slate-500">Si en el envasado contaste las unidades reales, ponlas para dejarlo exacto. Si no, deja vacío y usa el estimado.</p>
         <input value={unidadesReales} onChange={(e) => setUnidadesReales(e.target.value)} inputMode="numeric" placeholder="Total de unidades reales (opcional)"
           className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-base" />
       </section>
@@ -143,7 +135,7 @@ export default function FabricarForm({
       >
         ✅ Guardar fabricación {totalEst > 0 ? `(≈ ${totalEst} u.)` : ""}
       </button>
-      <p className="text-center text-[11px] text-slate-400">Descuenta insumos por receta (según litros), suma lo producido a bodega y afina el rendimiento.</p>
+      <p className="text-center text-[11px] text-slate-400">Descuenta insumos por receta (según litros) y suma lo producido a bodega.</p>
     </form>
   );
 }
