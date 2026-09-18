@@ -57,9 +57,15 @@ export function parseRespuestas(json: string | null | undefined): Record<string,
   }
 }
 
-export const CATEGORIAS_CAP = ["fabricacion", "maquinas", "receta", "otro"] as const;
+export const CATEGORIAS_CAP = ["manipulacion", "higiene", "calidad", "residuos", "seguridad", "maquinas", "fabricacion", "receta", "otro"] as const;
 export const categoriaCapLabel: Record<string, string> = {
-  fabricacion: "Fabricación", maquinas: "Uso de máquinas", receta: "Receta", otro: "Otro",
+  manipulacion: "Manipulación de alimentos", higiene: "Higiene y seguridad", calidad: "Control de calidad",
+  residuos: "Manejo de residuos", seguridad: "Seguridad laboral", maquinas: "Uso de máquinas",
+  fabricacion: "Fabricación", receta: "Receta", otro: "Otro",
+};
+export const categoriaCapIcon: Record<string, string> = {
+  manipulacion: "🧑‍🍳", higiene: "🧼", calidad: "✅", residuos: "♻️", seguridad: "🦺",
+  maquinas: "⚙️", fabricacion: "🏭", receta: "📋", otro: "📎",
 };
 
 /** Convierte un enlace de YouTube/Drive en URL embebible (o null si no reconoce). */
