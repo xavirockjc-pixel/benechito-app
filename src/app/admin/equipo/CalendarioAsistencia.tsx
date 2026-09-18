@@ -7,9 +7,10 @@ const claveDia = (d: Date) => new Date(d).toLocaleDateString("en-CA"); // yyyy-m
 
 /**
  * Calendario del mes en curso: cada día pintado según el tipo de asistencia.
- * Muestra ícono del tipo y, si trabajó, las horas del día.
+ * Muestra ícono del tipo, las horas del día y —si se pasa `prodPorDia`— la
+ * cantidad de helados que produjo ese día (para cruzar producción con el pago).
  */
-export default function CalendarioAsistencia({ asistencias }: { asistencias: Asist[] }) {
+export default function CalendarioAsistencia({ asistencias, prodPorDia = {} }: { asistencias: Asist[]; prodPorDia?: Record<string, number> }) {
   const hoy = new Date();
   const anio = hoy.getFullYear();
   const mes = hoy.getMonth();
@@ -42,24 +43,29 @@ export default function CalendarioAsistencia({ asistencias }: { asistencias: Asi
           if (dia == null) return <div key={i} />;
           const k = claveDia(new Date(anio, mes, dia));
           const a = porDia.get(k);
+          const helados = Math.round(prodPorDia[k] ?? 0);
           const esHoy = dia === hoy.getDate();
           const base = "flex aspect-square flex-col items-center justify-center rounded-lg border text-[11px]";
           if (!a) {
             return (
-              <div key={i} className={`${base} border-slate-100 text-slate-400 ${esHoy ? "ring-2 ring-slate-300" : ""}`}>
-                {dia}
+              <div key={i} title={helados > 0 ? `${dia} · ${helados} helados` : String(dia)}
+                className={`${base} ${helados > 0 ? "border-teal-200 bg-teal-50 text-teal-700" : "border-slate-100 text-slate-400"} ${esHoy ? "ring-2 ring-slate-300" : ""}`}>
+                <span className={helados > 0 ? "font-bold leading-none" : ""}>{dia}</span>
+                {helados > 0 && <span className="text-[9px] font-bold leading-none">🍦{helados}</span>}
               </div>
             );
           }
           return (
             <div
               key={i}
-              title={`${dia} · ${tipoAsistenciaLabel[a.tipo] ?? a.tipo}${a.horas > 0 ? ` · ${a.horas} h` : ""}`}
+              title={`${dia} · ${tipoAsistenciaLabel[a.tipo] ?? a.tipo}${a.horas > 0 ? ` · ${a.horas} h` : ""}${helados > 0 ? ` · ${helados} helados` : ""}`}
               className={`${base} ${tipoAsistenciaColor[a.tipo] ?? "bg-slate-100 text-slate-700 border-slate-200"} ${esHoy ? "ring-2 ring-slate-400" : ""}`}
             >
               <span className="font-bold leading-none">{dia}</span>
               <span className="leading-none">{tipoAsistenciaIcono[a.tipo]}</span>
-              {a.horas > 0 && <span className="text-[9px] font-semibold leading-none">{a.horas}h{a.horasExtra > 0 ? "+" : ""}</span>}
+              {helados > 0
+                ? <span className="text-[9px] font-bold leading-none">🍦{helados}</span>
+                : a.horas > 0 && <span className="text-[9px] font-semibold leading-none">{a.horas}h{a.horasExtra > 0 ? "+" : ""}</span>}
             </div>
           );
         })}

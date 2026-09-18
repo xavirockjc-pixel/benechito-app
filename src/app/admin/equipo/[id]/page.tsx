@@ -44,7 +44,8 @@ export default async function FichaTrabajador({ params }: { params: Promise<{ id
 
   // Estadísticas de producción/ventas por período.
   let statLabel = "Actividad";
-  let prod = { hoy: 0, semana: 0, mes: 0 };
+  const prod = { hoy: 0, semana: 0, mes: 0 };
+  const prodPorDia: Record<string, number> = {}; // yyyy-mm-dd → helados producidos (calendario)
   if (t.cargo === "vendedor") {
     statLabel = "Ventas ($)";
     if (t.usuarioId) {
@@ -53,21 +54,39 @@ export default async function FichaTrabajador({ params }: { params: Promise<{ id
         prisma.venta.aggregate({ _sum: { total: true }, where: { vendedorId: t.usuarioId, fecha: { gte: semana } } }),
         prisma.venta.aggregate({ _sum: { total: true }, where: { vendedorId: t.usuarioId, fecha: { gte: mes } } }),
       ]);
-      prod = { hoy: Number(h._sum.total ?? 0), semana: Number(s._sum.total ?? 0), mes: Number(m._sum.total ?? 0) };
+      prod.hoy = Number(h._sum.total ?? 0); prod.semana = Number(s._sum.total ?? 0); prod.mes = Number(m._sum.total ?? 0);
     }
   } else {
     // Operario / repartidor: unidades producidas (por nombre en movimientos de producción).
     statLabel = "Producción (u.)";
-    const wh = { zona: "produccion", nombreUsuario: { contains: t.nombre, mode: "insensitive" as const } };
-    const [h, s, m] = await Promise.all([
-      prisma.movimientoBodega.aggregate({ _sum: { cantidad: true }, where: { ...wh, fecha: { gte: hoy } } }),
-      prisma.movimientoBodega.aggregate({ _sum: { cantidad: true }, where: { ...wh, fecha: { gte: semana } } }),
-      prisma.movimientoBodega.aggregate({ _sum: { cantidad: true }, where: { ...wh, fecha: { gte: mes } } }),
-    ]);
-    prod = { hoy: Number(h._sum.cantidad ?? 0), semana: Number(s._sum.cantidad ?? 0), mes: Number(m._sum.cantidad ?? 0) };
+    // Producción atribuida al trabajador. Si está enlazado a un login, se usa
+    // `participantes` (igual que el pago: dividido si el turno lo trabajaron varios).
+    // Si no, se cae al nombre en el registro (compatibilidad).
+    const eventos = t.usuarioId
+      ? await prisma.movimientoBodega.findMany({
+          where: { zona: "produccion", tipo: "entrada", fecha: { gte: mes } },
+          select: { cantidad: true, fecha: true, usuarioId: true, participantes: true },
+        })
+      : await prisma.movimientoBodega.findMany({
+          where: { zona: "produccion", nombreUsuario: { contains: t.nombre, mode: "insensitive" as const }, fecha: { gte: mes } },
+          select: { cantidad: true, fecha: true, usuarioId: true, participantes: true },
+        });
+    const claveDia = (d: Date) => new Date(d).toLocaleDateString("en-CA");
+    for (const e of eventos) {
+      let share = e.cantidad;
+      if (t.usuarioId) {
+        const ids = e.participantes?.trim() ? e.participantes.split(",").map((x) => x.trim()).filter(Boolean) : e.usuarioId ? [e.usuarioId] : [];
+        if (!ids.includes(t.usuarioId)) continue;
+        share = e.cantidad / ids.length;
+      }
+      prodPorDia[claveDia(e.fecha)] = (prodPorDia[claveDia(e.fecha)] ?? 0) + share;
+      prod.mes += share;
+      if (e.fecha >= semana) prod.semana += share;
+      if (e.fecha >= hoy) prod.hoy += share;
+    }
   }
   const esDinero = t.cargo === "vendedor";
-  const fmtStat = (n: number) => (esDinero ? fmtCLP(n) : String(n));
+  const fmtStat = (n: number) => (esDinero ? fmtCLP(n) : String(Math.round(n)));
 
   // Cuenta: saldo (a favor del trabajador) y pagado en la semana.
   const saldo = t.movimientos.reduce((s, m) => s + signoMovTrabajador(m.tipo) * Number(m.monto), 0);
@@ -219,7 +238,7 @@ export default async function FichaTrabajador({ params }: { params: Promise<{ id
 
         {/* Calendario del mes */}
         <div className="mt-4 border-t border-slate-100 pt-4">
-          <CalendarioAsistencia asistencias={t.asistencias} />
+          <CalendarioAsistencia asistencias={t.asistencias} prodPorDia={prodPorDia} />
         </div>
 
         {/* Historial */}
