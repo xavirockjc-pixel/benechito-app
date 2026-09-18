@@ -72,6 +72,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       activo: true,
       items: [
         { href: "/admin/produccion", label: L.produccion, icon: "🏭" },
+        { href: "/admin/produccion-analisis", label: "Análisis de producción", icon: "📊" },
         { href: "/admin/materias", label: L.materias, icon: "🧪" },
         { href: "/admin/sabores", label: L.sabores, icon: "🍫" },
       ],
