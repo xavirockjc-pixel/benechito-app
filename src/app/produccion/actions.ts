@@ -290,3 +290,86 @@ export async function enviarReporteTurno() {
   revalidatePath("/produccion");
   redirect("/produccion?reporte=1");
 }
+
+/**
+ * Fabricación editable: una tanda con su preparador y su reparto por depósitos
+ * (para dividir sabores en distintos recipientes). Con los kilos de base:
+ *  1) descuenta los insumos de la receta (escalados por kilos) → costo/consumo,
+ *  2) suma las unidades por sabor a bodega,
+ *  3) queda registrada → de ahí el rendimiento se APRENDE solo (unidades/kilo).
+ */
+export async function crearFabricacion(formData: FormData) {
+  const linea = String(formData.get("linea") ?? "").trim();
+  const base = Number(String(formData.get("base") ?? "").replace(",", ".")) || 0; // kilos/litros de base
+  const baseUnidad = String(formData.get("baseUnidad") ?? "l").trim() === "kg" ? "kg" : "l";
+  const preparador = String(formData.get("preparador") ?? "").trim() || null;
+  const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
+
+  type Dep = { deposito?: string; sabor: string; unidades: number };
+  let depositos: Dep[] = [];
+  try { depositos = JSON.parse(String(formData.get("depositos") ?? "[]")); } catch { depositos = []; }
+  depositos = depositos.filter((d) => d && d.sabor?.trim() && Number.isFinite(d.unidades) && d.unidades > 0);
+  if (!linea || depositos.length === 0) return;
+
+  const bod = await bodegaId();
+  if (!bod) return;
+  const u = await usuarioActual();
+  const totalUnidades = depositos.reduce((s, d) => s + Math.floor(d.unidades), 0);
+
+  // 1) Consumir insumos de la receta base (fijos), escalados por los kilos.
+  if (base > 0) {
+    const ref = await prisma.recetaBase.findUnique({ where: { linea } });
+    const baseRef = ref && ref.baseRef > 0 ? ref.baseRef : 1;
+    const items = await prisma.recetaItem.findMany({ where: { linea, grupo: null } });
+    for (const it of items) {
+      const usar = it.cantidad * (base / baseRef);
+      if (usar <= 0) continue;
+      await prisma.materiaPrima.update({ where: { id: it.materiaPrimaId }, data: { stock: { decrement: usar } } });
+      await prisma.movimientoMateria.create({
+        data: {
+          materiaPrimaId: it.materiaPrimaId, tipo: "consumo", cantidad: usar,
+          motivo: `Fabricación · ${linea} · ${base} ${baseUnidad}`,
+          usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+        },
+      });
+    }
+  }
+
+  // 2) Producir: sumar unidades por sabor a bodega (StockSabor) + registro del turno.
+  const porSabor = new Map<string, number>();
+  for (const d of depositos) {
+    const s = d.sabor.trim();
+    porSabor.set(s, (porSabor.get(s) ?? 0) + Math.floor(d.unidades));
+  }
+  for (const [sabor, unidades] of porSabor) {
+    if (unidades <= 0) continue;
+    let saborId = (await prisma.sabor.findFirst({ where: { nombre: sabor, linea } }))?.id;
+    if (!saborId) saborId = (await prisma.sabor.create({ data: { nombre: sabor, linea } })).id;
+    await prisma.stockSabor.upsert({
+      where: { saborId_ubicacionId: { saborId, ubicacionId: bod } },
+      update: { cantidad: { increment: unidades } },
+      create: { saborId, ubicacionId: bod, cantidad: unidades },
+    });
+    await prisma.movimientoBodega.create({
+      data: {
+        zona: "produccion", ubicacionId: bod, tipo: "entrada", clase: "sabor",
+        refId: saborId, nombre: `${sabor} (${linea})`, cantidad: unidades,
+        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null, participantes: preparador,
+      },
+    });
+  }
+
+  // 3) Registrar la fabricación → de aquí el rendimiento se aprende (unidades ÷ kilos).
+  await prisma.controlCalidad.create({
+    data: {
+      clase: "linea", refId: linea, nombre: `${[...porSabor.keys()].join(", ")} · ${linea}`.slice(0, 180),
+      cantidad: totalUnidades, base: base > 0 ? base : null, baseUnidad: base > 0 ? baseUnidad : null,
+      preparador, depositos: JSON.stringify(depositos), operarios: preparador, observaciones,
+      usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+    },
+  });
+
+  await marcarAsistenciaAuto(u?.sub, "Fabricación registrada");
+  revalidatePath("/produccion");
+  redirect("/produccion?ok=1");
+}

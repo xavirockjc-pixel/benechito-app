@@ -586,6 +586,9 @@ model ControlCalidad {
   itemsTotal    Int      @default(0) // insumos de la receta
   lote          String? // lote de fabricación (fecha + turno + correlativo)
   observaciones String?
+  // Fabricación editable: quién mezcló y en qué depósitos se repartieron los sabores.
+  preparador    String? // nombre de quien preparó/mezcló la tanda
+  depositos     String? // JSON [{ deposito, sabor, unidades }] — reparto por recipiente
   usuarioId     String?
   nombreUsuario String?
 

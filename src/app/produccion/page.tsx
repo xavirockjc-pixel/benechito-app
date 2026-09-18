@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
@@ -106,6 +107,12 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
         <h1 className="text-xl font-extrabold text-slate-900">🏭 Producción</h1>
         <p className="text-xs text-slate-500">Mira qué toca hacer, controla la receta y anota lo que salió.</p>
       </div>
+
+      {/* Fabricación guiada: elige línea → kilos → depósitos; aprende el rendimiento solo */}
+      <Link href="/produccion/fabricar" className="block rounded-2xl bg-[#0f766e] p-4 text-center text-white shadow active:brightness-110">
+        <span className="text-base font-extrabold">🧪 Nueva fabricación</span>
+        <span className="mt-0.5 block text-xs text-white/80">Línea → kilos → depósitos. Descuenta insumos y aprende cuánto rinde.</span>
+      </Link>
 
       {ok && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Producción registrada</p>}
       {mezcla && <p className="rounded-xl bg-teal-100 px-4 py-3 text-center text-sm font-bold text-teal-700">✓ Mezcla confirmada · insumos descontados</p>}
