@@ -20,7 +20,15 @@ con doble clic, sin servidor ni internet.
 | `centro.html` | **Centro de Control (el motor)**: gestiona clientes; genera cotización + prompt de construcción + checklist; guarda en el navegador y **exporta respaldo JSON** | Tu tablero de trabajo y control |
 | `configurador.html` | **Configurador**: activa módulos y casillas con ilustración; genera el "Resumen para implementar" + "Prompt maestro" | Armar el sistema de cada cliente |
 | `cotizador.html` | **Cotizador por sector**: elige el sector → pitch a medida y pack + precio; copia o envía por WhatsApp | Cerrar precio por rubro |
+| `plantilla-tienda.html` | **Fábrica de Tiendas**: plantilla config-driven; "⚙️ Negocio" pone marca, colores, logo, WhatsApp, delivery y productos, y "⬇️ Descargar tienda lista" baja un `.html` autónomo del cliente | Replicar la tienda a otro cliente |
+| `clientes/dacris.html` | **Cliente real** (Da'cris, Lota): tienda de comida rápida/abarrotes/Caja Vecina con logo, tema y datos reales + CRM | Ejemplo de un cliente montado |
 | `RESPALDO.md` | **Plan de respaldo y continuidad**: dónde vive todo y cómo retomar si algo se cae | Tu control / independencia |
+
+### Montar la tienda de un cliente nuevo (sale un solo archivo)
+1. Abre `plantilla-tienda.html` → **⚙️ Negocio**: marca, eslogan, colores, sube el logo, WhatsApp, dirección, redes y zonas de delivery → **Guardar**.
+2. **✏️ Catálogo**: agrega categorías y productos (con foto, precio y opciones).
+3. **⬇️ Descargar tienda lista** → baja `tienda-<marca>.html`, ya con todo incrustado.
+4. Ese `.html` es la tienda del cliente: doble clic o súbelo a cualquier hosting. También puedes **exportar la Config (JSON)** para guardarla/retomarla.
 
 ### Flujo de trabajo (tú + Claude)
 1. **Registrar** el cliente en `centro.html` y elegir su sector.
