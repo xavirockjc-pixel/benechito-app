@@ -9,12 +9,27 @@ publican en cualquier hosting estático. No dependen de la app Next.js.
 
 ## Archivos
 
+**Empieza por `index.html` (Panal Home)** — el hub que enlaza todo. Todos los archivos abren
+con doble clic, sin servidor ni internet.
+
 | Archivo | Qué es | Para qué |
 |---|---|---|
-| `landing.html` | Landing comercial (tema oscuro, abeja robótica, 9 celdas con detalle, historia, packs por rubro y servicios) | Mostrarla al cliente / compartir link |
-| `presentacion.html` | **Documento para presentar**: dossier con problema→solución, 11 celdas, cómo funciona, sectores y **planes con valores**; imprimible y con tema claro/oscuro | Presentar a un cliente (pantalla o PDF) |
-| `configurador.html` | **Configurador**: activa módulos y casillas por cliente, elige rubro, ajusta precios, y genera el "Resumen para implementar" + "Prompt maestro" | Armar y replicar el sistema de cada cliente |
-| `cotizador.html` | **Cotizador por sector**: elige el sector → renombra las áreas, muestra un pitch a medida y el pack + precio recomendado; copia o envía la cotización por WhatsApp | Cerrar precio adaptado al rubro |
+| `index.html` | **Panal Home**: hub con lo público (para el cliente) y tus herramientas (internas) | Punto de entrada único |
+| `landing.html` | Landing comercial (portada por sector, 9 celdas con detalle, packs y servicios) | Mostrarla al cliente / compartir link |
+| `presentacion.html` | **Documento para presentar**: dossier con problema→solución, 11 celdas, sectores y **planes con valores**; imprimible | Presentar a un cliente (pantalla o PDF) |
+| `centro.html` | **Centro de Control (el motor)**: gestiona clientes; genera cotización + prompt de construcción + checklist; guarda en el navegador y **exporta respaldo JSON** | Tu tablero de trabajo y control |
+| `configurador.html` | **Configurador**: activa módulos y casillas con ilustración; genera el "Resumen para implementar" + "Prompt maestro" | Armar el sistema de cada cliente |
+| `cotizador.html` | **Cotizador por sector**: elige el sector → pitch a medida y pack + precio; copia o envía por WhatsApp | Cerrar precio por rubro |
+| `RESPALDO.md` | **Plan de respaldo y continuidad**: dónde vive todo y cómo retomar si algo se cae | Tu control / independencia |
+
+### Flujo de trabajo (tú + Claude)
+1. **Registrar** el cliente en `centro.html` y elegir su sector.
+2. **Cotizar** → aprobar y enviar por WhatsApp.
+3. **Construir** → copiar el "Prompt de construcción" y pasarlo a Claude (programa, ejecuta, despliega).
+4. **Entregar** → revisar con el checklist y **descargar el respaldo JSON**.
+
+Respaldo: repo (GitHub) + `panal-respaldo-*.json` del Centro + `pg_dump` de la app. Con esos 3, se
+reconstruye todo. Detalle en `RESPALDO.md`.
 
 > La landing también vive en la raíz como `panal-landing.html` (misma versión) por
 > compatibilidad con `MIGRACION.md`.

@@ -1,0 +1,149 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Panal Home</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --ground:#100b06; --surface:#19110a; --surface-2:#241a10; --line:#3c2d1a;
+    --honey:#f6a821; --bright:#ffce6a; --deep:#a8680f; --cream:#f4ecd8; --muted:#a99a7c; --teal:#5fd0c0;
+    --glow: rgba(246,168,33,.4);
+    --mono: ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --serif: Georgia,"Times New Roman",serif;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--cream); font-family:var(--sans); line-height:1.6;
+    background-image:radial-gradient(1100px 480px at 80% -10%, rgba(246,168,33,.10), transparent 60%)}
+  a{color:inherit; text-decoration:none}
+  .wrap{max-width:1000px; margin:0 auto; padding:0 20px}
+  h1,h2,h3{font-family:var(--serif); margin:0; text-wrap:balance}
+  .mono{font-family:var(--mono)}
+  .eyebrow{font-family:var(--mono); text-transform:uppercase; letter-spacing:.2em; font-size:.7rem; color:var(--honey); font-weight:700}
+
+  .hero{padding:66px 0 40px; text-align:center; border-bottom:1px solid var(--line)}
+  .logo{font-size:2.6rem; filter:drop-shadow(0 0 16px var(--glow))}
+  .hero h1{font-size:clamp(2.2rem,6vw,3.4rem); font-weight:800; letter-spacing:-.02em; margin:14px 0 12px; line-height:1.05}
+  .hero h1 .hl{color:var(--honey)}
+  .hero p{color:var(--muted); font-size:1.08rem; max-width:52ch; margin:0 auto}
+
+  section{padding:44px 0; border-bottom:1px solid var(--line)}
+  .sec-h{margin-bottom:20px}
+  .sec-h h2{font-size:clamp(1.4rem,3.4vw,1.9rem); font-weight:800; margin-top:6px}
+  .sec-h p{color:var(--muted); margin:6px 0 0}
+
+  .cards{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media (max-width:680px){ .cards{grid-template-columns:1fr} }
+  .card{display:flex; flex-direction:column; gap:6px; padding:22px; border:1px solid var(--line); border-radius:18px;
+    background:linear-gradient(180deg,var(--surface),#140d07); box-shadow:0 1px 2px rgba(0,0,0,.2); transition:transform .16s ease, border-color .16s ease, box-shadow .28s ease}
+  .card:hover{transform:translateY(-4px); border-color:var(--honey); box-shadow:0 20px 44px -24px var(--glow)}
+  .card .ic{font-size:1.7rem}
+  .card h3{font-family:var(--sans); font-size:1.12rem; font-weight:800; margin-top:6px}
+  .card p{color:var(--muted); font-size:.9rem; margin:0; flex:1}
+  .card .go{margin-top:10px; font-family:var(--mono); font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; color:var(--honey)}
+  .card:hover .go{color:var(--bright)}
+  .tagpub{align-self:flex-start; font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; padding:3px 9px; border-radius:999px; background:rgba(95,208,192,.14); color:var(--teal)}
+  .tagint{align-self:flex-start; font-size:.62rem; font-weight:800; text-transform:uppercase; letter-spacing:.06em; padding:3px 9px; border-radius:999px; background:rgba(246,168,33,.16); color:var(--honey)}
+
+  .steps{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
+  @media (max-width:760px){ .steps{grid-template-columns:1fr 1fr} }
+  .step{border:1px solid var(--line); border-radius:14px; padding:16px; background:var(--surface)}
+  .step .k{font-family:var(--mono); font-size:.68rem; color:var(--honey); letter-spacing:.1em}
+  .step h3{font-family:var(--sans); font-size:.95rem; margin:6px 0 4px}
+  .step p{margin:0; font-size:.8rem; color:var(--muted)}
+
+  footer{padding:26px 0 44px; text-align:center; color:var(--muted); font-size:.82rem}
+  :focus-visible{outline:2px solid var(--bright); outline-offset:3px; border-radius:8px}
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="logo">🍯</div>
+    <span class="eyebrow">Ecosistema modular de gestión</span>
+    <h1>Panal, <span class="hl">de principio a fin.</span></h1>
+    <p>Todo en un solo lugar: lo que le muestras al cliente y las herramientas con las que lo armas. Elige por dónde entrar.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <span class="eyebrow">Para mostrar al cliente</span>
+      <h2>Enséñale de qué se trata</h2>
+      <p>Páginas públicas: compártelas por link o muéstralas en la reunión.</p>
+    </div>
+    <div class="cards">
+      <a class="card" href="landing.html">
+        <span class="tagpub">Público</span>
+        <div class="ic">🐝</div>
+        <h3>Landing interactiva</h3>
+        <p>La página bonita: elige el rubro y toca cada celda para ver qué hace, con su mini-vista.</p>
+        <span class="go">Abrir landing →</span>
+      </a>
+      <a class="card" href="presentacion.html">
+        <span class="tagpub">Público</span>
+        <div class="ic">📊</div>
+        <h3>Presentación / dossier</h3>
+        <p>Problema, solución, las 11 celdas, sectores y planes con valores. Se imprime a PDF.</p>
+        <span class="go">Abrir presentación →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <span class="eyebrow">Para ti (interno)</span>
+      <h2>Arma, cotiza y controla</h2>
+      <p>Tus herramientas de trabajo. Empieza por el Centro de Control.</p>
+    </div>
+    <div class="cards">
+      <a class="card" href="centro.html">
+        <span class="tagint">Motor</span>
+        <div class="ic">🎛️</div>
+        <h3>Centro de Control</h3>
+        <p>Registra cada cliente, genera cotización + prompt de construcción + checklist, y descarga tu respaldo.</p>
+        <span class="go">Abrir centro →</span>
+      </a>
+      <a class="card" href="cotizador.html">
+        <span class="tagint">Interno</span>
+        <div class="ic">🧮</div>
+        <h3>Cotizador por sector</h3>
+        <p>Elige el sector y sale el pack + precio recomendado, listo para copiar o enviar por WhatsApp.</p>
+        <span class="go">Abrir cotizador →</span>
+      </a>
+      <a class="card" href="configurador.html">
+        <span class="tagint">Interno</span>
+        <div class="ic">🧩</div>
+        <h3>Configurador</h3>
+        <p>Activa módulos y casillas con su ilustración; genera el resumen de implementación y el prompt maestro.</p>
+        <span class="go">Abrir configurador →</span>
+      </a>
+      <a class="card" href="RESPALDO.md">
+        <span class="tagint">Control</span>
+        <div class="ic">🛟</div>
+        <h3>Plan de respaldo</h3>
+        <p>Dónde vive todo y cómo retomar si algo se cae — sin depender de una sola cosa.</p>
+        <span class="go">Ver respaldo →</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <span class="eyebrow">Cómo trabajamos</span>
+      <h2>De cliente nuevo a app funcionando</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><div class="k">PASO 1</div><h3>Registrar</h3><p>Cargas el cliente en el Centro de Control y eliges su sector.</p></div>
+      <div class="step"><div class="k">PASO 2</div><h3>Cotizar</h3><p>Sale el precio; lo apruebas y lo envías por WhatsApp.</p></div>
+      <div class="step"><div class="k">PASO 3</div><h3>Construir</h3><p>Me pasas el prompt en el chat; yo programo, ejecuto y despliego.</p></div>
+      <div class="step"><div class="k">PASO 4</div><h3>Entregar</h3><p>Revisas con el checklist, descargas respaldo y queda funcionando.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>🍯 Panal · Home — el mismo motor, celda por celda</footer>
+
+</body></html>

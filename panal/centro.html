@@ -1,0 +1,497 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Centro de Control Panal</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --ground:#100b06; --surface:#19110a; --surface-2:#241a10; --line:#3c2d1a;
+    --honey:#f6a821; --bright:#ffce6a; --deep:#a8680f; --cream:#f4ecd8; --muted:#a99a7c;
+    --teal:#5fd0c0; --good:#5fd0a6; --red:#f0755c; --blue:#4f9dff;
+    --glow: rgba(246,168,33,.4);
+    --mono: ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--cream); font-family:var(--sans); line-height:1.5;
+    background-image:radial-gradient(900px 360px at 88% -8%, rgba(246,168,33,.08), transparent 60%)}
+  a{color:var(--bright)}
+  .mono{font-family:var(--mono)}
+  header.bar{position:sticky; top:0; z-index:20; backdrop-filter:blur(10px);
+    background:rgba(16,11,6,.82); border-bottom:1px solid var(--line)}
+  .bar .in{max-width:1200px; margin:0 auto; padding:12px 18px; display:flex; align-items:center; gap:12px; flex-wrap:wrap}
+  .brand{display:flex; align-items:center; gap:9px; font-family:var(--mono); font-weight:700; letter-spacing:.16em; text-transform:uppercase; font-size:.92rem}
+  .brand .hx{font-size:1.2rem; filter:drop-shadow(0 0 8px var(--glow))}
+  .bar .sp{flex:1}
+  .btn{cursor:pointer; border:1px solid var(--line); border-radius:999px; font-weight:700; font-family:var(--sans);
+    padding:8px 14px; font-size:.82rem; background:#0e0a05; color:var(--cream); display:inline-flex; align-items:center; gap:6px; text-decoration:none}
+  .btn:hover{border-color:var(--honey)}
+  .btn-h{background:linear-gradient(180deg,var(--bright),var(--honey)); color:#2a1a05; border:0}
+  .btn-sm{padding:6px 11px; font-size:.76rem}
+  .btn-danger:hover{border-color:var(--red); color:var(--red)}
+
+  .wrap{max-width:1200px; margin:0 auto; padding:18px; display:grid; grid-template-columns:330px 1fr; gap:18px; align-items:start}
+  @media (max-width:900px){ .wrap{grid-template-columns:1fr} }
+
+  .panel{border:1px solid var(--line); border-radius:16px; background:linear-gradient(180deg,var(--surface),#140d07); padding:16px}
+  .panel h2{font-size:.82rem; text-transform:uppercase; letter-spacing:.1em; color:var(--muted); margin:0 0 12px; font-weight:800}
+
+  /* pipeline stats */
+  .stats{display:grid; grid-template-columns:repeat(5,1fr); gap:6px; margin-bottom:14px}
+  .stat{background:#0e0a05; border:1px solid var(--line); border-radius:10px; padding:8px 4px; text-align:center}
+  .stat b{display:block; font-size:1.1rem; color:var(--bright); font-variant-numeric:tabular-nums}
+  .stat span{font-size:.58rem; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+
+  .clist{display:flex; flex-direction:column; gap:8px; max-height:60vh; overflow:auto}
+  .citem{display:flex; align-items:center; gap:10px; padding:10px 12px; border:1px solid var(--line); border-radius:12px;
+    background:#0e0a05; cursor:pointer; text-align:left; color:var(--cream); width:100%}
+  .citem:hover{border-color:var(--honey)}
+  .citem.on{border-color:var(--honey); background:rgba(246,168,33,.1)}
+  .citem .em{font-size:1.3rem}
+  .citem .info{flex:1; min-width:0}
+  .citem .info b{display:block; font-size:.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .citem .info small{color:var(--muted); font-size:.72rem}
+  .badge{font-size:.6rem; font-weight:800; padding:3px 8px; border-radius:999px; text-transform:uppercase; letter-spacing:.03em; white-space:nowrap}
+  .b-prospecto{background:#2a2117; color:var(--muted)}
+  .b-cotizado{background:rgba(79,157,255,.16); color:var(--blue)}
+  .b-en_montaje{background:rgba(246,168,33,.18); color:var(--honey)}
+  .b-activo{background:rgba(95,208,166,.16); color:var(--good)}
+  .b-pausado{background:rgba(240,117,92,.16); color:var(--red)}
+  .empty{color:var(--muted); font-size:.85rem; text-align:center; padding:20px 8px}
+
+  /* editor */
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px}
+  @media (max-width:620px){ .grid2,.grid3{grid-template-columns:1fr} }
+  label.fld{display:flex; flex-direction:column; gap:4px; font-size:.72rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.04em}
+  input,select,textarea{font:inherit; font-size:.9rem; padding:9px 11px; border:1px solid var(--line); border-radius:9px; background:#0e0a05; color:var(--cream); width:100%}
+  input:focus,select:focus,textarea:focus{outline:none; border-color:var(--honey)}
+  .eyebrow{font-size:.68rem; text-transform:uppercase; letter-spacing:.14em; color:var(--honey); font-weight:800; display:block; margin:16px 0 8px}
+  .eyebrow:first-child{margin-top:0}
+  .toggles{display:flex; flex-wrap:wrap; gap:7px}
+  .tg{display:inline-flex; align-items:center; gap:7px; padding:7px 12px; border-radius:999px; border:1px solid var(--line); background:#0e0a05; cursor:pointer; font-size:.82rem; user-select:none}
+  .tg input{display:none}
+  .tg.on{border-color:var(--honey); background:rgba(246,168,33,.12); color:var(--bright)}
+  .tg.ext.on{border-color:var(--teal); background:rgba(95,208,192,.12); color:#bff0e8}
+  .tg .d{width:7px;height:7px;border-radius:50%;background:var(--line)}
+  .tg.on .d{background:var(--honey)} .tg.ext.on .d{background:var(--teal)}
+
+  .tabs{display:flex; gap:6px; flex-wrap:wrap; margin:4px 0 10px}
+  .tab{font-size:.78rem; font-weight:700; padding:7px 12px; border-radius:9px; border:1px solid var(--line); background:#0e0a05; cursor:pointer}
+  .tab.on{background:var(--cream); color:#1a120a; border-color:var(--cream)}
+  textarea.out{min-height:280px; font-family:var(--mono); font-size:.74rem; line-height:1.55}
+  .price{display:flex; gap:10px; flex-wrap:wrap; margin-top:6px}
+  .price .p{flex:1 1 150px; background:#0e0a05; border:1px solid var(--line); border-radius:11px; padding:11px 13px}
+  .price .p .k{font-size:.66rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted)}
+  .price .p .v{font-size:1.25rem; font-weight:800; color:var(--bright); font-variant-numeric:tabular-nums}
+  .row{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px}
+  .msg{font-size:.8rem; color:var(--good)}
+  .hintbox{font-size:.78rem; color:var(--muted); background:rgba(95,208,192,.08); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-top:10px}
+  :focus-visible{outline:2px solid var(--bright); outline-offset:2px}
+  input[type=file]{display:none}
+  /* modal respaldo */
+  .modal{position:fixed; inset:0; z-index:60; display:none; align-items:center; justify-content:center; padding:20px; background:rgba(6,4,2,.72); backdrop-filter:blur(5px)}
+  .modal.open{display:flex}
+  .sheet{width:100%; max-width:560px; max-height:90vh; overflow:auto; background:linear-gradient(180deg,var(--surface),#120b05); border:1px solid var(--honey); border-radius:18px; padding:18px}
+  .sheet h3{margin:0 0 4px; font-size:1.1rem}
+  .sheet p{margin:0 0 12px; color:var(--muted); font-size:.85rem}
+  .sheet textarea{min-height:200px; font-family:var(--mono); font-size:.72rem}
+  .mtabs{display:flex; gap:6px; margin-bottom:10px}
+  .mtab{font-size:.8rem; font-weight:700; padding:7px 12px; border-radius:9px; border:1px solid var(--line); background:#0e0a05; cursor:pointer}
+  .mtab.on{background:var(--cream); color:#1a120a; border-color:var(--cream)}
+</style>
+
+<header class="bar">
+  <div class="in">
+    <span class="brand"><span class="hx">🍯</span> Panal · Centro de Control</span>
+    <span class="sp"></span>
+    <button class="btn btn-sm" id="btnImport">📥 Importar respaldo</button>
+    <button class="btn btn-sm" id="btnExport">💾 Respaldo</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <!-- IZQUIERDA: pipeline + lista -->
+  <div class="panel">
+    <h2>Tus clientes</h2>
+    <div class="stats" id="stats"></div>
+    <button class="btn btn-h" style="width:100%; justify-content:center; margin-bottom:12px" id="btnNew">➕ Nuevo cliente</button>
+    <div class="clist" id="clist"></div>
+  </div>
+
+  <!-- DERECHA: editor + generadores -->
+  <div class="panel" id="editor" hidden>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:6px">
+      <h2 style="margin:0; flex:1" id="edTitle">Cliente</h2>
+      <button class="btn btn-sm btn-danger" id="btnDel">🗑 Eliminar</button>
+    </div>
+
+    <span class="eyebrow">Datos</span>
+    <div class="grid2">
+      <label class="fld">Nombre del negocio<input id="fNombre" placeholder="Ej: Heladería Da'cris"></label>
+      <label class="fld">Sector
+        <select id="fSector"></select>
+      </label>
+      <label class="fld">WhatsApp / contacto<input id="fContacto" placeholder="+56 9 ..."></label>
+      <label class="fld">Ciudad / comuna<input id="fCiudad" placeholder="Ej: Puente Alto"></label>
+      <label class="fld">Colores / logo<input id="fColores" placeholder="Ej: rojo y crema"></label>
+      <label class="fld">Estado
+        <select id="fEstado">
+          <option value="prospecto">Prospecto</option>
+          <option value="cotizado">Cotizado</option>
+          <option value="en_montaje">En montaje</option>
+          <option value="activo">Activo</option>
+          <option value="pausado">Pausado</option>
+        </select>
+      </label>
+    </div>
+
+    <span class="eyebrow">Módulos (celdas)</span>
+    <div class="toggles" id="mods"></div>
+
+    <span class="eyebrow">Extensiones</span>
+    <div class="toggles" id="exts"></div>
+
+    <span class="eyebrow">Servicios aparte</span>
+    <div class="toggles" id="servs"></div>
+
+    <span class="eyebrow">Plan y precio (editable)</span>
+    <div class="grid3">
+      <label class="fld">Plan
+        <select id="fPlan">
+          <option value="basico">Básico</option>
+          <option value="produccion">Producción</option>
+          <option value="completo">Completo</option>
+          <option value="medida">A medida</option>
+        </select>
+      </label>
+      <label class="fld">Instalación (CLP)<input id="fInstal" placeholder="450.000"></label>
+      <label class="fld">Mensual (CLP)<input id="fMes" placeholder="40.000"></label>
+    </div>
+    <div class="price">
+      <div class="p"><div class="k">Instalación</div><div class="v" id="pInstal">—</div></div>
+      <div class="p"><div class="k">Mensual</div><div class="v" id="pMes">—</div></div>
+      <div class="p"><div class="k">Celdas</div><div class="v" id="pCount">0</div></div>
+    </div>
+
+    <span class="eyebrow">Notas</span>
+    <textarea id="fNotas" style="min-height:60px" placeholder="Acuerdos, pendientes, fechas..."></textarea>
+
+    <span class="eyebrow">Generar (para ejecutar el montaje)</span>
+    <div class="tabs">
+      <button class="tab on" data-out="cotiza">Cotización</button>
+      <button class="tab" data-out="prompt">Prompt de construcción</button>
+      <button class="tab" data-out="checklist">Checklist de montaje</button>
+      <button class="tab" data-out="brief">Ficha del cliente</button>
+    </div>
+    <textarea class="out" id="outBox" readonly></textarea>
+    <div class="row">
+      <button class="btn btn-h btn-sm" id="btnCopy">📋 Copiar</button>
+      <button class="btn btn-sm" id="btnWa">💬 Enviar cotización por WhatsApp</button>
+      <span class="msg" id="msg"></span>
+    </div>
+    <div class="hintbox">🐝 <b>Cómo trabajamos:</b> arma aquí al cliente y cópiame el <b>Prompt de construcción</b> en el chat — yo programo, ejecuto y despliego. El <b>Checklist</b> es tu control de que todo quedó. Tu <b>respaldo</b> se descarga con el botón de arriba: guárdalo y podrás retomar todo aunque se caiga cualquier sistema.</div>
+  </div>
+
+  <div class="panel" id="welcome">
+    <h2>Empieza aquí</h2>
+    <p style="color:var(--muted); font-size:.9rem; max-width:60ch">Este es tu <b>motor</b>: registra cada cliente, elige su sector y módulos, y con un clic sale la <b>cotización</b>, el <b>prompt para construir su app</b> y el <b>checklist de montaje</b>. Todo se guarda solo en este navegador.</p>
+    <p style="color:var(--muted); font-size:.9rem; max-width:60ch">Descarga tu <b>respaldo</b> seguido (botón de arriba): es un archivo tuyo que puedes volver a cargar aquí o pasarme para retomar sin depender de nada.</p>
+    <button class="btn btn-h" id="btnNew2">➕ Registrar primer cliente</button>
+  </div>
+</div>
+
+<!-- modal de respaldo -->
+<div class="modal" id="modal">
+  <div class="sheet">
+    <div class="mtabs">
+      <button class="mtab on" id="mtExport">💾 Exportar</button>
+      <button class="mtab" id="mtImport">📥 Importar</button>
+    </div>
+    <div id="mExport">
+      <h3>Descargar tu respaldo</h3>
+      <p>Se intentó descargar el archivo. Si no bajó (por ejemplo dentro del visor), <b>copia este texto y pégalo en un archivo</b> llamado <span class="mono">panal-respaldo.json</span>. Guárdalo en 2 lugares.</p>
+      <textarea id="expBox" readonly></textarea>
+      <div class="row"><button class="btn btn-h btn-sm" id="btnCopyExp">📋 Copiar respaldo</button><button class="btn btn-sm" id="btnDlExp">⬇ Intentar descargar de nuevo</button><span class="msg" id="mMsg"></span></div>
+    </div>
+    <div id="mImport" hidden>
+      <h3>Importar un respaldo</h3>
+      <p>Pega aquí el contenido de tu <span class="mono">panal-respaldo.json</span>, o elige el archivo. Se combina con lo que ya tienes.</p>
+      <textarea id="impBox" placeholder="Pega aquí el JSON del respaldo..."></textarea>
+      <div class="row"><button class="btn btn-h btn-sm" id="btnDoImport">✅ Cargar respaldo pegado</button><button class="btn btn-sm" id="btnFileImport">📁 Elegir archivo</button><input type="file" id="fileImport" accept="application/json"></div>
+    </div>
+    <div class="row" style="justify-content:flex-end"><button class="btn btn-sm" id="btnCloseModal">Cerrar</button></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY="panal-centro-v1";
+  var MODULOS=[
+    {k:"produccion",e:"🏭",n:"Producción y calidad (litros, cierre de turno)"},
+    {k:"ventas",e:"🛒",n:"Ventas · Vendedor (precio por volumen)"},
+    {k:"repartos",e:"🛵",n:"Repartos y retiros"},
+    {k:"inventario",e:"📦",n:"Inventario"},
+    {k:"clientes",e:"🧾",n:"Clientes y deudas"},
+    {k:"panel",e:"📊",n:"Panel · Socio administrativo"},
+    {k:"facturacion",e:"🧮",n:"Facturación"},
+    {k:"recetas",e:"📖",n:"Recetas y capacitaciones"},
+    {k:"agenda",e:"📅",n:"Agenda y citas"},
+    {k:"mejoras",e:"🌱",n:"Mejoras y proyecciones"},
+    {k:"tienda",e:"🐝",n:"Tienda y Portal del Cliente"}
+  ];
+  var EXTS=[
+    {k:"sii",e:"🧾",n:"Facturación electrónica (SII)"},
+    {k:"compras",e:"🛒",n:"Compras / Turnos / Portal"},
+    {k:"cobranza",e:"📲",n:"Cobranza / Trazabilidad / Rentabilidad"},
+    {k:"capacita",e:"🎓",n:"Capacitación / BPM / Metas / EPP"}
+  ];
+  var SERVS=[
+    {k:"landing",e:"💻",n:"Landing / web"},
+    {k:"catalogo",e:"🗂️",n:"Catálogo / tienda"},
+    {k:"marketing",e:"📣",n:"Marketing y redes"},
+    {k:"chatbot",e:"🤖",n:"Chatbot IA"}
+  ];
+  var PLAN_PRECIO={
+    basico:{i:"250.000 – 400.000", m:"25.000 – 40.000"},
+    produccion:{i:"450.000 – 700.000", m:"40.000 – 60.000"},
+    completo:{i:"900.000 – 1.500.000", m:"60.000 – 100.000"},
+    medida:{i:"a definir", m:"a definir"}
+  };
+  var PLAN_LABEL={basico:"Básico", produccion:"Producción", completo:"Completo", medida:"A medida"};
+  var SECTORS={
+    heladeria:{e:"🍦",n:"Heladería / Fábrica de helados", plan:"completo", mods:["produccion","ventas","tienda","repartos","inventario","clientes","panel","facturacion","recetas","mejoras"], ext:[]},
+    panaderia:{e:"🥖",n:"Panadería / Pastelería", plan:"produccion", mods:["produccion","inventario","recetas","ventas","panel","clientes"], ext:[]},
+    comida:{e:"🍔",n:"Comida rápida / Restaurante", plan:"produccion", mods:["ventas","tienda","repartos","inventario","recetas","panel"], ext:[]},
+    distribuidora:{e:"🚚",n:"Distribuidora / Mayorista", plan:"completo", mods:["ventas","tienda","repartos","inventario","clientes","panel","facturacion"], ext:["cobranza","sii"]},
+    fabrica:{e:"🏭",n:"Fábrica / Manufactura", plan:"completo", mods:["produccion","inventario","recetas","panel","facturacion","mejoras"], ext:["compras","cobranza","capacita","sii"]},
+    almacen:{e:"🏪",n:"Almacén / Minimarket", plan:"basico", mods:["ventas","inventario","panel"], ext:[]},
+    consultoria:{e:"💼",n:"Servicios / Consultoría", plan:"basico", mods:["agenda","clientes","panel","facturacion"], ext:[]},
+    construccion:{e:"🏗️",n:"Construcción / Ferretería", plan:"produccion", mods:["inventario","clientes","facturacion","ventas","panel","repartos"], ext:["compras","sii"]},
+    medida:{e:"🛠️",n:"A medida", plan:"medida", mods:["inventario","panel"], ext:[]}
+  };
+  var WA_DEFAULT="56928005332";
+  var ESTADOS=[["prospecto","Prospecto"],["cotizado","Cotizado"],["en_montaje","En montaje"],["activo","Activo"],["pausado","Pausado"]];
+
+  var $=function(id){return document.getElementById(id);};
+  var db={clientes:[]}, curId=null, curTab="cotiza";
+
+  function load(){ try{ var r=localStorage.getItem(KEY); if(r) db=JSON.parse(r); }catch(e){} if(!db.clientes) db.clientes=[]; }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }
+  function uid(){ return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+  function cur(){ return db.clientes.filter(function(c){return c.id===curId;})[0]; }
+
+  // ---- pintar opciones fijas ----
+  (function(){
+    var s=$("fSector"); Object.keys(SECTORS).forEach(function(k){ var o=document.createElement("option"); o.value=k; o.textContent=SECTORS[k].e+" "+SECTORS[k].n; s.appendChild(o); });
+    function toggles(cont, arr, cls){ arr.forEach(function(it){
+      var l=document.createElement("label"); l.className="tg"+(cls?(" "+cls):""); l.dataset.k=it.k;
+      l.innerHTML='<span class="d"></span><input type="checkbox" value="'+it.k+'"> '+it.e+' '+it.n;
+      l.querySelector("input").addEventListener("change", function(e){ l.classList.toggle("on", e.target.checked); onEdit(); });
+      cont.appendChild(l);
+    }); }
+    toggles($("mods"), MODULOS); toggles($("exts"), EXTS, "ext"); toggles($("servs"), SERVS);
+  })();
+
+  // ---- lista + stats ----
+  function renderStats(){
+    var c=$("stats"); c.innerHTML="";
+    ESTADOS.forEach(function(e){
+      var n=db.clientes.filter(function(x){return x.estado===e[0];}).length;
+      var d=document.createElement("div"); d.className="stat"; d.innerHTML="<b>"+n+"</b><span>"+e[1]+"</span>"; c.appendChild(d);
+    });
+  }
+  function renderList(){
+    var c=$("clist"); c.innerHTML="";
+    if(!db.clientes.length){ c.innerHTML='<div class="empty">Aún no hay clientes.<br>Toca “Nuevo cliente”.</div>'; return; }
+    db.clientes.slice().sort(function(a,b){return (b.fecha||0)-(a.fecha||0);}).forEach(function(cl){
+      var s=SECTORS[cl.sector]||SECTORS.medida;
+      var est=ESTADOS.filter(function(e){return e[0]===cl.estado;})[0]||ESTADOS[0];
+      var b=document.createElement("button"); b.className="citem"+(cl.id===curId?" on":"");
+      b.innerHTML='<span class="em">'+s.e+'</span><span class="info"><b>'+(cl.nombre||"(sin nombre)")+'</b><small>'+s.n+' · '+(cl.mods?cl.mods.length:0)+' celdas</small></span><span class="badge b-'+cl.estado+'">'+est[1]+'</span>';
+      b.onclick=function(){ selectClient(cl.id); };
+      c.appendChild(b);
+    });
+  }
+
+  function newClient(){
+    var cl={ id:uid(), nombre:"", sector:"heladeria", contacto:"", ciudad:"", colores:"", estado:"prospecto",
+      plan:SECTORS.heladeria.plan, instal:PLAN_PRECIO[SECTORS.heladeria.plan].i, mes:PLAN_PRECIO[SECTORS.heladeria.plan].m,
+      mods:SECTORS.heladeria.mods.slice(), exts:SECTORS.heladeria.ext.slice(), servs:[], notas:"", fecha:Date.now() };
+    db.clientes.push(cl); save(); selectClient(cl.id);
+  }
+  function delClient(){
+    if(!curId) return; if(!confirm("¿Eliminar este cliente del centro? (tu respaldo descargado no se toca)")) return;
+    db.clientes=db.clientes.filter(function(c){return c.id!==curId;}); curId=null; save(); renderAll(); $("editor").hidden=true; $("welcome").hidden=false;
+  }
+  function selectClient(id){
+    curId=id; $("welcome").hidden=true; $("editor").hidden=false;
+    var cl=cur(); if(!cl) return;
+    $("fNombre").value=cl.nombre||""; $("fSector").value=cl.sector||"medida"; $("fContacto").value=cl.contacto||"";
+    $("fCiudad").value=cl.ciudad||""; $("fColores").value=cl.colores||""; $("fEstado").value=cl.estado||"prospecto";
+    $("fPlan").value=cl.plan||"medida"; $("fInstal").value=cl.instal||""; $("fMes").value=cl.mes||""; $("fNotas").value=cl.notas||"";
+    setToggles("mods", cl.mods||[]); setToggles("exts", cl.exts||[]); setToggles("servs", cl.servs||[]);
+    renderList(); refresh();
+  }
+  function setToggles(cont, active){
+    document.querySelectorAll("#"+cont+" .tg").forEach(function(l){
+      var on=active.indexOf(l.dataset.k)>=0; l.classList.toggle("on",on); l.querySelector("input").checked=on;
+    });
+  }
+  function readToggles(cont){ return [].slice.call(document.querySelectorAll("#"+cont+" .tg.on")).map(function(l){return l.dataset.k;}); }
+
+  // ---- editar en vivo ----
+  function onEdit(){
+    var cl=cur(); if(!cl) return;
+    cl.nombre=$("fNombre").value; cl.sector=$("fSector").value; cl.contacto=$("fContacto").value;
+    cl.ciudad=$("fCiudad").value; cl.colores=$("fColores").value; cl.estado=$("fEstado").value;
+    cl.plan=$("fPlan").value; cl.instal=$("fInstal").value; cl.mes=$("fMes").value; cl.notas=$("fNotas").value;
+    cl.mods=readToggles("mods"); cl.exts=readToggles("exts"); cl.servs=readToggles("servs");
+    save(); renderStats(); renderList(); refresh();
+  }
+  ["fNombre","fContacto","fCiudad","fColores","fInstal","fMes","fNotas","fEstado"].forEach(function(id){ $(id).addEventListener("input", onEdit); });
+  $("fEstado").addEventListener("change", onEdit);
+  $("fPlan").addEventListener("change", function(){
+    var cl=cur(); if(cl){ var p=PLAN_PRECIO[$("fPlan").value]; if(p){ $("fInstal").value=p.i; $("fMes").value=p.m; } }
+    onEdit();
+  });
+  $("fSector").addEventListener("change", function(){
+    var cl=cur(); if(!cl) return; var s=SECTORS[$("fSector").value]; if(!s) return;
+    if(confirm("¿Aplicar el pack recomendado de "+s.n+"? (reemplaza módulos, extensiones y plan)")){
+      setToggles("mods", s.mods); setToggles("exts", s.ext); $("fPlan").value=s.plan;
+      var p=PLAN_PRECIO[s.plan]; $("fInstal").value=p.i; $("fMes").value=p.m;
+    }
+    onEdit();
+  });
+
+  // ---- textos generados ----
+  function nombres(arr, list){ return arr.map(function(k){ var it=list.filter(function(x){return x.k===k;})[0]; return it?it.n:k; }); }
+  function ordenPegado(mods){
+    var orden=["recetas","inventario","produccion","agenda","ventas","tienda","repartos","clientes","facturacion","panel","mejoras"];
+    return orden.filter(function(k){return mods.indexOf(k)>=0;});
+  }
+  function txtCotiza(cl){
+    var s=SECTORS[cl.sector]||SECTORS.medida;
+    var t="COTIZACIÓN PANAL\n";
+    t+="Cliente: "+(cl.nombre||"—")+"\nSector: "+s.n+"\nPlan: "+PLAN_LABEL[cl.plan]+"\n";
+    t+="Celdas: "+(nombres(cl.mods,MODULOS).join(", ")||"—")+"\n";
+    if(cl.exts.length) t+="Extensiones: "+nombres(cl.exts,EXTS).join(", ")+"\n";
+    if(cl.servs.length) t+="Servicios (aparte): "+nombres(cl.servs,SERVS).join(", ")+"\n";
+    t+="Implementación: $"+(cl.instal||"—")+"\nMensualidad: $"+(cl.mes||"—")+" /mes\n";
+    t+="(Servicios extra se cotizan aparte. Valores referenciales.)";
+    return t;
+  }
+  function txtPrompt(cl){
+    var s=SECTORS[cl.sector]||SECTORS.medida;
+    var t="Construye una app web de gestión comercial modular (estilo Panal) para:\n";
+    t+="- Negocio: "+(cl.nombre||"{NOMBRE}")+"\n- Sector: "+s.n+"\n- Ciudad: "+(cl.ciudad||"—")+"\n- Idioma: español de Chile\n- Identidad visual: "+(cl.colores||"{COLORES}")+"\n";
+    t+="- Módulos activos: "+(nombres(cl.mods,MODULOS).join(", ")||"{MÓDULOS}")+"\n";
+    if(cl.exts.length) t+="- Extensiones: "+nombres(cl.exts,EXTS).join("; ")+"\n";
+    t+="\nBase: login por rol con clave, privacidad por rol (costos/márgenes solo dueño), menú por rol, PWA, modo claro/oscuro, control por voz en español, reporte diario a WhatsApp.\n";
+    t+="Conecta las celdas: al producir baja el stock por receta; el pedido llega a la bandeja central; costos/ganancias solo en el panel.\n";
+    t+="\nOrden de construcción: "+ordenPegado(cl.mods).join(" → ")+".";
+    return t;
+  }
+  function txtChecklist(cl){
+    var t="CHECKLIST DE MONTAJE — "+(cl.nombre||"cliente")+"\n\n";
+    t+="[ ] Instancia creada (base de datos + deploy)\n[ ] Login por roles y usuarios/claves\n";
+    t+="[ ] Módulos activados: "+(nombres(cl.mods,MODULOS).join(", ")||"—")+"\n";
+    if(cl.exts.length) t+="[ ] Extensiones: "+nombres(cl.exts,EXTS).join(", ")+"\n";
+    t+="[ ] Módulos conectados (stock descuenta, costos/ganancias en panel)\n[ ] Privacidad por rol · claves cambiadas\n";
+    t+="[ ] Datos base cargados (productos, precios, recetas)\n[ ] Probado en el celular del cliente\n";
+    if(cl.servs.indexOf("landing")>=0) t+="[ ] Landing publicada\n";
+    if(cl.servs.indexOf("catalogo")>=0) t+="[ ] Catálogo con productos y precios\n";
+    if(cl.servs.indexOf("marketing")>=0) t+="[ ] Redes creadas + calendario de publicaciones\n";
+    t+="[ ] Respaldo del centro descargado ✅";
+    return t;
+  }
+  function txtBrief(cl){
+    var s=SECTORS[cl.sector]||SECTORS.medida;
+    return "FICHA — "+(cl.nombre||"cliente")+"\n"
+      +"Sector: "+s.n+"\nContacto: "+(cl.contacto||"—")+"\nCiudad: "+(cl.ciudad||"—")+"\nColores: "+(cl.colores||"—")+"\n"
+      +"Estado: "+(ESTADOS.filter(function(e){return e[0]===cl.estado;})[0]||["","—"])[1]+"\n"
+      +"Plan: "+PLAN_LABEL[cl.plan]+" · Instalación $"+(cl.instal||"—")+" · Mensual $"+(cl.mes||"—")+"\n"
+      +"Notas: "+(cl.notas||"—");
+  }
+
+  function refresh(){
+    var cl=cur(); if(!cl) return;
+    var s=SECTORS[cl.sector]||SECTORS.medida;
+    $("edTitle").textContent=(s.e+" "+(cl.nombre||"Nuevo cliente"));
+    $("pInstal").textContent = cl.instal?("$"+cl.instal):"—";
+    $("pMes").textContent = cl.mes?("$"+cl.mes+"/mes"):"—";
+    $("pCount").textContent = (cl.mods?cl.mods.length:0);
+    var map={cotiza:txtCotiza, prompt:txtPrompt, checklist:txtChecklist, brief:txtBrief};
+    $("outBox").value=(map[curTab]||txtCotiza)(cl);
+  }
+
+  document.querySelectorAll(".tab").forEach(function(t){
+    t.addEventListener("click", function(){ curTab=t.dataset.out; document.querySelectorAll(".tab").forEach(function(x){x.classList.toggle("on",x===t);}); refresh(); });
+  });
+  $("btnCopy").addEventListener("click", function(){
+    var o=$("outBox"); o.select();
+    navigator.clipboard.writeText(o.value).then(function(){ flash("✅ Copiado"); }).catch(function(){ try{document.execCommand("copy"); flash("✅ Copiado");}catch(e){} });
+  });
+  $("btnWa").addEventListener("click", function(){
+    var cl=cur(); if(!cl) return; window.open("https://wa.me/"+WA_DEFAULT+"?text="+encodeURIComponent(txtCotiza(cl)),"_blank");
+  });
+  function flash(m){ var e=$("msg"); e.textContent=m; setTimeout(function(){e.textContent="";},2200); }
+
+  // ---- respaldo (modal: copiar / descargar / pegar) ----
+  function backupJSON(){ return JSON.stringify({ app:"panal-centro", version:1, exportado:new Date().toISOString(), clientes:db.clientes }, null, 2); }
+  function tryDownload(){
+    try{
+      var blob=new Blob([backupJSON()],{type:"application/json"});
+      var a=document.createElement("a"); a.href=URL.createObjectURL(blob);
+      a.download="panal-respaldo-"+new Date().toISOString().slice(0,10)+".json";
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+    }catch(e){}
+  }
+  function openModal(mode){
+    $("modal").classList.add("open");
+    setMTab(mode||"export");
+    $("expBox").value=backupJSON();
+  }
+  function setMTab(mode){
+    var exp=mode==="export";
+    $("mtExport").classList.toggle("on",exp); $("mtImport").classList.toggle("on",!exp);
+    $("mExport").hidden=!exp; $("mImport").hidden=exp;
+  }
+  function applyImport(text){
+    try{
+      var j=JSON.parse(text); var incoming=j.clientes||j;
+      if(!Array.isArray(incoming)) throw 0;
+      var byId={}; db.clientes.forEach(function(c){byId[c.id]=c;});
+      incoming.forEach(function(c){ if(c && c.id) byId[c.id]=c; });
+      db.clientes=Object.keys(byId).map(function(k){return byId[k];});
+      save(); renderAll(); $("modal").classList.remove("open");
+      alert("Respaldo importado: "+incoming.length+" cliente(s). Se combinaron con los existentes.");
+    }catch(err){ alert("No pude leer ese respaldo. Revisa que sea el texto/archivo correcto."); }
+  }
+  $("btnExport").addEventListener("click", function(){ openModal("export"); tryDownload(); });
+  $("btnImport").addEventListener("click", function(){ openModal("import"); });
+  $("mtExport").addEventListener("click", function(){ setMTab("export"); });
+  $("mtImport").addEventListener("click", function(){ setMTab("import"); });
+  $("btnCloseModal").addEventListener("click", function(){ $("modal").classList.remove("open"); });
+  $("modal").addEventListener("click", function(e){ if(e.target===$("modal")) $("modal").classList.remove("open"); });
+  $("btnDlExp").addEventListener("click", tryDownload);
+  $("btnCopyExp").addEventListener("click", function(){
+    var o=$("expBox"); o.select();
+    navigator.clipboard.writeText(o.value).then(function(){ $("mMsg").textContent="✅ Copiado"; setTimeout(function(){$("mMsg").textContent="";},2000); }).catch(function(){ try{document.execCommand("copy"); $("mMsg").textContent="✅ Copiado";}catch(e){} });
+  });
+  $("btnDoImport").addEventListener("click", function(){ var t=$("impBox").value.trim(); if(t) applyImport(t); });
+  $("btnFileImport").addEventListener("click", function(){ $("fileImport").click(); });
+  $("fileImport").addEventListener("change", function(e){
+    var f=e.target.files[0]; if(!f) return; var rd=new FileReader();
+    rd.onload=function(){ applyImport(rd.result); }; rd.readAsText(f); e.target.value="";
+  });
+
+  $("btnNew").addEventListener("click", newClient);
+  $("btnNew2").addEventListener("click", newClient);
+  $("btnDel").addEventListener("click", delClient);
+
+  function renderAll(){ renderStats(); renderList(); }
+  load(); renderAll();
+})();
+</script>
+
+</body></html>
