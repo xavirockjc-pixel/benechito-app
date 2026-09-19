@@ -1,5 +1,6 @@
 <title>Panal</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Panal — sistema de gestión para negocios de comida: producción, inventario, ventas, deudas y pedidos por WhatsApp, desde el teléfono y por voz.">
 <style>
   :root {
     --bg: #fbf7f0;
@@ -77,7 +78,7 @@
   .hero-grid { display: grid; grid-template-columns: 1.15fr .85fr; gap: 40px; align-items: center; }
   .hero h1 { font-size: clamp(2.1rem, 5.2vw, 3.5rem); line-height: 1.04; margin: 14px 0 18px; }
   .hero h1 .hl { color: var(--accent-deep); }
-  .hero p.lede { font-size: 1.12rem; color: var(--ink-2); margin: 0 0 26px; max-width: 33ch; }
+  .hero p.lede { font-size: 1.12rem; color: var(--ink-2); margin: 0 0 26px; max-width: 34ch; }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px; }
   .chip { font-size: .82rem; font-weight: 600; padding: 6px 13px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line); }
   .btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: .98rem; text-decoration: none;
@@ -98,10 +99,11 @@
     border-radius: 11px; padding: 9px 11px; margin-bottom: 7px; font-size: .78rem; }
   .prow b { color: var(--accent-deep); }
   .tag-ready { font-size: .64rem; font-weight: 700; color: var(--fresh); background: var(--fresh-bg); padding: 2px 7px; border-radius: 6px; }
+  .tag-warn { font-size: .64rem; font-weight: 700; color: var(--tomato); background: color-mix(in srgb, var(--tomato) 14%, transparent); padding: 2px 7px; border-radius: 6px; }
 
   /* Sections */
   section { padding: 52px 0; }
-  .sec-head { text-align: center; max-width: 40ch; margin: 0 auto 34px; }
+  .sec-head { text-align: center; max-width: 42ch; margin: 0 auto 34px; }
   .sec-head h2 { font-size: clamp(1.6rem, 3.6vw, 2.3rem); margin: 10px 0 8px; }
   .sec-head p { color: var(--ink-2); margin: 0; }
 
@@ -144,6 +146,19 @@
   .diff h3 { font-family: var(--sans); font-size: 1.02rem; margin: 2px 0 5px; }
   .diff p { font-size: .86rem; color: var(--ink-2); margin: 0; }
 
+  /* Planes / paquetes */
+  .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: stretch; }
+  .plan { position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 24px 22px; box-shadow: var(--shadow); display: flex; flex-direction: column; }
+  .plan.feat { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 40%, transparent), var(--shadow); }
+  .plan .badge { position: absolute; top: -11px; left: 22px; font-size: .66rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-deep)); padding: 4px 12px; border-radius: 999px; }
+  .plan h3 { font-family: var(--sans); font-size: 1.1rem; margin: 0 0 4px; }
+  .plan .pdesc { font-size: .82rem; color: var(--ink-2); margin: 0 0 14px; }
+  .plan ul { list-style: none; margin: 0 0 18px; padding: 0; }
+  .plan li { font-size: .84rem; padding: 6px 0; display: flex; gap: 8px; align-items: flex-start; }
+  .plan li::before { content: "✓"; color: var(--fresh); font-weight: 700; }
+  .plan .plan-cta { margin-top: auto; text-align: center; font-weight: 700; font-size: .9rem; text-decoration: none; padding: 11px 18px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink); background: var(--surface-2); }
+  .plan.feat .plan-cta { background: linear-gradient(135deg, var(--accent), var(--accent-deep)); color: #fff; border: 0; }
+
   /* CTA */
   .cta { text-align: center; background: linear-gradient(135deg, var(--accent), var(--accent-deep)); color: #fff; border-radius: 24px; padding: 46px 24px; box-shadow: var(--shadow); }
   .cta h2 { color: #fff; font-size: clamp(1.6rem, 3.4vw, 2.2rem); margin: 0 0 10px; }
@@ -156,7 +171,7 @@
     .hero-grid { grid-template-columns: 1fr; gap: 30px; }
     .phone { order: -1; }
     .core, .verticals { grid-template-columns: repeat(2, 1fr); }
-    .diffs { grid-template-columns: 1fr; }
+    .diffs, .plans { grid-template-columns: 1fr; }
   }
   @media (max-width: 480px) {
     .core { grid-template-columns: 1fr 1fr; }
@@ -164,9 +179,123 @@
   }
 </style>
 
+<!--
+  ╔══════════════════════════════════════════════════════════════════════════╗
+  ║  PANAL — CONFIGURACIÓN                                                      ║
+  ║                                                                            ║
+  ║  Todo lo que cambia entre un cliente y otro vive en el objeto PANAL de     ║
+  ║  abajo. El diseño no se toca: solo editas datos.                           ║
+  ║                                                                            ║
+  ║  ▸ AGREGAR un servicio      → suma un objeto a  PANAL.servicios            ║
+  ║  ▸ QUITAR un servicio       → borra (o comenta) ese objeto                 ║
+  ║  ▸ AGREGAR un segmento/rubro→ suma un objeto a  PANAL.segmentos            ║
+  ║  ▸ QUITAR un segmento/rubro → borra (o comenta) ese objeto                 ║
+  ║  ▸ REPLICAR a un cliente    → duplica este archivo, cambia PANAL.marca,    ║
+  ║                               .telefono/.demo y deja solo los servicios y  ║
+  ║                               segmentos que ese cliente contrató.          ║
+  ║                                                                            ║
+  ║  Cada tarjeta se dibuja sola desde estas listas. No hay que tocar el HTML  ║
+  ║  de las secciones ni los estilos.                                          ║
+  ╚══════════════════════════════════════════════════════════════════════════╝
+-->
+<script>
+const PANAL = {
+  // ── Identidad (cámbiala por cliente) ─────────────────────────────────────
+  marca: "Panal",
+  logo: "🍯",
+  tagline: "Gestión total para tu negocio de comida",
+  titulo: ["Un sistema.", "Todo tu negocio", ", bajo control."], // [antes, resaltado, después]
+  lede: "Producción, inventario, ventas, deudas y pedidos por WhatsApp — todo desde el teléfono y por voz.",
+  telefono: "56900000000",         // WhatsApp para el botón de demo (solo números, con código país)
+  demoTexto: "Hola, quiero una demo de Panal para mi negocio",
+
+  // ── SERVICIOS (el motor) — agrega o quita libremente ─────────────────────
+  // El sistema real hoy incluye todo esto. Para un cliente que no contrató
+  // alguno, simplemente bórralo de esta lista.
+  servicios: [
+    { ic: "📦", t: "Inventario y recetas", d: "Las materias primas se descuentan solas al producir, según la receta y los litros fabricados." },
+    { ic: "🏭", t: "Producción por litros", d: "Se fabrica por depósitos/litros, calcula unidades y aprende el rendimiento real de cada línea." },
+    { ic: "📋", t: "Cierre de turno y mermas", d: "Recuento real vs. estimado, insumos por línea y mermas, todo cuadrado al cerrar." },
+    { ic: "🎓", t: "Capacitaciones por área", d: "Instructivos por producto, galería “así debe quedar” y firma del trabajador." },
+    { ic: "🛒", t: "Ventas y caja", d: "Efectivo, transferencia, abono (paga una parte) y crédito, con precio por volumen y mayoreo." },
+    { ic: "💵", t: "Clientes y deudas", d: "Cuenta corriente, saldos y cobranza por abonos, sin perder ni un peso." },
+    { ic: "💬", t: "Pedidos por WhatsApp", d: "Entran de WhatsApp, Facebook e Instagram y caen solos en la central." },
+    { ic: "📅", t: "Agenda, rutas y entregas", d: "Encargos, visitas y delivery, con recordatorio automático al cliente." },
+    { ic: "🎙️", t: "Control por voz", d: "Tu equipo dicta en español: bodega, bitácora y asistencia sin escribir en el teléfono." },
+    { ic: "🧾", t: "Facturación electrónica", d: "Boletas y facturas al SII e IVA al día, conectado a tu operación." },
+    { ic: "🧠", t: "Socio administrativo", d: "Cada mañana te arma el resumen, las alertas y las 3 prioridades del día." },
+    { ic: "🔒", t: "Privacidad por rol", d: "Cada área ve solo lo suyo. Los costos, márgenes y totales, solo el dueño." },
+  ],
+
+  // ── SEGMENTOS / RUBROS — un producto, varias presentaciones ──────────────
+  // Cada segmento renombra las mismas áreas según el rubro. Agrega o quita
+  // rubros según a quién le vendas. La estructura de filas (izq/der) es libre.
+  segmentos: [
+    { emo: "🍦", nombre: "Heladería / Fábrica", filas: [
+      ["Producción", "Cremas / Paletas por litros"],
+      ["Bodega", "Insumos y sabores"],
+      ["Menú", "Líneas / sabores"],
+      ["Venta", "Ruta + distribución"],
+      ["Pedidos", "Retiros y encargos"],
+    ]},
+    { emo: "🥖", nombre: "Panadería", filas: [
+      ["Producción", "Amasado / Horno"],
+      ["Bodega", "Despensa"],
+      ["Menú", "Tipos de pan"],
+      ["Venta", "Mostrador + reparto"],
+      ["Pedidos", "Encargos"],
+    ]},
+    { emo: "🍔", nombre: "Comida rápida", filas: [
+      ["Producción", "Cocina"],
+      ["Bodega", "Almacén"],
+      ["Menú", "Ítems / combos"],
+      ["Venta", "Mostrador / Drive"],
+      ["Pedidos", "Delivery / Pickup"],
+    ]},
+    { emo: "🍽️", nombre: "Restaurante", filas: [
+      ["Producción", "Cocina"],
+      ["Bodega", "Bodega / Cava"],
+      ["Menú", "Platos"],
+      ["Venta", "Salón / Caja"],
+      ["Pedidos", "Reservas / Pickup"],
+    ]},
+  ],
+
+  // ── FLUJO (la cadena) — pasos de la operación ────────────────────────────
+  flujo: [
+    { n: "01", t: "Insumos", d: "Entran y se descuentan por receta." },
+    { n: "02", t: "Producción", d: "Se fabrica por litros y entra a bodega." },
+    { n: "03", t: "Venta", d: "Local, ruta o delivery." },
+    { n: "04", t: "Cobranza", d: "Pagos, abonos y deudas al día." },
+  ],
+
+  // ── DIFERENCIADORES — por qué es distinto ────────────────────────────────
+  diferenciadores: [
+    { big: "🎙️", t: "Funciona por voz", d: "El bodeguero o el cocinero dictan en español y listo. Botones grandes, cero complicación." },
+    { big: "💬", t: "Pedidos que llegan solos", d: "Lo que te escriben por WhatsApp, Facebook o Instagram entra automático y se despacha." },
+    { big: "🔒", t: "Cada quien ve lo suyo", d: "Los operarios registran su trabajo; los costos, márgenes y totales quedan solo para ti." },
+    { big: "📱", t: "Todo desde el teléfono", d: "Sin instalar nada pesado. Se abre como una app y trabaja en cualquier Android." },
+  ],
+
+  // ── PLANES / PAQUETES — para armar la oferta al cliente ───────────────────
+  // Deja los que ofrezcas. "feat: true" resalta el plan recomendado.
+  planes: [
+    { nombre: "Esencial", desc: "Para empezar a ordenar el día a día.", feat: false, badge: "",
+      incluye: ["Ventas y caja", "Inventario y recetas", "Clientes y deudas", "Control por voz"],
+      cta: "Quiero el Esencial" },
+    { nombre: "Completo", desc: "Toda la operación conectada, de la materia prima a la caja.", feat: true, badge: "Recomendado",
+      incluye: ["Todo lo de Esencial", "Producción por litros y mermas", "Pedidos por WhatsApp", "Agenda, rutas y entregas", "Socio administrativo"],
+      cta: "Quiero el Completo" },
+    { nombre: "Pro", desc: "Para escalar con papeles y equipo al día.", feat: false, badge: "",
+      incluye: ["Todo lo de Completo", "Facturación electrónica e IVA", "Capacitaciones por área", "Privacidad por rol avanzada"],
+      cta: "Quiero el Pro" },
+  ],
+};
+</script>
+
 <header class="top">
   <div class="wrap">
-    <div class="brand"><span class="mark">🍯</span> Panal</div>
+    <div class="brand"><span class="mark" data-logo></span> <span data-marca></span></div>
     <a href="#demo" class="top-cta">Solicitar demo</a>
   </div>
 </header>
@@ -174,15 +303,10 @@
 <section class="hero">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow">Gestión total para tu negocio de comida</span>
-      <h1>Un sistema. <span class="hl">Todo tu negocio</span>, bajo control.</h1>
-      <p class="lede">Producción, inventario, ventas, deudas y pedidos por WhatsApp — todo desde el teléfono y por voz.</p>
-      <div class="chips">
-        <span class="chip">🥖 Panadería</span>
-        <span class="chip">🍔 Comida rápida</span>
-        <span class="chip">🍽️ Restaurante</span>
-        <span class="chip">🏭 Fábrica</span>
-      </div>
+      <span class="eyebrow" data-tagline></span>
+      <h1 data-titulo></h1>
+      <p class="lede" data-lede></p>
+      <div class="chips" data-chips></div>
       <div class="btn-row">
         <a href="#demo" class="btn btn-primary">Ver una demo →</a>
         <a href="#rubros" class="btn btn-ghost">Cómo se adapta</a>
@@ -198,8 +322,8 @@
         </div>
         <div class="prow"><span>Harina</span><b>+5 kg</b></div>
         <div class="prow"><span>Azúcar</span><span>12 kg</span></div>
-        <div class="prow"><span>Chocolate</span><span class="tag-ready">bajo · 2 kg</span></div>
-        <div class="prow"><span>Levadura</span><span>8 u.</span></div>
+        <div class="prow"><span>Chocolate</span><span class="tag-warn">bajo · 2 kg</span></div>
+        <div class="prow"><span>Levadura</span><span class="tag-ready">ok · 8 u.</span></div>
       </div>
     </div>
   </div>
@@ -212,68 +336,18 @@
       <h2>Las funciones que todo negocio necesita</h2>
       <p>El mismo corazón sirve para cualquier rubro de comida. Cambia el nombre de las áreas, no el sistema.</p>
     </div>
-    <div class="core">
-      <div class="card"><div class="ic">📦</div><h3>Inventario y recetas</h3><p>Las materias primas se descuentan solas al producir, según la receta.</p></div>
-      <div class="card"><div class="ic">🛒</div><h3>Ventas y caja</h3><p>Efectivo, transferencia, abono (paga una parte) y crédito.</p></div>
-      <div class="card"><div class="ic">💵</div><h3>Clientes y deudas</h3><p>Cuenta corriente, saldos y cobranza por abonos.</p></div>
-      <div class="card"><div class="ic">💬</div><h3>Pedidos por WhatsApp</h3><p>Entran de WhatsApp, Facebook e Instagram y caen solos en la central.</p></div>
-      <div class="card"><div class="ic">📅</div><h3>Agenda y entregas</h3><p>Encargos, visitas y delivery, con recordatorio al cliente.</p></div>
-      <div class="card"><div class="ic">🎙️</div><h3>Control por voz</h3><p>Tu equipo dicta en español; nada de escribir en el teléfono.</p></div>
-      <div class="card"><div class="ic">🔒</div><h3>Privacidad por rol</h3><p>Cada área ve solo lo suyo. Los costos y totales, solo el dueño.</p></div>
-      <div class="card"><div class="ic">📈</div><h3>Tablero y finanzas</h3><p>Ventas, gastos y stock por día, semana o mes, de un vistazo.</p></div>
-    </div>
+    <div class="core" data-servicios></div>
   </div>
 </section>
 
 <section class="vsec" id="rubros">
   <div class="wrap">
     <div class="sec-head">
-      <span class="eyebrow">Un producto, cuatro presentaciones</span>
+      <span class="eyebrow">Un producto, varias presentaciones</span>
       <h2>El mismo sistema, con el nombre de tu rubro</h2>
       <p>Las áreas se renombran solas según tu negocio. Por dentro, el mismo motor probado.</p>
     </div>
-    <div class="verticals">
-      <div class="vcard">
-        <div class="vhead"><span class="emo">🥖</span><h3>Panadería</h3></div>
-        <ul>
-          <li><span>Producción</span><span>Amasado / Horno</span></li>
-          <li><span>Bodega</span><span>Despensa</span></li>
-          <li><span>Menú</span><span>Tipos de pan</span></li>
-          <li><span>Venta</span><span>Mostrador + reparto</span></li>
-          <li><span>Pedidos</span><span>Encargos</span></li>
-        </ul>
-      </div>
-      <div class="vcard">
-        <div class="vhead"><span class="emo">🍔</span><h3>Comida rápida</h3></div>
-        <ul>
-          <li><span>Producción</span><span>Cocina</span></li>
-          <li><span>Bodega</span><span>Almacén</span></li>
-          <li><span>Menú</span><span>Ítems / combos</span></li>
-          <li><span>Venta</span><span>Mostrador / Drive</span></li>
-          <li><span>Pedidos</span><span>Delivery / Pickup</span></li>
-        </ul>
-      </div>
-      <div class="vcard">
-        <div class="vhead"><span class="emo">🍽️</span><h3>Restaurante</h3></div>
-        <ul>
-          <li><span>Producción</span><span>Cocina</span></li>
-          <li><span>Bodega</span><span>Bodega / Cava</span></li>
-          <li><span>Menú</span><span>Platos</span></li>
-          <li><span>Venta</span><span>Salón / Caja</span></li>
-          <li><span>Pedidos</span><span>Reservas / Pickup</span></li>
-        </ul>
-      </div>
-      <div class="vcard">
-        <div class="vhead"><span class="emo">🏭</span><h3>Fábrica</h3></div>
-        <ul>
-          <li><span>Producción</span><span>Fabricación</span></li>
-          <li><span>Bodega</span><span>Bodega</span></li>
-          <li><span>Menú</span><span>Líneas / sabores</span></li>
-          <li><span>Venta</span><span>Ruta + distribución</span></li>
-          <li><span>Pedidos</span><span>Retiros</span></li>
-        </ul>
-      </div>
-    </div>
+    <div class="verticals" data-segmentos></div>
   </div>
 </section>
 
@@ -283,15 +357,7 @@
       <span class="eyebrow">De la materia prima a la caja</span>
       <h2>Toda la cadena, conectada</h2>
     </div>
-    <div class="flow">
-      <div class="step"><div class="n">01</div><h3>Insumos</h3><p>Entran y se descuentan por receta.</p></div>
-      <span class="arrow">→</span>
-      <div class="step"><div class="n">02</div><h3>Producción</h3><p>Se fabrica y entra a bodega.</p></div>
-      <span class="arrow">→</span>
-      <div class="step"><div class="n">03</div><h3>Venta</h3><p>Local, ruta o delivery.</p></div>
-      <span class="arrow">→</span>
-      <div class="step"><div class="n">04</div><h3>Cobranza</h3><p>Pagos, abonos y deudas al día.</p></div>
-    </div>
+    <div class="flow" data-flujo></div>
   </div>
 </section>
 
@@ -301,12 +367,18 @@
       <span class="eyebrow">Por qué es distinto</span>
       <h2>Hecho para el equipo real, no para expertos</h2>
     </div>
-    <div class="diffs">
-      <div class="diff"><span class="big">🎙️</span><div><h3>Funciona por voz</h3><p>El bodeguero o el cocinero dictan en español y listo. Botones grandes, cero complicación.</p></div></div>
-      <div class="diff"><span class="big">💬</span><div><h3>Pedidos que llegan solos</h3><p>Lo que te escriben por WhatsApp, Facebook o Instagram entra automático y se despacha.</p></div></div>
-      <div class="diff"><span class="big">🔒</span><div><h3>Cada quien ve lo suyo</h3><p>Los operarios registran su trabajo; los costos, márgenes y totales quedan solo para ti.</p></div></div>
-      <div class="diff"><span class="big">📱</span><div><h3>Todo desde el teléfono</h3><p>Sin instalar nada pesado. Se abre como una app y trabaja en cualquier Android.</p></div></div>
+    <div class="diffs" data-diferenciadores></div>
+  </div>
+</section>
+
+<section id="planes">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="eyebrow">Arma tu plan</span>
+      <h2>Elige solo lo que tu negocio necesita</h2>
+      <p>Empiezas con lo esencial y sumas servicios cuando quieras. Sin amarres.</p>
     </div>
+    <div class="plans" data-planes></div>
   </div>
 </section>
 
@@ -315,11 +387,73 @@
     <div class="cta">
       <h2>¿Quieres verlo con tu propio negocio?</h2>
       <p>Te muestro cómo quedaría con tus áreas, tus productos y tus precios. Sin compromiso.</p>
-      <a href="#" class="btn btn-primary">Agenda una demo →</a>
+      <a data-demo-link class="btn btn-primary">Agenda una demo →</a>
     </div>
   </div>
 </section>
 
 <footer>
-  Panal · Sistema de gestión para negocios de comida — panadería, comida rápida, restaurante y fábrica.
+  <span data-marca></span> · Sistema de gestión para negocios de comida.
 </footer>
+
+<script>
+  // ── Motor de render: dibuja todo desde el objeto PANAL. No editar por cliente. ──
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const el = (tag, cls, html) => { const n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  // Identidad
+  document.title = PANAL.marca;
+  $$("[data-marca]").forEach((n) => (n.textContent = PANAL.marca));
+  $("[data-logo]").textContent = PANAL.logo;
+  $("[data-tagline]").textContent = PANAL.tagline;
+  $("[data-lede]").textContent = PANAL.lede;
+  const [t0, thl, t1] = PANAL.titulo;
+  $("[data-titulo]").innerHTML = `${esc(t0)} <span class="hl">${esc(thl)}</span>${esc(t1)}`;
+
+  // Chips = emojis + nombres de los segmentos
+  const chips = $("[data-chips]");
+  PANAL.segmentos.forEach((s) => chips.appendChild(el("span", "chip", `${s.emo} ${esc(s.nombre)}`)));
+
+  // Servicios (motor)
+  const core = $("[data-servicios]");
+  PANAL.servicios.forEach((s) =>
+    core.appendChild(el("div", "card", `<div class="ic">${s.ic}</div><h3>${esc(s.t)}</h3><p>${esc(s.d)}</p>`))
+  );
+
+  // Segmentos / rubros
+  const verts = $("[data-segmentos]");
+  PANAL.segmentos.forEach((s) => {
+    const filas = s.filas.map((f) => `<li><span>${esc(f[0])}</span><span>${esc(f[1])}</span></li>`).join("");
+    verts.appendChild(el("div", "vcard",
+      `<div class="vhead"><span class="emo">${s.emo}</span><h3>${esc(s.nombre)}</h3></div><ul>${filas}</ul>`));
+  });
+
+  // Flujo
+  const flow = $("[data-flujo]");
+  PANAL.flujo.forEach((p, i) => {
+    flow.appendChild(el("div", "step", `<div class="n">${esc(p.n)}</div><h3>${esc(p.t)}</h3><p>${esc(p.d)}</p>`));
+    if (i < PANAL.flujo.length - 1) flow.appendChild(el("span", "arrow", "→"));
+  });
+
+  // Diferenciadores
+  const diffs = $("[data-diferenciadores]");
+  PANAL.diferenciadores.forEach((d) =>
+    diffs.appendChild(el("div", "diff", `<span class="big">${d.big}</span><div><h3>${esc(d.t)}</h3><p>${esc(d.d)}</p></div>`))
+  );
+
+  // Planes
+  const wsp = (msg) => `https://wa.me/${PANAL.telefono}?text=${encodeURIComponent(msg)}`;
+  const plans = $("[data-planes]");
+  PANAL.planes.forEach((p) => {
+    const items = p.incluye.map((x) => `<li>${esc(x)}</li>`).join("");
+    const badge = p.badge ? `<span class="badge">${esc(p.badge)}</span>` : "";
+    plans.appendChild(el("div", "plan" + (p.feat ? " feat" : ""),
+      `${badge}<h3>${esc(p.nombre)}</h3><p class="pdesc">${esc(p.desc)}</p><ul>${items}</ul>` +
+      `<a class="plan-cta" href="${wsp(`Hola, me interesa el plan ${p.nombre} de ${PANAL.marca}`)}">${esc(p.cta)}</a>`));
+  });
+
+  // Botón de demo → WhatsApp
+  $("[data-demo-link]").href = wsp(PANAL.demoTexto);
+</script>
