@@ -275,7 +275,24 @@
   var $=function(id){return document.getElementById(id);};
   var db={clientes:[]}, curId=null, curTab="cotiza";
 
-  function load(){ try{ var r=localStorage.getItem(KEY); if(r) db=JSON.parse(r); }catch(e){} if(!db.clientes) db.clientes=[]; }
+  function seedDemo(){
+    // Ejemplo de arranque: Heladería Da'cris (se puede eliminar). Solo la primera vez.
+    var flag=false; try{ flag=localStorage.getItem("panal-centro-seeded")==="1"; }catch(e){}
+    if(flag || db.clientes.length) return;
+    db.clientes.push({
+      id:"demo-dacris", nombre:"Heladería Da'cris", sector:"heladeria",
+      contacto:"+56 9 ____ ____", ciudad:"—", colores:"crema y frambuesa (rosa)",
+      estado:"en_montaje", plan:"completo",
+      instal:PLAN_PRECIO.completo.i, mes:PLAN_PRECIO.completo.m,
+      mods:SECTORS.heladeria.mods.slice(), exts:SECTORS.heladeria.ext.slice(),
+      servs:["landing","catalogo"],
+      notas:"Cliente de ejemplo para probar el Centro. Fabrica cremas y paletas por litros; vende en ruta y por la web. Puedes editarlo o eliminarlo.",
+      fecha:Date.now()
+    });
+    try{ localStorage.setItem("panal-centro-seeded","1"); }catch(e){}
+    save();
+  }
+  function load(){ try{ var r=localStorage.getItem(KEY); if(r) db=JSON.parse(r); }catch(e){} if(!db.clientes) db.clientes=[]; seedDemo(); }
   function save(){ try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){} }
   function uid(){ return "c"+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
   function cur(){ return db.clientes.filter(function(c){return c.id===curId;})[0]; }
