@@ -33,11 +33,21 @@ export default async function CapacitacionesProduccion({ searchParams }: { searc
   }
 
   // 2) Ya identificado: capacitaciones en pestañas por producto, con firma tiqueada.
-  const caps = await prisma.capacitacion.findMany({
-    where: { activo: true, rol: { in: ["produccion", "todos"] } },
-    orderBy: [{ orden: "asc" }],
-    include: { vistas: { select: { usuarioNombre: true, fecha: true } } },
-  });
+  const [caps, saboresAll] = await Promise.all([
+    prisma.capacitacion.findMany({
+      where: { activo: true, rol: { in: ["produccion", "todos"] } },
+      orderBy: [{ orden: "asc" }],
+      include: { vistas: { select: { usuarioNombre: true, fecha: true } } },
+    }),
+    prisma.sabor.findMany({ where: { activo: true }, select: { nombre: true, linea: true, fotoUrl: true, descripcion: true }, orderBy: { nombre: "asc" } }),
+  ]);
+  // Referencia visual "así debe quedar" por producto (foto + color/descripción de cada sabor).
+  const alias = (l: string) => (l === "trufas" ? ["trufas", "trufa"] : [l]);
+  const referencia: Record<string, { nombre: string; fotoUrl: string | null; descripcion: string | null }[]> = {};
+  for (const l of LINEAS_PRODUCCION) {
+    const items = saboresAll.filter((s) => alias(l).includes(s.linea)).map((s) => ({ nombre: s.nombre, fotoUrl: s.fotoUrl, descripcion: s.descripcion }));
+    if (items.length) referencia[l] = items;
+  }
 
   const mkCap = (c: (typeof caps)[number]) => ({
     id: c.id, titulo: c.titulo, categoria: c.categoria, descripcion: c.descripcion,
@@ -63,7 +73,7 @@ export default async function CapacitacionesProduccion({ searchParams }: { searc
       <h1 className="font-display text-xl font-extrabold text-slate-900">🎓 Capacitaciones</h1>
       <p className="mb-3 text-sm text-slate-500">Lee cada una y fírmala. Queda tiqueada a tu nombre, con copia y fecha.</p>
       {firmado && <p className="mb-3 rounded-xl border border-green-300 bg-green-50 px-3 py-2 text-sm font-bold text-green-700">✓ Firmada. ¡Gracias!</p>}
-      <CapacitacionesUI worker={worker} tabs={tabs} firmar={firmarCapacitacion} salir={salirTrabajadorCap} />
+      <CapacitacionesUI worker={worker} tabs={tabs} referencia={referencia} firmar={firmarCapacitacion} salir={salirTrabajadorCap} />
     </div>
   );
 }

@@ -10,14 +10,16 @@ type Cap = {
   firmadaPorMi: boolean; firmantes: Firmante[];
 };
 type Tab = { id: string; label: string; caps: Cap[] };
+type Ref = { nombre: string; fotoUrl: string | null; descripcion: string | null };
 
 const fmt = (iso: string) => new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export default function CapacitacionesUI({
-  worker, tabs, firmar, salir,
+  worker, tabs, referencia = {}, firmar, salir,
 }: {
   worker: string;
   tabs: Tab[];
+  referencia?: Record<string, Ref[]>;
   firmar: (fd: FormData) => Promise<void>;
   salir: () => Promise<void>;
 }) {
@@ -49,6 +51,27 @@ export default function CapacitacionesUI({
       </div>
 
       <p className="mb-2 text-xs font-semibold text-slate-400">{firmadas} de {caps.length} firmadas en {tab?.label}</p>
+
+      {/* "Así debe quedar": referencia visual de presentación por producto */}
+      {activa !== "general" && (referencia[activa]?.length ?? 0) > 0 && (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50/60 p-3">
+          <p className="mb-2 text-sm font-extrabold text-amber-800">📸 Así debe quedar — {tab?.label}</p>
+          <div className="grid grid-cols-3 gap-2">
+            {referencia[activa].map((r, i) => (
+              <div key={i} className="overflow-hidden rounded-xl border border-amber-200 bg-white">
+                {r.fotoUrl
+                  ? <img src={r.fotoUrl} alt={r.nombre} className="aspect-square w-full object-cover" />
+                  : <div className="grid aspect-square w-full place-items-center bg-slate-100 text-2xl text-slate-300">🍦</div>}
+                <div className="p-1.5">
+                  <p className="truncate text-[11px] font-bold text-slate-800">{r.nombre}</p>
+                  {r.descripcion && <p className="line-clamp-2 text-[10px] leading-tight text-slate-500">{r.descripcion}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-2 text-[10px] text-slate-400">Fotos y colores de referencia. La central los carga desde el panel (Sabores).</p>
+        </div>
+      )}
 
       <div className="space-y-4">
         {caps.map((c) => (
