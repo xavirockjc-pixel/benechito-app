@@ -12,8 +12,9 @@ publican en cualquier hosting estático. No dependen de la app Next.js.
 | Archivo | Qué es | Para qué |
 |---|---|---|
 | `landing.html` | Landing comercial (tema oscuro, abeja robótica, 9 celdas con detalle, historia, packs por rubro y servicios) | Mostrarla al cliente / compartir link |
+| `presentacion.html` | **Documento para presentar**: dossier con problema→solución, 11 celdas, cómo funciona, sectores y **planes con valores**; imprimible y con tema claro/oscuro | Presentar a un cliente (pantalla o PDF) |
 | `configurador.html` | **Configurador**: activa módulos y casillas por cliente, elige rubro, ajusta precios, y genera el "Resumen para implementar" + "Prompt maestro" | Armar y replicar el sistema de cada cliente |
-| `cotizador.html` | **Cotizador** rápido: marca celdas/extensiones y ve el rango de precio al instante; copia la cotización | Cerrar precio en la conversación |
+| `cotizador.html` | **Cotizador por sector**: elige el sector → renombra las áreas, muestra un pitch a medida y el pack + precio recomendado; copia o envía la cotización por WhatsApp | Cerrar precio adaptado al rubro |
 
 > La landing también vive en la raíz como `panal-landing.html` (misma versión) por
 > compatibilidad con `MIGRACION.md`.

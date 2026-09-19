@@ -225,7 +225,7 @@ function tile(x,y,label,val,c){return bar(x,y,62,40,'var(--bg2)',1)+txt(x+8,y+16
 function rowItem(y,label,val,c){return bar(14,y,180,11,'var(--ink2)',.12)+txt(18,y+9,label,'var(--ink)',8)+txt(250,y+9,val,c,9,1);}
 
 const MOCK = {
-  produccion:(c)=>frame(tile(14,48,'HOY','200 u',c)+tile(84,48,'COSTO','$38.400','var(--ink)')+tile(154,48,'GANANCIA','$61.600','var(--teal)')+bar(226,48,60,40,'var(--honey-soft)')+txt(233,64,'Insumos',c,7)+txt(233,78,'−auto',c,9,1)+rowItem(100,'Trufas · lote 12','✓ calidad',c)+rowItem(116,'Descuenta insumos','auto','var(--teal)')+rowItem(132,'🎙️ “hice 200…”','dictado',c),c),
+  produccion:(c)=>frame(tile(14,48,'LITROS','120 L',c)+tile(84,48,'≈ UNIDADES','480 u','var(--ink)')+tile(154,48,'MERMA','2,5%','var(--teal)')+bar(226,48,60,40,'var(--honey-soft)')+txt(233,64,'Insumos',c,7)+txt(233,78,'−auto',c,9,1)+rowItem(100,'Crema · línea 1','rend. auto',c)+rowItem(116,'Cierre turno','real vs est.','var(--teal)')+rowItem(132,'🎙️ “12 baldes…”','dictado',c),c),
   ventas:(c)=>frame(txt(16,50,'Ruta · Sector Centro','var(--ink)',9,1)+rowItem(60,'Almacén Rosa','$12.400',c)+rowItem(78,'Kiosco El Sol','abono',c)+rowItem(96,'Minimarket Díaz','$8.900',c)+bar(14,118,88,20,c)+txt(30,132,'Mercado Pago','#fff',8,1)+bar(108,118,88,20,'var(--bg2)')+txt(120,132,'Transferencia','var(--ink)',8)+bar(202,118,84,20,'var(--bg2)')+txt(214,132,'Efectivo','var(--ink)',8),c),
   repartos:(c)=>frame(txt(16,50,'Bandeja central','var(--ink)',9,1)+rowItem(60,'Pedido web #182','por pagar',c)+rowItem(78,'→ Reparto (auto)','envío',' var(--teal)')+rowItem(96,'Cliente: R. Pérez','datos ✓',c)+bar(14,118,130,22,'var(--honey-soft)')+txt(22,132,'📍 Envío auto a destino',c,8,1)+bar(150,118,136,22,'var(--bg2)')+txt(158,132,'💬 Entró por WhatsApp','var(--ink)',8),c),
   inventario:(c)=>frame(tile(14,48,'PRODUCTOS','128',c)+tile(84,48,'INSUMOS','54','var(--ink)')+tile(154,48,'BAJO STOCK','3','var(--red)')+bar(226,48,60,40,'var(--honey-soft)')+txt(233,64,'🎙️ voz',c,7)+txt(233,78,'ingreso',c,9,1)+rowItem(100,'Chocolate cobertura','2 kg ⚠️','var(--red)')+rowItem(116,'Harina','48 kg',c)+rowItem(132,'Vasos 500ml','stock ok','var(--teal)'),c),
@@ -242,15 +242,17 @@ const MOCK = {
 
 /* ============ Módulos, casillas, demos ============ */
 const MODULOS = [
-  { id:"01", key:"produccion", tl:false, star:true, nombre:"Producción y control de calidad", sub:"Fabricar, calidad, y descuento automático de inventario",
-    demo:"El operario dicta <b>“hice 200 trufas”</b>: el sistema <b>descuenta TODO del inventario automáticamente</b> según la receta, registra el lote y su control de calidad, y en el panel muestra <b>costos y ganancias</b>. El operario solo ve su trabajo del día.",
+  { id:"01", key:"produccion", tl:false, star:true, nombre:"Producción y control de calidad", sub:"Fabricar por litros, calidad, cierre de turno y descuento de insumos",
+    demo:"El operario reporta su turno con una <b>app simple</b>: fabrica <b>por litros/depósitos</b>, el sistema <b>estima las unidades</b> y <b>aprende solo el rendimiento</b> de cada línea. Al reportar, <b>descuenta los insumos por receta según los litros</b>; en el <b>cierre de turno</b> compara lo real contra lo estimado y saca las <b>mermas</b>. El dueño ve costos, ganancias y rendimiento; el operario solo su trabajo.",
     cas:[
-      {k:"cq", n:"✅ Control de calidad", d:"Checklist por lote (aspecto, peso, temperatura); registra quién y cuándo."},
-      {k:"desc", n:"📉 Descuento automático de inventario", d:"Al producir, baja solo los insumos usados según la receta — sin doble descuento."},
-      {k:"cg", n:"💰 Costos y ganancias", d:"Calcula el costo del lote y la ganancia; visible solo en el panel central."},
-      {k:"lotes", n:"🏷️ Lotes por turno", d:"Agrupa la producción del día/turno para trazar y medir rendimiento."},
+      {k:"litros", n:"🫗 Fabricación por litros / depósitos", d:"Mide por litros y estima unidades; el rendimiento se auto-aprende por línea (maduración vs. overrun)."},
+      {k:"cierre", n:"📋 Cierre de turno (real vs. estimado)", d:"Recuento real contra lo estimado, insumos por línea y cálculo de mermas al cerrar."},
+      {k:"cq", n:"✅ Control de calidad + BPM", d:"Checklist por lote (aspecto, peso, temperatura), higiene/BPM y bitácora por voz; registra quién y cuándo."},
+      {k:"desc", n:"📉 Descuento de insumos por receta", d:"Al reportar, baja solo los insumos usados según la receta y los litros — sin doble descuento."},
+      {k:"cg", n:"💰 Costos, ganancias y rendimiento", d:"Costo del lote, ganancia y rendimiento aprendido; visible solo en el panel. Se puede ocultar el aprendizaje al operario."},
+      {k:"lotes", n:"🏷️ Lotes / líneas por turno", d:"Agrupa por turno y por línea (preparador + depósitos) para trazar y medir."},
       {k:"agreg", n:"🍫 Sabores y agregados", d:"Esencias, colores, toppings por producto (solo donde aplica)."},
-      {k:"vozp", n:"🎙️ Asistente de voz", d:"Dicta lo producido sin soltar las manos; se registra y descuenta solo."},
+      {k:"vozp", n:"🎙️ Reporte por voz", d:"Dicta lo producido sin soltar las manos; se registra y descuenta solo."},
     ]},
   { id:"02", key:"ventas", tl:true, star:true, nombre:"Ventas · Vendedor en ruta", sub:"Vender en ruta o local, con medios de pago",
     demo:"El vendedor abre su <b>ruta por sector</b>, registra ventas contra la ficha del cliente y cobra con <b>Mercado Pago, transferencia o efectivo</b>. Ve lo suyo del día, no los márgenes del negocio.",
@@ -260,6 +262,7 @@ const MODULOS = [
       {k:"abono", n:"🤝 Contado y abono", d:"Cobra al momento o deja saldo pendiente."},
       {k:"online", n:"🌐 Canal online (venta web)", d:"Recibe pedidos de la tienda y los suma a la operación."},
       {k:"agenda", n:"📆 Agenda de visitas", d:"Próximas visitas y reposiciones programadas."},
+      {k:"volumen", n:"📊 Precio por volumen (tramos)", d:"Aplica solo el precio por cantidad (mayoreo) según los tramos definidos, por canal/lista."},
       {k:"vozv", n:"🎙️ Venta por voz", d:"Dicta la venta rápida sin teclear en la calle."},
     ]},
   { id:"03", key:"repartos", tl:false, star:true, nombre:"Repartos y retiros", sub:"Pedidos → bandeja central → despacho a destino",
@@ -297,12 +300,15 @@ const MODULOS = [
       {k:"rutcli", n:"🧾 RUT / razón social", d:"Para clientes que compran con factura."},
     ]},
   { id:"06", key:"panel", tl:true, star:false, nombre:"Panel central", sub:"Todo llega y se guarda aquí + reporte diario",
-    demo:"Tu vista de dueño: <b>todo lo implementado llega y se guarda aquí</b>. Ventas por canal, rankings, deudas, producción — con un <b>aviso automático / reporte diario</b> por WhatsApp y un <b>ojito</b> para ocultar montos.",
+    demo:"Tu vista de dueño: <b>todo lo implementado llega y se guarda aquí</b>. Tu <b>Socio administrativo</b> te arma cada mañana el <b>reporte, las alertas y las 3 prioridades</b> del día. Incluye <b>análisis de producción</b> (rendimiento, insumos+costo, mermas, cierres) y un <b>calendario de producción por trabajador</b>.",
     cas:[
       {k:"todo", n:"🗄️ Todo llega y se guarda", d:"Centraliza y guarda lo de cada módulo activo — nada se pierde."},
-      {k:"reporte", n:"📊 Aviso automático / reporte diario", d:"Resumen del día (ventas, caja, stock, deudas) a tu WhatsApp/correo."},
+      {k:"socio", n:"🐝 Socio administrativo (Supercerebro)", d:"Reporte diario a tu WhatsApp con ventas, caja, stock y deudas + alertas y las 3 prioridades del día."},
+      {k:"analisis", n:"🏭 Análisis de producción", d:"Rendimiento por línea, insumos y costo, mermas y cierres de turno — de un vistazo."},
+      {k:"calprod", n:"📅 Calendario de producción por trabajador", d:"Qué se fabrica cada día y quién, para planificar la semana."},
       {k:"kpi", n:"📈 Tarjetas KPI", d:"Ventas del día/mes, producción, stock, deudas — elige cuáles."},
       {k:"rank", n:"🏆 Rankings y ventas por canal", d:"Top productos y comparación entre canales."},
+      {k:"cero", n:"♻️ Empezar de cero", d:"Reinicia los números por sección (nuevo día/mes) sin borrar la configuración."},
       {k:"ojo", n:"👁️ Ojo para ocultar montos", d:"Oculta cifras con un toque frente a terceros."},
       {k:"users", n:"🔑 Usuarios y claves por rol", d:"Crea usuarios y define qué ve cada rol."},
     ]},
@@ -320,6 +326,7 @@ const MODULOS = [
     cas:[
       {k:"plantilla", n:"🧮 Plantilla de nueva receta (precio automático)", d:"Según los insumos y su costo, calcula costo y precio sugerido solo."},
       {k:"asesoria", n:"📚 Asesoría / paso a paso para personal nuevo", d:"Guía que capacita a quien recién entra, sin depender de nadie."},
+      {k:"capacita", n:"🎓 Capacitaciones con firma + galería “Así debe quedar”", d:"Acceso por nombre, pestañas por producto y firma tiqueada; fotos y colores de referencia por sabor/producto."},
       {k:"escala", n:"⚖️ Lote de referencia que escala", d:"Calcula insumos según cuánto vas a producir."},
       {k:"medidas", n:"🥣 Medidas físicas", d:"Ollas, bandejas, baldes — las del cliente."},
       {k:"clave", n:"🔐 Clave por receta (secretas)", d:"No se muestra hasta desbloquear; protege el know-how."},

@@ -494,11 +494,11 @@
       <!-- template cells -->
       <article class="cell star reveal"><span class="num mono">01</span>
         <div class="badge"><svg viewBox="0 0 60 66"><use href="#hexmark"/></svg><span>🏭</span></div>
-        <h3>Producción y calidad</h3><p>Control de calidad, recetas que descuentan solas, lotes por turno y costos automáticos.</p><span class="tag">★ Estrella</span></article>
+        <h3>Producción y calidad</h3><p>Fabrica por litros con rendimiento auto-aprendido, cierre de turno (real vs. estimado + mermas), BPM y descuento de insumos por receta.</p><span class="tag">★ Estrella</span></article>
 
       <article class="cell star reveal"><span class="num mono">02</span>
         <div class="badge"><svg viewBox="0 0 60 66"><use href="#hexmark"/></svg><span>🛒</span></div>
-        <h3>Ventas · Vendedor</h3><p>Rutas por sector, ventas al contado o con abono, agenda de visitas y venta por voz.</p><span class="tag">★ Estrella</span></article>
+        <h3>Ventas · Vendedor</h3><p>Rutas por sector, ventas al contado o con abono, precio por volumen y mayoreo automático, y venta por voz.</p><span class="tag">★ Estrella</span></article>
 
       <article class="cell star reveal"><span class="num mono">03</span>
         <div class="badge"><svg viewBox="0 0 60 66"><use href="#hexmark"/></svg><span>🛵</span></div>
@@ -514,7 +514,7 @@
 
       <article class="cell reveal"><span class="num mono">06</span>
         <div class="badge"><svg viewBox="0 0 60 66"><use href="#hexmark"/></svg><span>📊</span></div>
-        <h3>Panel central</h3><p>Todo llega y se guarda aquí. Ventas por canal, rankings y reporte diario a tu WhatsApp.</p></article>
+        <h3>Panel · Socio administrativo</h3><p>Todo llega y se guarda aquí. Tu Socio te arma el reporte, alertas y las 3 prioridades del día, con análisis de producción y calendario por trabajador.</p></article>
 
       <article class="cell reveal"><span class="num mono">07</span>
         <div class="badge"><svg viewBox="0 0 60 66"><use href="#hexmark"/></svg><span>🧮</span></div>
@@ -522,7 +522,7 @@
 
       <article class="cell reveal"><span class="num mono">08</span>
         <div class="badge"><svg viewBox="0 0 60 66"><use href="#hexmark"/></svg><span>📖</span></div>
-        <h3>Recetas y materias primas</h3><p>Plantilla con precio automático, lote que escala solo y clave para recetas secretas.</p></article>
+        <h3>Recetas y capacitaciones</h3><p>Plantilla con precio automático, lote que escala, capacitación con firma y galería “así debe quedar”, y clave para recetas secretas.</p></article>
 
       <article class="cell star reveal"><span class="num mono">09</span>
         <div class="badge"><svg viewBox="0 0 60 66"><use href="#hexmark"/></svg><span>🐝</span></div>
@@ -645,22 +645,22 @@
 (function(){
   /* ---- contenido de cada celda ---- */
   var MODS = [
-    {id:"01", em:"🏭", name:"Producción y calidad", intro:"El operario dicta lo que hizo y el sistema hace el resto: registra el lote, su control de calidad y descuenta el inventario solo.",
-      feats:["Control de calidad por lote (aspecto, peso, temperatura)","Descuento automático de insumos según la receta","Costos y ganancias por lote (solo en el panel)","Lotes por turno para trazar y medir","Sabores y agregados por producto","Asistente de voz: “hice 200 trufas”"]},
+    {id:"01", em:"🏭", name:"Producción y calidad", intro:"El operario reporta su turno con una app simple: fabrica por litros/depósitos, el sistema estima unidades, aprende el rendimiento y descuenta los insumos por receta.",
+      feats:["Fabricación por litros/depósitos con estimado de unidades","Rendimiento auto-aprendido por línea (maduración vs. overrun)","Cierre de turno: real vs. estimado + mermas","Descuento de insumos por receta según litros","Control de calidad + BPM/higiene, bitácora por voz","Costos, ganancias y rendimiento (solo en el panel)","Reporte por voz: “hice 12 baldes”"]},
     {id:"02", em:"🛒", name:"Ventas · Vendedor", intro:"El vendedor abre su ruta, registra ventas contra la ficha del cliente y cobra por cualquier medio. Ve lo suyo, no los márgenes.",
-      feats:["Rutas por sector con recorrido","Pago: Mercado Pago, transferencia o efectivo","Contado y abono (deja saldo pendiente)","Recibe pedidos del canal online","Agenda de visitas y reposiciones","Venta rápida por voz"]},
+      feats:["Rutas por sector con recorrido","Pago: Mercado Pago, transferencia o efectivo","Contado y abono (deja saldo pendiente)","Precio por volumen y mayoreo automático (tramos por canal/lista)","Recibe pedidos del canal online","Agenda de visitas y reposiciones","Venta rápida por voz"]},
     {id:"03", em:"🛵", name:"Repartos y retiros", intro:"Los pedidos de WhatsApp, redes y web caen en una bandeja central y el sistema los deriva solos a su destino.",
       feats:["Bandeja central de pedidos","Envíos por pagar (paga al recibir)","Datos del cliente a la vista para despachar","Envío automático a local, bodega o reparto","Entrada automática por WhatsApp/redes (n8n)","Retiro en local","🛵 App del repartidor “Mis entregas” (moto propia o arrendada)"]},
     {id:"04", em:"📦", name:"Inventario", intro:"Controla productos, insumos y materiales con stock valorizado, alertas y ajuste directo — sin depender solo de producción o ventas.",
       feats:["Productos · insumos · materiales","Materia prima con subtipos por rubro","Alertas de stock bajo","Múltiples bodegas / ubicaciones","Ocultar costos por rol (privacidad)","Ingreso y ajuste por voz o tabla editable"]},
     {id:"05", em:"🧾", name:"Clientes y deudas", intro:"Ficha por cliente con qué compra y a qué precio, historial completo y su cuenta corriente al día — cobras y vendes desde ahí mismo.",
       feats:["Fichas por tipo de cliente y su lista de precio","Seguimiento y próxima acción","Historial completo de cada cliente","Recordatorios automáticos (reposición, cobro)","Deudas y abonos","💵 Cobrar y vender desde la ficha (cuenta corriente)","🐝 Link al Portal del Cliente por WhatsApp","RUT / razón social para factura"]},
-    {id:"06", em:"📊", name:"Panel central", intro:"Tu vista de dueño: todo lo implementado llega y se guarda aquí, con reporte diario a tu WhatsApp.",
-      feats:["Todo llega y se guarda — nada se pierde","Aviso / reporte diario (ventas, caja, stock, deudas)","Tarjetas KPI que eliges","Rankings y ventas por canal","Ojo para ocultar montos frente a terceros","Usuarios y claves por rol"]},
+    {id:"06", em:"📊", name:"Panel · Socio administrativo", intro:"Tu vista de dueño: todo llega y se guarda aquí. Tu Socio te arma cada mañana el reporte, las alertas y las 3 prioridades del día.",
+      feats:["Socio administrativo (Supercerebro): reporte + alertas + 3 prioridades","Análisis de producción: rendimiento, insumos+costo, mermas, cierres","Calendario de producción por trabajador","Tarjetas KPI que eliges","Rankings y ventas por canal","Empezar de cero (reiniciar números por sección)","Ojo para ocultar montos · Usuarios y claves por rol"]},
     {id:"07", em:"🧮", name:"Facturación", intro:"Enlazada al sistema: emite documentos, recuerda facturar y registra folios. Con extensión, conecta al SII real.",
       feats:["Nota de venta enlazada al pedido","Guía de despacho para el reparto","Envíos automáticos del documento","Recordatorio de facturar por RUT","Registro de folios (correlativo)"]},
-    {id:"08", em:"📖", name:"Recetas y materias primas", intro:"Crea una receta desde una plantilla y el precio sale solo según el costo de los insumos. Incluye paso a paso para personal nuevo.",
-      feats:["Plantilla de receta con precio automático","Asesoría / paso a paso para quien recién entra","Lote de referencia que escala solo","Medidas físicas (ollas, bandejas, baldes)","Clave por receta (recetas secretas)"]},
+    {id:"08", em:"📖", name:"Recetas y capacitaciones", intro:"Crea una receta desde una plantilla y el precio sale solo según el costo de los insumos. Capacita al personal nuevo con firma y galería “así debe quedar”.",
+      feats:["Plantilla de receta con precio automático","Capacitación con acceso por nombre, pestañas por producto y firma tiqueada","Galería “así debe quedar” (fotos y colores por sabor)","Lote de referencia que escala solo","Medidas físicas (ollas, bandejas, baldes)","Clave por receta (recetas secretas)"]},
     {id:"09", em:"🐝", name:"Tienda y Portal del Cliente", intro:"Tu catálogo web donde cada cliente pide con su precio, y un portal propio “Mi Cuenta” con sus pedidos, su cuenta y tus promos.",
       feats:["Catálogo web con fotos y ficha por producto","Sabores con foto y descripción","Precio por tipo de cliente (detalle/mayorista/distribuidor)","Pedido con hora agendada y ubicación (GPS/mapa)","Pago online (Mercado Pago)","Aviso de pedido con sonido en la app","🐝 Portal del cliente “Mi Cuenta” (link por WhatsApp)","🔥 Novedades y promos para todos los clientes","🤝 Auto-registro de negocios (revendedores/distribuidores)"]}
   ];

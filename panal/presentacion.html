@@ -1,0 +1,321 @@
+<title>Panal · Presentación</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Presentación de Panal: el sistema modular de gestión para negocios de comida, con módulos, sectores, planes y valores.">
+<style>
+  :root{
+    color-scheme: dark;
+    --ground:#100b06; --surface:#19110a; --surface-2:#241a10; --line:#3c2d1a;
+    --honey:#f6a821; --bright:#ffce6a; --deep:#a8680f; --cream:#f4ecd8; --muted:#a99a7c;
+    --teal:#5fd0c0; --good:#5fd0a6; --red:#f0755c;
+    --glow: rgba(246,168,33,.4);
+    --mono: ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --serif: Georgia,"Times New Roman",serif;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
+    --ground:#fbf7f0; --surface:#ffffff; --surface-2:#f4ede0; --line:#e7dcc9;
+    --honey:#d6821a; --bright:#b56a06; --deep:#b56a06; --cream:#241c14; --muted:#6b5d4a;
+    --teal:#0f766e; --good:#2f8f5b; --red:#c0432e;
+    --glow: rgba(214,130,26,.25);
+  }}
+  :root[data-theme="light"]{
+    --ground:#fbf7f0; --surface:#ffffff; --surface-2:#f4ede0; --line:#e7dcc9;
+    --honey:#d6821a; --bright:#b56a06; --deep:#b56a06; --cream:#241c14; --muted:#6b5d4a;
+    --teal:#0f766e; --good:#2f8f5b; --red:#c0432e;
+    --glow: rgba(214,130,26,.25);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--cream); font-family:var(--sans); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    background-image:radial-gradient(1100px 460px at 82% -8%, rgba(246,168,33,.08), transparent 60%);}
+  .wrap{max-width:900px; margin-inline:auto; padding-inline:20px}
+  h1,h2,h3{font-family:var(--serif); text-wrap:balance; margin:0; letter-spacing:-.01em}
+  .mono{font-family:var(--mono)}
+  .eyebrow{font-family:var(--mono); text-transform:uppercase; letter-spacing:.2em; font-size:.7rem; color:var(--honey); font-weight:700}
+  a{color:var(--bright)}
+
+  /* portada */
+  .cover{border-bottom:1px solid var(--line); padding:60px 0 44px; position:relative; overflow:hidden}
+  .brand{display:flex; align-items:center; gap:11px; font-family:var(--mono); font-weight:700; letter-spacing:.18em; text-transform:uppercase; font-size:1rem}
+  .brand .hx{width:30px;height:33px;filter:drop-shadow(0 0 8px var(--glow))}
+  .cover h1{font-size:clamp(2.2rem,6vw,3.6rem); line-height:1.05; margin:22px 0 14px; font-weight:800}
+  .cover h1 .hl{color:var(--honey)}
+  .cover .lede{font-size:clamp(1.05rem,2.4vw,1.25rem); color:var(--muted); max-width:46ch; margin:0}
+  .cover .meta{margin-top:26px; display:flex; flex-wrap:wrap; gap:8px}
+  .pill{font-size:.8rem; font-weight:600; padding:6px 13px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line)}
+
+  section{padding:46px 0; border-bottom:1px solid var(--line)}
+  .sec-h{max-width:60ch; margin-bottom:22px}
+  .sec-h h2{font-size:clamp(1.5rem,3.6vw,2.1rem); font-weight:800; margin-top:8px}
+  .sec-h p{color:var(--muted); margin:10px 0 0}
+
+  /* problema / solucion */
+  .ba{display:grid; grid-template-columns:1fr 1fr; gap:16px}
+  @media (max-width:720px){ .ba{grid-template-columns:1fr} }
+  .col{border:1px solid var(--line); border-radius:16px; padding:20px; background:var(--surface)}
+  .col.bad{border-color:color-mix(in srgb, var(--red) 45%, var(--line))}
+  .col.good{border-color:color-mix(in srgb, var(--honey) 45%, var(--line)); background:linear-gradient(180deg,var(--surface-2),var(--surface))}
+  .col h3{font-family:var(--sans); font-size:1rem; font-weight:800; margin-bottom:10px}
+  .col.bad h3{color:var(--red)} .col.good h3{color:var(--bright)}
+  .col ul{margin:0; padding-left:18px; display:grid; gap:7px}
+  .col li{color:var(--muted); font-size:.9rem} .col.good li{color:var(--cream)}
+
+  /* modulos grid */
+  .mods{display:grid; grid-template-columns:repeat(3,1fr); gap:12px}
+  @media (max-width:760px){ .mods{grid-template-columns:1fr 1fr} }
+  @media (max-width:460px){ .mods{grid-template-columns:1fr} }
+  .mod{border:1px solid var(--line); border-radius:14px; padding:15px; background:var(--surface)}
+  .mod.star{border-color:color-mix(in srgb, var(--honey) 45%, var(--line))}
+  .mod .top{display:flex; align-items:center; gap:9px; margin-bottom:6px}
+  .mod .em{font-size:1.3rem}
+  .mod .n{font-family:var(--mono); font-size:.68rem; color:var(--deep); margin-left:auto}
+  .mod h3{font-family:var(--sans); font-size:.95rem; font-weight:800}
+  .mod p{margin:4px 0 0; font-size:.8rem; color:var(--muted)}
+  .mod .st{font-size:.6rem; font-weight:800; color:var(--honey); text-transform:uppercase; letter-spacing:.06em}
+
+  /* flujo */
+  .flow{display:flex; flex-wrap:wrap; gap:10px; align-items:stretch}
+  .step{flex:1 1 150px; min-width:140px; border:1px solid var(--line); border-radius:14px; padding:16px; background:var(--surface); text-align:center}
+  .step .k{font-family:var(--mono); font-size:.68rem; color:var(--honey); letter-spacing:.12em}
+  .step .ic{font-size:1.6rem; display:block; margin:6px 0 4px}
+  .step h3{font-family:var(--sans); font-size:.9rem; margin:0}
+  .step p{margin:5px 0 0; font-size:.76rem; color:var(--muted)}
+
+  /* sectores */
+  .secs{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+  @media (max-width:640px){ .secs{grid-template-columns:1fr} }
+  .scard{border:1px solid var(--line); border-radius:14px; padding:16px; background:var(--surface); display:flex; gap:12px}
+  .scard .se{font-size:1.6rem; flex:0 0 auto}
+  .scard b{font-size:.95rem; display:block}
+  .scard small{color:var(--muted); font-size:.82rem}
+
+  /* planes / tabla */
+  .table-wrap{overflow-x:auto; border:1px solid var(--line); border-radius:16px}
+  table{border-collapse:collapse; width:100%; min-width:520px; font-size:.9rem}
+  th,td{padding:12px 14px; text-align:left; border-bottom:1px solid var(--line)}
+  thead th{background:var(--surface-2); font-family:var(--sans); font-weight:800; font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; color:var(--muted)}
+  tbody tr:last-child td{border-bottom:0}
+  td b{color:var(--bright); font-variant-numeric:tabular-nums}
+  .plan-name{font-weight:800}
+  .services{margin-top:14px; display:flex; flex-wrap:wrap; gap:8px}
+  .svc{font-size:.82rem; padding:7px 12px; border-radius:999px; border:1px solid var(--line); background:var(--surface)}
+  .svc b{color:var(--bright); font-variant-numeric:tabular-nums}
+
+  /* por que nosotros */
+  .why{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
+  @media (max-width:760px){ .why{grid-template-columns:1fr 1fr} }
+  .why .item{border:1px solid var(--line); border-radius:14px; padding:16px; background:var(--surface)}
+  .why .big{font-size:1.6rem}
+  .why h3{font-family:var(--sans); font-size:.92rem; font-weight:800; margin:8px 0 4px}
+  .why p{margin:0; font-size:.8rem; color:var(--muted)}
+
+  /* cta */
+  .cta{text-align:center; background:linear-gradient(135deg,var(--honey),var(--deep)); color:#231605; border-radius:22px; padding:40px 24px; margin:36px 0}
+  .cta h2{color:#231605; font-size:clamp(1.5rem,3.4vw,2.1rem); margin:0 0 8px}
+  .cta p{max-width:46ch; margin:0 auto 20px; color:rgba(35,22,5,.85)}
+  .btn{display:inline-flex; align-items:center; gap:8px; font-weight:800; text-decoration:none; padding:13px 24px; border-radius:999px; background:#231605; color:var(--bright)}
+
+  footer{padding:26px 0 46px; color:var(--muted); font-size:.82rem; text-align:center}
+
+  .theme-btn{position:fixed; bottom:18px; right:18px; z-index:40; width:44px; height:44px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--cream); cursor:pointer; font-size:1.1rem; box-shadow:0 8px 24px -10px #000}
+  :focus-visible{outline:2px solid var(--bright); outline-offset:3px; border-radius:6px}
+
+  @media print{
+    body{background:#fff; color:#000; background-image:none}
+    .theme-btn{display:none}
+    section,.cover{break-inside:avoid; border-color:#ddd}
+    .cta{background:#f4ede0; color:#000; -webkit-print-color-adjust:exact; print-color-adjust:exact}
+  }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd778"/><stop offset="1" stop-color="#d98a12"/></linearGradient>
+  <symbol id="hm" viewBox="0 0 60 66"><path d="M30 2 56 17V49L30 64 4 49V17Z" fill="none" stroke="url(#gH)" stroke-width="3"/><path d="M30 16 44 24V40L30 48 16 40V24Z" fill="url(#gH)" opacity=".9"/><circle cx="30" cy="32" r="4.5" fill="#160f07"/></symbol>
+</defs></svg>
+
+<header class="cover">
+  <div class="wrap">
+    <div class="brand"><svg class="hx"><use href="#hm"/></svg> Panal</div>
+    <span class="eyebrow" style="display:block;margin-top:22px">Ecosistema modular de gestión</span>
+    <h1>Tu negocio, armado <span class="hl">celda por celda.</span></h1>
+    <p class="lede">Un solo sistema para producción, inventario, ventas, deudas y pedidos — desde el teléfono y por voz. El mismo motor probado en nuestras fábricas, hecho producto para cualquier negocio de comida.</p>
+    <div class="meta">
+      <span class="pill">🍦 Heladería</span>
+      <span class="pill">🥖 Panadería</span>
+      <span class="pill">🍔 Comida rápida</span>
+      <span class="pill">🚚 Distribuidora</span>
+      <span class="pill">🏭 Fábrica</span>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <span class="eyebrow">El problema</span>
+      <h2>El desorden cuesta plata todos los días</h2>
+      <p>Sin un sistema, el negocio depende de la memoria y de mucha administración para que todo cuadre.</p>
+    </div>
+    <div class="ba">
+      <div class="col bad">
+        <h3>😵‍💫 Antes</h3>
+        <ul>
+          <li>Pedidos perdidos entre chats, redes y papeles.</li>
+          <li>Ventas y abonos anotados en un cuaderno… o en ninguno.</li>
+          <li>No sabes cuánto ganas ni qué línea te deja pérdida.</li>
+          <li>Stock “a ojo”: quiebres y mermas sin aviso.</li>
+          <li>Cada persona nueva depende de otra para aprender.</li>
+        </ul>
+      </div>
+      <div class="col good">
+        <h3>✅ Con Panal</h3>
+        <ul>
+          <li>Una bandeja central: ningún pedido se pierde.</li>
+          <li>Cada venta y pago queda; la cuenta corriente al día.</li>
+          <li>Costos, ganancias, rendimiento y reporte diario a tu WhatsApp.</li>
+          <li>Inventario con alertas antes de que falte algo.</li>
+          <li>Capacitación con firma y galería “así debe quedar”.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <span class="eyebrow">La solución · 11 celdas</span>
+      <h2>Toma las celdas que necesitas hoy</h2>
+      <p>Cada módulo funciona solo y encaja con los demás. Empiezas con una celda y sumas cuando quieras, sin rehacer nada.</p>
+    </div>
+    <div class="mods" id="mods"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <span class="eyebrow">Cómo funciona</span>
+      <h2>Toda la cadena, conectada</h2>
+      <p>El dato viaja solo de una celda a otra — de la materia prima a la caja.</p>
+    </div>
+    <div class="flow">
+      <div class="step"><div class="k">01</div><span class="ic">📦</span><h3>Insumos</h3><p>Entran y se descuentan por receta.</p></div>
+      <div class="step"><div class="k">02</div><span class="ic">🏭</span><h3>Producción</h3><p>Se fabrica por litros y entra a bodega.</p></div>
+      <div class="step"><div class="k">03</div><span class="ic">🛒</span><h3>Venta</h3><p>Local, ruta o delivery.</p></div>
+      <div class="step"><div class="k">04</div><span class="ic">💵</span><h3>Cobranza</h3><p>Pagos, abonos y deudas al día.</p></div>
+      <div class="step"><div class="k">05</div><span class="ic">📊</span><h3>Panel</h3><p>Reporte, alertas y prioridades del día.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <span class="eyebrow">Un producto, varios sectores</span>
+      <h2>El mismo sistema, con el nombre de tu rubro</h2>
+      <p>Las áreas se renombran solas según tu negocio. Por dentro, el mismo motor.</p>
+    </div>
+    <div class="secs" id="secs"></div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <span class="eyebrow">Planes y valores</span>
+      <h2>Empiezas por lo que te aprieta, y creces</h2>
+      <p>Valores referenciales en pesos chilenos. La instalación es una vez; la mensualidad cubre soporte, hosting y mejoras.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Plan</th><th>Ideal para</th><th>Instalación</th><th>Mensual</th></tr></thead>
+        <tbody>
+          <tr><td class="plan-name">Básico</td><td>Hasta 3 celdas (vender y ordenar)</td><td><b>$250.000 – 400.000</b></td><td><b>$25.000 – 40.000</b></td></tr>
+          <tr><td class="plan-name">Producción</td><td>Hasta 6 celdas (fabricar + vender)</td><td><b>$450.000 – 700.000</b></td><td><b>$40.000 – 60.000</b></td></tr>
+          <tr><td class="plan-name">Completo</td><td>7+ celdas (toda la operación)</td><td><b>$900.000 – 1.500.000</b></td><td><b>$60.000 – 100.000</b></td></tr>
+          <tr><td class="plan-name">A medida</td><td>Necesidades específicas</td><td><b>a definir</b></td><td><b>a definir</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="services">
+      <span class="svc">💻 Landing sola <b>$99.000</b></span>
+      <span class="svc">🗂️ Catálogo / tienda <b>$120.000</b></span>
+      <span class="svc">📣 Marketing y redes <b>$150.000/mes</b></span>
+      <span class="svc">📘 Creación fanpage <b>$120.000</b></span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <span class="eyebrow">Por qué es distinto</span>
+      <h2>Hecho para el equipo real, no para expertos</h2>
+    </div>
+    <div class="why">
+      <div class="item"><span class="big">🎙️</span><h3>Funciona por voz</h3><p>El operario dicta en español. Botones grandes, cero complicación.</p></div>
+      <div class="item"><span class="big">💬</span><h3>Pedidos que llegan solos</h3><p>WhatsApp, Facebook e Instagram entran automático y se despachan.</p></div>
+      <div class="item"><span class="big">🔒</span><h3>Cada quien ve lo suyo</h3><p>Los costos, márgenes y totales quedan solo para ti.</p></div>
+      <div class="item"><span class="big">🏭</span><h3>Probado en la práctica</h3><p>Nació en nuestras fábricas y locales; hoy nos ahorra millones.</p></div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap">
+  <div class="cta">
+    <h2>¿Lo vemos con tu propio negocio?</h2>
+    <p>Cuéntanos cómo operas y armamos tu primera celda. Sin compromiso, sin rehacer nada después.</p>
+    <a class="btn" href="https://wa.me/56928005332?text=Hola!%20Quiero%20info%20de%20Panal%20para%20mi%20negocio%20%F0%9F%90%9D" target="_blank" rel="noopener">💬 Escríbeme por WhatsApp →</a>
+  </div>
+</div>
+
+<footer>🍯 Panal · Ecosistema modular de gestión — celda por celda</footer>
+
+<button class="theme-btn" onclick="toggleTheme()" title="Tema claro/oscuro" aria-label="Cambiar tema">🌓</button>
+
+<script>
+  const MODS = [
+    {e:"🏭", n:"01", t:"Producción y calidad", d:"Fabrica por litros, rendimiento aprendido, cierre de turno y mermas.", star:true},
+    {e:"🛒", n:"02", t:"Ventas · Vendedor", d:"Rutas, medios de pago, abonos y precio por volumen.", star:true},
+    {e:"🛵", n:"03", t:"Repartos y retiros", d:"Bandeja central que despacha a local, bodega o repartidor.", star:true},
+    {e:"📦", n:"04", t:"Inventario", d:"Productos, insumos y materiales con alertas de stock.", star:false},
+    {e:"🧾", n:"05", t:"Clientes y deudas", d:"Fichas, historial y cuenta corriente al día.", star:false},
+    {e:"📊", n:"06", t:"Panel · Socio administrativo", d:"Reporte, alertas y 3 prioridades del día; análisis de producción.", star:false},
+    {e:"🧮", n:"07", t:"Facturación", d:"Notas, guías y folios; con extensión, al SII real.", star:false},
+    {e:"📖", n:"08", t:"Recetas y capacitaciones", d:"Precio automático y capacitación con firma + galería.", star:false},
+    {e:"📅", n:"09", t:"Agenda y citas", d:"Reservas, calendario y recordatorios (servicios).", star:false},
+    {e:"🌱", n:"10", t:"Mejoras y proyecciones", d:"Dicta pendientes, ponles fecha y táchalos.", star:false},
+    {e:"🐝", n:"11", t:"Tienda y Portal del Cliente", d:"Catálogo web, pedidos y un portal “Mi Cuenta” por cliente.", star:true},
+  ];
+  const SECS = [
+    {e:"🍦", t:"Heladería / Fábrica", d:"Cremas y paletas por litros, ruta y web."},
+    {e:"🥖", t:"Panadería / Pastelería", d:"Amasado, horno, mostrador y encargos."},
+    {e:"🍔", t:"Comida rápida / Restaurante", d:"Pedido → cocina → delivery, sin perder ninguno."},
+    {e:"🚚", t:"Distribuidora / Mayorista", d:"Ruta, precio por volumen y cobranza al día."},
+    {e:"🏭", t:"Fábrica / Manufactura", d:"Líneas y lotes, compras y trazabilidad."},
+    {e:"💼", t:"Servicios / Consultoría", d:"Agenda, citas y cobros."},
+  ];
+  const mods = document.getElementById("mods");
+  MODS.forEach(m => {
+    const el = document.createElement("div");
+    el.className = "mod" + (m.star ? " star" : "");
+    el.innerHTML = `<div class="top"><span class="em">${m.e}</span>${m.star?'<span class="st">★</span>':''}<span class="n">${m.n}</span></div><h3>${m.t}</h3><p>${m.d}</p>`;
+    mods.appendChild(el);
+  });
+  const secs = document.getElementById("secs");
+  SECS.forEach(s => {
+    const el = document.createElement("div");
+    el.className = "scard";
+    el.innerHTML = `<span class="se">${s.e}</span><div><b>${s.t}</b><small>${s.d}</small></div>`;
+    secs.appendChild(el);
+  });
+  function toggleTheme(){
+    const r = document.documentElement;
+    const cur = r.getAttribute("data-theme") || (matchMedia("(prefers-color-scheme:dark)").matches ? "dark" : "light");
+    const n = cur === "dark" ? "light" : "dark";
+    r.setAttribute("data-theme", n);
+    try { localStorage.setItem("panal-theme", n); } catch(e){}
+  }
+  try { const t = localStorage.getItem("panal-theme"); if (t) document.documentElement.setAttribute("data-theme", t); } catch(e){}
+</script>

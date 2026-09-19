@@ -12,7 +12,7 @@
   *{box-sizing:border-box}
   body{margin:0; background:var(--ground); color:var(--cream); font-family:var(--sans); line-height:1.55;
     background-image:radial-gradient(900px 360px at 85% -6%, rgba(246,168,33,.09), transparent 60%)}
-  .wrap{max-width:940px; margin-inline:auto; padding:22px}
+  .wrap{max-width:980px; margin-inline:auto; padding:22px}
   h1,h2{margin:0; text-wrap:balance}
   .mono{font-family:var(--mono)}
   .eyebrow{font-family:var(--mono); text-transform:uppercase; letter-spacing:.22em; font-size:.68rem; color:var(--honey)}
@@ -33,8 +33,27 @@
   .chip .d{width:8px;height:8px;border-radius:50%;background:var(--line)}
   .chip.on .d{background:var(--honey); box-shadow:0 0 8px var(--honey)}
   .chip.ext.on .d{background:var(--teal); box-shadow:0 0 8px var(--teal)}
-  .presets .chip{background:var(--surface-2)}
   select{background:#0e0a05; color:var(--cream); border:1px solid var(--line); border-radius:9px; padding:8px 10px; font-size:.9rem}
+
+  /* selector de sector */
+  .sectors{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px}
+  .sector{display:flex; flex-direction:column; gap:2px; padding:13px 14px; border-radius:14px; border:1px solid var(--line);
+    background:var(--surface-2); cursor:pointer; text-align:left; transition:.14s; color:var(--cream)}
+  .sector:hover{border-color:var(--honey); transform:translateY(-2px)}
+  .sector.on{border-color:var(--honey); background:rgba(246,168,33,.12); box-shadow:0 10px 30px -18px var(--glow)}
+  .sector .se{font-size:1.5rem}
+  .sector b{font-size:.92rem; font-weight:800}
+  .sector small{color:var(--muted); font-size:.72rem; line-height:1.35}
+
+  /* pitch por sector */
+  .pitch{border:1px solid var(--honey); border-radius:16px; padding:16px 18px; margin-bottom:16px;
+    background:linear-gradient(180deg,rgba(246,168,33,.12),#140d07)}
+  .pitch .who{font-family:var(--mono); font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--honey)}
+  .pitch h3{margin:4px 0 6px; font-size:1.15rem}
+  .pitch p{margin:0; color:#e7dcc4; font-size:.9rem}
+  .areas{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
+  .area{font-size:.74rem; padding:4px 10px; border-radius:999px; background:#0e0a05; border:1px solid var(--line); color:var(--muted)}
+  .area b{color:var(--bright); font-weight:700}
 
   .quote{position:sticky; bottom:0; border:1px solid var(--honey); border-radius:18px;
     background:linear-gradient(180deg,#1c1409,#120b05); padding:18px; box-shadow:0 -14px 40px -20px #000; margin-top:8px}
@@ -48,8 +67,9 @@
   .detalle{margin-top:12px; font-size:.85rem; line-height:1.7}
   .detalle .dl b{color:var(--cream)} .detalle .dl{color:var(--muted)}
   .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px}
-  .btn{cursor:pointer; border:0; border-radius:999px; font-weight:700; font-family:var(--sans); padding:10px 18px; font-size:.88rem}
+  .btn{cursor:pointer; border:0; border-radius:999px; font-weight:700; font-family:var(--sans); padding:10px 18px; font-size:.88rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px}
   .btn-h{background:linear-gradient(180deg,var(--bright),var(--honey)); color:#2a1a05}
+  .btn-g{background:transparent; color:var(--cream); border:1px solid var(--line)}
   .msg{font-size:.82rem; color:var(--good)}
   :focus-visible{outline:2px solid var(--bright); outline-offset:2px}
 </style>
@@ -60,13 +80,21 @@
 </defs></svg>
 
 <div class="wrap">
-  <header class="top"><svg class="hex"><use href="#hm"/></svg><span class="brand">Panal <small>Cotizador</small></span></header>
-  <p class="eyebrow">Arma el panal del cliente y ve el precio al instante</p>
-  <p class="hint" style="margin:6px 0 16px">Elige un rubro (rellena solo) o marca las celdas y extensiones. El plan y el rango de precio se calculan solos, con el desglose de lo que incluye. Para el documento formal, usa el <b>Generador de Contrato</b>.</p>
+  <header class="top"><svg class="hex"><use href="#hm"/></svg><span class="brand">Panal <small>Cotizador por sector</small></span></header>
+  <p class="eyebrow">Elige el sector y arma el panal a su medida</p>
+  <p class="hint" style="margin:6px 0 16px">Cada sector parte con un <b>panal recomendado</b>, sus <b>áreas renombradas</b> y un discurso a medida. Ajusta celdas y extensiones; el plan y el rango de precio se calculan solos. Para el documento formal, usa el <b>Generador de Contrato</b>.</p>
 
   <div class="card">
-    <h2>🏭 Rubro (relleno rápido)</h2>
-    <div class="chips presets" id="presets"></div>
+    <h2>🏭 Sector</h2>
+    <p class="sub">Rellena todo con el pack pensado para ese rubro.</p>
+    <div class="sectors" id="sectors"></div>
+  </div>
+
+  <div class="pitch" id="pitch" hidden>
+    <span class="who" id="pWho"></span>
+    <h3 id="pTitle"></h3>
+    <p id="pText"></p>
+    <div class="areas" id="pAreas"></div>
   </div>
 
   <div class="card">
@@ -108,6 +136,7 @@
     <div class="detalle" id="detalle"></div>
     <div class="row">
       <button class="btn btn-h" id="copiar">📋 Copiar cotización</button>
+      <a class="btn btn-g" id="wa" target="_blank" rel="noopener">💬 Enviar por WhatsApp</a>
       <span class="msg" id="msg"></span>
     </div>
   </div>
@@ -115,33 +144,73 @@
 
 <script>
 (function(){
+  var WA="56928005332";
   var MODULOS=[
-    {k:"produccion",e:"🏭",n:"Producción y calidad"},{k:"ventas",e:"🛒",n:"Ventas · Vendedor"},{k:"repartos",e:"🛵",n:"Repartos y retiros"},
-    {k:"inventario",e:"📦",n:"Inventario"},{k:"clientes",e:"🧾",n:"Clientes y deudas"},{k:"panel",e:"📊",n:"Panel central"},
-    {k:"facturacion",e:"🧮",n:"Facturación"},{k:"recetas",e:"📖",n:"Recetas"},{k:"tienda",e:"🐝",n:"Tienda y Portal del Cliente"}
+    {k:"produccion",e:"🏭",n:"Producción y calidad (litros, cierre de turno)"},{k:"ventas",e:"🛒",n:"Ventas · Vendedor (precio por volumen)"},{k:"repartos",e:"🛵",n:"Repartos y retiros"},
+    {k:"inventario",e:"📦",n:"Inventario"},{k:"clientes",e:"🧾",n:"Clientes y deudas"},{k:"panel",e:"📊",n:"Panel · Socio administrativo"},
+    {k:"facturacion",e:"🧮",n:"Facturación"},{k:"recetas",e:"📖",n:"Recetas y capacitaciones"},{k:"agenda",e:"📅",n:"Agenda y citas"},
+    {k:"mejoras",e:"🌱",n:"Mejoras y proyecciones"},{k:"tienda",e:"🐝",n:"Tienda y Portal del Cliente"}
   ];
   var EXTENS=[
-    {k:"sii",e:"🧾",n:"Facturación electrónica (SII)"},{k:"cobranza",e:"📲",n:"Cobranza automática por WhatsApp"},
+    {k:"sii",e:"🧾",n:"Facturación electrónica (SII)"},{k:"cobranza",e:"📲",n:"Cobranza por WhatsApp"},
     {k:"compras",e:"🛒",n:"Compras y punto de reorden"},{k:"turnos",e:"🕒",n:"Turnos y ausencias"},
-    {k:"trazabilidad",e:"🔎",n:"Trazabilidad de lotes / calidad"},{k:"rentabilidad",e:"💹",n:"Rentabilidad por producto"}
+    {k:"trazabilidad",e:"🔎",n:"Trazabilidad de lotes / calidad"},{k:"rentabilidad",e:"💹",n:"Rentabilidad por producto"},
+    {k:"capacita",e:"🎓",n:"Capacitación · BPM · Metas · EPP"}
   ];
-  var SERVICIOS=[{k:"chatbot",e:"🤖",n:"Chatbot IA"},{k:"web",e:"🌐",n:"Página web / landing"},{k:"redes",e:"📣",n:"Administración de redes"},{k:"admin",e:"🔧",n:"Administración mensual"}];
+  var SERVICIOS=[{k:"chatbot",e:"🤖",n:"Chatbot IA"},{k:"web",e:"🌐",n:"Página web / landing"},{k:"redes",e:"📣",n:"Marketing y redes"},{k:"admin",e:"🔧",n:"Administración mensual"}];
   var PLAN={
     basico:{label:"Básico", impl:[250000,400000], mes:[25000,40000]},
     produccion:{label:"Producción", impl:[450000,700000], mes:[40000,60000]},
     completo:{label:"Completo", impl:[900000,1500000], mes:[60000,100000]},
     medida:{label:"A medida", impl:null, mes:null}
   };
-  var PRESETS=[
-    {k:"heladeria",e:"🍦",n:"Heladería", mods:["produccion","ventas","tienda","repartos","inventario","clientes","panel","facturacion","recetas"], ext:[]},
-    {k:"distribuidora",e:"🚚",n:"Distribuidora", mods:["ventas","tienda","repartos","inventario","clientes","panel","facturacion"], ext:["cobranza","sii"]},
-    {k:"comida",e:"🍔",n:"Comida rápida", mods:["ventas","tienda","repartos","inventario","recetas","panel"], ext:[]},
-    {k:"panaderia",e:"🥖",n:"Panadería", mods:["produccion","inventario","recetas","ventas","panel"], ext:[]},
-    {k:"fabrica",e:"🏭",n:"Fábrica", mods:["produccion","inventario","recetas","panel","facturacion"], ext:["compras","trazabilidad"]},
-    {k:"almacen",e:"🏪",n:"Almacén", mods:["ventas","inventario","panel"], ext:[]},
-    {k:"construccion",e:"🏗️",n:"Construcción", mods:["inventario","clientes","facturacion","ventas","panel"], ext:["compras"]},
-    {k:"manufactura",e:"🏭",n:"Manufactura", mods:["produccion","inventario","recetas","panel","facturacion"], ext:["trazabilidad","rentabilidad"]},
-    {k:"consultoria",e:"💼",n:"Consultoría", mods:["clientes","panel","facturacion"], ext:[]}
+  // Sectores: pack recomendado + pitch + áreas renombradas
+  var SECTORS=[
+    {k:"heladeria",e:"🍦",n:"Heladería / Fábrica de helados",
+     tag:"Fabricas por litros, vendes en ruta y web",
+     pitch:"Produces cremas y paletas <b>por litros</b>: Panal estima las unidades, aprende el rendimiento (maduración vs. overrun) y descuenta los insumos por receta. El cliente pide por la web con su precio y el reparto sale solo.",
+     areas:[["Producción","Cremas / Paletas por litros"],["Bodega","Insumos y sabores"],["Menú","Líneas / sabores"],["Venta","Ruta + distribución"],["Pedidos","Retiros y web"]],
+     mods:["produccion","ventas","tienda","repartos","inventario","clientes","panel","facturacion","recetas","mejoras"], ext:[]},
+    {k:"panaderia",e:"🥖",n:"Panadería / Pastelería",
+     tag:"Amasado, horno y mostrador al día",
+     pitch:"Controlas <b>amasado y horno por receta</b>, el stock de despensa baja solo y capacitas al personal nuevo con la galería “así debe quedar”. Mostrador y encargos, todo en el mismo panal.",
+     areas:[["Producción","Amasado / Horno"],["Bodega","Despensa"],["Menú","Tipos de pan"],["Venta","Mostrador + reparto"],["Pedidos","Encargos"]],
+     mods:["produccion","inventario","recetas","ventas","panel","clientes"], ext:[]},
+    {k:"comida",e:"🍔",n:"Comida rápida / Restaurante",
+     tag:"Pedido → cocina → delivery, sin perder ninguno",
+     pitch:"Los pedidos de <b>WhatsApp, web y redes</b> caen en una bandeja central, la cocina los ve y el stock baja por receta. Sale a delivery con mapa y el cliente ve su pedido en camino.",
+     areas:[["Producción","Cocina"],["Bodega","Almacén"],["Menú","Ítems / combos"],["Venta","Mostrador / Caja"],["Pedidos","Delivery / Pickup"]],
+     mods:["ventas","tienda","repartos","inventario","recetas","panel"], ext:[]},
+    {k:"distribuidora",e:"🚚",n:"Distribuidora / Mayorista",
+     tag:"Ruta, precio por volumen y cobranza al día",
+     pitch:"Vendes a negocios con <b>precio por volumen (tramos)</b> y lista por tipo de cliente. La cuenta corriente queda al día, la cobranza avisa por WhatsApp y el reparto se organiza por sector.",
+     areas:[["Producción","—"],["Bodega","Centro de distribución"],["Menú","Catálogo mayorista"],["Venta","Ruta + vendedores"],["Pedidos","Auto-registro de negocios"]],
+     mods:["ventas","tienda","repartos","inventario","clientes","panel","facturacion"], ext:["cobranza","sii"]},
+    {k:"fabrica",e:"🏭",n:"Fábrica / Manufactura",
+     tag:"Producción, insumos y trazabilidad",
+     pitch:"Fabricas <b>por líneas y lotes</b> con rendimiento aprendido, cierre de turno y mermas. Compras a proveedores con punto de reorden, trazabilidad por lote y rentabilidad por producto.",
+     areas:[["Producción","Fabricación por línea"],["Bodega","Materia prima"],["Menú","Líneas de producto"],["Venta","Distribución"],["Pedidos","Órdenes / retiros"]],
+     mods:["produccion","inventario","recetas","panel","facturacion","mejoras"], ext:["compras","trazabilidad","rentabilidad","capacita","sii"]},
+    {k:"almacen",e:"🏪",n:"Almacén / Minimarket",
+     tag:"Vender y controlar stock, simple",
+     pitch:"Lo esencial para <b>vender y no quebrar stock</b>: caja, inventario con alertas de mínimos y un panel con el reporte diario a tu WhatsApp.",
+     areas:[["Producción","—"],["Bodega","Estantería"],["Menú","Productos"],["Venta","Caja / Mostrador"],["Pedidos","—"]],
+     mods:["ventas","inventario","panel"], ext:[]},
+    {k:"consultoria",e:"💼",n:"Servicios / Consultoría",
+     tag:"Agenda, citas y cobros",
+     pitch:"El cliente <b>reserva la cita online</b>, paga la seña, recibe recordatorios y todo queda en su ficha. Facturas y llevas la cuenta al día sin planillas.",
+     areas:[["Producción","—"],["Bodega","—"],["Menú","Servicios"],["Venta","Agenda / Caja"],["Pedidos","Reservas"]],
+     mods:["agenda","clientes","panel","facturacion"], ext:[]},
+    {k:"construccion",e:"🏗️",n:"Construcción / Ferretería",
+     tag:"Materiales, clientes y facturación",
+     pitch:"Controlas <b>materiales y despacho</b>, llevas la ficha y deuda de cada cliente/obra y emites guías y facturas con recordatorio por RUT.",
+     areas:[["Producción","—"],["Bodega","Materiales"],["Menú","Catálogo"],["Venta","Cotización / Venta"],["Pedidos","Despacho a obra"]],
+     mods:["inventario","clientes","facturacion","ventas","panel","repartos"], ext:["compras","sii"]},
+    {k:"medida",e:"🛠️",n:"A medida",
+     tag:"Arma el panal desde cero",
+     pitch:"Parte con lo básico y suma celdas cuando quieras. Cuéntanos cómo operas y armamos tu primera celda.",
+     areas:[["Producción","—"],["Bodega","—"],["Menú","—"],["Venta","—"],["Pedidos","—"]],
+     mods:["inventario","panel"], ext:[]}
   ];
 
   function chip(cont, item, cls){
@@ -155,23 +224,49 @@
   EXTENS.forEach(function(x){ chip(document.getElementById('extens'), x, 'ext'); });
   SERVICIOS.forEach(function(s){ chip(document.getElementById('servicios'), s); });
 
-  PRESETS.forEach(function(p){
-    var b=document.createElement('button'); b.type='button'; b.className='chip'; b.innerHTML='<span class="d"></span>'+p.e+' '+p.n;
-    b.addEventListener('click', function(){
-      document.querySelectorAll('#modulos input').forEach(function(cb){ var on=p.mods.indexOf(cb.value)>=0; cb.checked=on; cb.closest('.chip').classList.toggle('on',on); });
-      document.querySelectorAll('#extens input').forEach(function(cb){ var on=(p.ext||[]).indexOf(cb.value)>=0; cb.checked=on; cb.closest('.chip').classList.toggle('on',on); });
-      document.getElementById('planSel').value='auto'; calc();
-    });
-    document.getElementById('presets').appendChild(b);
+  var sectorActual=null;
+  SECTORS.forEach(function(s){
+    var b=document.createElement('button'); b.type='button'; b.className='sector'; b.dataset.k=s.k;
+    b.innerHTML='<span class="se">'+s.e+'</span><b>'+s.n+'</b><small>'+s.tag+'</small>';
+    b.addEventListener('click', function(){ aplicarSector(s); });
+    document.getElementById('sectors').appendChild(b);
   });
+
+  function aplicarSector(s){
+    sectorActual=s;
+    document.querySelectorAll('.sector').forEach(function(b){ b.classList.toggle('on', b.dataset.k===s.k); });
+    document.querySelectorAll('#modulos input').forEach(function(cb){ var on=s.mods.indexOf(cb.value)>=0; cb.checked=on; cb.closest('.chip').classList.toggle('on',on); });
+    document.querySelectorAll('#extens input').forEach(function(cb){ var on=(s.ext||[]).indexOf(cb.value)>=0; cb.checked=on; cb.closest('.chip').classList.toggle('on',on); });
+    document.getElementById('planSel').value='auto';
+    // pitch
+    var p=document.getElementById('pitch'); p.hidden=false;
+    document.getElementById('pWho').textContent=s.e+' '+s.n;
+    document.getElementById('pTitle').textContent=s.tag;
+    document.getElementById('pText').innerHTML=s.pitch;
+    document.getElementById('pAreas').innerHTML=s.areas.filter(function(a){return a[1]!=="—";}).map(function(a){return '<span class="area">'+a[0]+': <b>'+a[1]+'</b></span>';}).join('');
+    calc();
+  }
 
   function sel(id){ return [].slice.call(document.querySelectorAll('#'+id+' input:checked')); }
   function names(id, arr){ return sel(id).map(function(c){ var it=arr.find(function(a){return a.k===c.value;}); return it? it.n : c.value; }); }
   function fmt(n){ return '$'+Number(n).toLocaleString('es-CL'); }
   function rango(a){ return a? fmt(a[0])+' – '+fmt(a[1]) : 'a definir'; }
   function planAuto(count){ return count<=3?'basico':(count<=6?'produccion':'completo'); }
-
   function planActual(nmods){ var f=document.getElementById('planSel').value; return f==='auto' ? (nmods? planAuto(nmods):'basico') : f; }
+
+  function cotizacionTexto(){
+    var mods=names('modulos',MODULOS), exts=names('extens',EXTENS), servs=names('servicios',SERVICIOS);
+    var planKey=planActual(mods.length); var p=PLAN[planKey];
+    return 'COTIZACIÓN PANAL\n'
+      +(sectorActual?('Sector: '+sectorActual.n+'\n'):'')
+      +'Plan: '+p.label+'\n'
+      +'Celdas: '+(mods.join(', ')||'—')+'\n'
+      +(exts.length?('Extensiones: '+exts.join(', ')+'\n'):'')
+      +(servs.length?('Servicios (aparte): '+servs.join(', ')+'\n'):'')
+      +'Implementación: '+(p.impl?rango(p.impl):'a definir')+'\n'
+      +'Mensualidad: '+(p.mes?rango(p.mes)+' /mes':'a definir')+'\n'
+      +'(Servicios extra se cotizan aparte. Valores referenciales.)';
+  }
 
   function calc(){
     var mods=names('modulos',MODULOS), exts=names('extens',EXTENS), servs=names('servicios',SERVICIOS);
@@ -185,24 +280,15 @@
     if(exts.length) d+='<div class="dl"><b>Extensiones:</b> '+exts.join(', ')+'</div>';
     if(servs.length) d+='<div class="dl"><b>Servicios (aparte):</b> '+servs.join(', ')+'</div>';
     document.getElementById('detalle').innerHTML=d;
+    document.getElementById('wa').href='https://wa.me/'+WA+'?text='+encodeURIComponent(cotizacionTexto());
   }
   document.getElementById('planSel').addEventListener('change', calc);
 
   document.getElementById('copiar').addEventListener('click', function(){
-    var mods=names('modulos',MODULOS), exts=names('extens',EXTENS), servs=names('servicios',SERVICIOS);
-    var planKey=planActual(mods.length); var p=PLAN[planKey];
-    var txt='COTIZACIÓN PANAL\n'
-      +'Plan: '+p.label+'\n'
-      +'Celdas: '+(mods.join(', ')||'—')+'\n'
-      +(exts.length?('Extensiones: '+exts.join(', ')+'\n'):'')
-      +(servs.length?('Servicios (aparte): '+servs.join(', ')+'\n'):'')
-      +'Implementación: '+(p.impl?rango(p.impl):'a definir')+'\n'
-      +'Mensualidad: '+(p.mes?rango(p.mes)+' /mes':'a definir')+'\n'
-      +'(Servicios extra se cotizan aparte. Valores referenciales.)';
-    navigator.clipboard.writeText(txt).then(function(){ var m=document.getElementById('msg'); m.textContent='✅ Cotización copiada'; setTimeout(function(){m.textContent='';},2500); });
+    navigator.clipboard.writeText(cotizacionTexto()).then(function(){ var m=document.getElementById('msg'); m.textContent='✅ Cotización copiada'; setTimeout(function(){m.textContent='';},2500); });
   });
 
-  document.querySelector('#presets .chip').click(); // arranca con heladería
+  aplicarSector(SECTORS[0]); // arranca con heladería
 })();
 </script>
 
