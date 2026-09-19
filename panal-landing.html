@@ -901,4 +901,93 @@
 })();
 </script>
 
+<!-- ============ Portada por sector: la parte visual se enciende al elegir el rubro ============ -->
+<style id="sectorFx">
+  :root{ --sector:#f6a821; --sector-glow:rgba(246,168,33,.45); }
+  .eyebrow{ color:var(--sector) !important; }
+  .hero h1 .lit{ color:var(--sector) !important; text-shadow:0 0 30px var(--sector-glow) !important; }
+  .bee-stage .halo{ background:radial-gradient(circle, var(--sector-glow), transparent 62%) !important; }
+  .cell:hover, .flow-steps li:hover, .step:hover, .svc-card:hover{
+    border-color:var(--sector) !important; box-shadow:0 18px 40px -22px var(--sector-glow) !important; }
+  .cell.star{ border-color:color-mix(in srgb, var(--sector) 45%, var(--line)) !important; }
+  .btn-honey{ background:linear-gradient(180deg, color-mix(in srgb,var(--sector) 55%,#ffce6a), var(--sector)) !important; }
+  #comb{ opacity:.9; }
+  /* chip para cambiar rubro */
+  #rubroChip{ position:fixed; right:14px; bottom:14px; z-index:50; display:none; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:.74rem; padding:8px 14px; border-radius:999px; cursor:pointer;
+    border:1px solid var(--sector); color:var(--sector); background:color-mix(in srgb, var(--sector) 14%, #100b06);
+    box-shadow:0 10px 30px -14px #000; }
+  #rubroChip:hover{ background:color-mix(in srgb, var(--sector) 22%, #100b06); }
+  /* gate */
+  #pGate{ position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; padding:26px;
+    background:radial-gradient(1200px 620px at 50% -12%, rgba(246,168,33,.16), transparent 60%), #0b0704; overflow:auto; }
+  #pGate.hide{ opacity:0; visibility:hidden; transition:opacity .45s ease, visibility .45s ease; }
+  #pGate .gbox{ max-width:820px; width:100%; text-align:center; }
+  #pGate .glogo{ font-size:2.4rem; filter:drop-shadow(0 0 16px rgba(246,168,33,.6)); }
+  #pGate .geye{ font-family:var(--mono); text-transform:uppercase; letter-spacing:.24em; font-size:.7rem; color:#f6a821; margin-top:10px }
+  #pGate h2{ font-family:var(--sans); font-size:clamp(1.7rem,4.6vw,2.6rem); font-weight:800; margin:8px 0 6px; color:#f4ecd8; letter-spacing:-.02em }
+  #pGate p.gsub{ color:#a99a7c; margin:0 auto 26px; max-width:46ch }
+  #pGate .ggrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr)); gap:12px }
+  #pGate button.sx{ --sc:#f6a821; display:flex; flex-direction:column; align-items:center; gap:5px; padding:22px 14px; cursor:pointer;
+    border:1.5px solid #33281a; border-radius:16px; background:linear-gradient(180deg,#19110a,#120c06); color:#f4ecd8;
+    transition:transform .14s ease, border-color .14s ease, box-shadow .28s ease }
+  #pGate button.sx:hover{ transform:translateY(-4px); border-color:var(--sc); box-shadow:0 18px 40px -20px var(--sc) }
+  #pGate button.sx .e{ font-size:2.1rem }
+  #pGate button.sx b{ font-size:.92rem; font-weight:800 }
+  #pGate button.sx small{ color:#a99a7c; font-size:.72rem; line-height:1.3 }
+  #pGate .gskip{ margin-top:20px; background:none; border:0; color:#a99a7c; font-size:.8rem; cursor:pointer; text-decoration:underline }
+  @media (prefers-reduced-motion:reduce){ #pGate.hide{ transition:none } }
+</style>
+<script>
+(function(){
+  var SECTORS=[
+    {k:"heladeria",e:"🍦",n:"Heladería",t:"Cremas y paletas por litros",c:"#ff5ea8"},
+    {k:"panaderia",e:"🥖",n:"Panadería",t:"Amasado, horno y mostrador",c:"#e8a33c"},
+    {k:"comida",e:"🍔",n:"Comida rápida",t:"Pedido → cocina → delivery",c:"#f0653f"},
+    {k:"distribuidora",e:"🚚",n:"Distribuidora",t:"Ruta, volumen y cobranza",c:"#4f9dff"},
+    {k:"fabrica",e:"🏭",n:"Fábrica",t:"Líneas, lotes y trazabilidad",c:"#45c9bb"},
+    {k:"almacen",e:"🏪",n:"Almacén",t:"Vender y controlar stock",c:"#45c46b"},
+    {k:"consultoria",e:"💼",n:"Servicios",t:"Agenda, citas y cobros",c:"#b18bff"},
+    {k:"construccion",e:"🏗️",n:"Construcción",t:"Materiales y despacho",c:"#ff9a3c"},
+    {k:"medida",e:"🛠️",n:"A medida",t:"Arma tu panal desde cero",c:"#e0921a"},
+  ];
+  var KEY="panal-sector", root=document.documentElement;
+
+  var gate=document.createElement("div"); gate.id="pGate";
+  gate.innerHTML='<div class="gbox"><div class="glogo">🍯</div>'
+    +'<div class="geye">Panal · a tu medida</div>'
+    +'<h2>¿Qué tipo de negocio tienes?</h2>'
+    +'<p class="gsub">Elige tu rubro y armamos la vista para ti. El mismo motor, con el color y las áreas de tu negocio.</p>'
+    +'<div class="ggrid" id="ggrid"></div>'
+    +'<button class="gskip" id="gskip">Ver todo sin elegir →</button></div>';
+  document.body.appendChild(gate);
+  var grid=gate.querySelector("#ggrid");
+  SECTORS.forEach(function(s){
+    var b=document.createElement("button"); b.className="sx"; b.style.setProperty("--sc",s.c);
+    b.innerHTML='<span class="e">'+s.e+'</span><b>'+s.n+'</b><small>'+s.t+'</small>';
+    b.onclick=function(){ elegir(s); }; grid.appendChild(b);
+  });
+  gate.querySelector("#gskip").onclick=function(){ cerrar(); };
+
+  var chip=document.createElement("button"); chip.id="rubroChip";
+  chip.onclick=function(){ abrir(); }; document.body.appendChild(chip);
+
+  function aplicar(s){
+    root.style.setProperty("--sector", s.c);
+    root.style.setProperty("--sector-glow", "color-mix(in srgb, "+s.c+" 45%, transparent)");
+    var eye=document.querySelector(".hero .eyebrow");
+    if(eye) eye.innerHTML='🐝 Panal para tu <b style="color:'+s.c+'">'+s.n+'</b>';
+    chip.innerHTML='<span>'+s.e+'</span> Cambiar rubro';
+    chip.style.display='inline-flex';
+  }
+  function elegir(s){ try{ localStorage.setItem(KEY, s.k); }catch(e){} aplicar(s); cerrar(); }
+  function cerrar(){ gate.classList.add("hide"); }
+  function abrir(){ gate.classList.remove("hide"); }
+
+  var saved=null; try{ saved=localStorage.getItem(KEY); }catch(e){}
+  var s0=SECTORS.filter(function(x){return x.k===saved;})[0];
+  if(s0){ aplicar(s0); cerrar(); }   // ya eligió antes: aplica y no bloquea
+})();
+</script>
+
 </body></html>
