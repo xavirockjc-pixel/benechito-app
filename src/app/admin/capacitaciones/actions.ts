@@ -13,6 +13,7 @@ function datos(formData: FormData) {
     urlVideo: String(formData.get("urlVideo") ?? "").trim() || null,
     pasos: String(formData.get("pasos") ?? "").trim() || null,
     productoId: String(formData.get("productoId") ?? "").trim() || null,
+    linea: String(formData.get("linea") ?? "").trim() || null,
     rol: String(formData.get("rol") ?? "todos"),
   };
 }

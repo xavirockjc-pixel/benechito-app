@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { CATEGORIAS_CAP, categoriaCapLabel, ROLES_FORM, rolFormLabel, urlEmbed } from "@/lib/dominio/checklists";
+import { LINEAS_PRODUCCION, lineaLabel } from "@/lib/dominio/produccion";
 import { crearCapacitacion, toggleCapacitacion, borrarCapacitacion } from "./actions";
 import MicDictado from "@/components/MicDictado";
 
@@ -43,6 +44,12 @@ export default async function CapacitacionesPage() {
             </select>
           </label>
         </div>
+        <label className="block text-sm font-bold text-slate-700">Pestaña por producto (opcional)
+          <select name="linea" defaultValue="" className={inputCls}>
+            <option value="">General (todas)</option>
+            {LINEAS_PRODUCCION.map((l) => <option key={l} value={l}>{lineaLabel[l] ?? l}</option>)}
+          </select>
+        </label>
         <label className="block text-sm font-bold text-slate-700">Enlace del video (YouTube o Drive)
           <input name="urlVideo" placeholder="https://youtu.be/…" className={inputCls} />
         </label>

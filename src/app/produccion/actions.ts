@@ -580,6 +580,43 @@ export async function crearNotaProduccion(formData: FormData) {
   redirect("/produccion/bitacora?ok=1");
 }
 
+/** El trabajador se identifica por su nombre para ver y firmar capacitaciones (constancia). */
+export async function identificarTrabajadorCap(formData: FormData) {
+  const nombre = String(formData.get("trabajador") ?? "").trim();
+  if (nombre) {
+    const c = await cookies();
+    c.set("cap_trab", nombre, { httpOnly: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 12 });
+  }
+  redirect("/produccion/capacitaciones");
+}
+
+/** Cierra la identificación (para que firme otro trabajador). */
+export async function salirTrabajadorCap() {
+  const c = await cookies();
+  c.delete("cap_trab");
+  redirect("/produccion/capacitaciones");
+}
+
+/**
+ * Firma una capacitación como leída. Queda tiqueada para ESE trabajador, con su
+ * nombre y la fecha/hora (copia/constancia). No duplica si ya la firmó.
+ */
+export async function firmarCapacitacion(formData: FormData) {
+  const capacitacionId = String(formData.get("capacitacionId") ?? "").trim();
+  const c = await cookies();
+  const trabajador = (c.get("cap_trab")?.value ?? "").trim();
+  if (!capacitacionId || !trabajador) redirect("/produccion/capacitaciones");
+  const u = await usuarioActual();
+  const ya = await prisma.capacitacionVista.findFirst({ where: { capacitacionId, usuarioNombre: trabajador } });
+  if (!ya) {
+    await prisma.capacitacionVista.create({
+      data: { capacitacionId, usuarioId: u?.sub ?? null, usuarioNombre: trabajador },
+    });
+  }
+  revalidatePath("/produccion/capacitaciones");
+  redirect("/produccion/capacitaciones?firmado=1");
+}
+
 /** Marca una observación de la bitácora como resuelta / la reabre. */
 export async function toggleNotaProduccion(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();

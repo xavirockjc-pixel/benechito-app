@@ -1172,6 +1172,7 @@ model Capacitacion {
   urlVideo    String?  // enlace YouTube/Drive
   pasos       String?  // texto paso a paso (opcional)
   productoId  String?  // enlazar a un producto/receta (sin FK dura)
+  linea       String?  // producto/área (tuyyo | cremas | trufas | cuchufli...); null = general
   rol         String   @default("todos")
   orden       Int      @default(0)
   activo      Boolean  @default(true)
