@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { abrirCaja, sesionAbierta } from "./actions";
 import CajaPOS from "./CajaPOS";
-import ContadorEfectivo from "./ContadorEfectivo";
+import AbrirCajaEfectivo from "./AbrirCajaEfectivo";
 import MovCajaLocalForm from "./MovCajaLocalForm";
 import RetirosDepto from "@/app/_shared/RetirosDepto";
 
@@ -19,8 +19,7 @@ export default async function CajaPage() {
         <h1 className="text-xl font-extrabold text-slate-900">Abrir caja</h1>
         <p className="mt-1 text-sm text-slate-500">¿Con cuánto efectivo de cambio partes hoy?</p>
         <form action={abrirCaja} className="mt-4 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="mb-2 text-sm font-bold text-slate-700">Cuenta el efectivo de cambio con que partes:</p>
-          <ContadorEfectivo name="fondo" />
+          <AbrirCajaEfectivo />
           <button className="mt-4 w-full rounded-xl bg-[#0f7a44] py-3 text-base font-extrabold text-white shadow-sm active:brightness-110">
             Abrir caja
           </button>

@@ -11,7 +11,7 @@ export default async function ReiniciarPage({ searchParams }: { searchParams: Pr
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-extrabold text-slate-900">Empezar de cero (reiniciar números)</h1>
+      <h1 className="text-2xl font-extrabold text-slate-900">Reiniciar números (empezar de cero)</h1>
       <p className="mt-1 text-sm text-slate-500">
         Deja en cero los <b>números</b> de las secciones que elijas para partir limpio. Úsalo para arrancar un nuevo
         período o si algo se desconfiguró. <b>No borra</b> catálogo, precios, clientes, usuarios, equipo, recetas ni

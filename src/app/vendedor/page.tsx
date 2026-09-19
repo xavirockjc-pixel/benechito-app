@@ -112,10 +112,9 @@ export default async function VendedorHome({
         </div>
 
         {/* Acciones rápidas */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2">
           <AccionRapida href="/vendedor/venta-rapida" icon="🛒" label="Vender rápido" color="#1479c4" />
           <AccionRapida href="/vendedor/nuevo" icon="➕" label="Cliente nuevo" color="#0f766e" />
-          <AccionRapida href="/vendedor?t=cat" icon="🛍️" label="Catálogo" color="#b45309" />
         </div>
 
         {/* Pedidos agendados para hoy */}
@@ -176,10 +175,6 @@ export default async function VendedorHome({
               ))}
             </div>
           )}
-
-          <Link href="/vendedor/nuevo" className="mt-3 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#0f766e]/40 py-3 text-sm font-extrabold text-[#0f766e] active:bg-teal-50">
-            ➕ Crear cliente nuevo
-          </Link>
         </section>
 
         {/* Cerrar turno: total vendido y cuadre de mercadería */}

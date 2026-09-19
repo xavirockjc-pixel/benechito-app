@@ -142,16 +142,16 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId
           className="w-full rounded-lg border-2 border-[#0f766e] px-3 py-2.5 text-sm" />
       )}
 
-      {/* Recomendación de la central (sugerencia, no obligación) */}
+      {/* Recomendación de la central (sugerencia, no obligación) — colapsable */}
       {notasRec.length > 0 && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
-          <p className="mb-1 text-xs font-extrabold text-amber-700">💡 Recomendación (no obligatorio)</p>
-          <ul className="space-y-0.5">
+        <details className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <summary className="cursor-pointer text-xs font-extrabold text-amber-700">💡 {notasRec.length} recomendación{notasRec.length === 1 ? "" : "es"} (no obligatorio) ▾</summary>
+          <ul className="mt-1 space-y-0.5">
             {notasRec.map((n, i) => (
               <li key={i} className="text-sm font-semibold text-amber-900">• {n}</li>
             ))}
           </ul>
-        </div>
+        </details>
       )}
 
       {/* Sabores + cuántos */}

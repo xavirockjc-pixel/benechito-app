@@ -5,13 +5,15 @@ import { sesionAbierta } from "./actions";
 // Recuerda abrir la Caja Local y la Caja Vecina al empezar el día.
 export default async function AvisoAperturas() {
   const hoy0 = new Date(); hoy0.setHours(0, 0, 0, 0);
-  const [sesionLocal, aperturaCV] = await Promise.all([
+  const [sesionLocal, aperturaCV, usaCV] = await Promise.all([
     sesionAbierta(),
     prisma.movimientoCajaVecina.findFirst({ where: { tipo: "apertura", fecha: { gte: hoy0 } } }),
+    // ¿Usan Caja Vecina? Solo recordamos abrirla si hay historial (si nunca la usan, no molesta).
+    prisma.movimientoCajaVecina.findFirst({ where: { fecha: { lt: hoy0 } }, select: { id: true } }),
   ]);
 
   const faltaLocal = !sesionLocal;
-  const faltaCV = !aperturaCV;
+  const faltaCV = !aperturaCV && !!usaCV;
   if (!faltaLocal && !faltaCV) return null;
 
   return (

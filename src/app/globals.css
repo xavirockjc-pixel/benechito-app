@@ -187,9 +187,9 @@ button:not(:disabled) { min-height: 40px; }
 .theme-fab:hover { filter: brightness(1.03); }
 /* En celular: botón redondo compacto (solo ícono), pegado a la esquina, sobre la barra inferior. */
 @media (max-width: 640px) {
-  .theme-fab { left: 12px; bottom: calc(74px + env(safe-area-inset-bottom)); padding: 0; width: 40px; height: 40px; justify-content: center; opacity: .92; }
+  .theme-fab { left: 12px; bottom: calc(96px + env(safe-area-inset-bottom)); padding: 0; width: 36px; height: 36px; justify-content: center; opacity: .78; }
   .theme-fab__tx { display: none; }
-  .theme-fab__ic { font-size: 18px; }
+  .theme-fab__ic { font-size: 17px; }
 }
 
 /* ===== Tarjetas KPI del Panel (colorido y amigable, ambos temas) ===== */

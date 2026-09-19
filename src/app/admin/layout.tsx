@@ -90,7 +90,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/equipo", label: "Equipo", icon: "👥" },
         { href: "/admin/usuarios", label: "Usuarios", icon: "🔑" },
         { href: "/admin/correcciones", label: "Correcciones (deshacer)", icon: "🧹" },
-        { href: "/admin/reiniciar", label: "Empezar de cero", icon: "🔄" },
+        { href: "/admin/reiniciar", label: "Reiniciar números", icon: "🔄" },
         { href: "/admin/configuracion", label: "Configuración", icon: "⚙️" },
       ],
     },

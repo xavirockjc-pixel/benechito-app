@@ -24,7 +24,7 @@ export default function EmpezarNuevoDia({
           onClick={() => setConfirmando(true)}
           className="w-full rounded-xl border-2 border-slate-300 bg-white py-3 text-sm font-extrabold text-slate-700 active:bg-slate-50"
         >
-          🔄 {label ?? "Empezar nuevo día (parte de cero)"}
+          📅 {label ?? "Cerrar el día (empezar cómputo nuevo)"}
         </button>
       ) : (
         <div className="rounded-xl border-2 border-amber-300 bg-amber-50 p-3 text-center">
@@ -40,7 +40,7 @@ export default function EmpezarNuevoDia({
               Cancelar
             </button>
             <button type="submit" className="flex-1 rounded-lg bg-amber-600 py-2 text-sm font-extrabold text-white active:brightness-110">
-              Sí, empezar nuevo día
+              Sí, cerrar el día
             </button>
           </div>
         </div>

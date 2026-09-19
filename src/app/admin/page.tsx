@@ -105,9 +105,9 @@ export default async function Panel() {
 
       {/* Empezar nuevo día para Bodega y Producción (oculta lo anterior, no borra) */}
       <div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:max-w-md">
-        <p className="text-sm font-bold text-slate-900">🔄 Empezar nuevo día (Bodega y Producción)</p>
-        <p className="mt-0.5 text-xs text-slate-500">Reinicia el conteo del día de Bodega y Producción desde cero. Lo anterior queda guardado (oculto), no se borra.</p>
-        <EmpezarNuevoDia action={empezarNuevoDia} label="Empezar nuevo día / nuevo cómputo" />
+        <p className="text-sm font-bold text-slate-900">📅 Cerrar el día (Bodega y Producción)</p>
+        <p className="mt-0.5 text-xs text-slate-500">Cierra el día y arranca un cómputo nuevo. Lo anterior queda guardado (oculto), no se borra. Para reiniciar los números de verdad, usa <b>Reiniciar números</b> en el menú.</p>
+        <EmpezarNuevoDia action={empezarNuevoDia} label="Cerrar el día (empezar cómputo nuevo)" />
       </div>
 
       {/* Más vendidos del mes: dulces vs helados */}
