@@ -1,0 +1,209 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Cotizador Panal</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --ground:#100b06; --surface:#19110a; --surface-2:#241a10; --line:#3c2d1a;
+    --honey:#f6a821; --bright:#ffce6a; --cream:#f4ecd8; --muted:#a99a7c; --good:#5fd0a6; --teal:#5fd0c0;
+    --glow: rgba(246,168,33,.4);
+    --mono: ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--cream); font-family:var(--sans); line-height:1.55;
+    background-image:radial-gradient(900px 360px at 85% -6%, rgba(246,168,33,.09), transparent 60%)}
+  .wrap{max-width:940px; margin-inline:auto; padding:22px}
+  h1,h2{margin:0; text-wrap:balance}
+  .mono{font-family:var(--mono)}
+  .eyebrow{font-family:var(--mono); text-transform:uppercase; letter-spacing:.22em; font-size:.68rem; color:var(--honey)}
+  header.top{display:flex; align-items:center; gap:12px; padding-bottom:8px; border-bottom:1px solid var(--line); margin-bottom:16px}
+  .hex{width:26px;height:29px;filter:drop-shadow(0 0 8px var(--glow))}
+  .brand{font-family:var(--mono); font-weight:700; letter-spacing:.16em; text-transform:uppercase; font-size:.95rem}
+  .brand small{display:block; color:var(--muted); font-size:.6rem; letter-spacing:.1em}
+  .hint{color:var(--muted); font-size:.85rem}
+  .card{border:1px solid var(--line); border-radius:16px; background:linear-gradient(180deg,var(--surface),#140d07); padding:18px; margin-bottom:16px}
+  .card h2{font-size:1rem; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:4px}
+  .card .sub{color:var(--muted); font-size:.82rem; margin:0 0 12px}
+  .chips{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{display:inline-flex; align-items:center; gap:8px; padding:8px 13px; border-radius:999px; border:1px solid var(--line);
+    background:#0e0a05; cursor:pointer; font-size:.88rem; user-select:none}
+  .chip input{display:none}
+  .chip.on{border-color:var(--honey); background:rgba(246,168,33,.12); color:var(--bright)}
+  .chip.ext.on{border-color:var(--teal); background:rgba(95,208,192,.12); color:#bff0e8}
+  .chip .d{width:8px;height:8px;border-radius:50%;background:var(--line)}
+  .chip.on .d{background:var(--honey); box-shadow:0 0 8px var(--honey)}
+  .chip.ext.on .d{background:var(--teal); box-shadow:0 0 8px var(--teal)}
+  .presets .chip{background:var(--surface-2)}
+  select{background:#0e0a05; color:var(--cream); border:1px solid var(--line); border-radius:9px; padding:8px 10px; font-size:.9rem}
+
+  .quote{position:sticky; bottom:0; border:1px solid var(--honey); border-radius:18px;
+    background:linear-gradient(180deg,#1c1409,#120b05); padding:18px; box-shadow:0 -14px 40px -20px #000; margin-top:8px}
+  .quote .plan{font-family:var(--mono); font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--honey)}
+  .quote .big{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:8px}
+  @media (max-width:560px){ .quote .big{grid-template-columns:1fr} }
+  .quote .b{background:#0e0a05; border:1px solid var(--line); border-radius:12px; padding:14px}
+  .quote .b .k{font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em}
+  .quote .b .v{font-size:1.4rem; font-weight:800; color:var(--bright); font-variant-numeric:tabular-nums; margin-top:3px}
+  .quote .b .u{font-size:.78rem; color:var(--muted)}
+  .detalle{margin-top:12px; font-size:.85rem; line-height:1.7}
+  .detalle .dl b{color:var(--cream)} .detalle .dl{color:var(--muted)}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px}
+  .btn{cursor:pointer; border:0; border-radius:999px; font-weight:700; font-family:var(--sans); padding:10px 18px; font-size:.88rem}
+  .btn-h{background:linear-gradient(180deg,var(--bright),var(--honey)); color:#2a1a05}
+  .msg{font-size:.82rem; color:var(--good)}
+  :focus-visible{outline:2px solid var(--bright); outline-offset:2px}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd778"/><stop offset="1" stop-color="#d98a12"/></linearGradient>
+  <symbol id="hm" viewBox="0 0 60 66"><path d="M30 2 56 17V49L30 64 4 49V17Z" fill="none" stroke="url(#gH)" stroke-width="3"/><path d="M30 16 44 24V40L30 48 16 40V24Z" fill="url(#gH)" opacity=".9"/><circle cx="30" cy="32" r="4.5" fill="#160f07"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <header class="top"><svg class="hex"><use href="#hm"/></svg><span class="brand">Panal <small>Cotizador</small></span></header>
+  <p class="eyebrow">Arma el panal del cliente y ve el precio al instante</p>
+  <p class="hint" style="margin:6px 0 16px">Elige un rubro (rellena solo) o marca las celdas y extensiones. El plan y el rango de precio se calculan solos, con el desglose de lo que incluye. Para el documento formal, usa el <b>Generador de Contrato</b>.</p>
+
+  <div class="card">
+    <h2>🏭 Rubro (relleno rápido)</h2>
+    <div class="chips presets" id="presets"></div>
+  </div>
+
+  <div class="card">
+    <h2>🧩 Celdas (módulos)</h2>
+    <p class="sub">El corazón del sistema. Definen el plan.</p>
+    <div class="chips" id="modulos"></div>
+  </div>
+
+  <div class="card">
+    <h2>➕ Extensiones</h2>
+    <p class="sub">Funciones avanzadas que se activan sobre el plan.</p>
+    <div class="chips" id="extens"></div>
+  </div>
+
+  <div class="card">
+    <h2>🛠️ Servicios extra</h2>
+    <p class="sub">Se cotizan aparte según alcance.</p>
+    <div class="chips" id="servicios"></div>
+  </div>
+
+  <div class="card">
+    <h2>📐 Plan</h2>
+    <p class="sub">Se sugiere solo según las celdas; puedes forzarlo.</p>
+    <select id="planSel">
+      <option value="auto">Automático (según celdas)</option>
+      <option value="basico">Básico</option>
+      <option value="produccion">Producción</option>
+      <option value="completo">Completo</option>
+      <option value="medida">A medida</option>
+    </select>
+  </div>
+
+  <div class="quote">
+    <span class="plan" id="planLbl">Plan —</span>
+    <div class="big">
+      <div class="b"><div class="k">Implementación (una vez)</div><div class="v" id="impl">—</div><div class="u" id="implu"></div></div>
+      <div class="b"><div class="k">Mensualidad</div><div class="v" id="mes">—</div><div class="u">soporte · hosting · mejoras</div></div>
+    </div>
+    <div class="detalle" id="detalle"></div>
+    <div class="row">
+      <button class="btn btn-h" id="copiar">📋 Copiar cotización</button>
+      <span class="msg" id="msg"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var MODULOS=[
+    {k:"produccion",e:"🏭",n:"Producción y calidad"},{k:"ventas",e:"🛒",n:"Ventas · Vendedor"},{k:"repartos",e:"🛵",n:"Repartos y retiros"},
+    {k:"inventario",e:"📦",n:"Inventario"},{k:"clientes",e:"🧾",n:"Clientes y deudas"},{k:"panel",e:"📊",n:"Panel central"},
+    {k:"facturacion",e:"🧮",n:"Facturación"},{k:"recetas",e:"📖",n:"Recetas"},{k:"tienda",e:"🐝",n:"Tienda y Portal del Cliente"}
+  ];
+  var EXTENS=[
+    {k:"sii",e:"🧾",n:"Facturación electrónica (SII)"},{k:"cobranza",e:"📲",n:"Cobranza automática por WhatsApp"},
+    {k:"compras",e:"🛒",n:"Compras y punto de reorden"},{k:"turnos",e:"🕒",n:"Turnos y ausencias"},
+    {k:"trazabilidad",e:"🔎",n:"Trazabilidad de lotes / calidad"},{k:"rentabilidad",e:"💹",n:"Rentabilidad por producto"}
+  ];
+  var SERVICIOS=[{k:"chatbot",e:"🤖",n:"Chatbot IA"},{k:"web",e:"🌐",n:"Página web / landing"},{k:"redes",e:"📣",n:"Administración de redes"},{k:"admin",e:"🔧",n:"Administración mensual"}];
+  var PLAN={
+    basico:{label:"Básico", impl:[250000,400000], mes:[25000,40000]},
+    produccion:{label:"Producción", impl:[450000,700000], mes:[40000,60000]},
+    completo:{label:"Completo", impl:[900000,1500000], mes:[60000,100000]},
+    medida:{label:"A medida", impl:null, mes:null}
+  };
+  var PRESETS=[
+    {k:"heladeria",e:"🍦",n:"Heladería", mods:["produccion","ventas","tienda","repartos","inventario","clientes","panel","facturacion","recetas"], ext:[]},
+    {k:"distribuidora",e:"🚚",n:"Distribuidora", mods:["ventas","tienda","repartos","inventario","clientes","panel","facturacion"], ext:["cobranza","sii"]},
+    {k:"comida",e:"🍔",n:"Comida rápida", mods:["ventas","tienda","repartos","inventario","recetas","panel"], ext:[]},
+    {k:"panaderia",e:"🥖",n:"Panadería", mods:["produccion","inventario","recetas","ventas","panel"], ext:[]},
+    {k:"fabrica",e:"🏭",n:"Fábrica", mods:["produccion","inventario","recetas","panel","facturacion"], ext:["compras","trazabilidad"]},
+    {k:"almacen",e:"🏪",n:"Almacén", mods:["ventas","inventario","panel"], ext:[]},
+    {k:"construccion",e:"🏗️",n:"Construcción", mods:["inventario","clientes","facturacion","ventas","panel"], ext:["compras"]},
+    {k:"manufactura",e:"🏭",n:"Manufactura", mods:["produccion","inventario","recetas","panel","facturacion"], ext:["trazabilidad","rentabilidad"]},
+    {k:"consultoria",e:"💼",n:"Consultoría", mods:["clientes","panel","facturacion"], ext:[]}
+  ];
+
+  function chip(cont, item, cls){
+    var l=document.createElement('label'); l.className='chip'+(cls?(' '+cls):''); l.dataset.k=item.k;
+    l.innerHTML='<span class="d"></span><input type="checkbox" value="'+item.k+'"> '+item.e+' '+item.n;
+    var cb=l.querySelector('input');
+    cb.addEventListener('change', function(){ l.classList.toggle('on', cb.checked); calc(); });
+    cont.appendChild(l); return cb;
+  }
+  MODULOS.forEach(function(m){ chip(document.getElementById('modulos'), m); });
+  EXTENS.forEach(function(x){ chip(document.getElementById('extens'), x, 'ext'); });
+  SERVICIOS.forEach(function(s){ chip(document.getElementById('servicios'), s); });
+
+  PRESETS.forEach(function(p){
+    var b=document.createElement('button'); b.type='button'; b.className='chip'; b.innerHTML='<span class="d"></span>'+p.e+' '+p.n;
+    b.addEventListener('click', function(){
+      document.querySelectorAll('#modulos input').forEach(function(cb){ var on=p.mods.indexOf(cb.value)>=0; cb.checked=on; cb.closest('.chip').classList.toggle('on',on); });
+      document.querySelectorAll('#extens input').forEach(function(cb){ var on=(p.ext||[]).indexOf(cb.value)>=0; cb.checked=on; cb.closest('.chip').classList.toggle('on',on); });
+      document.getElementById('planSel').value='auto'; calc();
+    });
+    document.getElementById('presets').appendChild(b);
+  });
+
+  function sel(id){ return [].slice.call(document.querySelectorAll('#'+id+' input:checked')); }
+  function names(id, arr){ return sel(id).map(function(c){ var it=arr.find(function(a){return a.k===c.value;}); return it? it.n : c.value; }); }
+  function fmt(n){ return '$'+Number(n).toLocaleString('es-CL'); }
+  function rango(a){ return a? fmt(a[0])+' – '+fmt(a[1]) : 'a definir'; }
+  function planAuto(count){ return count<=3?'basico':(count<=6?'produccion':'completo'); }
+
+  function planActual(nmods){ var f=document.getElementById('planSel').value; return f==='auto' ? (nmods? planAuto(nmods):'basico') : f; }
+
+  function calc(){
+    var mods=names('modulos',MODULOS), exts=names('extens',EXTENS), servs=names('servicios',SERVICIOS);
+    var planKey=planActual(mods.length); var p=PLAN[planKey];
+    document.getElementById('planLbl').textContent='Plan '+p.label+' · '+mods.length+' celdas'+(exts.length?(' · '+exts.length+' ext'):'')+(servs.length?(' · '+servs.length+' serv'):'');
+    document.getElementById('impl').textContent = p.impl? rango(p.impl):'a definir';
+    document.getElementById('implu').textContent = mods.length? '':'elige celdas';
+    document.getElementById('mes').textContent = p.mes? rango(p.mes)+' /mes':'a definir';
+    var d='';
+    d+='<div class="dl"><b>Celdas:</b> '+(mods.join(', ')||'—')+'</div>';
+    if(exts.length) d+='<div class="dl"><b>Extensiones:</b> '+exts.join(', ')+'</div>';
+    if(servs.length) d+='<div class="dl"><b>Servicios (aparte):</b> '+servs.join(', ')+'</div>';
+    document.getElementById('detalle').innerHTML=d;
+  }
+  document.getElementById('planSel').addEventListener('change', calc);
+
+  document.getElementById('copiar').addEventListener('click', function(){
+    var mods=names('modulos',MODULOS), exts=names('extens',EXTENS), servs=names('servicios',SERVICIOS);
+    var planKey=planActual(mods.length); var p=PLAN[planKey];
+    var txt='COTIZACIÓN PANAL\n'
+      +'Plan: '+p.label+'\n'
+      +'Celdas: '+(mods.join(', ')||'—')+'\n'
+      +(exts.length?('Extensiones: '+exts.join(', ')+'\n'):'')
+      +(servs.length?('Servicios (aparte): '+servs.join(', ')+'\n'):'')
+      +'Implementación: '+(p.impl?rango(p.impl):'a definir')+'\n'
+      +'Mensualidad: '+(p.mes?rango(p.mes)+' /mes':'a definir')+'\n'
+      +'(Servicios extra se cotizan aparte. Valores referenciales.)';
+    navigator.clipboard.writeText(txt).then(function(){ var m=document.getElementById('msg'); m.textContent='✅ Cotización copiada'; setTimeout(function(){m.textContent='';},2500); });
+  });
+
+  document.querySelector('#presets .chip').click(); // arranca con heladería
+})();
+</script>
+
+</body></html>

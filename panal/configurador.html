@@ -1,0 +1,516 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Configurador Panal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#FAF7F1; --bg2:#F2ECE1; --surface:#FFFFFF; --ink:#1C1A15; --ink2:#5E574A;
+    --line:#E6DECE; --honey:#D6821A; --honey-deep:#B26512; --teal:#0F766E; --teal-soft:#0f766e14;
+    --honey-soft:#D6821A14; --shadow:0 1px 2px rgba(28,26,21,.05),0 8px 30px rgba(28,26,21,.06);
+    --radius:16px; --red:#C0432E;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#141210; --bg2:#1B1813; --surface:#211D17; --ink:#F4EFE4; --ink2:#B7AD9A;
+    --line:#332D23; --honey:#F0A63C; --honey-deep:#E8912A; --teal:#3FCBBE; --teal-soft:#3fcbbe1a;
+    --honey-soft:#f0a63c1a; --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 40px rgba(0,0,0,.35); --red:#F0755C;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#141210; --bg2:#1B1813; --surface:#211D17; --ink:#F4EFE4; --ink2:#B7AD9A;
+    --line:#332D23; --honey:#F0A63C; --honey-deep:#E8912A; --teal:#3FCBBE; --teal-soft:#3fcbbe1a;
+    --honey-soft:#f0a63c1a; --shadow:0 1px 2px rgba(0,0,0,.3),0 12px 40px rgba(0,0,0,.35); --red:#F0755C;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.55}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+  h1{font-size:clamp(1.6rem,3.4vw,2.2rem);font-weight:850;margin:0;letter-spacing:-.02em}
+  .muted{color:var(--ink2)}
+  .hexmark{width:24px;height:27px;display:inline-block;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:linear-gradient(150deg,var(--honey),var(--honey-deep))}
+  header{position:sticky;top:0;z-index:30;backdrop-filter:blur(10px);background:color-mix(in srgb,var(--bg) 85%,transparent);border-bottom:1px solid var(--line)}
+  .nav{display:flex;align-items:center;justify-content:space-between;height:60px;gap:12px}
+  .brand{display:flex;align-items:center;gap:9px;font-weight:850;font-size:1.1rem}
+  .btn{display:inline-flex;align-items:center;gap:7px;font-weight:750;font-size:.9rem;padding:9px 16px;border-radius:999px;border:1.5px solid transparent;cursor:pointer;transition:transform .12s,filter .12s;background:transparent;color:var(--ink)}
+  .btn:hover{transform:translateY(-1px)}
+  .btn-honey{background:linear-gradient(150deg,var(--honey),var(--honey-deep));color:#fff}
+  .btn-ghost{border-color:var(--line)} .btn-ghost:hover{border-color:var(--honey)}
+  .btn-sm{padding:6px 12px;font-size:.82rem}
+
+  .layout{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start;padding:26px 0 80px}
+  @media(max-width:960px){.layout{grid-template-columns:1fr}}
+
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:20px;margin-bottom:18px}
+  .eyebrow{font-size:.7rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--honey-deep);display:block;margin-bottom:10px}
+  label.fld{display:flex;flex-direction:column;gap:5px;font-size:.8rem;font-weight:700;color:var(--ink2)}
+  input[type=text],input[type=number],select,textarea{font:inherit;font-size:.92rem;padding:9px 11px;border:1.5px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:100%}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--honey)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+  @media(max-width:560px){.grid2,.grid3{grid-template-columns:1fr}}
+
+  .rubros{display:flex;flex-wrap:wrap;gap:9px}
+  .rubro{display:flex;align-items:center;gap:7px;padding:9px 14px;border:1.5px solid var(--line);border-radius:999px;background:var(--bg);cursor:pointer;font-weight:750;font-size:.9rem;transition:.12s}
+  .rubro:hover{border-color:var(--honey)}
+  .rubro.active{background:var(--honey);border-color:var(--honey);color:#fff}
+
+  .mod{border:1.5px solid var(--line);border-radius:14px;margin-bottom:12px;overflow:hidden;transition:border-color .14s}
+  .mod.on{border-color:var(--honey)}
+  .mod-head{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;background:var(--bg)}
+  .mod.on .mod-head{background:var(--honey-soft)}
+  .mod-head .num{width:24px;height:27px;flex-shrink:0;clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:var(--honey-soft);color:var(--honey-deep);font-size:.7rem;font-weight:850;display:flex;align-items:center;justify-content:center}
+  .mod.tl .num{background:var(--teal-soft);color:var(--teal)}
+  .mod-head .tt{flex:1;min-width:0}
+  .mod-head .tt b{font-size:1rem;font-weight:800;display:block}
+  .mod-head .tt small{color:var(--ink2);font-size:.82rem}
+  .star{font-size:.62rem;font-weight:800;color:var(--teal);text-transform:uppercase;letter-spacing:.04em}
+  .sw{position:relative;width:44px;height:26px;border-radius:999px;background:var(--line);flex-shrink:0;transition:.16s}
+  .sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.16s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .mod.on .sw{background:var(--honey)} .mod.on .sw::after{transform:translateX(18px)}
+  .mod-body{padding:0 16px;max-height:0;overflow:hidden;transition:max-height .3s ease,padding .3s ease}
+  .mod.open .mod-body{max-height:1600px;padding:4px 16px 16px}
+  .mockup{background:var(--bg2);border:1px solid var(--line);border-radius:12px;padding:10px;margin:10px 0;text-align:center}
+  .mockup svg{width:100%;max-width:340px;height:auto;display:block;margin:0 auto}
+  .mockup .cap{font-size:.72rem;color:var(--ink2);margin-top:6px;font-weight:700}
+  .demo{background:var(--honey-soft);border-radius:10px;padding:11px 13px;margin:8px 0 12px;font-size:.85rem;color:var(--ink)}
+  .cas{display:flex;align-items:flex-start;gap:9px;padding:7px 0;border-top:1px solid var(--line)}
+  .cas input{margin-top:3px;width:17px;height:17px;accent-color:var(--honey);flex-shrink:0}
+  .cas .cx{flex:1}
+  .cas .cx b{font-size:.9rem;font-weight:700}
+  .cas .cx small{display:block;color:var(--ink2);font-size:.8rem}
+
+  .resumen{position:sticky;top:76px}
+  .rs-plan{font-size:1.3rem;font-weight:850;color:var(--honey-deep)}
+  .rs-line{display:flex;justify-content:space-between;gap:10px;font-size:.88rem;padding:5px 0;border-bottom:1px dashed var(--line)}
+  .rs-line span:first-child{color:var(--ink2)}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+  .chip{font-size:.72rem;font-weight:750;padding:4px 10px;border-radius:999px;background:var(--honey-soft);color:var(--honey-deep)}
+  .chip.tl{background:var(--teal-soft);color:var(--teal)}
+  textarea.out{min-height:170px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.72rem;line-height:1.5}
+  .tabs{display:flex;gap:6px;margin-bottom:8px}
+  .tab{font-size:.78rem;font-weight:750;padding:6px 11px;border-radius:8px;border:1.5px solid var(--line);background:var(--bg);cursor:pointer}
+  .tab.active{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  .addon{display:flex;align-items:flex-start;gap:9px;padding:10px 0;border-top:1px solid var(--line)}
+  .addon input[type=checkbox]{margin-top:3px;width:17px;height:17px;accent-color:var(--honey)}
+  .note{font-size:.78rem;color:var(--ink2);background:var(--teal-soft);border-radius:8px;padding:8px 10px;margin-top:6px}
+  .theme-btn{position:fixed;bottom:18px;right:18px;z-index:40;width:46px;height:46px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);cursor:pointer;font-size:1.2rem;box-shadow:var(--shadow)}
+</style>
+
+<header>
+  <div class="wrap nav">
+    <div class="brand"><span class="hexmark"></span>Configurador Panal</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="resetAll()">↺ Limpiar</button>
+      <button class="btn btn-honey btn-sm" onclick="copyOut()">📋 Copiar resumen</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div style="padding:22px 0 4px">
+    <h1>Arma el ecosistema del cliente 🐝</h1>
+    <p class="muted" style="max-width:64ch">Elige el rubro, activa los módulos y sus casillas, y abajo sale todo listo para implementar. Cada módulo trae una <b>ilustración de cómo se ve</b> y cada casilla explica <b>qué hace y para qué</b>. Precios, landing, catálogo y marketing: todo editable.</p>
+  </div>
+
+  <div class="layout">
+    <div>
+      <div class="card">
+        <span class="eyebrow">1 · Datos del cliente</span>
+        <div class="grid2">
+          <label class="fld">Nombre del negocio<input type="text" id="cNombre" placeholder="Ej: Panadería La Espiga" oninput="update()"></label>
+          <label class="fld">WhatsApp del negocio<input type="text" id="cWa" placeholder="+56 9 ..." oninput="update()"></label>
+          <label class="fld">Ciudad / comuna<input type="text" id="cCiudad" placeholder="Ej: Puente Alto" oninput="update()"></label>
+          <label class="fld">Colores / logo de marca<input type="text" id="cColores" placeholder="Ej: rojo y crema, o 'usar los del rubro'" oninput="update()"></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">2 · Rubro (aplica un pack recomendado)</span>
+        <div class="rubros" id="rubros"></div>
+        <p class="muted" style="font-size:.8rem;margin-top:10px">Al elegir un rubro se marcan los módulos sugeridos. Después ajustas lo que quieras — todo es personalizable.</p>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">3 · Módulos y casillas — <span style="text-transform:none;color:var(--ink2)">toca “¿qué hace?” para ver la ilustración</span></span>
+        <div id="mods"></div>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">4 · Extensiones (add-ons del sistema)</span>
+        <div id="exts"></div>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">5 · Landing, catálogo y precios del cliente</span>
+        <div class="grid2" style="margin-bottom:12px">
+          <label class="cas" style="border:none;padding:0"><input type="checkbox" id="oLanding" checked onchange="update()"><span class="cx"><b>Landing page del cliente</b><small>Página pública con su marca, módulos y CTA a WhatsApp.</small></span></label>
+          <label class="cas" style="border:none;padding:0"><input type="checkbox" id="oCatalogo" checked onchange="update()"><span class="cx"><b>Catálogo / tienda online</b><small>Productos, sabores, precios por tipo de cliente y pedido.</small></span></label>
+        </div>
+        <span class="eyebrow" style="margin-top:6px">Plan del sistema y precios (editables)</span>
+        <div class="grid3">
+          <label class="fld">Plan
+            <select id="cPlan" onchange="update()">
+              <option value="basico">Básico</option>
+              <option value="produccion" selected>Producción</option>
+              <option value="completo">Completo</option>
+              <option value="medida">A medida</option>
+            </select>
+          </label>
+          <label class="fld">Instalación (CLP)<input type="text" id="cInstal" value="450.000" oninput="update()"></label>
+          <label class="fld">Mensual (CLP)<input type="text" id="cMes" value="40.000" oninput="update()"></label>
+        </div>
+      </div>
+
+      <div class="card">
+        <span class="eyebrow">6 · Servicios adicionales (se venden aparte)</span>
+        <p class="muted" style="font-size:.8rem;margin-top:-4px;margin-bottom:8px">Precios de venta de Panal, editables. Úsalos sueltos o como add-on de un plan.</p>
+        <div class="grid2">
+          <label class="fld">💻 Landing sola (CLP)<input type="text" id="sLanding" value="99.000" oninput="update()"></label>
+          <label class="fld">🗂️ Catálogo / tienda (CLP)<input type="text" id="sCatalogo" value="120.000" oninput="update()"></label>
+        </div>
+        <div class="addon">
+          <input type="checkbox" id="mkOn" onchange="update()">
+          <span class="cx" style="flex:1">
+            <b>📣 Marketing y redes sociales</b>
+            <small>Gestión con seguimiento + 3 publicaciones/semana en Facebook e Instagram.</small>
+            <div class="grid2" style="margin-top:8px">
+              <label class="fld">Gestión mensual (CLP)<input type="text" id="mkMes" value="150.000" oninput="update()"></label>
+              <label class="fld">Creación página Facebook (CLP)<input type="text" id="mkFb" value="120.000" oninput="update()"></label>
+            </div>
+            <div class="note" id="mkNote">💡 Mercado Chile 2026: gestión de redes pyme ≈ $150.000–$400.000/mes (planes de 3 posts/sem parten ~$150k; packs con video/stories ~$319k). Creación de fanpage ≈ $50.000–$150.000. Tu $150k/mes es competitivo (gama de entrada).</div>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="resumen">
+      <div class="card">
+        <span class="eyebrow">Resumen en vivo</span>
+        <div class="rs-plan" id="rsNombre">Nuevo cliente</div>
+        <p class="muted" id="rsRubro" style="font-size:.85rem;margin-bottom:8px">Elige un rubro…</p>
+        <div class="chips" id="rsChips"></div>
+        <div class="rs-line"><span>Módulos activos</span><b id="rsCount">0</b></div>
+        <div class="rs-line"><span>Plan</span><b id="rsPlan">—</b></div>
+        <div class="rs-line"><span>Instalación</span><b id="rsInstal">—</b></div>
+        <div class="rs-line"><span>Mensual sistema</span><b id="rsMes">—</b></div>
+        <div class="rs-line"><span>Marketing/mes</span><b id="rsMk">—</b></div>
+        <div class="rs-line"><span>Landing / Catálogo</span><b id="rsLC">—</b></div>
+      </div>
+      <div class="card">
+        <div class="tabs">
+          <div class="tab active" data-tab="impl" onclick="setTab('impl')">Implementar</div>
+          <div class="tab" data-tab="prompt" onclick="setTab('prompt')">Prompt maestro</div>
+        </div>
+        <textarea class="out" id="outBox" readonly></textarea>
+        <button class="btn btn-honey btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="copyOut()">📋 Copiar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="theme-btn" onclick="toggleTheme()" title="Tema claro/oscuro">🌓</button>
+
+<script>
+/* ============ Mockups (ilustración de cómo se ve cada módulo) ============ */
+function frame(inner, color){
+  return `<svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="298" height="168" rx="14" fill="var(--surface)" stroke="var(--line)"/>
+    <rect x="1" y="1" width="298" height="34" rx="14" fill="${color}"/>
+    <rect x="1" y="20" width="298" height="15" fill="${color}"/>
+    <circle cx="20" cy="18" r="6" fill="#ffffff" opacity=".9"/>
+    <rect x="34" y="13" width="120" height="10" rx="5" fill="#ffffff" opacity=".9"/>
+    ${inner}
+  </svg>`;
+}
+const bar=(x,y,w,h,c,o=1)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="3" fill="${c}" opacity="${o}"/>`;
+const txt=(x,y,s,c,fs=9,b=0)=>`<text x="${x}" y="${y}" font-size="${fs}" fill="${c}" font-family="sans-serif" ${b?'font-weight="800"':''}>${s}</text>`;
+function tile(x,y,label,val,c){return bar(x,y,62,40,'var(--bg2)',1)+txt(x+8,y+16,label,'var(--ink2)',7)+txt(x+8,y+31,val,c,12,1);}
+function rowItem(y,label,val,c){return bar(14,y,180,11,'var(--ink2)',.12)+txt(18,y+9,label,'var(--ink)',8)+txt(250,y+9,val,c,9,1);}
+
+const MOCK = {
+  produccion:(c)=>frame(tile(14,48,'HOY','200 u',c)+tile(84,48,'COSTO','$38.400','var(--ink)')+tile(154,48,'GANANCIA','$61.600','var(--teal)')+bar(226,48,60,40,'var(--honey-soft)')+txt(233,64,'Insumos',c,7)+txt(233,78,'−auto',c,9,1)+rowItem(100,'Trufas · lote 12','✓ calidad',c)+rowItem(116,'Descuenta insumos','auto','var(--teal)')+rowItem(132,'🎙️ “hice 200…”','dictado',c),c),
+  ventas:(c)=>frame(txt(16,50,'Ruta · Sector Centro','var(--ink)',9,1)+rowItem(60,'Almacén Rosa','$12.400',c)+rowItem(78,'Kiosco El Sol','abono',c)+rowItem(96,'Minimarket Díaz','$8.900',c)+bar(14,118,88,20,c)+txt(30,132,'Mercado Pago','#fff',8,1)+bar(108,118,88,20,'var(--bg2)')+txt(120,132,'Transferencia','var(--ink)',8)+bar(202,118,84,20,'var(--bg2)')+txt(214,132,'Efectivo','var(--ink)',8),c),
+  repartos:(c)=>frame(txt(16,50,'Bandeja central','var(--ink)',9,1)+rowItem(60,'Pedido web #182','por pagar',c)+rowItem(78,'→ Reparto (auto)','envío',' var(--teal)')+rowItem(96,'Cliente: R. Pérez','datos ✓',c)+bar(14,118,130,22,'var(--honey-soft)')+txt(22,132,'📍 Envío auto a destino',c,8,1)+bar(150,118,136,22,'var(--bg2)')+txt(158,132,'💬 Entró por WhatsApp','var(--ink)',8),c),
+  inventario:(c)=>frame(tile(14,48,'PRODUCTOS','128',c)+tile(84,48,'INSUMOS','54','var(--ink)')+tile(154,48,'BAJO STOCK','3','var(--red)')+bar(226,48,60,40,'var(--honey-soft)')+txt(233,64,'🎙️ voz',c,7)+txt(233,78,'ingreso',c,9,1)+rowItem(100,'Chocolate cobertura','2 kg ⚠️','var(--red)')+rowItem(116,'Harina','48 kg',c)+rowItem(132,'Vasos 500ml','stock ok','var(--teal)'),c),
+  clientes:(c)=>frame(txt(16,50,'Ficha · Almacén Rosa','var(--ink)',9,1)+bar(14,58,120,14,'var(--honey-soft)')+txt(20,68,'Tipo: Mayorista',c,8)+rowItem(80,'Deuda actual','$14.500','var(--red)')+rowItem(98,'Seguimiento','llamar vie',c)+rowItem(116,'Historial','23 compras','var(--teal)')+rowItem(134,'Última compra','hace 5 d',c),c),
+  panel:(c)=>frame(tile(14,48,'VENTAS','$185.000',c)+tile(84,48,'DEUDAS','$42.100','var(--red)')+tile(154,48,'PRODUCCIÓN','200 u','var(--teal)')+bar(226,48,60,40,'var(--honey-soft)')+txt(233,63,'👁️',c,11)+txt(231,78,'ocultar',c,7)+txt(16,108,'📊 Reporte diario 8:00 AM','var(--ink)',9,1)+rowItem(118,'Todo llega y se guarda','✓',c)+rowItem(136,'Aviso automático','WhatsApp','var(--teal)'),c),
+  facturacion:(c)=>frame(txt(16,50,'Documentos','var(--ink)',9,1)+rowItem(60,'Nota de venta #45','emitida',c)+rowItem(78,'Guía de despacho','→ destino','var(--teal)')+rowItem(96,'Factura RUT 76...','pendiente','var(--red)')+rowItem(114,'Folio SII','ok',c)+bar(14,132,272,20,'var(--honey-soft)')+txt(22,146,'🔗 Enlazado al sistema · envío auto',c,8,1),c),
+  recetas:(c)=>frame(txt(16,50,'Nueva receta','var(--ink)',9,1)+rowItem(60,'+ Insumo: crema','$1.200',c)+rowItem(78,'+ Insumo: fruta','$800',c)+rowItem(96,'Costo receta','$2.000','var(--ink)')+rowItem(114,'Precio sugerido','$3.400','var(--teal)')+bar(14,132,272,20,'var(--honey-soft)')+txt(22,146,'📚 Paso a paso para personal nuevo',c,8,1),c),
+  agenda:(c)=>frame(txt(16,50,'Agenda de citas','var(--ink)',9,1)+
+    [0,1,2,3,4].map((d,i)=>bar(14+i*40,58,34,14,'var(--bg2)')+txt(20+i*40,68,['L','M','X','J','V'][i],'var(--ink2)',8)).join('')+
+    bar(14,76,34,26,c)+txt(24,92,'09',' #fff',9,1)+bar(54,76,34,26,'var(--honey-soft)')+bar(94,76,34,26,c)+
+    rowItem(112,'09:00 Juan P.','confirmada',c)+rowItem(130,'11:30 (pago reserva)','MercadoPago','var(--teal)'),c),
+  mejoras:(c)=>frame(txt(16,50,'Mejoras y proyecciones','var(--ink)',9,1)+rowItem(60,'✅ Selladora línea postres','08-sep','var(--teal)')+rowItem(78,'🔧 Catálogo PDF mayoristas','en proceso',c)+rowItem(96,'⭕ Nueva cámara fría','⚠️ alta','var(--red)')+bar(14,116,272,22,'var(--honey-soft)')+txt(22,130,'🎙️ “implementar selladora, urgente”',c,8,1),c),
+};
+
+/* ============ Módulos, casillas, demos ============ */
+const MODULOS = [
+  { id:"01", key:"produccion", tl:false, star:true, nombre:"Producción y control de calidad", sub:"Fabricar, calidad, y descuento automático de inventario",
+    demo:"El operario dicta <b>“hice 200 trufas”</b>: el sistema <b>descuenta TODO del inventario automáticamente</b> según la receta, registra el lote y su control de calidad, y en el panel muestra <b>costos y ganancias</b>. El operario solo ve su trabajo del día.",
+    cas:[
+      {k:"cq", n:"✅ Control de calidad", d:"Checklist por lote (aspecto, peso, temperatura); registra quién y cuándo."},
+      {k:"desc", n:"📉 Descuento automático de inventario", d:"Al producir, baja solo los insumos usados según la receta — sin doble descuento."},
+      {k:"cg", n:"💰 Costos y ganancias", d:"Calcula el costo del lote y la ganancia; visible solo en el panel central."},
+      {k:"lotes", n:"🏷️ Lotes por turno", d:"Agrupa la producción del día/turno para trazar y medir rendimiento."},
+      {k:"agreg", n:"🍫 Sabores y agregados", d:"Esencias, colores, toppings por producto (solo donde aplica)."},
+      {k:"vozp", n:"🎙️ Asistente de voz", d:"Dicta lo producido sin soltar las manos; se registra y descuenta solo."},
+    ]},
+  { id:"02", key:"ventas", tl:true, star:true, nombre:"Ventas · Vendedor en ruta", sub:"Vender en ruta o local, con medios de pago",
+    demo:"El vendedor abre su <b>ruta por sector</b>, registra ventas contra la ficha del cliente y cobra con <b>Mercado Pago, transferencia o efectivo</b>. Ve lo suyo del día, no los márgenes del negocio.",
+    cas:[
+      {k:"rutas", n:"🗺️ Rutas por sector", d:"Organiza clientes por zona; el vendedor sigue su recorrido."},
+      {k:"pago", n:"💳 Pago: Mercado Pago / transferencia / efectivo", d:"Elige el medio en cada venta; queda registrado."},
+      {k:"abono", n:"🤝 Contado y abono", d:"Cobra al momento o deja saldo pendiente."},
+      {k:"online", n:"🌐 Canal online (venta web)", d:"Recibe pedidos de la tienda y los suma a la operación."},
+      {k:"agenda", n:"📆 Agenda de visitas", d:"Próximas visitas y reposiciones programadas."},
+      {k:"vozv", n:"🎙️ Venta por voz", d:"Dicta la venta rápida sin teclear en la calle."},
+    ]},
+  { id:"03", key:"repartos", tl:false, star:true, nombre:"Repartos y retiros", sub:"Pedidos → bandeja central → despacho a destino",
+    demo:"Los pedidos de <b>WhatsApp, redes y canal online</b> caen en una bandeja central. Ves los <b>datos del cliente</b>, marcas el pago o <b>envío por pagar</b>, y el sistema deriva el <b>envío automáticamente a su destino</b>.",
+    cas:[
+      {k:"bandeja", n:"📥 Bandeja central de pedidos", d:"Todos los pedidos en un solo lugar, sin perderse entre chats."},
+      {k:"onlinepp", n:"🌐 Canal online — envíos por pagar", d:"Pedido web con envío que el cliente paga al recibir."},
+      {k:"datoscli", n:"👤 Datos del cliente en el pedido", d:"Nombre, dirección y contacto a la vista para despachar bien."},
+      {k:"autodest", n:"📍 Envío automático a destinos", d:"Deriva solo a local, bodega o reparto según la regla."},
+      {k:"n8n", n:"🤖 Entrada automática (WhatsApp/redes)", d:"Los pedidos entran solos vía n8n (opcional)."},
+      {k:"retiro", n:"🏪 Retiro en local", d:"Para quien solo hace retiro, sin reparto."},
+      {k:"repartidor", n:"🛵 App del repartidor (Mis entregas)", d:"El repartidor ve sus entregas con mapa y cobro, y marca “entregado”; sirve para moto propia o arrendada."},
+    ]},
+  { id:"04", key:"inventario", tl:true, star:false, nombre:"Inventario", sub:"Productos, insumos y materiales con alertas",
+    demo:"Controla <b>productos, materias primas y materiales</b> con stock valorizado y alerta de mínimos. El bodeguero ingresa por voz; los costos se pueden ocultar por rol.",
+    cas:[
+      {k:"tres", n:"📦 Productos · Insumos · Materiales", d:"Tres tipos de existencia; activa solo los que usa."},
+      {k:"materia", n:"🧂 Materia prima con subtipos", d:"Harinas, esencias, salsas… adaptado al rubro."},
+      {k:"alertas", n:"⚠️ Alertas de stock bajo", d:"Avisa antes de que se acabe algo crítico."},
+      {k:"bodegas", n:"🏬 Múltiples bodegas/ubicaciones", d:"Para más de un punto de almacenamiento."},
+      {k:"costos", n:"🔒 Ocultar costos", d:"El bodeguero ve stock pero no el valor (privacidad)."},
+      {k:"vozi", n:"🎙️ Ingreso por voz", d:"“Ingresa 5 kilos de chocolate” y suma al stock."},
+      {k:"ajuste", n:"🔧 Ajuste / quitar / editar stock directo", d:"Pon o quita cantidades a mano (tabla editable tipo planilla) o por voz — sin depender de producción/ventas; queda auditable. Lo automático se mantiene."},
+    ]},
+  { id:"05", key:"clientes", tl:false, star:false, nombre:"Clientes y deudas", sub:"Fichas, seguimiento, historial, deudas",
+    demo:"Ficha por cliente con <b>qué compra y a qué precio</b>, <b>seguimiento</b> (próxima acción) e <b>historial completo</b> de cada uno, más control de deudas y abonos.",
+    cas:[
+      {k:"fichas", n:"🪪 Fichas por tipo de cliente", d:"Detalle, mayorista, distribuidor… con su lista de precio."},
+      {k:"segui", n:"🔎 Seguimiento por cliente", d:"Próxima acción, recordatorios y estado de la relación."},
+      {k:"hist", n:"🕓 Historial de cada cliente", d:"Todo lo que compró, cuándo y cuánto — la memoria del cliente."},
+      {k:"record", n:"🔔 Recordatorios automáticos", d:"Avisa reposición de puntos, cobros y seguimiento de preventa por WhatsApp — con un toque o automático (n8n)."},
+      {k:"deudas", n:"💵 Deudas y abonos", d:"Registra saldos y pagos (se quita si solo vende al contado)."},
+      {k:"cobrarficha", n:"🧾 Cobrar y vender desde la ficha", d:"Registra pago/abono (baja la deuda) y ventas directo en el cliente; cuenta corriente siempre al día."},
+      {k:"portalcli", n:"🐝 Link al Portal del Cliente", d:"Genera y comparte por WhatsApp el portal “Mi Cuenta” de cada cliente."},
+      {k:"rutcli", n:"🧾 RUT / razón social", d:"Para clientes que compran con factura."},
+    ]},
+  { id:"06", key:"panel", tl:true, star:false, nombre:"Panel central", sub:"Todo llega y se guarda aquí + reporte diario",
+    demo:"Tu vista de dueño: <b>todo lo implementado llega y se guarda aquí</b>. Ventas por canal, rankings, deudas, producción — con un <b>aviso automático / reporte diario</b> por WhatsApp y un <b>ojito</b> para ocultar montos.",
+    cas:[
+      {k:"todo", n:"🗄️ Todo llega y se guarda", d:"Centraliza y guarda lo de cada módulo activo — nada se pierde."},
+      {k:"reporte", n:"📊 Aviso automático / reporte diario", d:"Resumen del día (ventas, caja, stock, deudas) a tu WhatsApp/correo."},
+      {k:"kpi", n:"📈 Tarjetas KPI", d:"Ventas del día/mes, producción, stock, deudas — elige cuáles."},
+      {k:"rank", n:"🏆 Rankings y ventas por canal", d:"Top productos y comparación entre canales."},
+      {k:"ojo", n:"👁️ Ojo para ocultar montos", d:"Oculta cifras con un toque frente a terceros."},
+      {k:"users", n:"🔑 Usuarios y claves por rol", d:"Crea usuarios y define qué ve cada rol."},
+    ]},
+  { id:"07", key:"facturacion", tl:false, star:false, nombre:"Facturación", sub:"Enlazada al sistema: notas, guías y envíos",
+    demo:"<b>Enlazada al sistema</b>: emite <b>nota de venta</b> y <b>guía de despacho</b>, recuerda facturar por RUT, registra folios y hace <b>envíos automáticos a destinos</b>. Con la extensión 14 se conecta al SII real.",
+    cas:[
+      {k:"nota", n:"🧾 Nota de venta", d:"Documento de la venta enlazado al pedido/cliente."},
+      {k:"guia", n:"🚚 Guía de despacho", d:"Documento de traslado para el reparto."},
+      {k:"envauto", n:"📤 Envíos automáticos a destinos", d:"Manda el documento al cliente/destino sin pasos manuales."},
+      {k:"recu", n:"⏰ Recordatorio por RUT", d:"Marca qué ventas quedan por facturar."},
+      {k:"folios", n:"🔢 Registro de folios", d:"Lleva el correlativo sin que se te pase ninguno."},
+    ]},
+  { id:"08", key:"recetas", tl:true, star:false, nombre:"Recetas y materias primas", sub:"Plantilla con precio automático + capacitación",
+    demo:"Crea una <b>receta nueva desde una plantilla</b>: agregas los insumos y <b>el precio sale automático</b> según su costo. Incluye <b>asesoría y paso a paso para personal nuevo</b> y clave para recetas secretas.",
+    cas:[
+      {k:"plantilla", n:"🧮 Plantilla de nueva receta (precio automático)", d:"Según los insumos y su costo, calcula costo y precio sugerido solo."},
+      {k:"asesoria", n:"📚 Asesoría / paso a paso para personal nuevo", d:"Guía que capacita a quien recién entra, sin depender de nadie."},
+      {k:"escala", n:"⚖️ Lote de referencia que escala", d:"Calcula insumos según cuánto vas a producir."},
+      {k:"medidas", n:"🥣 Medidas físicas", d:"Ollas, bandejas, baldes — las del cliente."},
+      {k:"clave", n:"🔐 Clave por receta (secretas)", d:"No se muestra hasta desbloquear; protege el know-how."},
+    ]},
+  { id:"09", key:"agenda", tl:false, star:false, nombre:"Agenda y citas", sub:"Reservas, calendario y recordatorios (servicios)",
+    demo:"Para negocios de <b>servicios/consultoría</b>: el cliente <b>reserva una cita</b>, ve el calendario por profesional, recibe <b>recordatorios automáticos</b> y puede <b>pagar la reserva</b> (Mercado Pago). Todo queda en su ficha.",
+    cas:[
+      {k:"reserva", n:"📅 Reserva de citas online", d:"El cliente elige día y hora desde la web."},
+      {k:"cal", n:"👥 Calendario por profesional", d:"Agenda separada por persona/box/sala."},
+      {k:"record", n:"🔔 Recordatorios automáticos", d:"Aviso por WhatsApp antes de la cita (menos ausencias)."},
+      {k:"pagores", n:"💳 Pago / abono de la reserva", d:"Cobra la seña al reservar (Mercado Pago/transferencia)."},
+      {k:"fichacita", n:"🗂️ Historial de citas por cliente", d:"Qué sesiones tuvo, notas y seguimiento."},
+    ]},
+  { id:"10", key:"mejoras", tl:true, star:false, nombre:"Mejoras y proyecciones", sub:"Dicta pendientes, ponles fecha y táchalos",
+    demo:"El dueño <b>dicta lo que hay que hacer</b> (“implementar selladora para línea postres, urgente”), el sistema detecta área, prioridad y fecha; se <b>alinea al calendario</b>, avisa en el reporte diario y se va <b>tachando</b> al cumplirse.",
+    cas:[
+      {k:"vozmej", n:"🎙️ Dictar por voz", d:"Habla la mejora y arma la tarjeta sola (área, prioridad, fecha)."},
+      {k:"prio", n:"🚦 Prioridad y área", d:"Alta/media/baja y por área (producción, ventas, marketing…)."},
+      {k:"fechamej", n:"📅 Fecha objetivo + recordatorio", d:"Se alinea al calendario y avisa cuando se acerca o vence."},
+      {k:"tachar", n:"✅ Tachar al cumplir", d:"Pendiente → en proceso → hecha, con historial de cumplidas."},
+      {k:"repmej", n:"📊 Aparece en el reporte diario", d:"Las mejoras con fecha próxima/vencida llegan a tu WhatsApp."},
+    ]},
+  { id:"11", key:"tienda", tl:true, star:true, nombre:"Tienda online y Portal del Cliente", sub:"Catálogo web, pedidos y un portal propio para cada cliente",
+    demo:"Tus clientes <b>piden solos desde la web</b> con <b>su precio</b> (detalle, mayorista o distribuidor), eligen sabor viendo su <b>foto y de qué está hecho</b>, agendan hora y comparten su ubicación. Cada cliente tiene su <b>Portal “Mi Cuenta”</b> (link por WhatsApp, sin clave) donde ve sus pedidos, su <b>estado de cuenta</b> y las <b>promos y novedades</b> que publicas. Los pedidos llegan con <b>aviso y sonido</b>.",
+    cas:[
+      {k:"catalogo", n:"🛒 Catálogo web con fotos", d:"Tienda pública con productos ilustrados y ficha de cada uno con sus características."},
+      {k:"sabores", n:"🍦 Sabores con foto y descripción", d:"El cliente ve cómo es y de qué está hecho cada sabor al seleccionarlo."},
+      {k:"tarifa", n:"🏷️ Precio por tipo de cliente", d:"Detalle, mayorista o distribuidor: cada uno ve su precio automáticamente."},
+      {k:"pedidoweb", n:"📅 Pedido con hora y ubicación", d:"Agenda retiro/despacho y comparte su ubicación (GPS o link de Google Maps)."},
+      {k:"pagoweb", n:"💳 Pago online (Mercado Pago)", d:"Cobra el pedido en línea, o queda por pagar al recibir."},
+      {k:"avisoped", n:"🔔 Aviso de pedido con sonido", d:"Suena en la app (y llega a Telegram) apenas piden — no se pierde ninguno."},
+      {k:"portalcli", n:"🐝 Portal del cliente “Mi Cuenta”", d:"Link propio por WhatsApp (sin clave): ve sus pedidos, su cuenta y vuelve a pedir en 1 toque."},
+      {k:"novedades", n:"🔥 Novedades y promos", d:"Publicas promos, nuevos productos y sabores que ven todos tus clientes en su portal."},
+      {k:"autoreg", n:"🤝 Auto-registro de negocios", d:"Revendedores y distribuidores se dan de alta solos desde un portal y caen en tu CRM."},
+    ]},
+];
+const EXTS = [
+  { id:"14", key:"sii", nombre:"Facturación electrónica (SII)", demo:"Emisión real de boletas/facturas electrónicas ante el SII (certificado y folios los carga el cliente)." },
+  { id:"15", key:"compras", nombre:"Compras · Turnos · Portal", demo:"Órdenes de compra a proveedores, turnos del equipo y portal de acceso." },
+  { id:"16", key:"cobranza", nombre:"Cobranza · Trazabilidad · Rentabilidad", demo:"Gestión de cobranza, trazabilidad por lote y rentabilidad por producto." },
+  { id:"17", key:"capacita", nombre:"Capacitación · Formularios/BPM · Metas · EPP", demo:"Capacitaciones, checklists BPM/inocuidad, metas por rol y control de EPP." },
+];
+
+/* ============ Packs por rubro ============ */
+const RUBROS = {
+  panaderia:   { icon:"🥐", label:"Panadería", plan:"produccion", mods:["produccion","inventario","recetas","ventas","panel"], exts:[] },
+  distribuidora:{ icon:"🚚", label:"Distribuidora", plan:"completo", mods:["ventas","tienda","repartos","inventario","clientes","panel","facturacion"], exts:["cobranza","sii"] },
+  almacen:     { icon:"🏪", label:"Almacén / Minimarket", plan:"basico", mods:["ventas","inventario","panel"], exts:[] },
+  fabrica:     { icon:"🏭", label:"Fábrica", plan:"completo", mods:["produccion","inventario","recetas","panel","facturacion","mejoras"], exts:["compras","cobranza","capacita","sii"] },
+  heladeria:   { icon:"🍦", label:"Heladería / Dulces", plan:"completo", mods:["produccion","ventas","tienda","repartos","inventario","clientes","panel","facturacion","recetas","mejoras"], exts:[] },
+  consultoria: { icon:"💼", label:"Consultoría (agenda y citas)", plan:"basico", mods:["agenda","clientes","panel","facturacion"], exts:[] },
+  medida:      { icon:"🛠️", label:"A medida", plan:"medida", mods:["inventario","panel"], exts:[] },
+};
+const PLAN_LABEL = { basico:"Básico", produccion:"Producción", completo:"Completo", medida:"A medida" };
+const PLAN_PRECIO = {
+  basico:{i:"250.000 – 400.000", m:"25.000 – 40.000"},
+  produccion:{i:"450.000 – 700.000", m:"40.000 – 60.000"},
+  completo:{i:"900.000 – 1.500.000", m:"60.000 – 100.000"},
+  medida:{i:"a definir", m:"a definir"},
+};
+
+let rubroActual = null, tab = "impl";
+function el(html){ const t=document.createElement("template"); t.innerHTML=html.trim(); return t.content.firstChild; }
+
+function renderRubros(){
+  const c = document.getElementById("rubros"); c.innerHTML="";
+  Object.entries(RUBROS).forEach(([k,r])=>{ const b=el(`<button class="rubro" data-r="${k}">${r.icon} ${r.label}</button>`); b.onclick=()=>aplicarRubro(k); c.appendChild(b); });
+}
+function renderMods(){
+  const cont = document.getElementById("mods"); cont.innerHTML="";
+  MODULOS.forEach(m=>{
+    const color = m.tl ? "var(--teal)" : "var(--honey-deep)";
+    const cas = m.cas.map(c=>`<label class="cas"><input type="checkbox" data-cas="${m.key}.${c.k}" onchange="update()"><span class="cx"><b>${c.n}</b><small>${c.d}</small></span></label>`).join("");
+    const mk = MOCK[m.key] ? `<div class="mockup">${MOCK[m.key](color)}<div class="cap">Así se ve · ${m.nombre}</div></div>` : "";
+    const node = el(`
+      <div class="mod ${m.tl?'tl':''}" id="mod-${m.key}">
+        <div class="mod-head">
+          <span class="num">${m.id}</span>
+          <span class="tt"><b>${m.nombre} ${m.star?'<span class="star">★</span>':''}</b><small>${m.sub}</small></span>
+          <span class="sw" data-sw="${m.key}"></span>
+        </div>
+        <div class="mod-body">
+          <div class="demo">${m.demo}</div>
+          ${mk}
+          ${cas}
+        </div>
+      </div>`);
+    node.querySelector('[data-sw]').onclick=(e)=>{ e.stopPropagation(); toggleMod(m.key); };
+    node.querySelector('.mod-head').onclick=()=>toggleOpen(m.key);
+    cont.appendChild(node);
+  });
+}
+function renderExts(){
+  const c = document.getElementById("exts"); c.innerHTML="";
+  EXTS.forEach(x=> c.appendChild(el(`<label class="cas" style="border-top:1px solid var(--line)"><input type="checkbox" data-ext="${x.key}" onchange="update()"><span class="cx"><b>${x.id} · ${x.nombre}</b><small>${x.demo}</small></span></label>`)));
+}
+
+function toggleMod(key){
+  const mod=document.getElementById("mod-"+key); mod.classList.toggle("on");
+  const on=mod.classList.contains("on");
+  mod.querySelectorAll('[data-cas]').forEach(c=>c.checked=on);
+  if(on) mod.classList.add("open");
+  update();
+}
+function toggleOpen(key){ document.getElementById("mod-"+key).classList.toggle("open"); }
+
+function aplicarRubro(k){
+  rubroActual=k;
+  document.querySelectorAll(".rubro").forEach(b=>b.classList.toggle("active",b.dataset.r===k));
+  const r=RUBROS[k];
+  MODULOS.forEach(m=>{ const mod=document.getElementById("mod-"+m.key); const on=r.mods.includes(m.key);
+    mod.classList.toggle("on",on); mod.querySelectorAll('[data-cas]').forEach(c=>c.checked=on); });
+  document.querySelectorAll('[data-ext]').forEach(e=>e.checked=r.exts.includes(e.dataset.ext));
+  document.getElementById("cPlan").value=r.plan;
+  const p=PLAN_PRECIO[r.plan]; document.getElementById("cInstal").value=p.i; document.getElementById("cMes").value=p.m;
+  update();
+}
+function setTab(t){ tab=t; document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x.dataset.tab===t)); update(); }
+function toggleTheme(){ const r=document.documentElement; const cur=r.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"); const n=cur==="dark"?"light":"dark"; r.setAttribute("data-theme",n); try{localStorage.setItem("panal-theme",n)}catch(e){} }
+
+function modsActivos(){ return MODULOS.filter(m=>document.getElementById("mod-"+m.key).classList.contains("on")); }
+function extsActivos(){ return EXTS.filter(x=>document.querySelector(`[data-ext="${x.key}"]`).checked); }
+function casActivas(m){ return m.cas.filter(c=>document.querySelector(`[data-cas="${m.key}.${c.k}"]`).checked); }
+
+function update(){
+  const g=id=>document.getElementById(id);
+  const nombre=g("cNombre").value.trim()||"Nuevo cliente";
+  const plan=g("cPlan").value, instal=g("cInstal").value.trim(), mes=g("cMes").value.trim();
+  const landing=g("oLanding").checked, catalogo=g("oCatalogo").checked;
+  const mkOn=g("mkOn").checked, mkMes=g("mkMes").value.trim(), mkFb=g("mkFb").value.trim();
+  const activos=modsActivos(), exts=extsActivos();
+
+  g("rsNombre").textContent=nombre;
+  g("rsRubro").textContent=rubroActual?(RUBROS[rubroActual].icon+" "+RUBROS[rubroActual].label):"Sin rubro (a medida)";
+  g("rsCount").textContent=activos.length;
+  g("rsPlan").textContent=PLAN_LABEL[plan];
+  g("rsInstal").textContent=instal?"$"+instal:"—";
+  g("rsMes").textContent=mes?"$"+mes+"/mes":"—";
+  g("rsMk").textContent=mkOn&&mkMes?"$"+mkMes+"/mes":"—";
+  g("rsLC").textContent=((landing?"Landing":"")+(landing&&catalogo?" + ":"")+(catalogo?"Catálogo":""))||"—";
+  g("rsChips").innerHTML=activos.map(m=>`<span class="chip">${m.id} ${m.nombre.split(" ")[0]}</span>`).join("")+exts.map(x=>`<span class="chip tl">Ext ${x.id}</span>`).join("")+(mkOn?`<span class="chip tl">📣 Marketing</span>`:"");
+
+  g("outBox").value = tab==="impl"
+    ? textoImplementar({nombre,plan,instal,mes,landing,catalogo,activos,exts,mkOn,mkMes,mkFb})
+    : textoPrompt({nombre,activos,exts});
+}
+
+function ordenPegado(activos){
+  const orden=["recetas","inventario","produccion","agenda","ventas","tienda","repartos","clientes","facturacion","panel","mejoras"];
+  return orden.filter(k=>activos.some(m=>m.key===k)).map(k=>MODULOS.find(m=>m.key===k).id).join(", ");
+}
+function textoImplementar(o){
+  let s=`RESUMEN PARA IMPLEMENTAR — ${o.nombre}\n`;
+  s+=`Rubro: ${rubroActual?RUBROS[rubroActual].label:"a medida"} · Plan: ${PLAN_LABEL[o.plan]}\n`;
+  s+=`Instalación: $${o.instal||"—"} · Mensual: $${o.mes||"—"}/mes\n`;
+  s+=`Entregables: ${[o.landing?"Landing":null,o.catalogo?"Catálogo/tienda":null,"App por roles"].filter(Boolean).join(" · ")}\n`;
+  s+=`\nMÓDULOS (${o.activos.length}):\n`;
+  o.activos.forEach(m=>{ s+=`• ${m.id} ${m.nombre}\n    ↳ ${casActivas(m).map(c=>c.n.replace(/^[^ ]+ /,'')).join(", ")||"(base)"}\n`; });
+  if(o.exts.length){ s+=`\nEXTENSIONES:\n`; o.exts.forEach(x=>s+=`• ${x.id} ${x.nombre}\n`); }
+  if(o.mkOn){ s+=`\nMARKETING Y REDES:\n• Gestión mensual: $${o.mkMes} (3 posts/sem FB+IG, con seguimiento)\n• Creación página Facebook: $${o.mkFb}\n`; }
+  s+=`\nORDEN DE CONSTRUCCIÓN (pegar prompts):\n1) 09-Prompt-Maestro (relleno) → 2) módulos: ${ordenPegado(o.activos)}\n`;
+  if(o.exts.length) s+=`3) extensiones: ${o.exts.map(x=>x.id).join(", ")}\n`;
+  s+=`\nCHECKLIST:\n[ ] Login por roles  [ ] Usuarios y claves por rol\n[ ] Módulos conectados (stock descuenta, costos/ganancias en panel)\n[ ] Privacidad por rol  [ ] Claves cambiadas  [ ] Deploy probado en celular`;
+  if(o.landing) s+=`\n[ ] Landing del cliente publicada`;
+  if(o.catalogo) s+=`\n[ ] Catálogo con productos y precios cargados`;
+  if(o.mkOn) s+=`\n[ ] Redes creadas y calendario de publicaciones armado`;
+  return s;
+}
+function textoPrompt(o){
+  const nom=o.nombre==="Nuevo cliente"?"{NOMBRE}":o.nombre;
+  const colores=document.getElementById("cColores").value.trim()||"{COLORES O LOGO}";
+  let s=`Construye una app web de gestión comercial modular para:\n`;
+  s+=`- Nombre del negocio: ${nom}\n- Rubro: ${rubroActual?RUBROS[rubroActual].label:"{RUBRO}"}\n- Idioma: español de Chile\n- Identidad visual: ${colores}\n- Módulos activos: ${o.activos.map(m=>m.nombre).join(", ")||"{MÓDULOS}"}\n\n`;
+  s+=`Aplica la BASE del 09-Prompt-Maestro (base técnica, login por rol con clave, privacidad,\nmenú por rol, reglas de negocio e identidad visual moderna con modo claro/oscuro y PWA).\n\nCasillas activadas por módulo:\n`;
+  o.activos.forEach(m=>{ s+=`• ${m.nombre}: ${casActivas(m).map(c=>c.n.replace(/^[^ ]+ /,'')).join(", ")||"base"}\n`; });
+  if(o.exts.length) s+=`\nExtensiones: ${o.exts.map(x=>x.nombre).join("; ")}\n`;
+  s+=`\nDespués pega los módulos en orden: ${ordenPegado(o.activos)}.`;
+  return s;
+}
+
+function copyOut(){ const out=document.getElementById("outBox"); out.select(); out.setSelectionRange(0,99999);
+  navigator.clipboard.writeText(out.value).then(()=>{ const b=event.target,t=b.textContent; b.textContent="✓ Copiado"; setTimeout(()=>b.textContent=t,1400); }).catch(()=>document.execCommand("copy")); }
+function resetAll(){
+  rubroActual=null; document.querySelectorAll(".rubro").forEach(b=>b.classList.remove("active"));
+  MODULOS.forEach(m=>{ const mod=document.getElementById("mod-"+m.key); mod.classList.remove("on","open"); mod.querySelectorAll('[data-cas]').forEach(c=>c.checked=false); });
+  document.querySelectorAll('[data-ext]').forEach(e=>e.checked=false);
+  ["cNombre","cWa","cCiudad","cColores"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("mkOn").checked=false; update();
+}
+(function(){ try{const t=localStorage.getItem("panal-theme"); if(t) document.documentElement.setAttribute("data-theme",t);}catch(e){}
+  renderRubros(); renderMods(); renderExts(); update(); })();
+</script>
+
+</body></html>
