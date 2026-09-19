@@ -24,6 +24,7 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
   const [q, setQ] = useState("");
   const [modo, setModo] = useState("efectivo");
   const [abono, setAbono] = useState("");
+  const [verVenta, setVerVenta] = useState(false); // el panel de cobro se esconde hasta que quiera vender
 
   const clientesFiltrados = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -110,8 +111,25 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
         })}
       </div>
 
-      {/* Carrito */}
+      {/* Barra compacta: el panel de venta se abre solo cuando quieren vender (no tapa el catálogo) */}
       {lineas.length > 0 && (
+        <div className="sticky bottom-20 z-10">
+          {!verVenta ? (
+            <button type="button" onClick={() => setVerVenta(true)}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-green-600 py-4 text-base font-extrabold text-white shadow-lg active:brightness-95">
+              🛒 Ver venta · {lineas.length} ítem{lineas.length > 1 ? "s" : ""} · {fmtCLP(total)}
+            </button>
+          ) : (
+            <button type="button" onClick={() => setVerVenta(false)}
+              className="w-full rounded-2xl bg-slate-800 py-2.5 text-sm font-bold text-white shadow active:brightness-110">
+              ▾ Seguir viendo el catálogo
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Carrito (dentro del panel de venta) */}
+      {verVenta && lineas.length > 0 && (
         <div className="rounded-xl border border-slate-200 bg-white p-3">
           <div className="mb-1 flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Venta</span>
@@ -145,8 +163,9 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
         </div>
       )}
 
-      {/* Cobro */}
-      <form action={ventaRapida} className="sticky bottom-20 space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
+      {/* Cobro (dentro del panel de venta) */}
+      {verVenta && (
+      <form action={ventaRapida} className="space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
         <input type="hidden" name="items" value={JSON.stringify(lineas)} />
         <input type="hidden" name="negocioId" value={cliente?.id ?? ""} />
 
@@ -239,6 +258,7 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
               : `Registrar venta ${total > 0 ? fmtCLP(total) : ""}`}
         </button>
       </form>
+      )}
     </div>
   );
 }
