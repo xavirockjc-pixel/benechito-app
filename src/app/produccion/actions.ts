@@ -215,6 +215,29 @@ export async function registrarProduccion(formData: FormData) {
     });
   }
 
+  // Descuento automático de insumos por la RECETA BASE del tipo, escalado por los
+  // litros de mezcla (igual que la receta cargada en el panel: "para X litros").
+  // Solo insumos fijos (sin grupo); los alternativos (grupo) se eligen aparte.
+  if (litros > 0) {
+    const ref = await prisma.recetaBase.findUnique({ where: { linea } });
+    const baseRef = ref && ref.baseRef > 0 ? ref.baseRef : 0;
+    if (baseRef > 0) {
+      const recetaItems = await prisma.recetaItem.findMany({ where: { linea, grupo: null } });
+      for (const it of recetaItems) {
+        const usar = it.cantidad * (litros / baseRef);
+        if (usar <= 0) continue;
+        await prisma.materiaPrima.update({ where: { id: it.materiaPrimaId }, data: { stock: { decrement: usar } } });
+        await prisma.movimientoMateria.create({
+          data: {
+            materiaPrimaId: it.materiaPrimaId, tipo: "consumo", cantidad: usar,
+            motivo: `Producción · ${linea} · ${litros} L`,
+            usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+          },
+        });
+      }
+    }
+  }
+
   // Nombres de quienes trabajaron (para el registro interno del turno).
   const ids = participantes ? participantes.split(",").map((s) => s.trim()).filter(Boolean) : [];
   let operarios: string | null = u?.nombre ?? null;
