@@ -3,9 +3,9 @@
 <style>
   :root{
     color-scheme: dark;
-    --bg:#fff7ef; --card:#ffffff; --ink:#2a1a12; --muted:#8a7568; --line:#f2e3d5;
-    --rojo:#e0322c; --rojodark:#a81a15; --amar:#ffb020; --amardark:#e08a00; --verde:#25D366;
-    --ground:#160f08; --dsurf:#20160d; --dline:#3c2d1a; --honey:#f6a821; --bright:#ffce6a; --cream:#f4ecd8; --dmuted:#a99a7c; --rosa:#ff7aa2;
+    --bg:#151210; --bg2:#0e0b08; --card:#211b14; --ink:#f5ecdd; --muted:#a9997f; --line:#352b1f;
+    --rojo:#f2941f; --rojodark:#d1741a; --amar:#ffc24d; --amardark:#ffb020; --verde:#25D366;
+    --ground:#0e0b08; --dsurf:#211b14; --dline:#352b1f; --honey:#f2941f; --bright:#ffc24d; --cream:#f5ecdd; --dmuted:#a9997f; --rosa:#ff9a3c;
     --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     --mono:ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
     --shadow:0 18px 40px -26px rgba(120,40,10,.5);
@@ -24,8 +24,8 @@
   .page{display:none} .page.on{display:block}
 
   /* ==== TIENDA (claro) ==== */
-  .hero{position:relative;overflow:hidden;color:#fff;text-align:center;padding:48px 0 38px;background:linear-gradient(120deg,#e0322c,#a81a15 55%,#7a1410);background-size:200% 200%;animation:grad 14s ease infinite}
-  @keyframes grad{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+  .hero{position:relative;overflow:hidden;color:#fff;text-align:center;padding:34px 0 30px;background:radial-gradient(700px 360px at 50% 6%, rgba(242,148,31,.20), transparent 62%), linear-gradient(180deg,#171009,#0b0805 72%)}
+  .hero .logo{width:min(230px,58vw);height:auto;display:block;margin:2px auto 8px;filter:drop-shadow(0 10px 26px rgba(0,0,0,.6))}
   .floaties{position:absolute;inset:0;pointer-events:none}
   .floaties span{position:absolute;font-size:2.2rem;opacity:.22;animation:floaty 9s ease-in-out infinite}
   @keyframes floaty{0%,100%{transform:translateY(0) rotate(-6deg)}50%{transform:translateY(-20px) rotate(6deg)}}
@@ -36,17 +36,18 @@
   .wave{display:block;width:100%;height:34px;margin-top:-1px}
   .search{position:sticky;top:48px;z-index:15;background:var(--bg);padding:14px 0 6px}
   .sbar{display:flex;gap:8px}
-  .sbar input{flex:1;min-width:0;border:2px solid var(--line);border-radius:999px;padding:12px 16px;font-size:1rem;background:#fff;box-shadow:var(--shadow)}
+  .sbar input{flex:1;min-width:0;border:2px solid var(--line);border-radius:999px;padding:12px 16px;font-size:1rem;background:var(--card);color:var(--ink);box-shadow:var(--shadow)}
+  .sbar input::placeholder{color:var(--muted)}
   .sbar input:focus{outline:none;border-color:var(--rojo)}
-  .mic{flex:0 0 auto;width:48px;border:0;border-radius:50%;background:linear-gradient(180deg,#ff4b45,var(--rojo));color:#fff;font-size:1.15rem;cursor:pointer;box-shadow:var(--shadow)}
+  .mic{flex:0 0 auto;width:48px;border:0;border-radius:50%;background:linear-gradient(180deg,#ffb04d,var(--rojo));color:#160f07;font-size:1.15rem;cursor:pointer;box-shadow:var(--shadow)}
   .mic.on{background:linear-gradient(180deg,#12b551,#0a8f3c);animation:pulseR 1s infinite}
   @keyframes pulseR{50%{box-shadow:0 0 0 9px rgba(10,143,60,.22)}}
   .chips{display:flex;gap:8px;overflow-x:auto;padding:12px 0 4px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}
-  .chip{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 15px;font-weight:800;font-size:.84rem;cursor:pointer;color:var(--muted)}
+  .chip{flex:0 0 auto;border:1px solid var(--line);background:var(--card);border-radius:999px;padding:9px 15px;font-weight:800;font-size:.84rem;cursor:pointer;color:var(--muted)}
   .chip.on{background:linear-gradient(180deg,var(--rojo),var(--rojodark));border-color:var(--rojo);color:#fff}
   .toolbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:6px}
   .count{color:var(--muted);font-size:.85rem;font-weight:600}
-  .edit-toggle{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font-weight:800;font-size:.82rem;cursor:pointer}
+  .edit-toggle{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 14px;font-weight:800;font-size:.82rem;cursor:pointer}
   .edit-toggle.on{background:var(--amar);border-color:var(--amar);color:#3a2600}
   .menu{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:16px 0 40px}
   @media(max-width:720px){.menu{grid-template-columns:1fr 1fr}}@media(max-width:460px){.menu{grid-template-columns:1fr}}
@@ -60,37 +61,42 @@
   .item .pr{color:var(--rojo);font-weight:900;font-size:1.15rem;margin:8px 0}
   .item .add{background:linear-gradient(180deg,#ff4b45,var(--rojo));color:#fff;font-weight:800;font-size:.84rem;padding:9px 20px;border-radius:999px;cursor:pointer;border:0}
   .item .ed{position:absolute;top:9px;right:9px;display:none;gap:5px}.item.editing .ed{display:flex}
-  .item .ed button{width:32px;height:32px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer}
+  .item .ed button{width:32px;height:32px;border:1px solid var(--line);background:var(--bg);border-radius:9px;cursor:pointer}
   .empty{text-align:center;color:var(--muted);padding:40px 0}
-  .panel{background:#fff;border:2px solid var(--amar);border-radius:20px;padding:18px;margin:6px 0 14px;display:none;box-shadow:var(--shadow)}.panel.on{display:block}
+  .panel{background:var(--card);border:2px solid var(--amar);border-radius:20px;padding:18px;margin:6px 0 14px;display:none;box-shadow:var(--shadow)}.panel.on{display:block}
   .panel h3{font-size:1.05rem;margin-bottom:10px}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:560px){.grid2{grid-template-columns:1fr}}
   .panel label,.optsEd label{font-size:.7rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
-  .panel input,.panel select{width:100%;margin-top:4px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.92rem;background:#fff}
+  .panel input,.panel select{width:100%;margin-top:4px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:.92rem;background:var(--bg);color:var(--ink)}
   .photo-row{margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
-  .fprev{width:66px;height:66px;border-radius:14px;border:2px dashed var(--line);display:grid;place-items:center;font-size:1.6rem;background:#fff;overflow:hidden}.fprev img{width:100%;height:100%;object-fit:cover}
-  .mini{border:1px solid var(--line);background:#fff;border-radius:999px;padding:8px 14px;font-weight:800;font-size:.8rem;cursor:pointer}.mini.voz{background:#eafff2;border-color:#bde9cf;color:#0a8f3c}
+  .fprev{width:66px;height:66px;border-radius:14px;border:2px dashed var(--line);display:grid;place-items:center;font-size:1.6rem;background:var(--bg);overflow:hidden}.fprev img{width:100%;height:100%;object-fit:cover}
+  .mini{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 14px;font-weight:800;font-size:.8rem;cursor:pointer}.mini.voz{background:#13351f;border-color:#1e6b3f;color:#7fe0a6}
   .optsEd{margin-top:12px;border-top:1px dashed var(--line);padding-top:12px}
-  .gcard{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px;background:#fffdf9}
+  .gcard{border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:8px;background:var(--bg)}
   .gh{display:flex;gap:6px;align-items:center;margin-bottom:6px}.gh input{flex:1}.orow{display:flex;gap:6px;margin-bottom:4px}.orow input.on{flex:1}.orow input.op{width:88px}
-  .x{border:1px solid var(--line);background:#fff;border-radius:8px;width:32px;cursor:pointer}
-  .btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.btn{border:0;border-radius:999px;font-weight:800;padding:11px 20px;font-size:.88rem;cursor:pointer}.btn-r{background:var(--rojo);color:#fff}.btn-g{background:#efe7df;color:#333}
+  .gcard input,.gcard select{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:.85rem}
+  .x{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;width:32px;cursor:pointer}
+  .btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}.btn{border:0;border-radius:999px;font-weight:800;padding:11px 20px;font-size:.88rem;cursor:pointer}.btn-r{background:var(--rojo);color:#160f07}.btn-g{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
   .hint{color:var(--muted);font-size:.82rem;margin-top:8px}
   .info{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}@media(max-width:560px){.info{grid-template-columns:1fr}}
   .info div{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;box-shadow:var(--shadow)}.info b{display:block}.info span{color:var(--muted);font-size:.9rem}
+  .deliv{border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--card);box-shadow:var(--shadow)}
+  .delh{background:linear-gradient(180deg,var(--rojo),var(--rojodark));color:#160f07;font-weight:900;padding:12px 16px;font-size:.95rem}
+  .delrow{display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-top:1px solid var(--line);font-size:.95rem}
+  .delrow span{color:var(--muted)} .delrow b{color:var(--bright);font-variant-numeric:tabular-nums}
 
   /* modal producto */
   .modal{position:fixed;inset:0;z-index:60;display:none;align-items:flex-end;justify-content:center;background:rgba(30,12,6,.6);backdrop-filter:blur(4px)}.modal.on{display:flex}@media(min-width:640px){.modal{align-items:center;padding:20px}}
-  .sheet{width:100%;max-width:480px;max-height:92vh;overflow-y:auto;background:#fff;border-radius:22px 22px 0 0;box-shadow:0 -20px 60px -20px #000}@media(min-width:640px){.sheet{border-radius:22px}}
+  .sheet{width:100%;max-width:480px;max-height:92vh;overflow-y:auto;background:var(--card);color:var(--ink);border-radius:22px 22px 0 0;box-shadow:0 -20px 60px -20px #000}@media(min-width:640px){.sheet{border-radius:22px}}
   .sheet .top{position:relative;background:linear-gradient(135deg,var(--rojo),var(--rojodark));color:#fff;padding:18px}
   .sheet .top .em{font-size:2rem}.sheet .top h3{font-size:1.3rem;font-weight:900;margin-top:4px}
   .sheet .top .close{position:absolute;top:12px;right:12px;width:36px;height:36px;border:0;border-radius:50%;background:rgba(255,255,255,.2);color:#fff;font-size:1.1rem;cursor:pointer}
   .sheet .body{padding:14px 18px 6px}
   .grp{margin-bottom:12px}.grp .gt{font-weight:800;font-size:.92rem;margin-bottom:6px;display:flex;justify-content:space-between}.grp .gt small{color:var(--muted);font-weight:600}
-  .opt{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:6px;cursor:pointer}.opt.sel{border-color:var(--rojo);background:#fff3f2}
-  .opt .nm{flex:1}.opt .px{color:var(--amardark);font-weight:800;font-size:.85rem}.opt input{accent-color:var(--rojo);width:18px;height:18px}
-  .notas,.datin{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:.92rem}
+  .opt{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin-bottom:6px;cursor:pointer;background:var(--bg)}.opt.sel{border-color:var(--rojo);background:color-mix(in srgb,var(--rojo) 16%,var(--bg))}
+  .opt .nm{flex:1}.opt .px{color:var(--bright);font-weight:800;font-size:.85rem}.opt input{accent-color:var(--rojo);width:18px;height:18px}
+  .notas,.datin{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:.92rem;background:var(--bg);color:var(--ink)}
   .datin{margin-bottom:6px}
-  .sheet .foot{position:sticky;bottom:0;background:#fff;border-top:1px solid var(--line);padding:14px 18px;display:flex;gap:10px;align-items:center}
+  .sheet .foot{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:14px 18px;display:flex;gap:10px;align-items:center}
   .sheet .foot .tot{font-weight:900;font-size:1.2rem;color:var(--rojo)}.sheet .foot .pedir{flex:1;background:var(--verde);color:#fff;border:0;border-radius:999px;padding:13px;font-weight:800;font-size:1rem;cursor:pointer;text-align:center}
   .micnota{border:1px solid #bde9cf;background:#eafff2;color:#0a8f3c;border-radius:10px;padding:8px 10px;cursor:pointer}
 
@@ -158,12 +164,12 @@
 <div class="page on" id="pageTienda">
   <div class="hero">
     <div class="floaties" aria-hidden="true"><span style="left:6%;top:22%">🌭</span><span style="left:88%;top:18%;animation-delay:1.2s">🍦</span><span style="left:14%;top:64%;animation-delay:2.1s">🥖</span><span style="left:80%;top:66%;animation-delay:.6s">☕</span><span style="left:48%;top:12%;animation-delay:1.8s">🍟</span><span style="left:30%;top:70%;animation-delay:2.6s">🏧</span></div>
-    <div class="wrap in"><div style="font-size:2.3rem">🌭🥖☕🍦🛒🏧</div><h1>Da'cris</h1><div class="slo">"De todo, si no ¿pa' qué?"</div><p>En Lota encuentras de todo en un solo lugar: comida rápida, abarrotes, panadería y <b>Caja Vecina</b>. Retiro o delivery. Busca lo que necesitas 👇</p></div>
-    <svg class="wave" viewBox="0 0 1440 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40 C 360 0, 1080 0, 1440 40 Z" fill="#fff7ef"/></svg>
+    <div class="wrap in"><img class="logo" src="assets/dacris-logo.jpg" alt="Da'cris — De todo si no, pa' qué"><p>En Lota, <b>de todo en un solo lugar</b>: completos, sandwiches, papas, pichangas, churros, helados soft, empanadas, dulces, panadería y <b>Caja Vecina</b>. Retiro en local o delivery 👇</p></div>
+    <svg class="wave" viewBox="0 0 1440 40" preserveAspectRatio="none" aria-hidden="true"><path d="M0 40 C 360 0, 1080 0, 1440 40 Z" fill="#151210"/></svg>
   </div>
   <div class="wrap">
     <div class="search">
-      <div class="sbar"><input id="q" type="text" placeholder="Busca: completo, pan, café, helado…" autocomplete="off"><button class="mic" id="mic" title="Buscar por voz">🎤</button></div>
+      <div class="sbar"><input id="q" type="text" placeholder="Busca: completo, sandwich, papas, helado…" autocomplete="off"><button class="mic" id="mic" title="Buscar por voz">🎤</button></div>
       <div class="chips" id="chips"></div>
       <div class="toolbar"><span class="count" id="count"></span><button class="edit-toggle" id="editToggle">✏️ Editar catálogo</button></div>
     </div>
@@ -183,7 +189,21 @@
     </div>
     <div class="menu" id="menu"></div>
     <div class="empty" id="empty" style="display:none">No encontramos eso 🤔</div>
-    <div class="info" style="margin-bottom:30px"><div><b>📍 Dónde estamos</b><span>Av. La Paz 96, Bannen, Lota</span></div><div><b>🛵 Entrega</b><span>Retiro o Delivery en Lota.</span></div><div><b>💳 Pago</b><span>Efectivo, transferencia y Mercado Pago.</span></div><div><b>🏧 Caja Vecina</b><span>Giros, depósitos, pago de cuentas y transferencias.</span></div></div>
+    <div class="info" style="margin-bottom:16px">
+      <div><b>📍 Dónde estamos</b><span>Av. La Paz 99, Lota</span></div>
+      <div><b>📞 Contacto</b><span><a href="https://wa.me/56937762665" target="_blank" rel="noopener" style="color:var(--bright)">+56 9 3776 2665</a> · WhatsApp</span></div>
+      <div><b>📱 Redes</b><span>Facebook: Dacris Lota · Instagram: @dacris_lota</span></div>
+      <div><b>💳 Pago</b><span>Efectivo, transferencia y Mercado Pago.</span></div>
+      <div><b>🏧 Caja Vecina</b><span>Giros, depósitos, pago de cuentas y transferencias.</span></div>
+      <div><b>🕒 Retiro o delivery</b><span>Retiras en el local o te lo llevamos. Tú eliges.</span></div>
+    </div>
+    <div class="deliv" style="margin-bottom:30px">
+      <div class="delh"><span>🛵 Valores de delivery por zona</span></div>
+      <div class="delrow"><span>Lota</span><b>$1.500</b></div>
+      <div class="delrow"><span>Colcura</span><b>$2.000</b></div>
+      <div class="delrow"><span>Playa Blanca</span><b>$2.500</b></div>
+      <div class="delrow"><span>Coronel</span><b>$4.500</b></div>
+    </div>
   </div>
 </div>
 
@@ -304,24 +324,27 @@
   }
 
   /* ================= TIENDA ================= */
-  var CATS=["Comida rápida","Panadería","Cafetería","Helados","Abarrotes","Caja Vecina","Otro"];
+  var CATS=["Comida rápida","Helados","Panadería","Abarrotes","Caja Vecina","Otro"];
+  // Productos reales de Da'cris (del flyer). Precios referenciales — ajústalos con "Editar catálogo".
   var DEFAULTS=[
-    {cat:"Caja Vecina",e:"🏧",n:"Giro / Retiro de efectivo",d:"Retira plata de tu cuenta o CuentaRUT.",p:"comisión"},
-    {cat:"Caja Vecina",e:"💵",n:"Depósito",d:"Deposita en tu cuenta o la de otra persona.",p:"comisión"},
+    {cat:"Comida rápida",e:"🌭",n:"Completos",d:"Italiano, dinámico o a lo pobre.",p:"desde $1.500",opts:[{g:"Tipo",tipo:"single",ops:[{n:"Italiano",p:0},{n:"Dinámico",p:300},{n:"A lo pobre",p:900}]},{g:"Aderezos",tipo:"multi",ops:[{n:"Mayo",p:0},{n:"Ketchup",p:0},{n:"Mostaza",p:0},{n:"Ají",p:0}]},{g:"Extras",tipo:"multi",ops:[{n:"Palta extra",p:500},{n:"Queso",p:400},{n:"Doble vianesa",p:700}]}]},
+    {cat:"Comida rápida",e:"🥪",n:"Sandwiches",d:"Churrasco, mechada, as. Con tus agregados.",p:"desde $2.500",opts:[{g:"Relleno",tipo:"single",ops:[{n:"Churrasco",p:0},{n:"Mechada",p:0},{n:"As",p:0}]},{g:"Estilo",tipo:"single",ops:[{n:"Italiano",p:0},{n:"Chacarero",p:800},{n:"Barros Luco",p:600}]}]},
+    {cat:"Comida rápida",e:"🍟",n:"Papas fritas",d:"Solas o cargadas.",p:"desde $2.000",opts:[{g:"Tamaño",tipo:"single",ops:[{n:"Normal",p:0},{n:"Grande",p:1000}]},{g:"Extras",tipo:"multi",ops:[{n:"Cheddar",p:600},{n:"Tocino",p:800},{n:"Vienesa",p:600}]}]},
+    {cat:"Comida rápida",e:"🍽️",n:"Pichangas",d:"Surtido para compartir.",p:"desde $7.900",opts:[{g:"Tamaño",tipo:"single",ops:[{n:"Para 2",p:0},{n:"Para 4",p:5000},{n:"Para 6",p:9000}]}]},
+    {cat:"Comida rápida",e:"🥨",n:"Churros",d:"Rellenos de manjar o chocolate.",p:"desde $1.000",opts:[{g:"Relleno",tipo:"single",ops:[{n:"Manjar",p:0},{n:"Chocolate",p:0},{n:"Sin relleno",p:0}]}]},
+    {cat:"Helados",e:"🍦",n:"Helados soft",d:"Barquillo o vasito, con topping.",p:"desde $1.500",opts:[{g:"Sabor",tipo:"single",ops:[{n:"Vainilla",p:0},{n:"Chocolate",p:0},{n:"Mixto",p:0}]},{g:"Topping",tipo:"multi",ops:[{n:"Chispas",p:300},{n:"Salsa",p:300},{n:"Galleta",p:400}]}]},
+    {cat:"Panadería",e:"🥟",n:"Empanadas",d:"De pino, queso o del día.",p:"desde $1.500",opts:[{g:"Relleno",tipo:"single",ops:[{n:"Pino",p:0},{n:"Queso",p:0},{n:"Napolitana",p:300}]}]},
+    {cat:"Panadería",e:"🥖",n:"Panadería",d:"Pan amasado y del día. Por kilo.",p:"desde $1.800"},
+    {cat:"Panadería",e:"🍰",n:"Dulces",d:"Pasteles, kuchen y dulces chilenos.",p:"varios"},
+    {cat:"Abarrotes",e:"🥤",n:"Bebidas",d:"Lata o 1.5L, bien helada.",p:"desde $1.200"},
+    {cat:"Abarrotes",e:"🍫",n:"Golosinas y snacks",d:"Dulces, galletas, cabritas.",p:"desde $500"},
+    {cat:"Abarrotes",e:"🛒",n:"Básicos del hogar",d:"Lo que te falta a última hora.",p:"varios"},
+    {cat:"Caja Vecina",e:"🏧",n:"Giro / Retiro de efectivo",d:"Retira de tu cuenta o CuentaRUT.",p:"comisión"},
+    {cat:"Caja Vecina",e:"💵",n:"Depósito",d:"A tu cuenta o la de otra persona.",p:"comisión"},
     {cat:"Caja Vecina",e:"🧾",n:"Pago de cuentas",d:"Luz, agua, gas y más.",p:"comisión"},
-    {cat:"Caja Vecina",e:"🔁",n:"Transferencias",d:"Envía dinero a otra cuenta.",p:"comisión"},
-    {cat:"Comida rápida",e:"🌭",n:"Completo Italiano",d:"Vianesa, palta, tomate y mayo.",p:"$2.000",opts:[{g:"Aderezos",tipo:"multi",ops:[{n:"Mayo",p:0},{n:"Ketchup",p:0},{n:"Ají",p:0}]},{g:"Extras",tipo:"multi",ops:[{n:"Palta extra",p:500},{n:"Queso",p:400},{n:"Doble vianesa",p:700}]}]},
-    {cat:"Comida rápida",e:"🌭",n:"Completo Simple",d:"Vianesa Llanquihue.",p:"$1.500"},
-    {cat:"Comida rápida",e:"🍟",n:"Salchipapas",d:"Papas con vienesas y salsas.",p:"$3.500",opts:[{g:"Extras",tipo:"multi",ops:[{n:"Tocino",p:800},{n:"Cheddar",p:500}]}]},
-    {cat:"Comida rápida",e:"🍽️",n:"Pichanga",d:"Para compartir.",p:"$7.900",opts:[{g:"Tamaño",tipo:"single",ops:[{n:"Para 2",p:0},{n:"Para 4",p:5000},{n:"Para 6",p:9000}]}]},
-    {cat:"Panadería",e:"🥖",n:"Pan amasado",d:"Recién hecho. Por kilo.",p:"$1.800"},
-    {cat:"Panadería",e:"🥟",n:"Empanadas",d:"Pino, queso o del día.",p:"$1.500",opts:[{g:"Relleno",tipo:"single",ops:[{n:"Pino",p:0},{n:"Queso",p:0}]}]},
-    {cat:"Cafetería",e:"☕",n:"Café",d:"Cortado, con leche o exprés.",p:"$1.200",opts:[{g:"Tamaño",tipo:"single",ops:[{n:"Chico",p:0},{n:"Grande",p:500}]}]},
-    {cat:"Helados",e:"🍦",n:"Helados",d:"Paletas, barquillos y potes.",p:"desde $1.000",opts:[{g:"Sabor",tipo:"single",ops:[{n:"Chocolate",p:0},{n:"Vainilla",p:0},{n:"Frutilla",p:0}]}]},
-    {cat:"Abarrotes",e:"🥤",n:"Bebidas",d:"Lata o 1.5L.",p:"desde $1.200"},
-    {cat:"Abarrotes",e:"🍫",n:"Golosinas y snacks",d:"Dulces, galletas, cabritas.",p:"desde $500"}
+    {cat:"Caja Vecina",e:"🔁",n:"Transferencias",d:"Envía dinero a otra cuenta.",p:"comisión"}
   ];
-  var MKEY='dacris_menu_v3';
+  var MKEY='dacris_menu_v4';
   function mLoad(){ try{ var s=JSON.parse(localStorage.getItem(MKEY)); return Array.isArray(s)&&s.length?s:DEFAULTS.slice(); }catch(e){ return DEFAULTS.slice(); } }
   function mSave(){ try{ localStorage.setItem(MKEY, JSON.stringify(items)); }catch(e){} }
   var items=mLoad();
