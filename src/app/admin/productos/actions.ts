@@ -10,6 +10,39 @@ const val = (fd: FormData, k: string) => {
   return v ? String(v).trim() : "";
 };
 
+/** Obtiene (o crea) la lista de precios de un canal/perfil. */
+async function listaDeCanal(canal: string, nombre: string) {
+  const existe = await prisma.listaPrecio.findFirst({ where: { canal, activo: true } });
+  if (existe) return existe;
+  return prisma.listaPrecio.create({ data: { canal, nombre, activo: true } });
+}
+
+/** Guarda los precios por PERFIL de un producto (Local unitario/minorista/mayorista, Reparto, Distribuidor, Tienda). */
+export async function guardarPreciosPerfil(formData: FormData) {
+  const id = val(formData, "id");
+  if (!id) return;
+  const { PERFILES_PRECIO, canalLabel } = await import("@/lib/dominio/precios");
+  for (const perfil of PERFILES_PRECIO) {
+    const raw = String(formData.get(`precio_${perfil.id}`) ?? "").replace(/[^0-9]/g, "");
+    const lista = await listaDeCanal(perfil.id, canalLabel[perfil.id] ?? perfil.label);
+    if (raw === "") {
+      // Vacío = quitar ese precio (el producto no se vende en ese perfil).
+      await prisma.precioProducto.deleteMany({ where: { productoId: id, listaId: lista.id, cantidadMinima: 1 } });
+      continue;
+    }
+    const precio = Number(raw);
+    const ya = await prisma.precioProducto.findFirst({ where: { productoId: id, listaId: lista.id, cantidadMinima: 1 } });
+    if (ya) await prisma.precioProducto.update({ where: { id: ya.id }, data: { precio } });
+    else await prisma.precioProducto.create({ data: { productoId: id, listaId: lista.id, precio, cantidadMinima: 1 } });
+  }
+  revalidatePath(`/admin/productos/${id}`);
+  revalidatePath("/admin/precios");
+  revalidatePath("/tienda");
+  revalidatePath("/vendedor");
+  revalidatePath("/caja");
+  redirect(`/admin/productos/${id}?precios=1`);
+}
+
 /** Guarda la foto de un producto (imagen subida y comprimida a data URL). */
 export async function guardarFotoProducto(formData: FormData) {
   const id = val(formData, "id");
@@ -145,7 +178,8 @@ export async function crearProducto(formData: FormData) {
       categoria: val(formData, "categoria") || null,
       tipo: val(formData, "tipo") === "reventa" ? "reventa" : "propio",
       seccion: ["propio", "distribucion", "ruta", "promo"].includes(val(formData, "seccion")) ? val(formData, "seccion") : "propio",
-      soloLocal: formData.get("soloLocal") === "si",
+      // Distribución/reventa = solo Local (se ocultan de vendedor, bodega y producción; quedan en el panel).
+      soloLocal: formData.get("soloLocal") === "si" || val(formData, "tipo") === "reventa" || val(formData, "seccion") === "distribucion",
       publicarTienda: formData.get("publicarTienda") === "si",
       stockMinimo: Math.max(0, Math.floor(Number(val(formData, "stockMinimo")) || 0)),
       descripcion: val(formData, "descripcion") || null,
@@ -203,7 +237,8 @@ export async function actualizarProducto(formData: FormData) {
       categoria: val(formData, "categoria") || null,
       tipo: val(formData, "tipo") === "reventa" ? "reventa" : "propio",
       seccion: ["propio", "distribucion", "ruta", "promo"].includes(val(formData, "seccion")) ? val(formData, "seccion") : "propio",
-      soloLocal: formData.get("soloLocal") === "si",
+      // Distribución/reventa = solo Local (se ocultan de vendedor, bodega y producción; quedan en el panel).
+      soloLocal: formData.get("soloLocal") === "si" || val(formData, "tipo") === "reventa" || val(formData, "seccion") === "distribucion",
       publicarTienda: formData.get("publicarTienda") === "si",
       stockMinimo: Math.max(0, Math.floor(Number(val(formData, "stockMinimo")) || 0)),
       descripcion: val(formData, "descripcion") || null,

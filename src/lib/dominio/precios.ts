@@ -60,6 +60,8 @@ export const compraLabel: Record<string, string> = {
 /** Etiquetas legibles de canales (para UI). */
 export const canalLabel: Record<string, string> = {
   sala: "Sala de Ventas",
+  minorista: "Local minorista",
+  mayorista: "Local mayorista",
   web: "Web",
   reparto: "Reparto",
   negocio: "Negocio",
@@ -68,6 +70,20 @@ export const canalLabel: Record<string, string> = {
   distribuidor: "Distribuidor",
   supermercado: "Supermercado",
 };
+
+/**
+ * Perfiles de precio que se editan por producto (en el Catálogo). Cada perfil
+ * se guarda en su lista por canal; cada app monta el precio de su perfil.
+ * Orden = cómo se muestran en el editor.
+ */
+export const PERFILES_PRECIO = [
+  { id: "sala", label: "Local · unitario", icono: "🧍" },
+  { id: "minorista", label: "Local · minorista", icono: "🛍️" },
+  { id: "mayorista", label: "Local · mayorista", icono: "📦" },
+  { id: "reparto", label: "Reparto (vendedor)", icono: "🚚" },
+  { id: "distribuidor", label: "Distribuidor", icono: "🏭" },
+  { id: "web", label: "Tienda online", icono: "💻" },
+] as const;
 
 /**
  * Determina la lista de precios que corresponde a un cliente (Negocio).
