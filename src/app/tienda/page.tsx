@@ -49,7 +49,7 @@ export default async function TiendaPage({ searchParams }: { searchParams: Promi
   const precios = listaIds.length
     ? await prisma.precioProducto.findMany({
         where: { listaId: { in: listaIds }, cantidadMinima: 1, producto: { publicarTienda: true, activo: true } },
-        include: { producto: true },
+        include: { producto: { include: { fotos: { orderBy: [{ orden: "asc" }, { createdAt: "asc" }], select: { url: true } } } } },
       })
     : [];
 
@@ -93,6 +93,7 @@ export default async function TiendaPage({ searchParams }: { searchParams: Promi
       formato: producto.formato,
       seccion: producto.seccion ?? "propio",
       fotoUrl: producto.fotoUrl || imagenDefault(producto.nombre),
+      fotos: (producto.fotos.length > 0 ? producto.fotos.map((f) => f.url) : [producto.fotoUrl || imagenDefault(producto.nombre)]).filter((u): u is string => !!u),
       precios, // { detalle, online, comerciante, distribuidor }
       sabores: saboresDe(producto),
       grupo: grupoDe(producto.linea, producto.nombre),

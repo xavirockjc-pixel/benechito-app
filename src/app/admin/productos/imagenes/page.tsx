@@ -2,7 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { lineaLabel } from "@/lib/dominio/produccion";
 import { seccionCatalogoLabel, seccionCatalogoIcono } from "@/lib/dominio/catalogo";
-import SubirFoto from "../SubirFoto";
+import GaleriaProducto from "../GaleriaProducto";
+import CarruselFotos from "@/app/_shared/CarruselFotos";
 import { togglePublicarTienda, guardarReglasTienda, guardarSaboresTienda } from "../actions";
 
 export const dynamic = "force-dynamic";
@@ -11,8 +12,9 @@ export default async function ImagenesPage() {
   const productos = await prisma.producto.findMany({
     where: { activo: true },
     orderBy: [{ seccion: "asc" }, { nombre: "asc" }],
+    include: { fotos: { orderBy: [{ orden: "asc" }, { createdAt: "asc" }], select: { id: true, url: true } } },
   });
-  const conFoto = productos.filter((p) => p.fotoUrl).length;
+  const conFoto = productos.filter((p) => p.fotos.length > 0 || p.fotoUrl).length;
   const enTienda = productos.filter((p) => p.publicarTienda).length;
 
   return (
@@ -21,7 +23,7 @@ export default async function ImagenesPage() {
         <div>
           <Link href="/admin/productos" className="text-sm font-semibold text-slate-500 hover:text-slate-800">← Catálogo</Link>
           <h1 className="text-2xl font-extrabold text-slate-900">📷 Fotos de la tienda</h1>
-          <p className="text-sm text-slate-500">Sube la foto de cada producto (desde tu compu o celular) y elige cuáles se publican en la tienda.</p>
+          <p className="text-sm text-slate-500">Sube <b>varias fotos</b> por producto (se ven en carrusel que rota solo en tienda, vendedor y panel). La primera es la principal. Elige cuáles se publican en la tienda.</p>
         </div>
         <a href="/tienda" target="_blank" rel="noopener noreferrer" className="rounded-full bg-[#1479c4] px-5 py-2.5 text-sm font-bold text-white active:scale-95">🛒 Ver tienda</a>
       </div>
@@ -34,7 +36,10 @@ export default async function ImagenesPage() {
       <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
         {productos.map((p) => (
           <div key={p.id} className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-            <SubirFoto id={p.id} fotoUrl={p.fotoUrl} nombre={p.nombre} />
+            {p.fotos.length > 1 && (
+              <CarruselFotos urls={p.fotos.map((f) => f.url)} alt={p.nombre} className="mb-2 aspect-square w-full rounded-xl" />
+            )}
+            <GaleriaProducto id={p.id} fotos={p.fotos} nombre={p.nombre} />
             <p className="mt-2 truncate text-sm font-bold text-slate-900">{p.nombre}</p>
             <p className="truncate text-[11px] text-slate-400">
               {seccionCatalogoIcono[p.seccion ?? "propio"]} {seccionCatalogoLabel[p.seccion ?? "propio"] ?? p.seccion}

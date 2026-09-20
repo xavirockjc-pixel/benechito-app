@@ -122,6 +122,7 @@ model Producto {
 
   instalaciones   PuntoProducto[]
   reposicionItems ReposicionItem[]
+  fotos           ProductoFoto[]
   // --- v2: catálogo comercial ---
   precios         PrecioProducto[]
   pedidoItems     PedidoItem[]
@@ -714,6 +715,20 @@ model OrdenProduccion {
   fechaTermino DateTime?
 
   @@index([estado])
+}
+
+/// Galería de fotos de un producto (varias, en orden de subida). El carrusel de la
+/// tienda / vendedor / panel las rota solas. `Producto.fotoUrl` queda como la
+/// principal (la primera) para los lugares que muestran una sola imagen.
+model ProductoFoto {
+  id         String   @id @default(cuid())
+  producto   Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  productoId String
+  url        String
+  orden      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([productoId])
 }
 
 /// Recomendación de la central para la app de Producción. Es una NOTA (sugerencia,

@@ -5,9 +5,10 @@ import { fmtCLP } from "@/lib/dominio/pedidos";
 import { whatsappLink } from "@/lib/config";
 import { crearPedidoTienda } from "./actions";
 import UbicacionCliente from "./UbicacionCliente";
+import CarruselFotos from "@/app/_shared/CarruselFotos";
 
 type SaborInfo = { nombre: string; desc: string | null; foto: string | null };
-type Prod = { id: string; nombre: string; descripcion: string | null; formato: string | null; seccion: string; fotoUrl: string | null; precios: Record<string, number>; sabores: SaborInfo[]; grupo: string; min: number; max: number };
+type Prod = { id: string; nombre: string; descripcion: string | null; formato: string | null; seccion: string; fotoUrl: string | null; fotos?: string[]; precios: Record<string, number>; sabores: SaborInfo[]; grupo: string; min: number; max: number };
 type Tarifa = { codigo: string; label: string; icono: string; cond: string };
 
 const GRUPOS = [
@@ -84,9 +85,8 @@ export default function Tienda({
     return (
       <div key={p.id} className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-sm ring-1 ring-crema-2 transition hover:-translate-y-1 hover:shadow-xl">
         <button type="button" onClick={() => setDetalleProd(p)} className="relative aspect-square w-full overflow-hidden bg-white" title="Ver detalle del producto">
-          {p.fotoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={p.fotoUrl} alt={p.nombre} className="h-full w-full object-contain transition group-hover:scale-105" />
+          {(p.fotos && p.fotos.length) || p.fotoUrl ? (
+            <CarruselFotos urls={p.fotos && p.fotos.length ? p.fotos : p.fotoUrl ? [p.fotoUrl] : []} alt={p.nombre} className="h-full w-full" />
           ) : (
             <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${grad}`}>
               <span className="font-display text-4xl font-extrabold text-white/90">{p.nombre.charAt(0)}</span>
@@ -341,9 +341,8 @@ export default function Tienda({
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={() => setDetalleProd(null)}>
           <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
             <div className="relative aspect-square w-full bg-white">
-              {detalleProd.fotoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={detalleProd.fotoUrl} alt={detalleProd.nombre} className="h-full w-full object-contain" />
+              {(detalleProd.fotos && detalleProd.fotos.length) || detalleProd.fotoUrl ? (
+                <CarruselFotos urls={detalleProd.fotos && detalleProd.fotos.length ? detalleProd.fotos : detalleProd.fotoUrl ? [detalleProd.fotoUrl] : []} alt={detalleProd.nombre} intervalo={3500} className="h-full w-full" />
               ) : (
                 <div className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${GRAD[detalleProd.seccion] ?? GRAD.propio}`}>
                   <span className="font-display text-6xl font-extrabold text-white/90">{detalleProd.nombre.charAt(0)}</span>

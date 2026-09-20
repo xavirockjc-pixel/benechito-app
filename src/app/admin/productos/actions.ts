@@ -23,6 +23,40 @@ export async function guardarFotoProducto(formData: FormData) {
   revalidatePath("/tienda");
 }
 
+/** Mantiene Producto.fotoUrl = primera foto de la galería (para los lugares con 1 imagen). */
+async function sincronizarPrincipal(productoId: string) {
+  const primera = await prisma.productoFoto.findFirst({ where: { productoId }, orderBy: [{ orden: "asc" }, { createdAt: "asc" }] });
+  await prisma.producto.update({ where: { id: productoId }, data: { fotoUrl: primera?.url ?? null } });
+}
+
+/** Agrega una foto a la galería del producto (varias, en orden de subida). */
+export async function agregarFotoProducto(formData: FormData) {
+  const id = val(formData, "id");
+  const url = String(formData.get("fotoUrl") ?? "");
+  if (!id || !(url.startsWith("data:image/") || url.startsWith("http"))) return;
+  const max = await prisma.productoFoto.aggregate({ where: { productoId: id }, _max: { orden: true } });
+  await prisma.productoFoto.create({ data: { productoId: id, url, orden: (max._max.orden ?? -1) + 1 } });
+  await sincronizarPrincipal(id);
+  revalidatePath("/admin/productos/imagenes");
+  revalidatePath("/admin/productos");
+  revalidatePath("/tienda");
+  revalidatePath("/vendedor");
+}
+
+/** Quita una foto de la galería. */
+export async function quitarFotoProducto(formData: FormData) {
+  const fotoId = val(formData, "fotoId");
+  if (!fotoId) return;
+  const foto = await prisma.productoFoto.findUnique({ where: { id: fotoId }, select: { productoId: true } });
+  if (!foto) return;
+  await prisma.productoFoto.delete({ where: { id: fotoId } });
+  await sincronizarPrincipal(foto.productoId);
+  revalidatePath("/admin/productos/imagenes");
+  revalidatePath("/admin/productos");
+  revalidatePath("/tienda");
+  revalidatePath("/vendedor");
+}
+
 /** Guarda las reglas de cantidad de la tienda (mínimo/máximo) de un producto. */
 export async function guardarReglasTienda(formData: FormData) {
   const id = val(formData, "id");

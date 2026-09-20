@@ -19,7 +19,7 @@ export default async function CatalogoVenta() {
     ? await Promise.all([
         prisma.precioProducto.findMany({
           where: { listaId: lista.id, cantidadMinima: 1 },
-          include: { producto: { select: { id: true, nombre: true, formato: true, fotoUrl: true, activo: true, soloLocal: true } } },
+          include: { producto: { select: { id: true, nombre: true, formato: true, fotoUrl: true, activo: true, soloLocal: true, fotos: { orderBy: [{ orden: "asc" }, { createdAt: "asc" }], select: { url: true } } } } },
         }),
         // Tramos por volumen (mayoreo): desde N unidades, otro precio.
         prisma.precioProducto.findMany({
@@ -44,6 +44,7 @@ export default async function CatalogoVenta() {
       nombre: p.producto.nombre,
       formato: p.producto.formato,
       fotoUrl: p.producto.fotoUrl,
+      fotos: p.producto.fotos.map((f) => f.url),
       precio: Number(p.precio),
       tramos: (tramosDe.get(p.producto.id) ?? []).sort((a, b) => a.desde - b.desde),
     }))

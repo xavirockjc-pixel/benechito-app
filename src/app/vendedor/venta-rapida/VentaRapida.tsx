@@ -5,10 +5,11 @@ import { fmtCLP } from "@/lib/dominio/pedidos";
 import { ETIQUETAS_VENTA, etiquetaVentaLabel, TIPOS_DOCUMENTO, tipoDocumentoLabel } from "@/lib/dominio/ventas";
 import { ventaRapida } from "../actions";
 import ControlVoz from "../ControlVoz";
+import CarruselFotos from "@/app/_shared/CarruselFotos";
 import type { CambioVoz } from "@/lib/dominio/voz";
 
 type Tramo = { desde: number; precio: number };
-type Prod = { id: string; nombre: string; formato: string | null; precio: number; fotoUrl?: string | null; tramos?: Tramo[] };
+type Prod = { id: string; nombre: string; formato: string | null; precio: number; fotoUrl?: string | null; fotos?: string[]; tramos?: Tramo[] };
 type Cliente = { id: string; nombreNegocio: string; comuna: string };
 
 /** Precio unitario según la cantidad: aplica el tramo de mayor volumen que alcance. */
@@ -90,13 +91,8 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
               className={`overflow-hidden rounded-2xl border text-left shadow-sm active:brightness-95 ${n > 0 ? "border-[#1479c4] ring-2 ring-blue-200" : "border-slate-200 bg-white"}`}
             >
               <span className="relative block aspect-square w-full bg-slate-100">
-                {p.fotoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={p.fotoUrl} alt={p.nombre} className="h-full w-full object-cover" />
-                ) : (
-                  <span className="flex h-full items-center justify-center text-3xl text-slate-300">🍫</span>
-                )}
-                {n > 0 && <span className="absolute right-1 top-1 grid h-6 min-w-6 place-items-center rounded-full bg-[#1479c4] px-1.5 text-xs font-extrabold text-white">{n}</span>}
+                <CarruselFotos urls={p.fotos && p.fotos.length ? p.fotos : p.fotoUrl ? [p.fotoUrl] : []} alt={p.nombre} className="h-full w-full" />
+                {n > 0 && <span className="absolute right-1 top-1 z-10 grid h-6 min-w-6 place-items-center rounded-full bg-[#1479c4] px-1.5 text-xs font-extrabold text-white">{n}</span>}
               </span>
               <span className="block p-2">
                 <span className="block truncate text-sm font-semibold text-slate-900">{p.nombre}</span>
