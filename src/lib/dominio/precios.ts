@@ -86,6 +86,19 @@ export const PERFILES_PRECIO = [
 ] as const;
 
 /**
+ * Escalones del LOCAL por CANTIDAD: en el POS del local no se elige el perfil a mano,
+ * el precio se activa solo según cuántas unidades lleva el cliente.
+ *   1 → unitario (sala) · 6+ → minorista · 50+ → mayorista.
+ * Además, cualquier tramo por volumen definido en la lista Sala (100, 200, 500…)
+ * se agrega sobre estos escalones para bajar aún más el precio por bolsa.
+ */
+export const ESCALONES_LOCAL: { perfil: string; desde: number; label: string }[] = [
+  { perfil: "sala", desde: 1, label: "Unitario" },
+  { perfil: "minorista", desde: 6, label: "Minorista (6+)" },
+  { perfil: "mayorista", desde: 50, label: "Mayorista (50+)" },
+];
+
+/**
  * Determina la lista de precios que corresponde a un cliente (Negocio).
  * Prioridad: lista asignada explícitamente → lista por canal del tipo de cliente.
  * Devuelve el id de la lista, o null si no hay ninguna configurada.

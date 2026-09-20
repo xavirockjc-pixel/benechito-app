@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { abrirCaja, sesionAbierta } from "./actions";
+import { ESCALONES_LOCAL } from "@/lib/dominio/precios";
 import CajaPOS from "./CajaPOS";
 import AbrirCajaEfectivo from "./AbrirCajaEfectivo";
 import MovCajaLocalForm from "./MovCajaLocalForm";
@@ -34,31 +35,46 @@ export default async function CajaPage() {
   // Caja abierta → resumen + POS.
   const salaUbic = (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } })) ?? (await prisma.ubicacion.findFirst());
 
-  const [listas, prods, precios, stockSala, ventas] = await Promise.all([
-    prisma.listaPrecio.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
+  const [prods, precios, stockSala, ventas] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
-    prisma.precioProducto.findMany({ where: { cantidadMinima: 1 } }),
+    prisma.precioProducto.findMany({ include: { lista: { select: { canal: true } } } }),
     salaUbic ? prisma.stock.findMany({ where: { ubicacionId: salaUbic.id } }) : Promise.resolve([]),
     prisma.venta.findMany({ where: { sesionCajaId: sesion.id }, include: { pagos: true } }),
   ]);
 
-  // Precios por producto y lista: { productoId: { listaId: precio } }
-  const preciosDe: Record<string, Record<string, number>> = {};
+  // Precio neto por producto → canal → { base (cantMin 1) y tramos por volumen }.
+  type Escalon = { desde: number; precio: number };
+  const porCanal: Record<string, Record<string, { base?: number; tramos: Escalon[] }>> = {};
   for (const p of precios) {
-    (preciosDe[p.productoId] ??= {})[p.listaId] = Number(p.precio);
+    const canal = p.lista.canal;
+    const m = (porCanal[p.productoId] ??= {});
+    const e = (m[canal] ??= { tramos: [] });
+    const neto = Number(p.precio) - Number(p.descuento ?? 0);
+    if (p.cantidadMinima <= 1) e.base = neto;
+    else e.tramos.push({ desde: p.cantidadMinima, precio: neto });
   }
+
+  // Escalera del LOCAL por cantidad: unitario/minorista/mayorista + tramos por volumen (lista Sala).
+  const escaleraLocal = (pid: string): { desde: number; precio: number; label: string }[] => {
+    const canales = porCanal[pid] ?? {};
+    const escalones: { desde: number; precio: number; label: string }[] = [];
+    for (const esc of ESCALONES_LOCAL) {
+      const base = canales[esc.perfil]?.base;
+      if (base != null) escalones.push({ desde: esc.desde, precio: base, label: esc.label });
+    }
+    for (const t of canales.sala?.tramos ?? []) escalones.push({ desde: t.desde, precio: t.precio, label: `Por ${t.desde}` });
+    return escalones.sort((a, b) => a.desde - b.desde || b.precio - a.precio);
+  };
+
   const stockDe = new Map(stockSala.map((s) => [s.productoId, s.cantidad]));
 
   const productos = prods.map((p) => ({
     id: p.id,
     nombre: p.nombre,
     formato: p.formato,
-    precios: preciosDe[p.id] ?? {},
+    escalera: escaleraLocal(p.id),
     stock: stockDe.get(p.id) ?? 0,
   }));
-
-  const listasPOS = listas.map((l) => ({ id: l.id, nombre: l.nombre, canal: l.canal }));
-  const listaSalaId = listas.find((l) => l.canal === "sala")?.id ?? listas[0]?.id ?? "";
 
   const totalVendido = ventas.reduce((s, v) => s + Number(v.total), 0);
   const nVentas = ventas.length;
@@ -81,7 +97,7 @@ export default async function CajaPage() {
         </div>
       </div>
 
-      <CajaPOS productos={productos} listas={listasPOS} listaInicialId={listaSalaId} />
+      <CajaPOS productos={productos} />
 
       <div className="mt-4"><MovCajaLocalForm /></div>
 
