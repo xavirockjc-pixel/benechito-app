@@ -31,6 +31,8 @@ const APPS: Item[] = [
   { href: "/caja", label: "Caja", icon: "🧾" },
   { href: "/bodega", label: "Bodega", icon: "📦" },
   { href: "/produccion", label: "Producción", icon: "🏭" },
+  { href: "/tienda", label: "Tienda", icon: "🛍️" },
+  { href: "/portal", label: "Portal", icon: "🤝" },
 ];
 
 // El menú se construye con las etiquetas del rubro activo (plantilla).
