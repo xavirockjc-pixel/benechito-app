@@ -12,7 +12,7 @@ type Modulo = { titulo: string; items: Item[] };
  * Al tocar una opción navega a esa página y se cierra. Resalta dónde estás y
  * abre el grupo que contiene la página actual.
  */
-export default function MenuMovil({ modulos }: { modulos: Modulo[] }) {
+export default function MenuMovil({ modulos, apps = [] }: { modulos: Modulo[]; apps?: Item[] }) {
   const pathname = usePathname();
   // Ruta activa = la opción más específica (href más largo) que coincide.
   const activoHref = modulos
@@ -83,6 +83,25 @@ export default function MenuMovil({ modulos }: { modulos: Modulo[] }) {
                 );
               })}
             </div>
+
+            {apps.length > 0 && (
+              <div className="mt-4">
+                <p className="mb-1.5 px-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Apps</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {apps.map((a) => (
+                    <Link
+                      key={a.href}
+                      href={a.href}
+                      onClick={() => setOpen(false)}
+                      className="flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2.5 text-sm font-semibold text-slate-700 active:bg-slate-100"
+                      style={{ background: "var(--surface-2)" }}
+                    >
+                      <span className="text-lg">{a.icon}</span> {a.label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

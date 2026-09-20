@@ -25,6 +25,14 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 type Item = { href: string; label: string; icon: string };
 type Modulo = { titulo: string; activo: boolean; items: Item[]; avanzado?: boolean };
 
+// Apps del ecosistema (cada una con su propio manifest PWA), accesibles desde el panel.
+const APPS: Item[] = [
+  { href: "/vendedor", label: "Vendedor", icon: "📱" },
+  { href: "/caja", label: "Caja", icon: "🧾" },
+  { href: "/bodega", label: "Bodega", icon: "📦" },
+  { href: "/produccion", label: "Producción", icon: "🏭" },
+];
+
 // El menú se construye con las etiquetas del rubro activo (plantilla).
 // Menú del día a día arriba; lo poco usado queda en "Más herramientas" (oculto en modo simple).
 function construirModulos(L: Etiquetas): Modulo[] {
@@ -193,12 +201,21 @@ export default async function AdminLayout({
             <span className="text-xs font-semibold text-slate-300">🎤 Dictar en un campo</span>
             <MicDictado etiqueta="🎤" />
           </div>
-          <Link
-            href="/vendedor"
-            className="mb-3 flex items-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
-          >
-            📱 App Vendedor
-          </Link>
+          {/* Accesos a las demás apps del ecosistema (mismas que las PWA con manifest). */}
+          <div className="mb-3">
+            <p className="mb-1.5 px-1 text-[11px] font-bold uppercase tracking-wider text-slate-500">Apps</p>
+            <div className="grid grid-cols-2 gap-2">
+              {APPS.map((a) => (
+                <Link
+                  key={a.href}
+                  href={a.href}
+                  className="flex items-center gap-2 rounded-lg bg-slate-800 px-3 py-2 text-sm font-semibold text-slate-200 transition hover:bg-slate-700"
+                >
+                  <span>{a.icon}</span> {a.label}
+                </Link>
+              ))}
+            </div>
+          </div>
           <p className="text-sm font-bold text-white">{usuario?.nombre}</p>
           <p className="mb-3 truncate text-xs text-slate-500">{usuario?.email}</p>
           <form action={logout}>
@@ -213,7 +230,7 @@ export default async function AdminLayout({
       <div className="flex-1">
         {/* Barra móvil */}
         <div className="flex items-center justify-between gap-2 bg-slate-900 px-4 py-3 text-white md:hidden">
-          <MenuMovil modulos={modulosVisibles} />
+          <MenuMovil modulos={modulosVisibles} apps={APPS} />
           <span className="min-w-0 flex-1 truncate font-display text-sm font-extrabold">
             Benechito <span className="font-normal text-slate-400">· Administración</span>
           </span>
