@@ -159,9 +159,9 @@
   ];
   var SERVICIOS=[{k:"chatbot",e:"🤖",n:"Chatbot IA"},{k:"web",e:"🌐",n:"Página web / landing"},{k:"redes",e:"📣",n:"Marketing y redes"},{k:"admin",e:"🔧",n:"Administración mensual"}];
   var PLAN={
-    basico:{label:"Básico", impl:[250000,400000], mes:[25000,40000]},
-    produccion:{label:"Producción", impl:[450000,700000], mes:[40000,60000]},
-    completo:{label:"Completo", impl:[900000,1500000], mes:[60000,100000]},
+    basico:{label:"Básico", impl:325000, mes:32500},
+    produccion:{label:"Producción", impl:575000, mes:50000},
+    completo:{label:"Completo", impl:1200000, mes:80000},
     medida:{label:"A medida", impl:null, mes:null}
   };
   // Sectores: pack recomendado + pitch + áreas renombradas
@@ -250,7 +250,7 @@
   function sel(id){ return [].slice.call(document.querySelectorAll('#'+id+' input:checked')); }
   function names(id, arr){ return sel(id).map(function(c){ var it=arr.find(function(a){return a.k===c.value;}); return it? it.n : c.value; }); }
   function fmt(n){ return '$'+Number(n).toLocaleString('es-CL'); }
-  function rango(a){ return a? fmt(a[0])+' – '+fmt(a[1]) : 'a definir'; }
+  function rango(a){ return a? (Array.isArray(a)? fmt(a[0])+' – '+fmt(a[1]) : fmt(a)) : 'a definir'; }
   function planAuto(count){ return count<=3?'basico':(count<=6?'produccion':'completo'); }
   function planActual(nmods){ var f=document.getElementById('planSel').value; return f==='auto' ? (nmods? planAuto(nmods):'basico') : f; }
 

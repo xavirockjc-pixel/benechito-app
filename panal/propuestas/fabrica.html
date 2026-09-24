@@ -1,98 +1,128 @@
 <title>Propuesta Fábrica</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Propuesta comercial de Panal para una fábrica — producción, recetas e inventario, con la central del dueño (sin reparto).">
+<meta name="description" content="Propuesta comercial de Panal para una fábrica (sin reparto): producción, recetas, inventario y la central.">
 <style>
   :root{
     color-scheme: dark;
     --ground:#100b06; --surface:#19110a; --surface-2:#241a10; --line:#3c2d1a;
     --honey:#f6a821; --bright:#ffce6a; --deep:#a8680f; --cream:#f4ecd8; --muted:#a99a7c;
-    --teal:#5fd0c0; --good:#5fd0a6;
-    --glow: rgba(246,168,33,.4);
+    --good:#5fd0a6; --glow: rgba(246,168,33,.5);
     --mono: ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
-    --serif: Georgia,"Times New Roman",serif;
     --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
-  @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
-    --ground:#fbf7f0; --surface:#ffffff; --surface-2:#f4ede0; --line:#e7dcc9;
-    --honey:#d6821a; --bright:#b56a06; --deep:#b56a06; --cream:#241c14; --muted:#6b5d4a; --teal:#0f766e; --good:#2f8f5b; --glow:rgba(214,130,26,.22);
-  }}
-  :root[data-theme="light"]{
-    --ground:#fbf7f0; --surface:#ffffff; --surface-2:#f4ede0; --line:#e7dcc9;
-    --honey:#d6821a; --bright:#b56a06; --deep:#b56a06; --cream:#241c14; --muted:#6b5d4a; --teal:#0f766e; --good:#2f8f5b; --glow:rgba(214,130,26,.22);
-  }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--sans);line-height:1.6;
-    background-image:radial-gradient(1000px 420px at 82% -10%, rgba(246,168,33,.09), transparent 60%)}
-  .wrap{max-width:820px;margin-inline:auto;padding-inline:20px}
-  h1,h2,h3{font-family:var(--serif);margin:0;text-wrap:balance;letter-spacing:-.01em}
+  html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--sans);line-height:1.6;letter-spacing:.1px;overflow-x:hidden;
+    background-image:radial-gradient(1100px 480px at 78% -8%, rgba(246,168,33,.10), transparent 60%), radial-gradient(760px 460px at 8% 4%, rgba(255,206,106,.05), transparent 55%);}
+  .wrap{max-width:900px;margin-inline:auto;padding-inline:22px}
+  h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.02em}
+  .eyebrow{font-family:var(--mono);text-transform:uppercase;letter-spacing:.28em;font-size:.72rem;color:var(--honey);font-weight:700}
   .mono{font-family:var(--mono)}
-  .eyebrow{font-family:var(--mono);text-transform:uppercase;letter-spacing:.2em;font-size:.7rem;color:var(--honey);font-weight:700}
 
-  .cover{padding:52px 0 34px;border-bottom:1px solid var(--line)}
-  .cover .top{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:700;letter-spacing:.16em;text-transform:uppercase;font-size:.85rem;color:var(--muted)}
-  .cover .top .hx{font-size:1.2rem}
-  .cover h1{font-size:clamp(2rem,5.4vw,3rem);font-weight:800;margin:18px 0 6px}
-  .cover h1 .hl{color:var(--honey)}
-  .cover .sub{color:var(--muted);font-size:1.05rem}
-  .cover .rubro{margin-top:14px;display:inline-block;font-size:.82rem;font-weight:700;padding:6px 13px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
+  header.bar{position:sticky;top:0;z-index:40;backdrop-filter:blur(10px);background:rgba(16,11,6,.72);border-bottom:1px solid var(--line)}
+  header.bar .in{max-width:900px;margin-inline:auto;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:700;letter-spacing:.22em;text-transform:uppercase;font-size:.92rem}
+  .brand .hx{width:24px;height:27px;filter:drop-shadow(0 0 8px var(--glow))}
+  .brand small{color:var(--muted);letter-spacing:.14em}
 
-  section{padding:34px 0;border-bottom:1px solid var(--line)}
-  .sec-h{margin-bottom:18px}
-  .sec-h h2{font-size:clamp(1.3rem,3.2vw,1.8rem);font-weight:800;margin-top:6px}
-  .sec-h p{color:var(--muted);margin:8px 0 0}
-  .lead{font-size:1.05rem;color:var(--cream)}
+  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line);padding:52px 0 40px}
+  .hero-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:24px;align-items:center}
+  @media (max-width:760px){ .hero-grid{grid-template-columns:1fr} .bee-stage{display:none} }
+  .hero h1{font-size:clamp(2rem,5.6vw,3.2rem);line-height:1.04;font-weight:800;margin:14px 0 12px}
+  .hero h1 .lit{color:var(--honey);text-shadow:0 0 26px var(--glow)}
+  .hero .lede{color:#e7dcc4;font-size:1.05rem;max-width:44ch}
+  .hero .para{margin-top:14px;font-family:var(--mono);font-size:.78rem;letter-spacing:.06em;color:var(--muted)}
+  .hero .para b{color:var(--bright)}
+  .bee-stage{position:relative;height:230px}
+  .bee-stage .halo{position:absolute;inset:0;margin:auto;width:230px;height:230px;background:radial-gradient(circle, rgba(246,168,33,.22), transparent 62%);filter:blur(4px)}
+  .bee-hero{position:absolute;left:50%;top:50%;width:200px;translate:-50% -50%;filter:drop-shadow(0 16px 24px rgba(0,0,0,.5));animation:hover 6s ease-in-out infinite}
+  @keyframes hover{0%,100%{translate:-50% -52%;rotate:-2deg}50%{translate:-50% -46%;rotate:2deg}}
 
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  @media (max-width:620px){ .grid{grid-template-columns:1fr} }
-  .card{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--surface);display:flex;gap:12px}
-  .card .ic{font-size:1.5rem;flex:0 0 auto}
-  .card b{font-family:var(--sans);font-size:.98rem}
-  .card span{display:block;color:var(--muted);font-size:.85rem;margin-top:2px}
+  section{padding:clamp(40px,6vw,64px) 0;border-bottom:1px solid var(--line)}
+  .sec-h{max-width:60ch;margin-bottom:22px}
+  .sec-h h2{font-size:clamp(1.5rem,3.6vw,2.2rem);font-weight:800;margin-top:10px}
+  .sec-h p{color:var(--muted);margin-top:10px}
+  .lead{font-size:1.06rem;color:#e7dcc4}
 
-  .flow{display:flex;flex-wrap:wrap;gap:10px}
-  .step{flex:1 1 150px;min-width:140px;border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface);text-align:center}
-  .step .k{font-family:var(--mono);font-size:.66rem;color:var(--honey);letter-spacing:.12em}
+  .cells{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:620px){ .cells{grid-template-columns:1fr} }
+  .cell{position:relative;padding:20px;background:linear-gradient(180deg,var(--surface),#140d07);border:1px solid var(--line);border-radius:16px;
+    clip-path:polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);transition:transform .2s,border-color .2s,box-shadow .3s}
+  .cell:hover{transform:translateY(-3px);border-color:var(--honey);box-shadow:0 18px 40px -22px var(--glow)}
+  .cell .badge{position:relative;width:46px;height:51px;display:grid;place-items:center;margin-bottom:12px}
+  .cell .badge svg{width:100%;height:100%;filter:drop-shadow(0 0 8px var(--glow))}
+  .cell .badge span{position:absolute;font-size:19px}
+  .cell h3{font-family:var(--sans);font-size:1.05rem;font-weight:800}
+  .cell p{margin-top:6px;color:var(--muted);font-size:.9rem}
+
+  .flow{display:flex;flex-wrap:wrap;gap:12px}
+  .step{flex:1 1 150px;min-width:140px;border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--surface);text-align:center;
+    clip-path:polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%)}
+  .step .k{font-family:var(--mono);font-size:.66rem;color:var(--honey);letter-spacing:.14em}
   .step .ic{font-size:1.5rem;display:block;margin:6px 0 4px}
   .step b{font-family:var(--sans);font-size:.9rem}
 
-  .price{border:2px solid var(--honey);border-radius:18px;overflow:hidden;background:var(--surface);box-shadow:0 20px 50px -30px var(--glow)}
-  .price .ph{background:linear-gradient(135deg,var(--honey),var(--deep));color:#231605;padding:16px 20px}
-  .price .ph .pl{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
-  .price .ph .pn{font-family:var(--serif);font-size:1.5rem;font-weight:800}
-  .price .pb{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .price{border:1px solid var(--honey);border-radius:20px;overflow:hidden;background:linear-gradient(180deg,#1c1409,#120b05);box-shadow:0 24px 60px -34px var(--glow)}
+  .price .ph{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+  .price .ph .hx{width:30px;height:33px;filter:drop-shadow(0 0 8px var(--glow))}
+  .price .ph .pl{font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--honey)}
+  .price .ph .pn{font-size:1.4rem;font-weight:800}
+  .price .pb{display:grid;grid-template-columns:1fr 1fr}
   @media (max-width:520px){ .price .pb{grid-template-columns:1fr} }
-  .price .cell{padding:18px 20px}
-  .price .cell+.cell{border-left:1px solid var(--line)}
-  @media (max-width:520px){ .price .cell+.cell{border-left:0;border-top:1px solid var(--line)} }
-  .price .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-  .price .v{font-size:1.5rem;font-weight:800;color:var(--bright);font-variant-numeric:tabular-nums;margin-top:2px}
+  .price .c{padding:18px 20px}
+  .price .c+.c{border-left:1px solid var(--line)}
+  @media (max-width:520px){ .price .c+.c{border-left:0;border-top:1px solid var(--line)} }
+  .price .k{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .price .v{font-size:1.7rem;font-weight:800;color:var(--bright);font-variant-numeric:tabular-nums;margin-top:2px}
   .price .u{font-size:.8rem;color:var(--muted)}
-  .incluye{margin:16px 0 0;padding:0 20px 18px;list-style:none;display:grid;gap:7px}
-  .incluye li{display:flex;gap:9px;font-size:.9rem}
-  .incluye li::before{content:"✓";color:var(--good);font-weight:800}
+  .incluye{margin:0;padding:16px 20px 18px;list-style:none;display:grid;gap:7px;border-top:1px solid var(--line)}
+  .incluye li{display:flex;gap:9px;font-size:.9rem;color:#e7dcc4}
+  .incluye li::before{content:"⬢";color:var(--honey);font-size:.8rem}
 
   .extras{display:flex;flex-wrap:wrap;gap:8px}
   .extra{font-size:.84rem;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
   .extra b{color:var(--bright);font-variant-numeric:tabular-nums}
 
-  .cta{text-align:center;background:linear-gradient(135deg,var(--honey),var(--deep));color:#231605;border-radius:22px;padding:38px 24px;margin:30px 0}
-  .cta h2{color:#231605;font-size:clamp(1.4rem,3.2vw,2rem);margin:0 0 8px}
-  .cta p{max-width:46ch;margin:0 auto 18px;color:rgba(35,22,5,.85)}
-  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:800;text-decoration:none;padding:13px 24px;border-radius:999px;background:#231605;color:var(--bright)}
-  .fine{color:var(--muted);font-size:.82rem;text-align:center;margin-top:10px}
-
-  footer{padding:22px 0 42px;text-align:center;color:var(--muted);font-size:.8rem}
-  .theme-btn{position:fixed;bottom:16px;right:16px;z-index:40;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--cream);cursor:pointer;font-size:1.1rem}
+  .cta{position:relative;text-align:center;background:linear-gradient(135deg,var(--honey),var(--deep));color:#231605;border-radius:24px;padding:40px 24px;margin:32px 0 8px;overflow:hidden}
+  .cta h2{color:#231605;font-size:clamp(1.5rem,3.4vw,2.1rem);margin:0 0 8px;font-weight:800}
+  .cta p{max-width:46ch;margin:0 auto 20px;color:rgba(35,22,5,.85)}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:800;text-decoration:none;padding:13px 26px;border-radius:999px;background:#160f07;color:var(--bright)}
+  .fine{color:var(--muted);font-size:.8rem;text-align:center;margin-top:12px}
+  footer{padding:26px 0 44px;text-align:center;color:var(--muted);font-size:.8rem}
   :focus-visible{outline:2px solid var(--bright);outline-offset:3px;border-radius:6px}
-  @media print{ body{background:#fff;color:#000;background-image:none} .theme-btn{display:none} section,.cover{break-inside:avoid} .cta{background:#f4ede0;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact} }
+  @media (prefers-reduced-motion:reduce){ .bee-hero{animation:none} }
+  @media print{
+    body{background:#fff;color:#111;background-image:none}
+    header.bar,.bee-stage{display:none}
+    section,.hero{border-color:#ddd;break-inside:avoid}
+    .cell,.step,.price{background:#fff;box-shadow:none} .cell p,.sec-h p,.hero .lede,.incluye li{color:#333}
+    .cell h3,.hero h1{color:#111} .hero h1 .lit{color:var(--deep);text-shadow:none}
+    .cta{background:#f4ede0;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact} .cta h2,.cta p{color:#111}
+  }
 </style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gHoney" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd778"/><stop offset="1" stop-color="#d98a12"/></linearGradient>
+  <linearGradient id="gWing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3d6" stop-opacity=".85"/><stop offset="1" stop-color="#f6a821" stop-opacity=".25"/></linearGradient>
+  <radialGradient id="gEye" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#fff7e0"/><stop offset=".5" stop-color="#ffce6a"/><stop offset="1" stop-color="#a8680f"/></radialGradient>
+  <symbol id="hexmark" viewBox="0 0 60 66"><path d="M30 2 56 17V49L30 64 4 49V17Z" fill="none" stroke="url(#gHoney)" stroke-width="3"/><path d="M30 16 44 24V40L30 48 16 40V24Z" fill="url(#gHoney)" opacity=".9"/><circle cx="30" cy="32" r="4.5" fill="#160f07"/></symbol>
+  <symbol id="bee" viewBox="0 0 260 190">
+    <g><g opacity=".9"><path d="M150 78 C 96 6, 26 12, 40 62 C 52 96, 120 96, 150 82 Z" fill="url(#gWing)" stroke="#fff3d6" stroke-opacity=".5"/><path d="M60 30 L120 74 M52 52 L128 70 M70 22 L110 76" stroke="#fff3d6" stroke-opacity=".45" stroke-width="1.4" fill="none"/></g><g opacity=".7"><path d="M158 88 C 108 34, 44 46, 62 92 C 74 120, 132 108, 158 90 Z" fill="url(#gWing)" stroke="#fff3d6" stroke-opacity=".4"/></g></g>
+    <path d="M196 70 C 214 44, 226 40, 236 30" stroke="#e9c27a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M198 78 C 220 60, 232 58, 246 52" stroke="#e9c27a" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="236" cy="30" r="5" fill="url(#gEye)"/><circle cx="246" cy="52" r="5" fill="url(#gEye)"/>
+    <g stroke="#3a250c" stroke-width="2"><path d="M44 96 l24 -20 h26 l24 20 -24 20 h-26 Z" fill="url(#gHoney)"/><path d="M92 96 l22 -18 h24 l22 18 -22 18 h-24 Z" fill="#241708"/><path d="M136 96 l22 -18 h22 l22 18 -22 18 h-22 Z" fill="url(#gHoney)"/></g>
+    <path d="M54 96 h150 M96 84 v24 M140 84 v24" stroke="#160f07" stroke-opacity=".55" stroke-width="1.6"/>
+    <path d="M178 96 l18 -16 h14 l14 16 -14 16 h-14 Z" fill="#2c1c0a" stroke="#3a250c" stroke-width="2"/><circle cx="204" cy="96" r="9" fill="url(#gEye)"/><circle cx="207" cy="93" r="2.4" fill="#fff7e0"/>
+    <path d="M44 96 l-16 -8 v16 Z" fill="#ffce6a" opacity=".8"/><path d="M30 96 l-14 -4 v8 Z" fill="#fff3d6" opacity=".5"/>
+    <path d="M84 116 l-6 16 M112 118 l0 18 M150 116 l8 16" stroke="#c9922f" stroke-width="3" stroke-linecap="round"/>
+  </symbol>
+</defs></svg>
 
 <script>
 /* ── Propuesta (edita esto para cada cliente) ─────────────────────────────── */
 const PROP = {
   cliente: "Tu Fábrica",
   rubro: "🏭 Fábrica · Producción por lotes",
-  titulo: ["Tu fábrica, medida y", "bajo control", "."],
+  titulo: ["Tu fábrica, medida y ", "bajo control", "."],
   intro: "El mismo sistema que corre en nuestra fábrica, ahora para la tuya. Fabricas por lotes/litros, el inventario se descuenta por receta, y la central te muestra costos, rendimiento y mermas. Sin reparto: pensado para producir y despachar, no para andar en ruta.",
   incluye: [
     {ic:"🏭", t:"Producción y calidad", d:"Fabrica por litros/lotes, rendimiento auto-aprendido, cierre de turno y mermas."},
@@ -108,7 +138,7 @@ const PROP = {
     {k:"03", ic:"🏬", t:"Entra a bodega"},
     {k:"04", ic:"📊", t:"Costos en la central"},
   ],
-  plan: { nombre:"Plan Completo", instal:"$900.000 – $1.500.000", mes:"$60.000 – $100.000" },
+  plan: { nombre:"Plan Completo", instal:"$1.200.000", mes:"$80.000" },
   incluyePlan: [
     "Producción por lotes/litros con rendimiento y mermas",
     "Recetas, capacitaciones e inventario por insumos",
@@ -127,21 +157,27 @@ const PROP = {
 };
 </script>
 
-<header class="cover"><div class="wrap">
-  <div class="top"><span class="hx">🍯</span> Panal · Propuesta</div>
-  <div class="eyebrow" style="margin-top:20px" id="pRubro"></div>
-  <h1 id="pTitulo"></h1>
-  <p class="sub">Preparada para <b id="pCliente"></b></p>
+<header class="bar"><div class="in">
+  <span class="brand"><svg class="hx"><use href="#hexmark"/></svg> Panal <small>· Propuesta</small></span>
+  <span class="eyebrow" id="pCliente2"></span>
 </div></header>
 
-<section><div class="wrap">
-  <div class="sec-h"><span class="eyebrow">El problema que resolvemos</span><h2>De todo en un solo lugar, bajo control</h2></div>
-  <p class="lead" id="pIntro"></p>
+<section class="hero"><div class="wrap hero-grid">
+  <div>
+    <span class="eyebrow" id="pRubro"></span>
+    <h1 id="pTitulo"></h1>
+    <p class="lede" id="pIntro"></p>
+    <p class="para">Preparada para <b id="pCliente"></b></p>
+  </div>
+  <div class="bee-stage" aria-hidden="true">
+    <div class="halo"></div>
+    <svg class="bee-hero" viewBox="0 0 260 190"><use href="#bee"/></svg>
+  </div>
 </div></section>
 
 <section><div class="wrap">
   <div class="sec-h"><span class="eyebrow">Qué incluye</span><h2>La app y la central, a tu medida</h2></div>
-  <div class="grid" id="pIncluye"></div>
+  <div class="cells" id="pIncluye"></div>
 </div></section>
 
 <section><div class="wrap">
@@ -152,10 +188,10 @@ const PROP = {
 <section><div class="wrap">
   <div class="sec-h"><span class="eyebrow">Inversión</span><h2>Simple y sin sorpresas</h2><p>Valores en pesos chilenos. La instalación es una vez; la mensualidad cubre soporte, hosting y mejoras.</p></div>
   <div class="price">
-    <div class="ph"><div class="pl" id="pPlanL"></div><div class="pn" id="pPlanN"></div></div>
+    <div class="ph"><svg class="hx"><use href="#hexmark"/></svg><div><div class="pl" id="pPlanL"></div><div class="pn" id="pPlanN"></div></div></div>
     <div class="pb">
-      <div class="cell"><div class="k">Instalación (una vez)</div><div class="v" id="pInstal"></div></div>
-      <div class="cell"><div class="k">Mensualidad</div><div class="v" id="pMes"></div><div class="u">soporte · hosting · mejoras</div></div>
+      <div class="c"><div class="k">Instalación (una vez)</div><div class="v" id="pInstal"></div></div>
+      <div class="c"><div class="k">Mensualidad</div><div class="v" id="pMes"></div><div class="u">soporte · hosting · mejoras</div></div>
     </div>
     <ul class="incluye" id="pIncluyePlan"></ul>
   </div>
@@ -175,17 +211,16 @@ const PROP = {
 </div>
 
 <footer>🍯 Panal · Ecosistema modular de gestión — celda por celda</footer>
-<button class="theme-btn" onclick="toggleTheme()" title="Tema claro/oscuro" aria-label="Cambiar tema">🌓</button>
 
 <script>
   const $=function(id){return document.getElementById(id);};
   const esc=function(s){return String(s==null?'':s).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
   document.title = "Propuesta " + PROP.cliente;
   $("pRubro").textContent = PROP.rubro;
-  const [a,hl,b]=PROP.titulo; $("pTitulo").innerHTML = esc(a)+' <span class="hl">'+esc(hl)+'</span>'+esc(b);
-  $("pCliente").textContent = PROP.cliente;
+  const [a,hl,b]=PROP.titulo; $("pTitulo").innerHTML = esc(a)+'<span class="lit">'+esc(hl)+'</span>'+esc(b);
+  $("pCliente").textContent = PROP.cliente; $("pCliente2").textContent = "Para " + PROP.cliente;
   $("pIntro").textContent = PROP.intro;
-  $("pIncluye").innerHTML = PROP.incluye.map(function(x){return '<div class="card"><span class="ic">'+x.ic+'</span><div><b>'+esc(x.t)+'</b><span>'+esc(x.d)+'</span></div></div>';}).join('');
+  $("pIncluye").innerHTML = PROP.incluye.map(function(x){return '<div class="cell"><div class="badge"><svg viewBox="0 0 60 66"><use href="#hexmark"/></svg><span>'+x.ic+'</span></div><h3>'+esc(x.t)+'</h3><p>'+esc(x.d)+'</p></div>';}).join('');
   $("pFlujo").innerHTML = PROP.flujo.map(function(x){return '<div class="step"><div class="k">'+esc(x.k)+'</div><span class="ic">'+x.ic+'</span><b>'+esc(x.t)+'</b></div>';}).join('');
   $("pPlanL").textContent = "Recomendado para "+PROP.cliente;
   $("pPlanN").textContent = PROP.plan.nombre;
@@ -197,6 +232,4 @@ const PROP = {
   const msg = "Hola! Soy de "+PROP.cliente+" y quiero avanzar con la propuesta de Panal ("+PROP.plan.nombre+").";
   $("pCta").href = "https://wa.me/"+PROP.whatsapp+"?text="+encodeURIComponent(msg);
   $("pVig").textContent = "Propuesta válida por "+PROP.vigenciaDias+" días. Valores referenciales; se ajustan según lo que elijas.";
-  function toggleTheme(){ var r=document.documentElement; var cur=r.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"); var n=cur==="dark"?"light":"dark"; r.setAttribute("data-theme",n); try{localStorage.setItem("panal-theme",n);}catch(e){} }
-  try{ var t=localStorage.getItem("panal-theme"); if(t) document.documentElement.setAttribute("data-theme",t); }catch(e){}
 </script>

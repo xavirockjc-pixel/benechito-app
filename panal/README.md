@@ -63,9 +63,9 @@ reconstruye todo. Detalle en `RESPALDO.md`.
 
 | Plan | Instalación (una vez) | Mensual (soporte · hosting · mejoras) |
 |---|---|---|
-| Básico (≤3 celdas) | $250.000 – $400.000 | $25.000 – $40.000 |
-| Producción (≤6 celdas) | $450.000 – $700.000 | $40.000 – $60.000 |
-| Completo (7+ celdas) | $900.000 – $1.500.000 | $60.000 – $100.000 |
+| Básico (≤3 celdas) | $325.000 | $32.500 |
+| Producción (≤6 celdas) | $575.000 | $50.000 |
+| Completo (7+ celdas) | $1.200.000 | $80.000 |
 | A medida | a definir | a definir |
 
 **Servicios que se venden aparte:** Landing sola $99.000 · Catálogo/tienda $120.000 ·
