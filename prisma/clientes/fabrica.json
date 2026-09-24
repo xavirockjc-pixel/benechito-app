@@ -1,0 +1,33 @@
+{
+  "_comentario": "Config de provisión de una FÁBRICA parecida a Benechito, SIN reparto. Renombra 'fabrica' y ajusta nombre/productos por cliente. Aplicar: CLIENTE=fabrica npm run seed:cliente",
+  "empresa": {
+    "nombre": "Fábrica Ejemplo",
+    "rubro": "fabrica",
+    "modoSimple": true,
+    "accesoRoles": "caja,produccion,bodega",
+    "accesoDesde": "08:00",
+    "accesoHasta": "23:59",
+    "accesoDias": "1,2,3,4,5,6"
+  },
+  "sucursal": "Planta",
+  "ubicaciones": [
+    { "nombre": "Bodega Fábrica", "tipo": "bodega" },
+    { "nombre": "Sala de Ventas", "tipo": "sala" }
+  ],
+  "listas": [
+    { "nombre": "Sala de Ventas", "canal": "sala" },
+    { "nombre": "Distribuidor", "canal": "distribuidor" },
+    { "nombre": "Web", "canal": "web" }
+  ],
+  "usuarios": [
+    { "email": "dueno@fabrica.cl", "nombre": "Dueño Fábrica", "rol": "propietario" },
+    { "email": "produccion@fabrica.cl", "nombre": "Producción", "rol": "produccion" },
+    { "email": "bodega@fabrica.cl", "nombre": "Bodega", "rol": "bodega" },
+    { "email": "caja@fabrica.cl", "nombre": "Sala de Ventas", "rol": "caja" }
+  ],
+  "catalogo": [
+    { "cat": "Línea 1", "nombre": "Producto A", "desc": "Producto propio (ajústalo).", "precio": 0, "tipo": "propio" },
+    { "cat": "Línea 1", "nombre": "Producto B", "desc": "Producto propio (ajústalo).", "precio": 0, "tipo": "propio" },
+    { "cat": "Línea 2", "nombre": "Producto C", "desc": "Producto propio (ajústalo).", "precio": 0, "tipo": "propio" }
+  ]
+}

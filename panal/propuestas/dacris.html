@@ -1,0 +1,201 @@
+<title>Propuesta Da'cris</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Propuesta comercial de Panal para Da'cris — la app y la central para tu negocio.">
+<style>
+  :root{
+    color-scheme: dark;
+    --ground:#100b06; --surface:#19110a; --surface-2:#241a10; --line:#3c2d1a;
+    --honey:#f6a821; --bright:#ffce6a; --deep:#a8680f; --cream:#f4ecd8; --muted:#a99a7c;
+    --teal:#5fd0c0; --good:#5fd0a6;
+    --glow: rgba(246,168,33,.4);
+    --mono: ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --serif: Georgia,"Times New Roman",serif;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
+    --ground:#fbf7f0; --surface:#ffffff; --surface-2:#f4ede0; --line:#e7dcc9;
+    --honey:#d6821a; --bright:#b56a06; --deep:#b56a06; --cream:#241c14; --muted:#6b5d4a; --teal:#0f766e; --good:#2f8f5b; --glow:rgba(214,130,26,.22);
+  }}
+  :root[data-theme="light"]{
+    --ground:#fbf7f0; --surface:#ffffff; --surface-2:#f4ede0; --line:#e7dcc9;
+    --honey:#d6821a; --bright:#b56a06; --deep:#b56a06; --cream:#241c14; --muted:#6b5d4a; --teal:#0f766e; --good:#2f8f5b; --glow:rgba(214,130,26,.22);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--sans);line-height:1.6;
+    background-image:radial-gradient(1000px 420px at 82% -10%, rgba(246,168,33,.09), transparent 60%)}
+  .wrap{max-width:820px;margin-inline:auto;padding-inline:20px}
+  h1,h2,h3{font-family:var(--serif);margin:0;text-wrap:balance;letter-spacing:-.01em}
+  .mono{font-family:var(--mono)}
+  .eyebrow{font-family:var(--mono);text-transform:uppercase;letter-spacing:.2em;font-size:.7rem;color:var(--honey);font-weight:700}
+
+  .cover{padding:52px 0 34px;border-bottom:1px solid var(--line)}
+  .cover .top{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:700;letter-spacing:.16em;text-transform:uppercase;font-size:.85rem;color:var(--muted)}
+  .cover .top .hx{font-size:1.2rem}
+  .cover h1{font-size:clamp(2rem,5.4vw,3rem);font-weight:800;margin:18px 0 6px}
+  .cover h1 .hl{color:var(--honey)}
+  .cover .sub{color:var(--muted);font-size:1.05rem}
+  .cover .rubro{margin-top:14px;display:inline-block;font-size:.82rem;font-weight:700;padding:6px 13px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
+
+  section{padding:34px 0;border-bottom:1px solid var(--line)}
+  .sec-h{margin-bottom:18px}
+  .sec-h h2{font-size:clamp(1.3rem,3.2vw,1.8rem);font-weight:800;margin-top:6px}
+  .sec-h p{color:var(--muted);margin:8px 0 0}
+  .lead{font-size:1.05rem;color:var(--cream)}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media (max-width:620px){ .grid{grid-template-columns:1fr} }
+  .card{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--surface);display:flex;gap:12px}
+  .card .ic{font-size:1.5rem;flex:0 0 auto}
+  .card b{font-family:var(--sans);font-size:.98rem}
+  .card span{display:block;color:var(--muted);font-size:.85rem;margin-top:2px}
+
+  .flow{display:flex;flex-wrap:wrap;gap:10px}
+  .step{flex:1 1 150px;min-width:140px;border:1px solid var(--line);border-radius:12px;padding:14px;background:var(--surface);text-align:center}
+  .step .k{font-family:var(--mono);font-size:.66rem;color:var(--honey);letter-spacing:.12em}
+  .step .ic{font-size:1.5rem;display:block;margin:6px 0 4px}
+  .step b{font-family:var(--sans);font-size:.9rem}
+
+  .price{border:2px solid var(--honey);border-radius:18px;overflow:hidden;background:var(--surface);box-shadow:0 20px 50px -30px var(--glow)}
+  .price .ph{background:linear-gradient(135deg,var(--honey),var(--deep));color:#231605;padding:16px 20px}
+  .price .ph .pl{font-family:var(--mono);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+  .price .ph .pn{font-family:var(--serif);font-size:1.5rem;font-weight:800}
+  .price .pb{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  @media (max-width:520px){ .price .pb{grid-template-columns:1fr} }
+  .price .cell{padding:18px 20px}
+  .price .cell+.cell{border-left:1px solid var(--line)}
+  @media (max-width:520px){ .price .cell+.cell{border-left:0;border-top:1px solid var(--line)} }
+  .price .k{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .price .v{font-size:1.5rem;font-weight:800;color:var(--bright);font-variant-numeric:tabular-nums;margin-top:2px}
+  .price .u{font-size:.8rem;color:var(--muted)}
+  .incluye{margin:16px 0 0;padding:0 20px 18px;list-style:none;display:grid;gap:7px}
+  .incluye li{display:flex;gap:9px;font-size:.9rem}
+  .incluye li::before{content:"✓";color:var(--good);font-weight:800}
+
+  .extras{display:flex;flex-wrap:wrap;gap:8px}
+  .extra{font-size:.84rem;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
+  .extra b{color:var(--bright);font-variant-numeric:tabular-nums}
+
+  .cta{text-align:center;background:linear-gradient(135deg,var(--honey),var(--deep));color:#231605;border-radius:22px;padding:38px 24px;margin:30px 0}
+  .cta h2{color:#231605;font-size:clamp(1.4rem,3.2vw,2rem);margin:0 0 8px}
+  .cta p{max-width:46ch;margin:0 auto 18px;color:rgba(35,22,5,.85)}
+  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:800;text-decoration:none;padding:13px 24px;border-radius:999px;background:#231605;color:var(--bright)}
+  .fine{color:var(--muted);font-size:.82rem;text-align:center;margin-top:10px}
+
+  footer{padding:22px 0 42px;text-align:center;color:var(--muted);font-size:.8rem}
+  .theme-btn{position:fixed;bottom:16px;right:16px;z-index:40;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:var(--surface);color:var(--cream);cursor:pointer;font-size:1.1rem}
+  :focus-visible{outline:2px solid var(--bright);outline-offset:3px;border-radius:6px}
+  @media print{ body{background:#fff;color:#000;background-image:none} .theme-btn{display:none} section,.cover{break-inside:avoid} .cta{background:#f4ede0;color:#000;-webkit-print-color-adjust:exact;print-color-adjust:exact} }
+</style>
+
+<script>
+/* ── Propuesta (edita esto para cada cliente) ─────────────────────────────── */
+const PROP = {
+  cliente: "Da'cris",
+  rubro: "🍔 Comida rápida · Local en Lota",
+  titulo: ["Tu negocio, ordenado y en el", "celular", "."],
+  intro: "Hoy los pedidos, las ventas y la caja se llevan de memoria y en papeles. Con Panal, Da'cris tiene su propia app por rol y una central para el dueño: nada se pierde, todo queda registrado y sabes cuánto ganas — sin complicarte.",
+  incluye: [
+    {ic:"🧾", t:"Caja / Mostrador", d:"Vende comida y abarrotes, registra Caja Vecina, controla la caja del día."},
+    {ic:"👨‍🍳", t:"Cocina · Pedidos", d:"Los pedidos de WhatsApp y web caen en una bandeja; la cocina los prepara."},
+    {ic:"🛵", t:"Reparto", d:"Delivery con mapa y estados; el cliente ve su pedido en camino."},
+    {ic:"📦", t:"Inventario", d:"Productos e insumos con alertas antes de que falte algo."},
+    {ic:"🐝", t:"Tienda web + Portal", d:"Catálogo con tu marca; los pedidos llegan solos a tu WhatsApp."},
+    {ic:"📊", t:"La Central (dueño)", d:"Ventas, deudas y reporte diario a tu WhatsApp; solo tú ves los totales."},
+  ],
+  flujo: [
+    {k:"01", ic:"🧾", t:"Entra el pedido"},
+    {k:"02", ic:"👨‍🍳", t:"Cocina prepara"},
+    {k:"03", ic:"🛵", t:"Sale a delivery"},
+    {k:"04", ic:"📊", t:"Queda en la central"},
+  ],
+  plan: { nombre:"Plan Producción", instal:"$450.000 – $700.000", mes:"$40.000 – $60.000" },
+  incluyePlan: [
+    "App por rol (caja, cocina, reparto) + la central del dueño",
+    "Tienda web con pedidos por WhatsApp",
+    "Inventario, clientes y reporte diario",
+    "Instalación, capacitación y puesta en marcha",
+    "Soporte, hosting y mejoras (mensualidad)",
+  ],
+  extras: [
+    {t:"Landing sola", p:"$99.000"},
+    {t:"Marketing y redes", p:"$150.000/mes"},
+    {t:"Facturación electrónica (SII)", p:"a definir"},
+  ],
+  vigenciaDias: 15,
+  whatsapp: "56928005332",  // tu contacto Panal (el vendedor)
+};
+</script>
+
+<header class="cover"><div class="wrap">
+  <div class="top"><span class="hx">🍯</span> Panal · Propuesta</div>
+  <div class="eyebrow" style="margin-top:20px" id="pRubro"></div>
+  <h1 id="pTitulo"></h1>
+  <p class="sub">Preparada para <b id="pCliente"></b></p>
+</div></header>
+
+<section><div class="wrap">
+  <div class="sec-h"><span class="eyebrow">El problema que resolvemos</span><h2>De todo en un solo lugar, bajo control</h2></div>
+  <p class="lead" id="pIntro"></p>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-h"><span class="eyebrow">Qué incluye</span><h2>La app y la central, a tu medida</h2></div>
+  <div class="grid" id="pIncluye"></div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-h"><span class="eyebrow">Cómo funciona</span><h2>Del pedido a la caja, conectado</h2></div>
+  <div class="flow" id="pFlujo"></div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="sec-h"><span class="eyebrow">Inversión</span><h2>Simple y sin sorpresas</h2><p>Valores en pesos chilenos. La instalación es una vez; la mensualidad cubre soporte, hosting y mejoras.</p></div>
+  <div class="price">
+    <div class="ph"><div class="pl" id="pPlanL"></div><div class="pn" id="pPlanN"></div></div>
+    <div class="pb">
+      <div class="cell"><div class="k">Instalación (una vez)</div><div class="v" id="pInstal"></div></div>
+      <div class="cell"><div class="k">Mensualidad</div><div class="v" id="pMes"></div><div class="u">soporte · hosting · mejoras</div></div>
+    </div>
+    <ul class="incluye" id="pIncluyePlan"></ul>
+  </div>
+  <div style="margin-top:16px">
+    <div class="eyebrow" style="margin-bottom:8px">Opcionales (se suman si quieres)</div>
+    <div class="extras" id="pExtras"></div>
+  </div>
+</div></section>
+
+<div class="wrap">
+  <div class="cta">
+    <h2 id="pCtaH"></h2>
+    <p>Te lo dejamos funcionando y andando en tu celular. Nosotros hacemos todo lo técnico; tú solo lo usas.</p>
+    <a class="btn" id="pCta" target="_blank" rel="noopener">💬 Quiero avanzar</a>
+  </div>
+  <p class="fine" id="pVig"></p>
+</div>
+
+<footer>🍯 Panal · Ecosistema modular de gestión — celda por celda</footer>
+<button class="theme-btn" onclick="toggleTheme()" title="Tema claro/oscuro" aria-label="Cambiar tema">🌓</button>
+
+<script>
+  const $=function(id){return document.getElementById(id);};
+  const esc=function(s){return String(s==null?'':s).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+  document.title = "Propuesta " + PROP.cliente;
+  $("pRubro").textContent = PROP.rubro;
+  const [a,hl,b]=PROP.titulo; $("pTitulo").innerHTML = esc(a)+' <span class="hl">'+esc(hl)+'</span>'+esc(b);
+  $("pCliente").textContent = PROP.cliente;
+  $("pIntro").textContent = PROP.intro;
+  $("pIncluye").innerHTML = PROP.incluye.map(function(x){return '<div class="card"><span class="ic">'+x.ic+'</span><div><b>'+esc(x.t)+'</b><span>'+esc(x.d)+'</span></div></div>';}).join('');
+  $("pFlujo").innerHTML = PROP.flujo.map(function(x){return '<div class="step"><div class="k">'+esc(x.k)+'</div><span class="ic">'+x.ic+'</span><b>'+esc(x.t)+'</b></div>';}).join('');
+  $("pPlanL").textContent = "Recomendado para "+PROP.cliente;
+  $("pPlanN").textContent = PROP.plan.nombre;
+  $("pInstal").textContent = PROP.plan.instal;
+  $("pMes").textContent = PROP.plan.mes + " /mes";
+  $("pIncluyePlan").innerHTML = PROP.incluyePlan.map(function(x){return '<li>'+esc(x)+'</li>';}).join('');
+  $("pExtras").innerHTML = PROP.extras.map(function(x){return '<span class="extra">'+esc(x.t)+' <b>'+esc(x.p)+'</b></span>';}).join('');
+  $("pCtaH").textContent = "¿Lo dejamos andando en "+PROP.cliente+"?";
+  const msg = "Hola! Soy de "+PROP.cliente+" y quiero avanzar con la propuesta de Panal ("+PROP.plan.nombre+").";
+  $("pCta").href = "https://wa.me/"+PROP.whatsapp+"?text="+encodeURIComponent(msg);
+  $("pVig").textContent = "Propuesta válida por "+PROP.vigenciaDias+" días. Valores referenciales; se ajustan según lo que elijas.";
+  function toggleTheme(){ var r=document.documentElement; var cur=r.getAttribute("data-theme")||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light"); var n=cur==="dark"?"light":"dark"; r.setAttribute("data-theme",n); try{localStorage.setItem("panal-theme",n);}catch(e){} }
+  try{ var t=localStorage.getItem("panal-theme"); if(t) document.documentElement.setAttribute("data-theme",t); }catch(e){}
+</script>
