@@ -11,7 +11,8 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "node prisma/seed.mjs",
-    "seed:dacris": "node prisma/seed-dacris.mjs",
+    "seed:cliente": "node prisma/seed-cliente.mjs",
+    "seed:dacris": "CLIENTE=dacris node prisma/seed-cliente.mjs",
     "db:studio": "prisma studio"
   },
   "dependencies": {

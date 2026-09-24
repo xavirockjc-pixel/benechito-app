@@ -1,0 +1,42 @@
+{
+  "_comentario": "Config de provisión del cliente Da'cris (Lota). Un cliente = un archivo como este. Se aplica con: CLIENTE=dacris npm run seed:cliente",
+  "empresa": {
+    "nombre": "Da'cris",
+    "rubro": "comida_rapida",
+    "modoSimple": true,
+    "accesoRoles": "caja,produccion,chofer",
+    "accesoDesde": "10:00",
+    "accesoHasta": "23:59",
+    "accesoDias": "1,2,3,4,5,6,0"
+  },
+  "sucursal": "Lota",
+  "ubicaciones": [
+    { "nombre": "Mostrador / Local", "tipo": "sala" },
+    { "nombre": "Cocina", "tipo": "bodega" },
+    { "nombre": "Reparto", "tipo": "vehiculo" }
+  ],
+  "listas": [
+    { "nombre": "Mostrador", "canal": "sala" },
+    { "nombre": "Web", "canal": "web" },
+    { "nombre": "Reparto", "canal": "reparto" }
+  ],
+  "usuarios": [
+    { "email": "dueno@dacris.cl", "nombre": "Dueño Da'cris", "rol": "propietario" },
+    { "email": "caja@dacris.cl", "nombre": "Cajero Mostrador", "rol": "caja" },
+    { "email": "cocina@dacris.cl", "nombre": "Cocina", "rol": "produccion" },
+    { "email": "reparto@dacris.cl", "nombre": "Reparto", "rol": "chofer" }
+  ],
+  "catalogo": [
+    { "cat": "Comida rápida", "nombre": "Completos", "desc": "Italiano, dinámico o a lo pobre.", "precio": 1500, "tipo": "propio" },
+    { "cat": "Comida rápida", "nombre": "Sandwiches", "desc": "Churrasco, mechada, as.", "precio": 2500, "tipo": "propio" },
+    { "cat": "Comida rápida", "nombre": "Papas fritas", "desc": "Solas o cargadas.", "precio": 2000, "tipo": "propio" },
+    { "cat": "Comida rápida", "nombre": "Pichangas", "desc": "Surtido para compartir.", "precio": 7900, "tipo": "propio" },
+    { "cat": "Comida rápida", "nombre": "Churros", "desc": "Rellenos de manjar o chocolate.", "precio": 1000, "tipo": "propio" },
+    { "cat": "Helados", "nombre": "Helados soft", "desc": "Barquillo o vasito, con topping.", "precio": 1500, "tipo": "propio" },
+    { "cat": "Panadería", "nombre": "Empanadas", "desc": "De pino, queso o del día.", "precio": 1500, "tipo": "propio" },
+    { "cat": "Panadería", "nombre": "Panadería", "desc": "Pan amasado y del día. Por kilo.", "precio": 1800, "tipo": "propio" },
+    { "cat": "Panadería", "nombre": "Dulces", "desc": "Pasteles, kuchen y dulces.", "precio": 0, "tipo": "propio" },
+    { "cat": "Abarrotes", "nombre": "Bebidas", "desc": "Lata o 1.5L, bien helada.", "precio": 1200, "tipo": "reventa" },
+    { "cat": "Abarrotes", "nombre": "Golosinas y snacks", "desc": "Dulces, galletas, cabritas.", "precio": 500, "tipo": "reventa" }
+  ]
+}
