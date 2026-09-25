@@ -1,16 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { fijarStockBodega } from "./actions";
+import { fijarStockConteo } from "./actions";
 
 type Item = { id: string; nombre: string; actual: number; grupo: "Productos" | "Sabores" };
 
 /**
- * Conteo / corrección de stock: el bodeguero escribe cuántos HAY de verdad y el
- * sistema deja ese número (no suma ni resta ventas). Sirve mientras no hay un orden
- * fijo de entradas/salidas: se corrobora y se edita directo. Solo guarda lo que cambió.
+ * Conteo / corrección de stock: se escribe cuántos HAY de verdad y el sistema deja
+ * ese número (no suma ni resta ventas). Sirve mientras no hay un orden fijo de
+ * entradas/salidas: se corrobora y se edita directo. Solo guarda lo que cambió y
+ * SIEMPRE deja el ajuste registrado para poder comparar después. `zona` = dónde
+ * se cuenta (bodega o sala/local).
  */
-export default function CorregirStock({ items }: { items: Item[] }) {
+export default function CorregirStock({ items, zona = "bodega" }: { items: Item[]; zona?: "bodega" | "sala" }) {
   const [valores, setValores] = useState<Record<string, string>>({});
   const [q, setQ] = useState("");
 
@@ -46,7 +48,8 @@ export default function CorregirStock({ items }: { items: Item[] }) {
         className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-blue-500"
       />
 
-      <form action={fijarStockBodega} className="mt-3">
+      <form action={fijarStockConteo} className="mt-3">
+        <input type="hidden" name="zona" value={zona} />
         <input type="hidden" name="items" value={JSON.stringify(cambios)} />
 
         {grupos.map((g) => {

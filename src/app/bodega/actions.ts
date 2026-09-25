@@ -115,12 +115,14 @@ export async function moverStockBodega(formData: FormData) {
 }
 
 /**
- * Corrige/pone el stock REAL de bodega directo (conteo), sin pasar por ventas ni
- * entradas. El bodeguero escribe cuántos hay de verdad y el sistema lo deja en ese
- * número. Guarda el ajuste (diferencia) como movimiento para no perder el rastro.
- * items = [{ id:"prod:<id>"|"sab:<id>", cantidad:<número real> }]
+ * Corrige/pone el stock REAL directo (conteo), sin pasar por ventas ni entradas.
+ * Se escribe cuántos hay de verdad y el sistema lo deja en ese número. SIEMPRE
+ * guarda el ajuste (diferencia) como movimiento, para después comparar contra lo
+ * que se vendió. Excepción hasta tener un orden fijo de entradas/salidas.
+ * zona = "bodega" | "sala". items = [{ id:"prod:<id>"|"sab:<id>", cantidad:<real> }]
  */
-export async function fijarStockBodega(formData: FormData) {
+export async function fijarStockConteo(formData: FormData) {
+  const zona = String(formData.get("zona") ?? "bodega").trim() === "sala" ? "sala" : "bodega";
   let items: { id: string; cantidad: number }[] = [];
   try {
     items = JSON.parse(String(formData.get("items") ?? "[]"));
@@ -130,7 +132,7 @@ export async function fijarStockBodega(formData: FormData) {
   items = items.filter((i) => typeof i.id === "string" && Number.isFinite(i.cantidad) && i.cantidad >= 0);
   if (items.length === 0) return;
 
-  const ubic = await ubicacionDeZona("bodega");
+  const ubic = await ubicacionDeZona(zona);
   if (!ubic) return;
   const u = await usuarioActual();
 
@@ -155,12 +157,12 @@ export async function fijarStockBodega(formData: FormData) {
           productoId: realId, tipo: "ajuste",
           ubicacionDestinoId: delta > 0 ? ubic : null,
           ubicacionOrigenId: delta < 0 ? ubic : null,
-          cantidad: Math.abs(delta), referencia: "conteo-bodega",
+          cantidad: Math.abs(delta), referencia: `conteo-${zona}`,
         },
       });
       await prisma.movimientoBodega.create({
         data: {
-          zona: "bodega", ubicacionId: ubic, tipo: "ajuste", clase: "producto", refId: realId,
+          zona, ubicacionId: ubic, tipo: "ajuste", clase: "producto", refId: realId,
           nombre: prod?.nombre ?? realId, detalle: `Conteo: quedó en ${nueva}`, cantidad: Math.abs(delta),
           usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
         },
@@ -178,7 +180,7 @@ export async function fijarStockBodega(formData: FormData) {
       const sab = await prisma.sabor.findUnique({ where: { id: realId }, select: { nombre: true } });
       await prisma.movimientoBodega.create({
         data: {
-          zona: "bodega", ubicacionId: ubic, tipo: "ajuste", clase: "sabor", refId: realId,
+          zona, ubicacionId: ubic, tipo: "ajuste", clase: "sabor", refId: realId,
           nombre: sab?.nombre ?? realId, detalle: `Conteo: quedó en ${nueva}`, cantidad: Math.abs(delta),
           usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
         },
@@ -186,6 +188,11 @@ export async function fijarStockBodega(formData: FormData) {
     }
   }
 
+  if (zona === "sala") {
+    revalidatePath("/caja/inventario");
+    revalidatePath("/caja");
+    redirect("/caja/inventario?ok=1");
+  }
   revalidatePath("/bodega");
   redirect("/bodega?ok=1");
 }
