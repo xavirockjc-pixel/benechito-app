@@ -1,0 +1,222 @@
+<title>Da'cris con Panal</title>
+<meta name="description" content="Propuesta de servicio Panal para Da'cris (Lota): local, fabricación, bodega y reparto en el celular, con planes Básico, Estándar y Full.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    color-scheme: dark;
+    --ground:#141009; --surface:#1e1810; --surface-2:#271e12; --line:#3b2d1a;
+    --naranja:#f2941f; --bright:#ffc24d; --deep:#c0741a;
+    --cream:#f5ecd9; --muted:#b3a284; --wa:#25D366; --wa-deep:#128C4B;
+    --good:#68d19a;
+    --serif:"Bricolage Grotesque", Georgia, serif;
+    --sans:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --gut: clamp(16px, 4vw, 40px);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--cream); font-family:var(--sans); line-height:1.6;
+    background-image:radial-gradient(120% 60% at 50% -8%, rgba(242,148,31,.16), transparent 60%);}
+  .wrap{max-width:1040px; margin-inline:auto; padding-inline:var(--gut)}
+  h1,h2,h3{font-family:var(--serif); margin:0; text-wrap:balance; letter-spacing:-.01em; line-height:1.08}
+  p{margin:0}
+  a{color:var(--bright)}
+  .eyebrow{font-family:var(--sans); text-transform:uppercase; letter-spacing:.18em; font-size:.72rem; font-weight:600; color:var(--naranja)}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  /* Topbar */
+  .top{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    padding-block:16px; border-bottom:1px solid var(--line)}
+  .brand{display:flex; align-items:center; gap:9px; font-weight:800; font-family:var(--serif); letter-spacing:.02em}
+  .hx{width:26px; height:26px; display:grid; place-items:center; font-size:1.1rem;
+    background:linear-gradient(135deg,var(--naranja),var(--bright)); border-radius:8px; color:#231602}
+  .top .meta{font-size:.8rem; color:var(--muted)}
+
+  /* Hero */
+  .hero{display:grid; grid-template-columns:auto 1fr; gap:clamp(18px,4vw,40px); align-items:center;
+    padding-block:clamp(30px,6vw,56px)}
+  .hero .logo{width:clamp(120px,26vw,190px); height:auto; border-radius:20px;
+    box-shadow:0 18px 50px rgba(0,0,0,.55); background:#0c0a07}
+  .hero h1{font-size:clamp(2.4rem,8vw,4.4rem); font-weight:800; font-style:italic}
+  .hero h1 .hl{color:var(--naranja)}
+  .hero .slo{font-size:clamp(1.05rem,3vw,1.4rem); font-weight:600; color:var(--bright); margin-top:6px}
+  .hero .lede{color:var(--muted); max-width:52ch; margin-top:12px; font-size:1.02rem}
+  @media(max-width:560px){ .hero{grid-template-columns:1fr; text-align:center} .hero .logo{margin-inline:auto} .hero .lede{margin-inline:auto} }
+
+  section{padding-block:clamp(30px,5vw,48px); border-top:1px solid var(--line)}
+  .sec-h{margin-bottom:22px}
+  .sec-h h2{font-size:clamp(1.5rem,4vw,2.1rem); font-weight:800}
+  .sec-h p{color:var(--muted); margin-top:8px; max-width:60ch}
+
+  /* Pillars */
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px}
+  .pill{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px}
+  .pill .ic{font-size:1.7rem}
+  .pill h3{font-size:1.12rem; font-weight:800; margin:10px 0 4px; font-family:var(--sans)}
+  .pill p{color:var(--muted); font-size:.92rem}
+
+  /* Highlight */
+  .flow{background:linear-gradient(135deg, rgba(242,148,31,.14), rgba(255,194,77,.06));
+    border:1px solid var(--line); border-radius:20px; padding:clamp(20px,4vw,32px)}
+  .flow h2{font-size:clamp(1.4rem,4vw,2rem); font-weight:800}
+  .chain{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px; font-weight:600}
+  .chain .step{background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:10px 14px; font-size:.95rem}
+  .chain .arw{color:var(--naranja); font-weight:800}
+  .chain .out{background:rgba(37,211,102,.14); border-color:var(--wa-deep); color:var(--good)}
+
+  /* Planes */
+  .plans{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; align-items:start}
+  .plan{background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:22px; display:flex; flex-direction:column; gap:14px}
+  .plan.best{border-color:var(--naranja); box-shadow:0 0 0 1px var(--naranja), 0 20px 50px rgba(242,148,31,.14); position:relative}
+  .tag{position:absolute; top:-12px; left:22px; background:var(--naranja); color:#231602; font-weight:800;
+    font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; padding:5px 11px; border-radius:999px}
+  .plan .name{font-family:var(--serif); font-weight:800; font-size:1.5rem}
+  .plan .for{color:var(--muted); font-size:.88rem; min-height:2.4em}
+  .price{border-block:1px solid var(--line); padding-block:14px}
+  .price .mo{font-size:2rem; font-weight:800; font-family:var(--serif)}
+  .price .mo small{font-size:.9rem; color:var(--muted); font-weight:600; font-family:var(--sans)}
+  .price .mount{color:var(--muted); font-size:.9rem; margin-top:4px}
+  ul.feats{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; font-size:.93rem}
+  ul.feats li{display:flex; gap:9px; align-items:flex-start}
+  ul.feats li::before{content:"✓"; color:var(--good); font-weight:800; flex:none}
+  ul.feats li.off{color:var(--muted); opacity:.6}
+  ul.feats li.off::before{content:"–"; color:var(--muted)}
+
+  .note{background:var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--naranja);
+    border-radius:12px; padding:16px 18px; color:var(--cream); margin-top:20px; font-size:.95rem}
+  .note b{color:var(--bright)}
+
+  /* Cotización desglosada */
+  .quote{background:var(--surface); border:1px solid var(--line); border-radius:18px; overflow:hidden}
+  .qrow{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:15px 18px; border-top:1px solid var(--line)}
+  .qrow:first-child{border-top:0}
+  .qn{font-weight:500}
+  .qv{font-weight:700; color:var(--cream); white-space:nowrap}
+  .qrow.qtot{background:var(--surface-2); border-top:2px solid var(--naranja)}
+  .qrow.qtot .qn{font-family:var(--serif); font-weight:800; font-size:1.1rem}
+  .qrow.qtot .qv{color:var(--bright); font-size:1.3rem; font-family:var(--serif); font-weight:800}
+  .qrow.qmes .qn{color:var(--good); font-weight:600}
+  .qrow.qmes .qv{color:var(--good)}
+
+  /* CTA */
+  .cta{display:grid; gap:14px; justify-items:center; text-align:center}
+  .cta h2{font-size:clamp(1.6rem,5vw,2.4rem); font-weight:800; font-style:italic}
+  .btn{display:inline-flex; align-items:center; gap:9px; background:var(--wa); color:#04220f; font-weight:800;
+    text-decoration:none; padding:14px 26px; border-radius:14px; font-size:1.05rem}
+  .contact{font-size:.95rem; color:var(--muted)}
+  .num{font-weight:700; color:var(--cream); font-variant-numeric:tabular-nums; user-select:all}
+  footer{padding-block:26px; color:var(--muted); font-size:.82rem; text-align:center; border-top:1px solid var(--line)}
+</style>
+
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand"><span class="hx">🐝</span> Panal</div>
+    <div class="meta">Propuesta de servicio · Lota · 2026</div>
+  </div>
+
+  <header class="hero">
+    <img class="logo" src="../clientes/assets/dacris-logo.jpg" alt="Da'cris — De todo si no, pa' qué">
+    <div>
+      <p class="eyebrow">Propuesta para</p>
+      <h1>Da'<span class="hl">cris</span></h1>
+      <p class="slo">Todo tu negocio, en el celular.</p>
+      <p class="lede">Completos, pichangas, papas, panadería, helados y Caja Vecina — manejados desde un solo lugar: lo que vendes, lo que fabricas, lo que te queda en bodega y tus deliverys. Sin planillas, con botones grandes y control por voz.</p>
+    </div>
+  </header>
+
+  <section>
+    <div class="sec-h">
+      <p class="eyebrow">Lo que tendrás</p>
+      <h2>Tu operación completa, conectada</h2>
+      <p>Cada parte habla con la otra: vendes en el local, se descuenta el stock, sabes qué fabricar y organizas el reparto — todo solo.</p>
+    </div>
+    <div class="grid">
+      <div class="pill"><div class="ic">🛒</div><h3>Local / Caja</h3><p>Vende rápido en el mesón y cierra la caja cuadrada al final del día. Sabes exactamente cuánto entró.</p></div>
+      <div class="pill"><div class="ic">🏭</div><h3>Fabricación con recetas</h3><p>Armas pichangas y completos y el sistema descuenta los insumos (pan, vienesa, palta…) por receta.</p></div>
+      <div class="pill"><div class="ic">📦</div><h3>Bodega / Stock</h3><p>Ves cuánto te queda de cada insumo y te avisa cuándo reponer. Nunca más quedarte sin pan un sábado.</p></div>
+      <div class="pill"><div class="ic">🚚</div><h3>Reparto</h3><p>Organiza los deliverys de Lota: quién pidió, cuánto y dónde. Todo ordenado en un solo panel.</p></div>
+      <div class="pill"><div class="ic">🛍️</div><h3>Tu tienda web</h3><p>Página propia con tu logo Da'cris. Tus clientes piden por WhatsApp directo desde el menú. <b>Ya está lista.</b></p></div>
+      <div class="pill"><div class="ic">🎂</div><h3>Fichero de clientes</h3><p>Guarda clientes, gustos y cumpleaños para mandarles promos y que vuelvan.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="flow">
+      <p class="eyebrow">El truco que te hace ganar</p>
+      <h2>Cada venta descuenta tus insumos, sola</h2>
+      <p style="color:var(--muted); margin-top:10px; max-width:60ch">Ya no adivinas cuánto gastaste. Vendes un completo y el sistema baja el stock exacto de lo que llevó. Al final del día sabes qué te queda y cuánto ganaste de verdad.</p>
+      <div class="chain">
+        <span class="step">🌭 Vendes un completo</span>
+        <span class="arw">→</span>
+        <span class="step">Descuenta pan + vienesa + palta</span>
+        <span class="arw">→</span>
+        <span class="step">Baja el stock de bodega</span>
+        <span class="arw">→</span>
+        <span class="step out">Sabes qué reponer y cuánto ganaste ✓</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h">
+      <p class="eyebrow">Cotización para Da'cris</p>
+      <h2>Lo que se arma y cuánto vale</h2>
+      <p>Se cobra por lo que montamos: tu tienda web, el panel central y cada app que uses. Se paga una vez y queda funcionando.</p>
+    </div>
+
+    <div class="quote">
+      <div class="qrow"><span class="qn">🛍️ Landing con catálogo (tu tienda web Da'cris)</span><span class="qv tnum">$120.000</span></div>
+      <div class="qrow"><span class="qn">📊 Central — panel de administración</span><span class="qv tnum">$50.000</span></div>
+      <div class="qrow"><span class="qn">🧾 App Caja / Local</span><span class="qv tnum">$30.000</span></div>
+      <div class="qrow"><span class="qn">🏭 App Producción (fabricación por receta)</span><span class="qv tnum">$30.000</span></div>
+      <div class="qrow"><span class="qn">📦 App Bodega (stock)</span><span class="qv tnum">$30.000</span></div>
+      <div class="qrow"><span class="qn">🚚 App Reparto (delivery)</span><span class="qv tnum">$30.000</span></div>
+      <div class="qrow qtot"><span class="qn">Montaje total (una vez)</span><span class="qv tnum">$290.000</span></div>
+      <div class="qrow qmes"><span class="qn">Mensualidad — hosting, mantención, actualizaciones y soporte</span><span class="qv tnum">$20.000 / mes</span></div>
+    </div>
+
+    <div class="note">
+      🌐 <b>Dominio aparte:</b> el dominio (ej. <span class="tnum">tudominio.cl</span>, ~$12.000/año) corre por cuenta de Da'cris; yo lo dejo conectado. &nbsp;·&nbsp; ➕ <b>¿Más usuarios?</b> Cada app adicional para sumar gente: <b>$15.000</b>. &nbsp;·&nbsp; 🎁 <b>Fundador:</b> mensualidad congelada 1 año.
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h">
+      <p class="eyebrow">El montaje se paga — tú eliges cómo</p>
+      <h2>Dos formas de pagar el arranque</h2>
+      <p>El montaje es dejarte todo configurado a tu medida: tus productos, tus recetas y tu tienda. Se paga una vez — al contado o repartido en la cuota.</p>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      <div class="pill">
+        <div class="ic">💵</div>
+        <h3>Al contado</h3>
+        <p>Pagas el montaje al inicio y listo. Es la forma más barata en total. Da'cris: <b class="tnum" style="color:var(--bright)">$290.000</b> una vez + $20.000/mes.</p>
+      </div>
+      <div class="pill">
+        <div class="ic">📅</div>
+        <h3>Repartido en la cuota <span style="font-size:.7rem;font-weight:600;color:var(--naranja);vertical-align:middle">+20% recargo</span></h3>
+        <p>Si no quieres soltar todo de una: pagas un <b>arranque de $50.000</b> + una cuota más alta el primer año (Da'cris <b class="tnum" style="color:var(--bright)">~$45.000/mes</b>), y al año 2 baja a $20.000/mes. Permanencia 12 meses.</p>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:8px">Pagar en cuotas tiene un <b>recargo de ~20%</b> por el financiamiento (montaje $348.000). El contado siempre sale más barato.</p>
+      </div>
+    </div>
+    <div class="note">
+      🎓 <b>Capacitación:</b> la <b>primera capacitación va incluida</b> en el montaje (te dejamos usándolo de verdad). Sesiones extra — cuando entra gente nueva o quieren repasar — <b>$15.000 cada una</b>. El soporte del día a día por WhatsApp va incluido en la mensualidad.
+    </div>
+  </section>
+
+  <section>
+    <div class="cta">
+      <p class="eyebrow">¿Partimos?</p>
+      <h2>Dejemos Da'cris andando</h2>
+      <p class="contact">Escríbeme por WhatsApp y coordinamos la instalación:<br>
+        <span class="num">+56 9 2800 5332</span> · Javier — Panal</p>
+      <a class="btn" href="https://wa.me/56928005332?text=Hola%20Javier%2C%20quiero%20avanzar%20con%20Panal%20para%20Da'cris" target="_blank" rel="noopener">💬 Quiero avanzar con Da'cris</a>
+    </div>
+  </section>
+
+  <footer>
+    Panal · Sistema de gestión para negocios de comida · Propuesta sin compromiso para Da'cris (Lota)
+  </footer>
+
+</div>

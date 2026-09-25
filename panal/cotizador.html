@@ -1,0 +1,372 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}</style></head><body>
+<title>Cotizador Panal</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --ground:#100b06; --surface:#19110a; --surface-2:#241a10; --line:#3c2d1a;
+    --honey:#f6a821; --bright:#ffce6a; --cream:#f4ecd8; --muted:#a99a7c; --good:#5fd0a6; --teal:#5fd0c0;
+    --glow: rgba(246,168,33,.4);
+    --mono: ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--cream); font-family:var(--sans); line-height:1.55;
+    background-image:radial-gradient(900px 360px at 85% -6%, rgba(246,168,33,.09), transparent 60%)}
+  .wrap{max-width:980px; margin-inline:auto; padding:22px}
+  h1,h2{margin:0; text-wrap:balance}
+  .mono{font-family:var(--mono)}
+  .eyebrow{font-family:var(--mono); text-transform:uppercase; letter-spacing:.22em; font-size:.68rem; color:var(--honey)}
+  header.top{display:flex; align-items:center; gap:12px; padding-bottom:8px; border-bottom:1px solid var(--line); margin-bottom:16px}
+  .hex{width:26px;height:29px;filter:drop-shadow(0 0 8px var(--glow))}
+  .brand{font-family:var(--mono); font-weight:700; letter-spacing:.16em; text-transform:uppercase; font-size:.95rem}
+  .brand small{display:block; color:var(--muted); font-size:.6rem; letter-spacing:.1em}
+  .hint{color:var(--muted); font-size:.85rem}
+  .card{border:1px solid var(--line); border-radius:16px; background:linear-gradient(180deg,var(--surface),#140d07); padding:18px; margin-bottom:16px}
+  .card h2{font-size:1rem; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:4px}
+  .card .sub{color:var(--muted); font-size:.82rem; margin:0 0 12px}
+  .chips{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{display:inline-flex; align-items:center; gap:8px; padding:8px 13px; border-radius:999px; border:1px solid var(--line);
+    background:#0e0a05; cursor:pointer; font-size:.88rem; user-select:none}
+  .chip input{display:none}
+  .chip.on{border-color:var(--honey); background:rgba(246,168,33,.12); color:var(--bright)}
+  .chip.ext.on{border-color:var(--teal); background:rgba(95,208,192,.12); color:#bff0e8}
+  .chip .d{width:8px;height:8px;border-radius:50%;background:var(--line)}
+  .chip.on .d{background:var(--honey); box-shadow:0 0 8px var(--honey)}
+  .chip.ext.on .d{background:var(--teal); box-shadow:0 0 8px var(--teal)}
+  select{background:#0e0a05; color:var(--cream); border:1px solid var(--line); border-radius:9px; padding:8px 10px; font-size:.9rem}
+
+  /* selector de sector */
+  .sectors{display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px}
+  .sector{display:flex; flex-direction:column; gap:2px; padding:13px 14px; border-radius:14px; border:1px solid var(--line);
+    background:var(--surface-2); cursor:pointer; text-align:left; transition:.14s; color:var(--cream)}
+  .sector:hover{border-color:var(--honey); transform:translateY(-2px)}
+  .sector.on{border-color:var(--honey); background:rgba(246,168,33,.12); box-shadow:0 10px 30px -18px var(--glow)}
+  .sector .se{font-size:1.5rem}
+  .sector b{font-size:.92rem; font-weight:800}
+  .sector small{color:var(--muted); font-size:.72rem; line-height:1.35}
+
+  /* pitch por sector */
+  .pitch{border:1px solid var(--honey); border-radius:16px; padding:16px 18px; margin-bottom:16px;
+    background:linear-gradient(180deg,rgba(246,168,33,.12),#140d07)}
+  .pitch .who{font-family:var(--mono); font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--honey)}
+  .pitch h3{margin:4px 0 6px; font-size:1.15rem}
+  .pitch p{margin:0; color:#e7dcc4; font-size:.9rem}
+  .areas{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
+  .area{font-size:.74rem; padding:4px 10px; border-radius:999px; background:#0e0a05; border:1px solid var(--line); color:var(--muted)}
+  .area b{color:var(--bright); font-weight:700}
+
+  .quote{position:sticky; bottom:0; border:1px solid var(--honey); border-radius:18px;
+    background:linear-gradient(180deg,#1c1409,#120b05); padding:18px; box-shadow:0 -14px 40px -20px #000; margin-top:8px}
+  .quote .plan{font-family:var(--mono); font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--honey)}
+  .quote .big{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:8px}
+  @media (max-width:560px){ .quote .big{grid-template-columns:1fr} }
+  .quote .b{background:#0e0a05; border:1px solid var(--line); border-radius:12px; padding:14px}
+  .quote .b .k{font-size:.72rem; color:var(--muted); text-transform:uppercase; letter-spacing:.06em}
+  .quote .b .v{font-size:1.4rem; font-weight:800; color:var(--bright); font-variant-numeric:tabular-nums; margin-top:3px}
+  .quote .b .u{font-size:.78rem; color:var(--muted)}
+  .detalle{margin-top:12px; font-size:.85rem; line-height:1.7}
+  .detalle .dl b{color:var(--cream)} .detalle .dl{color:var(--muted)}
+  .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:12px}
+  .btn{cursor:pointer; border:0; border-radius:999px; font-weight:700; font-family:var(--sans); padding:10px 18px; font-size:.88rem; text-decoration:none; display:inline-flex; align-items:center; gap:7px}
+  .btn-h{background:linear-gradient(180deg,var(--bright),var(--honey)); color:#2a1a05}
+  .btn-g{background:transparent; color:var(--cream); border:1px solid var(--line)}
+  .msg{font-size:.82rem; color:var(--good)}
+  :focus-visible{outline:2px solid var(--bright); outline-offset:2px}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd778"/><stop offset="1" stop-color="#d98a12"/></linearGradient>
+  <symbol id="hm" viewBox="0 0 60 66"><path d="M30 2 56 17V49L30 64 4 49V17Z" fill="none" stroke="url(#gH)" stroke-width="3"/><path d="M30 16 44 24V40L30 48 16 40V24Z" fill="url(#gH)" opacity=".9"/><circle cx="30" cy="32" r="4.5" fill="#160f07"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+  <header class="top"><svg class="hex"><use href="#hm"/></svg><span class="brand">Panal <small>Cotizador por sector</small></span></header>
+  <p class="eyebrow">Elige el sector y arma el panal a su medida</p>
+  <p class="hint" style="margin:6px 0 16px">Cada sector parte con un <b>panal recomendado</b>, sus <b>áreas renombradas</b> y un discurso a medida. Ajusta celdas y extensiones; el plan y el rango de precio se calculan solos. Para el documento formal, usa el <b>Generador de Contrato</b>.</p>
+
+  <div class="card">
+    <h2>🏭 Sector</h2>
+    <p class="sub">Rellena todo con el pack pensado para ese rubro.</p>
+    <div class="sectors" id="sectors"></div>
+  </div>
+
+  <div class="pitch" id="pitch" hidden>
+    <span class="who" id="pWho"></span>
+    <h3 id="pTitle"></h3>
+    <p id="pText"></p>
+    <div class="areas" id="pAreas"></div>
+  </div>
+
+  <div class="card">
+    <h2>🧩 Celdas (módulos)</h2>
+    <p class="sub">El corazón del sistema. Definen el plan.</p>
+    <div class="chips" id="modulos"></div>
+  </div>
+
+  <div class="card">
+    <h2>➕ Extensiones</h2>
+    <p class="sub">Funciones avanzadas que se activan sobre el plan.</p>
+    <div class="chips" id="extens"></div>
+  </div>
+
+  <div class="card">
+    <h2>🛠️ Servicios extra</h2>
+    <p class="sub">Se cotizan aparte según alcance.</p>
+    <div class="chips" id="servicios"></div>
+  </div>
+
+  <div class="card">
+    <h2>📐 Plan</h2>
+    <p class="sub">Se sugiere solo según las celdas; puedes forzarlo.</p>
+    <select id="planSel">
+      <option value="auto">Automático (según celdas)</option>
+      <option value="basico">Básico</option>
+      <option value="produccion">Producción</option>
+      <option value="completo">Completo</option>
+      <option value="medida">A medida</option>
+    </select>
+  </div>
+
+  <div class="quote">
+    <span class="plan" id="planLbl">Plan —</span>
+    <div class="big">
+      <div class="b"><div class="k">Implementación (una vez)</div><div class="v" id="impl">—</div><div class="u" id="implu"></div></div>
+      <div class="b"><div class="k">Mensualidad</div><div class="v" id="mes">—</div><div class="u">soporte · hosting · mejoras</div></div>
+    </div>
+    <div class="detalle" id="detalle"></div>
+    <div class="row">
+      <button class="btn btn-h" id="copiar">📋 Copiar cotización</button>
+      <a class="btn btn-g" id="wa" target="_blank" rel="noopener">💬 Enviar por WhatsApp</a>
+      <span class="msg" id="msg"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var WA="56928005332";
+  var MODULOS=[
+    {k:"produccion",e:"🏭",n:"Producción y calidad (litros, cierre de turno)"},{k:"ventas",e:"🛒",n:"Ventas · Vendedor (precio por volumen)"},{k:"repartos",e:"🛵",n:"Repartos y retiros"},
+    {k:"inventario",e:"📦",n:"Inventario"},{k:"clientes",e:"🧾",n:"Clientes y deudas"},{k:"panel",e:"📊",n:"Panel · Socio administrativo"},
+    {k:"facturacion",e:"🧮",n:"Facturación"},{k:"recetas",e:"📖",n:"Recetas y capacitaciones"},{k:"agenda",e:"📅",n:"Agenda y citas"},
+    {k:"mejoras",e:"🌱",n:"Mejoras y proyecciones"},{k:"tienda",e:"🐝",n:"Tienda y Portal del Cliente"}
+  ];
+  var EXTENS=[
+    {k:"sii",e:"🧾",n:"Facturación electrónica (SII)"},{k:"cobranza",e:"📲",n:"Cobranza por WhatsApp"},
+    {k:"compras",e:"🛒",n:"Compras y punto de reorden"},{k:"turnos",e:"🕒",n:"Turnos y ausencias"},
+    {k:"trazabilidad",e:"🔎",n:"Trazabilidad de lotes / calidad"},{k:"rentabilidad",e:"💹",n:"Rentabilidad por producto"},
+    {k:"capacita",e:"🎓",n:"Capacitación · BPM · Metas · EPP"}
+  ];
+  var SERVICIOS=[{k:"chatbot",e:"🤖",n:"Chatbot IA"},{k:"web",e:"🌐",n:"Página web / landing"},{k:"redes",e:"📣",n:"Marketing y redes"},{k:"admin",e:"🔧",n:"Administración mensual"}];
+  var PLAN={
+    basico:{label:"Básico", impl:325000, mes:32500},
+    produccion:{label:"Producción", impl:575000, mes:50000},
+    completo:{label:"Completo", impl:1200000, mes:80000},
+    medida:{label:"A medida", impl:null, mes:null}
+  };
+  // Sectores: pack recomendado + pitch + áreas renombradas
+  var SECTORS=[
+    {k:"heladeria",e:"🍦",n:"Heladería / Fábrica de helados",
+     tag:"Fabricas por litros, vendes en ruta y web",
+     pitch:"Produces cremas y paletas <b>por litros</b>: Panal estima las unidades, aprende el rendimiento (maduración vs. overrun) y descuenta los insumos por receta. El cliente pide por la web con su precio y el reparto sale solo.",
+     areas:[["Producción","Cremas / Paletas por litros"],["Bodega","Insumos y sabores"],["Menú","Líneas / sabores"],["Venta","Ruta + distribución"],["Pedidos","Retiros y web"]],
+     mods:["produccion","ventas","tienda","repartos","inventario","clientes","panel","facturacion","recetas","mejoras"], ext:[]},
+    {k:"panaderia",e:"🥖",n:"Panadería / Pastelería",
+     tag:"Amasado, horno y mostrador al día",
+     pitch:"Controlas <b>amasado y horno por receta</b>, el stock de despensa baja solo y capacitas al personal nuevo con la galería “así debe quedar”. Mostrador y encargos, todo en el mismo panal.",
+     areas:[["Producción","Amasado / Horno"],["Bodega","Despensa"],["Menú","Tipos de pan"],["Venta","Mostrador + reparto"],["Pedidos","Encargos"]],
+     mods:["produccion","inventario","recetas","ventas","panel","clientes"], ext:[]},
+    {k:"comida",e:"🍔",n:"Comida rápida / Restaurante",
+     tag:"Pedido → cocina → delivery, sin perder ninguno",
+     pitch:"Los pedidos de <b>WhatsApp, web y redes</b> caen en una bandeja central, la cocina los ve y el stock baja por receta. Sale a delivery con mapa y el cliente ve su pedido en camino.",
+     areas:[["Producción","Cocina"],["Bodega","Almacén"],["Menú","Ítems / combos"],["Venta","Mostrador / Caja"],["Pedidos","Delivery / Pickup"]],
+     mods:["ventas","tienda","repartos","inventario","recetas","panel"], ext:[]},
+    {k:"distribuidora",e:"🚚",n:"Distribuidora / Mayorista",
+     tag:"Ruta, precio por volumen y cobranza al día",
+     pitch:"Vendes a negocios con <b>precio por volumen (tramos)</b> y lista por tipo de cliente. La cuenta corriente queda al día, la cobranza avisa por WhatsApp y el reparto se organiza por sector.",
+     areas:[["Producción","—"],["Bodega","Centro de distribución"],["Menú","Catálogo mayorista"],["Venta","Ruta + vendedores"],["Pedidos","Auto-registro de negocios"]],
+     mods:["ventas","tienda","repartos","inventario","clientes","panel","facturacion"], ext:["cobranza","sii"]},
+    {k:"fabrica",e:"🏭",n:"Fábrica / Manufactura",
+     tag:"Producción, insumos y trazabilidad",
+     pitch:"Fabricas <b>por líneas y lotes</b> con rendimiento aprendido, cierre de turno y mermas. Compras a proveedores con punto de reorden, trazabilidad por lote y rentabilidad por producto.",
+     areas:[["Producción","Fabricación por línea"],["Bodega","Materia prima"],["Menú","Líneas de producto"],["Venta","Distribución"],["Pedidos","Órdenes / retiros"]],
+     mods:["produccion","inventario","recetas","panel","facturacion","mejoras"], ext:["compras","trazabilidad","rentabilidad","capacita","sii"]},
+    {k:"almacen",e:"🏪",n:"Almacén / Minimarket",
+     tag:"Vender y controlar stock, simple",
+     pitch:"Lo esencial para <b>vender y no quebrar stock</b>: caja, inventario con alertas de mínimos y un panel con el reporte diario a tu WhatsApp.",
+     areas:[["Producción","—"],["Bodega","Estantería"],["Menú","Productos"],["Venta","Caja / Mostrador"],["Pedidos","—"]],
+     mods:["ventas","inventario","panel"], ext:[]},
+    {k:"consultoria",e:"💼",n:"Servicios / Consultoría",
+     tag:"Agenda, citas y cobros",
+     pitch:"El cliente <b>reserva la cita online</b>, paga la seña, recibe recordatorios y todo queda en su ficha. Facturas y llevas la cuenta al día sin planillas.",
+     areas:[["Producción","—"],["Bodega","—"],["Menú","Servicios"],["Venta","Agenda / Caja"],["Pedidos","Reservas"]],
+     mods:["agenda","clientes","panel","facturacion"], ext:[]},
+    {k:"construccion",e:"🏗️",n:"Construcción / Ferretería",
+     tag:"Materiales, clientes y facturación",
+     pitch:"Controlas <b>materiales y despacho</b>, llevas la ficha y deuda de cada cliente/obra y emites guías y facturas con recordatorio por RUT.",
+     areas:[["Producción","—"],["Bodega","Materiales"],["Menú","Catálogo"],["Venta","Cotización / Venta"],["Pedidos","Despacho a obra"]],
+     mods:["inventario","clientes","facturacion","ventas","panel","repartos"], ext:["compras","sii"]},
+    {k:"medida",e:"🛠️",n:"A medida",
+     tag:"Arma el panal desde cero",
+     pitch:"Parte con lo básico y suma celdas cuando quieras. Cuéntanos cómo operas y armamos tu primera celda.",
+     areas:[["Producción","—"],["Bodega","—"],["Menú","—"],["Venta","—"],["Pedidos","—"]],
+     mods:["inventario","panel"], ext:[]}
+  ];
+
+  function chip(cont, item, cls){
+    var l=document.createElement('label'); l.className='chip'+(cls?(' '+cls):''); l.dataset.k=item.k;
+    l.innerHTML='<span class="d"></span><input type="checkbox" value="'+item.k+'"> '+item.e+' '+item.n;
+    var cb=l.querySelector('input');
+    cb.addEventListener('change', function(){ l.classList.toggle('on', cb.checked); calc(); });
+    cont.appendChild(l); return cb;
+  }
+  MODULOS.forEach(function(m){ chip(document.getElementById('modulos'), m); });
+  EXTENS.forEach(function(x){ chip(document.getElementById('extens'), x, 'ext'); });
+  SERVICIOS.forEach(function(s){ chip(document.getElementById('servicios'), s); });
+
+  var sectorActual=null;
+  SECTORS.forEach(function(s){
+    var b=document.createElement('button'); b.type='button'; b.className='sector'; b.dataset.k=s.k;
+    b.innerHTML='<span class="se">'+s.e+'</span><b>'+s.n+'</b><small>'+s.tag+'</small>';
+    b.addEventListener('click', function(){ aplicarSector(s); });
+    document.getElementById('sectors').appendChild(b);
+  });
+
+  function aplicarSector(s){
+    sectorActual=s;
+    document.querySelectorAll('.sector').forEach(function(b){ b.classList.toggle('on', b.dataset.k===s.k); });
+    document.querySelectorAll('#modulos input').forEach(function(cb){ var on=s.mods.indexOf(cb.value)>=0; cb.checked=on; cb.closest('.chip').classList.toggle('on',on); });
+    document.querySelectorAll('#extens input').forEach(function(cb){ var on=(s.ext||[]).indexOf(cb.value)>=0; cb.checked=on; cb.closest('.chip').classList.toggle('on',on); });
+    document.getElementById('planSel').value='auto';
+    // pitch
+    var p=document.getElementById('pitch'); p.hidden=false;
+    document.getElementById('pWho').textContent=s.e+' '+s.n;
+    document.getElementById('pTitle').textContent=s.tag;
+    document.getElementById('pText').innerHTML=s.pitch;
+    document.getElementById('pAreas').innerHTML=s.areas.filter(function(a){return a[1]!=="—";}).map(function(a){return '<span class="area">'+a[0]+': <b>'+a[1]+'</b></span>';}).join('');
+    calc();
+  }
+
+  function sel(id){ return [].slice.call(document.querySelectorAll('#'+id+' input:checked')); }
+  function names(id, arr){ return sel(id).map(function(c){ var it=arr.find(function(a){return a.k===c.value;}); return it? it.n : c.value; }); }
+  function fmt(n){ return '$'+Number(n).toLocaleString('es-CL'); }
+  function rango(a){ return a? (Array.isArray(a)? fmt(a[0])+' – '+fmt(a[1]) : fmt(a)) : 'a definir'; }
+  function planAuto(count){ return count<=3?'basico':(count<=6?'produccion':'completo'); }
+  function planActual(nmods){ var f=document.getElementById('planSel').value; return f==='auto' ? (nmods? planAuto(nmods):'basico') : f; }
+
+  function cotizacionTexto(){
+    var mods=names('modulos',MODULOS), exts=names('extens',EXTENS), servs=names('servicios',SERVICIOS);
+    var planKey=planActual(mods.length); var p=PLAN[planKey];
+    return 'COTIZACIÓN PANAL\n'
+      +(sectorActual?('Sector: '+sectorActual.n+'\n'):'')
+      +'Plan: '+p.label+'\n'
+      +'Celdas: '+(mods.join(', ')||'—')+'\n'
+      +(exts.length?('Extensiones: '+exts.join(', ')+'\n'):'')
+      +(servs.length?('Servicios (aparte): '+servs.join(', ')+'\n'):'')
+      +'Implementación: '+(p.impl?rango(p.impl):'a definir')+'\n'
+      +'Mensualidad: '+(p.mes?rango(p.mes)+' /mes':'a definir')+'\n'
+      +'(Servicios extra se cotizan aparte. Valores referenciales.)';
+  }
+
+  function calc(){
+    var mods=names('modulos',MODULOS), exts=names('extens',EXTENS), servs=names('servicios',SERVICIOS);
+    var planKey=planActual(mods.length); var p=PLAN[planKey];
+    document.getElementById('planLbl').textContent='Plan '+p.label+' · '+mods.length+' celdas'+(exts.length?(' · '+exts.length+' ext'):'')+(servs.length?(' · '+servs.length+' serv'):'');
+    document.getElementById('impl').textContent = p.impl? rango(p.impl):'a definir';
+    document.getElementById('implu').textContent = mods.length? '':'elige celdas';
+    document.getElementById('mes').textContent = p.mes? rango(p.mes)+' /mes':'a definir';
+    var d='';
+    d+='<div class="dl"><b>Celdas:</b> '+(mods.join(', ')||'—')+'</div>';
+    if(exts.length) d+='<div class="dl"><b>Extensiones:</b> '+exts.join(', ')+'</div>';
+    if(servs.length) d+='<div class="dl"><b>Servicios (aparte):</b> '+servs.join(', ')+'</div>';
+    document.getElementById('detalle').innerHTML=d;
+    document.getElementById('wa').href='https://wa.me/'+WA+'?text='+encodeURIComponent(cotizacionTexto());
+  }
+  document.getElementById('planSel').addEventListener('change', calc);
+
+  document.getElementById('copiar').addEventListener('click', function(){
+    navigator.clipboard.writeText(cotizacionTexto()).then(function(){ var m=document.getElementById('msg'); m.textContent='✅ Cotización copiada'; setTimeout(function(){m.textContent='';},2500); });
+  });
+
+  aplicarSector(SECTORS[0]); // arranca con heladería
+})();
+</script>
+
+<!-- ============ Portada por sector: acento visual por rubro ============ -->
+<style id="sectorFx">
+  :root{ --sector:#f6a821; }
+  .eyebrow{ color:var(--sector) !important; }
+  .chip.on{ border-color:var(--sector) !important; background:color-mix(in srgb,var(--sector) 14%, #0e0a05) !important; color:color-mix(in srgb,var(--sector) 65%, #fff) !important; }
+  .chip.on .d{ background:var(--sector) !important; box-shadow:0 0 8px var(--sector) !important; }
+  .sector.on{ border-color:var(--sector) !important; background:color-mix(in srgb,var(--sector) 12%, transparent) !important; box-shadow:0 10px 30px -18px var(--sector) !important; }
+  .sector:hover{ border-color:var(--sector) !important; }
+  .pitch{ border-color:var(--sector) !important; background:linear-gradient(180deg, color-mix(in srgb,var(--sector) 12%, transparent), #140d07) !important; }
+  .pitch .who, .area b{ color:var(--sector) !important; }
+  .quote{ border-color:var(--sector) !important; }
+  .quote .plan, .quote .b .v{ color:var(--sector) !important; }
+  .btn-h{ background:linear-gradient(180deg, color-mix(in srgb,var(--sector) 55%,#ffce6a), var(--sector)) !important; }
+  .hex{ filter:drop-shadow(0 0 8px color-mix(in srgb,var(--sector) 55%, transparent)) !important; }
+  #rubroChip{ position:fixed; right:14px; bottom:14px; z-index:50; display:none; align-items:center; gap:8px;
+    font-family:var(--mono); font-size:.74rem; padding:8px 14px; border-radius:999px; cursor:pointer;
+    border:1px solid var(--sector); color:var(--sector); background:color-mix(in srgb, var(--sector) 14%, #100b06);
+    box-shadow:0 10px 30px -14px #000; }
+  #pGate{ position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; padding:26px;
+    background:radial-gradient(1200px 620px at 50% -12%, rgba(246,168,33,.16), transparent 60%), #0b0704; overflow:auto; }
+  #pGate.hide{ opacity:0; visibility:hidden; transition:opacity .45s ease, visibility .45s ease; }
+  #pGate .gbox{ max-width:820px; width:100%; text-align:center; }
+  #pGate .glogo{ font-size:2.4rem; filter:drop-shadow(0 0 16px rgba(246,168,33,.6)); }
+  #pGate .geye{ font-family:var(--mono); text-transform:uppercase; letter-spacing:.24em; font-size:.7rem; color:#f6a821; margin-top:10px }
+  #pGate h2{ font-size:clamp(1.7rem,4.6vw,2.6rem); font-weight:800; margin:8px 0 6px; color:#f4ecd8; letter-spacing:-.02em }
+  #pGate p.gsub{ color:#a99a7c; margin:0 auto 26px; max-width:46ch }
+  #pGate .ggrid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(158px,1fr)); gap:12px }
+  #pGate button.sx{ --sc:#f6a821; display:flex; flex-direction:column; align-items:center; gap:5px; padding:22px 14px; cursor:pointer;
+    border:1.5px solid #33281a; border-radius:16px; background:linear-gradient(180deg,#19110a,#120c06); color:#f4ecd8;
+    transition:transform .14s ease, border-color .14s ease, box-shadow .28s ease }
+  #pGate button.sx:hover{ transform:translateY(-4px); border-color:var(--sc); box-shadow:0 18px 40px -20px var(--sc) }
+  #pGate button.sx .e{ font-size:2.1rem } #pGate button.sx b{ font-size:.92rem; font-weight:800 }
+  #pGate button.sx small{ color:#a99a7c; font-size:.72rem; line-height:1.3 }
+  #pGate .gskip{ margin-top:20px; background:none; border:0; color:#a99a7c; font-size:.8rem; cursor:pointer; text-decoration:underline }
+</style>
+<script>
+(function(){
+  var SECTORS=[
+    {k:"heladeria",e:"🍦",n:"Heladería",t:"Cremas y paletas por litros",c:"#ff5ea8"},
+    {k:"panaderia",e:"🥖",n:"Panadería",t:"Amasado, horno y mostrador",c:"#e8a33c"},
+    {k:"comida",e:"🍔",n:"Comida rápida",t:"Pedido → cocina → delivery",c:"#f0653f"},
+    {k:"distribuidora",e:"🚚",n:"Distribuidora",t:"Ruta, volumen y cobranza",c:"#4f9dff"},
+    {k:"fabrica",e:"🏭",n:"Fábrica",t:"Líneas, lotes y trazabilidad",c:"#45c9bb"},
+    {k:"almacen",e:"🏪",n:"Almacén",t:"Vender y controlar stock",c:"#45c46b"},
+    {k:"consultoria",e:"💼",n:"Servicios",t:"Agenda, citas y cobros",c:"#b18bff"},
+    {k:"construccion",e:"🏗️",n:"Construcción",t:"Materiales y despacho",c:"#ff9a3c"},
+    {k:"medida",e:"🛠️",n:"A medida",t:"Arma tu panal desde cero",c:"#e0921a"},
+  ];
+  var KEY="panal-sector", root=document.documentElement;
+  var gate=document.createElement("div"); gate.id="pGate";
+  gate.innerHTML='<div class="gbox"><div class="glogo">🍯</div><div class="geye">Panal · Cotizador</div>'
+    +'<h2>¿Para qué tipo de negocio cotizas?</h2>'
+    +'<p class="gsub">Elige el sector y armamos el panal recomendado con su precio. Puedes ajustarlo después.</p>'
+    +'<div class="ggrid" id="ggrid"></div></div>';
+  document.body.appendChild(gate);
+  var grid=gate.querySelector("#ggrid");
+  SECTORS.forEach(function(s){
+    var b=document.createElement("button"); b.className="sx"; b.style.setProperty("--sc",s.c);
+    b.innerHTML='<span class="e">'+s.e+'</span><b>'+s.n+'</b><small>'+s.t+'</small>';
+    b.onclick=function(){ elegir(s); }; grid.appendChild(b);
+  });
+  var chip=document.createElement("button"); chip.id="rubroChip";
+  chip.onclick=function(){ gate.classList.remove("hide"); }; document.body.appendChild(chip);
+
+  function aplicar(s){
+    root.style.setProperty("--sector", s.c);
+    var btn=document.querySelector('.sector[data-k="'+s.k+'"]'); if(btn) btn.click();
+    chip.innerHTML='<span>'+s.e+'</span> Cambiar rubro'; chip.style.display='inline-flex';
+  }
+  function elegir(s){ try{ localStorage.setItem(KEY, s.k); }catch(e){} aplicar(s); gate.classList.add("hide"); }
+
+  var saved=null; try{ saved=localStorage.getItem(KEY); }catch(e){}
+  var s0=SECTORS.filter(function(x){return x.k===saved;})[0];
+  if(s0){ aplicar(s0); gate.classList.add("hide"); }
+})();
+</script>
+
+</body></html>
