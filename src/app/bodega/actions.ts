@@ -114,6 +114,82 @@ export async function moverStockBodega(formData: FormData) {
   redirect(zona === "sala" ? "/caja/distribucion?ok=1" : "/bodega?ok=1");
 }
 
+/**
+ * Corrige/pone el stock REAL de bodega directo (conteo), sin pasar por ventas ni
+ * entradas. El bodeguero escribe cuántos hay de verdad y el sistema lo deja en ese
+ * número. Guarda el ajuste (diferencia) como movimiento para no perder el rastro.
+ * items = [{ id:"prod:<id>"|"sab:<id>", cantidad:<número real> }]
+ */
+export async function fijarStockBodega(formData: FormData) {
+  let items: { id: string; cantidad: number }[] = [];
+  try {
+    items = JSON.parse(String(formData.get("items") ?? "[]"));
+  } catch {
+    return;
+  }
+  items = items.filter((i) => typeof i.id === "string" && Number.isFinite(i.cantidad) && i.cantidad >= 0);
+  if (items.length === 0) return;
+
+  const ubic = await ubicacionDeZona("bodega");
+  if (!ubic) return;
+  const u = await usuarioActual();
+
+  for (const it of items) {
+    const [kind, realId] = it.id.split(":");
+    if (!realId) continue;
+    const nueva = Math.max(0, Math.floor(it.cantidad));
+
+    if (kind === "prod") {
+      const actual = await prisma.stock.findUnique({ where: { productoId_ubicacionId: { productoId: realId, ubicacionId: ubic } } });
+      const disponible = actual?.cantidad ?? 0;
+      const delta = nueva - disponible;
+      if (delta === 0) continue;
+      await prisma.stock.upsert({
+        where: { productoId_ubicacionId: { productoId: realId, ubicacionId: ubic } },
+        update: { cantidad: nueva },
+        create: { productoId: realId, ubicacionId: ubic, cantidad: nueva },
+      });
+      const prod = await prisma.producto.findUnique({ where: { id: realId }, select: { nombre: true } });
+      await prisma.movimientoStock.create({
+        data: {
+          productoId: realId, tipo: "ajuste",
+          ubicacionDestinoId: delta > 0 ? ubic : null,
+          ubicacionOrigenId: delta < 0 ? ubic : null,
+          cantidad: Math.abs(delta), referencia: "conteo-bodega",
+        },
+      });
+      await prisma.movimientoBodega.create({
+        data: {
+          zona: "bodega", ubicacionId: ubic, tipo: "ajuste", clase: "producto", refId: realId,
+          nombre: prod?.nombre ?? realId, detalle: `Conteo: quedó en ${nueva}`, cantidad: Math.abs(delta),
+          usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+        },
+      });
+    } else if (kind === "sab") {
+      const actual = await prisma.stockSabor.findUnique({ where: { saborId_ubicacionId: { saborId: realId, ubicacionId: ubic } } });
+      const disponible = actual?.cantidad ?? 0;
+      const delta = nueva - disponible;
+      if (delta === 0) continue;
+      await prisma.stockSabor.upsert({
+        where: { saborId_ubicacionId: { saborId: realId, ubicacionId: ubic } },
+        update: { cantidad: nueva },
+        create: { saborId: realId, ubicacionId: ubic, cantidad: nueva },
+      });
+      const sab = await prisma.sabor.findUnique({ where: { id: realId }, select: { nombre: true } });
+      await prisma.movimientoBodega.create({
+        data: {
+          zona: "bodega", ubicacionId: ubic, tipo: "ajuste", clase: "sabor", refId: realId,
+          nombre: sab?.nombre ?? realId, detalle: `Conteo: quedó en ${nueva}`, cantidad: Math.abs(delta),
+          usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+        },
+      });
+    }
+  }
+
+  revalidatePath("/bodega");
+  redirect("/bodega?ok=1");
+}
+
 const BOLSA = 50; // una bolsa = 50 unidades de un sabor
 
 /**

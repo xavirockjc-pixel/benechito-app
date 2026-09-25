@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { inicioDelDia } from "@/lib/dominio/empresa";
 import MovimientoBodegaVoz from "./MovimientoBodegaVoz";
+import CorregirStock from "./CorregirStock";
 import NuevoProductoBodega from "./NuevoProductoBodega";
 import RetirosDepto from "@/app/_shared/RetirosDepto";
 import EmpezarNuevoDia from "@/app/_shared/EmpezarNuevoDia";
@@ -43,6 +44,14 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
   const enBodega = stockProd.filter((s) => s.cantidad !== 0).sort((a, b) => a.producto.nombre.localeCompare(b.producto.nombre));
   const saboresBodega = stockSab.filter((s) => s.cantidad !== 0).sort((a, b) => a.sabor.nombre.localeCompare(b.sabor.nombre));
 
+  // Conteo/corrección: TODOS los productos y sabores con su stock actual (0 si no hay).
+  const stockProdMap = new Map(stockProd.map((s) => [s.productoId, s.cantidad]));
+  const stockSabMap = new Map(stockSab.map((s) => [s.saborId, s.cantidad]));
+  const itemsConteo = [
+    ...productos.map((p) => ({ id: `prod:${p.id}`, nombre: p.nombre, actual: stockProdMap.get(p.id) ?? 0, grupo: "Productos" as const })),
+    ...sabores.map((s) => ({ id: `sab:${s.id}`, nombre: s.nombre, actual: stockSabMap.get(s.id) ?? 0, grupo: "Sabores" as const })),
+  ];
+
   return (
     <div className="space-y-5">
       <div>
@@ -68,6 +77,9 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
         <MovimientoBodegaVoz catalogo={catalogo} signo={-1} etiqueta="Quitar por voz"
           hint="Di por ejemplo: “cinco trufas” (lo que se dañó o salió)." colorBoton="bg-red-600" textoConfirmar="Descontar de bodega" />
       </section>
+
+      {/* Corregir/poner el stock real directo (conteo), sin pasar por ventas/entradas */}
+      <CorregirStock items={itemsConteo} />
 
       {/* Stock actual (el bodeguero SÍ ve lo que hay; NO ve ventas del mes) */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -113,8 +125,8 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
             {registroHoy.map((m) => (
               <li key={m.id} className="flex items-center justify-between py-1.5">
                 <span className="min-w-0">
-                  <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : m.tipo === "mixto" ? "text-[#b45309]" : "text-red-600"}`}>
-                    {m.tipo === "entrada" ? "📥 +" : m.tipo === "mixto" ? "🍬 " : "📤 −"}{m.cantidad}
+                  <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : m.tipo === "mixto" ? "text-[#b45309]" : m.tipo === "ajuste" ? "text-blue-600" : "text-red-600"}`}>
+                    {m.tipo === "entrada" ? "📥 +" : m.tipo === "mixto" ? "🍬 " : m.tipo === "ajuste" ? "✏️ " : "📤 −"}{m.cantidad}
                   </span>{" "}
                   <span className="text-slate-800">{m.nombre}</span>
                 </span>
