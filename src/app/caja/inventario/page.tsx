@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { quitarProductoCaja } from "../actions";
+import CorregirStock from "@/app/bodega/CorregirStock";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,8 @@ const lineaLabel: Record<string, string> = {
   paleta: "Paletas", cocada: "Cocadas", postre: "Postres", bebida: "Bebidas", snack: "Snacks", otro: "Otro",
 };
 
-export default async function InventarioLocal() {
+export default async function InventarioLocal({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
+  const { ok } = await searchParams;
   const salaUbic = (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } })) ?? (await prisma.ubicacion.findFirst());
   const salaLista = (await prisma.listaPrecio.findFirst({ where: { canal: "sala" } })) ?? (await prisma.listaPrecio.findFirst({ where: { activo: true } }));
 
@@ -27,6 +29,11 @@ export default async function InventarioLocal() {
     (acc[p.linea] ??= []).push(p); return acc;
   }, {});
 
+  // Conteo/corrección del local (sala): todos los productos con su stock actual.
+  const itemsConteo = productos.map((p) => ({
+    id: `prod:${p.id}`, nombre: p.nombre, actual: stockDe.get(p.id) ?? 0, grupo: "Productos" as const,
+  }));
+
   return (
     <div className="mx-auto max-w-2xl">
       <div className="flex items-center justify-between">
@@ -36,6 +43,15 @@ export default async function InventarioLocal() {
         </div>
         <Link href="/caja/nuevo-producto" className="rounded-lg bg-[#0f7a44] px-3 py-2 text-sm font-bold text-white active:scale-95">➕ Nuevo</Link>
       </div>
+
+      {ok && <p className="mt-3 rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Stock actualizado</p>}
+
+      {/* Corregir/poner el stock real del local directo (conteo). Queda registrado el ajuste. */}
+      {productos.length > 0 && (
+        <div className="mt-4">
+          <CorregirStock items={itemsConteo} zona="sala" />
+        </div>
+      )}
 
       {productos.length === 0 ? (
         <p className="mt-6 rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">No hay productos. Agrega el primero con “➕ Nuevo”.</p>
