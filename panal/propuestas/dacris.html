@@ -1,234 +1,222 @@
-<title>Propuesta Da'cris</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Propuesta comercial de Panal para Da'cris — la app y la central para tu negocio.">
+<title>Da'cris con Panal</title>
+<meta name="description" content="Propuesta de servicio Panal para Da'cris (Lota): local, fabricación, bodega y reparto en el celular, con planes Básico, Estándar y Full.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap">
 <style>
   :root{
     color-scheme: dark;
-    --ground:#100b06; --surface:#19110a; --surface-2:#241a10; --line:#3c2d1a;
-    --honey:#f6a821; --bright:#ffce6a; --deep:#a8680f; --cream:#f4ecd8; --muted:#a99a7c;
-    --good:#5fd0a6; --glow: rgba(246,168,33,.5);
-    --mono: ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
-    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --ground:#141009; --surface:#1e1810; --surface-2:#271e12; --line:#3b2d1a;
+    --naranja:#f2941f; --bright:#ffc24d; --deep:#c0741a;
+    --cream:#f5ecd9; --muted:#b3a284; --wa:#25D366; --wa-deep:#128C4B;
+    --good:#68d19a;
+    --serif:"Bricolage Grotesque", Georgia, serif;
+    --sans:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --gut: clamp(16px, 4vw, 40px);
   }
   *{box-sizing:border-box}
-  html{-webkit-text-size-adjust:100%}
-  body{margin:0;background:var(--ground);color:var(--cream);font-family:var(--sans);line-height:1.6;letter-spacing:.1px;overflow-x:hidden;
-    background-image:radial-gradient(1100px 480px at 78% -8%, rgba(246,168,33,.10), transparent 60%), radial-gradient(760px 460px at 8% 4%, rgba(255,206,106,.05), transparent 55%);}
-  .wrap{max-width:900px;margin-inline:auto;padding-inline:22px}
-  h1,h2,h3{margin:0;text-wrap:balance;letter-spacing:-.02em}
-  .eyebrow{font-family:var(--mono);text-transform:uppercase;letter-spacing:.28em;font-size:.72rem;color:var(--honey);font-weight:700}
-  .mono{font-family:var(--mono)}
+  body{margin:0; background:var(--ground); color:var(--cream); font-family:var(--sans); line-height:1.6;
+    background-image:radial-gradient(120% 60% at 50% -8%, rgba(242,148,31,.16), transparent 60%);}
+  .wrap{max-width:1040px; margin-inline:auto; padding-inline:var(--gut)}
+  h1,h2,h3{font-family:var(--serif); margin:0; text-wrap:balance; letter-spacing:-.01em; line-height:1.08}
+  p{margin:0}
+  a{color:var(--bright)}
+  .eyebrow{font-family:var(--sans); text-transform:uppercase; letter-spacing:.18em; font-size:.72rem; font-weight:600; color:var(--naranja)}
+  .tnum{font-variant-numeric:tabular-nums}
 
-  header.bar{position:sticky;top:0;z-index:40;backdrop-filter:blur(10px);background:rgba(16,11,6,.72);border-bottom:1px solid var(--line)}
-  header.bar .in{max-width:900px;margin-inline:auto;padding:12px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px}
-  .brand{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-weight:700;letter-spacing:.22em;text-transform:uppercase;font-size:.92rem}
-  .brand .hx{width:24px;height:27px;filter:drop-shadow(0 0 8px var(--glow))}
-  .brand small{color:var(--muted);letter-spacing:.14em}
+  /* Topbar */
+  .top{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    padding-block:16px; border-bottom:1px solid var(--line)}
+  .brand{display:flex; align-items:center; gap:9px; font-weight:800; font-family:var(--serif); letter-spacing:.02em}
+  .hx{width:26px; height:26px; display:grid; place-items:center; font-size:1.1rem;
+    background:linear-gradient(135deg,var(--naranja),var(--bright)); border-radius:8px; color:#231602}
+  .top .meta{font-size:.8rem; color:var(--muted)}
 
-  .hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line);padding:52px 0 40px}
-  .hero-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:24px;align-items:center}
-  @media (max-width:760px){ .hero-grid{grid-template-columns:1fr} .bee-stage{display:none} }
-  .hero h1{font-size:clamp(2rem,5.6vw,3.2rem);line-height:1.04;font-weight:800;margin:14px 0 12px}
-  .hero h1 .lit{color:var(--honey);text-shadow:0 0 26px var(--glow)}
-  .hero .lede{color:#e7dcc4;font-size:1.05rem;max-width:44ch}
-  .hero .para{margin-top:14px;font-family:var(--mono);font-size:.78rem;letter-spacing:.06em;color:var(--muted)}
-  .hero .para b{color:var(--bright)}
-  .bee-stage{position:relative;height:230px}
-  .bee-stage .halo{position:absolute;inset:0;margin:auto;width:230px;height:230px;background:radial-gradient(circle, rgba(246,168,33,.22), transparent 62%);filter:blur(4px)}
-  .bee-hero{position:absolute;left:50%;top:50%;width:200px;translate:-50% -50%;filter:drop-shadow(0 16px 24px rgba(0,0,0,.5));animation:hover 6s ease-in-out infinite}
-  @keyframes hover{0%,100%{translate:-50% -52%;rotate:-2deg}50%{translate:-50% -46%;rotate:2deg}}
+  /* Hero */
+  .hero{display:grid; grid-template-columns:auto 1fr; gap:clamp(18px,4vw,40px); align-items:center;
+    padding-block:clamp(30px,6vw,56px)}
+  .hero .logo{width:clamp(120px,26vw,190px); height:auto; border-radius:20px;
+    box-shadow:0 18px 50px rgba(0,0,0,.55); background:#0c0a07}
+  .hero h1{font-size:clamp(2.4rem,8vw,4.4rem); font-weight:800; font-style:italic}
+  .hero h1 .hl{color:var(--naranja)}
+  .hero .slo{font-size:clamp(1.05rem,3vw,1.4rem); font-weight:600; color:var(--bright); margin-top:6px}
+  .hero .lede{color:var(--muted); max-width:52ch; margin-top:12px; font-size:1.02rem}
+  @media(max-width:560px){ .hero{grid-template-columns:1fr; text-align:center} .hero .logo{margin-inline:auto} .hero .lede{margin-inline:auto} }
 
-  section{padding:clamp(40px,6vw,64px) 0;border-bottom:1px solid var(--line)}
-  .sec-h{max-width:60ch;margin-bottom:22px}
-  .sec-h h2{font-size:clamp(1.5rem,3.6vw,2.2rem);font-weight:800;margin-top:10px}
-  .sec-h p{color:var(--muted);margin-top:10px}
-  .lead{font-size:1.06rem;color:#e7dcc4}
+  section{padding-block:clamp(30px,5vw,48px); border-top:1px solid var(--line)}
+  .sec-h{margin-bottom:22px}
+  .sec-h h2{font-size:clamp(1.5rem,4vw,2.1rem); font-weight:800}
+  .sec-h p{color:var(--muted); margin-top:8px; max-width:60ch}
 
-  .cells{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media (max-width:620px){ .cells{grid-template-columns:1fr} }
-  .cell{position:relative;padding:20px;background:linear-gradient(180deg,var(--surface),#140d07);border:1px solid var(--line);border-radius:16px;
-    clip-path:polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);transition:transform .2s,border-color .2s,box-shadow .3s}
-  .cell:hover{transform:translateY(-3px);border-color:var(--honey);box-shadow:0 18px 40px -22px var(--glow)}
-  .cell .badge{position:relative;width:46px;height:51px;display:grid;place-items:center;margin-bottom:12px}
-  .cell .badge svg{width:100%;height:100%;filter:drop-shadow(0 0 8px var(--glow))}
-  .cell .badge span{position:absolute;font-size:19px}
-  .cell h3{font-family:var(--sans);font-size:1.05rem;font-weight:800}
-  .cell p{margin-top:6px;color:var(--muted);font-size:.9rem}
+  /* Pillars */
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px}
+  .pill{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px}
+  .pill .ic{font-size:1.7rem}
+  .pill h3{font-size:1.12rem; font-weight:800; margin:10px 0 4px; font-family:var(--sans)}
+  .pill p{color:var(--muted); font-size:.92rem}
 
-  .flow{display:flex;flex-wrap:wrap;gap:12px}
-  .step{flex:1 1 150px;min-width:140px;border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--surface);text-align:center;
-    clip-path:polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%)}
-  .step .k{font-family:var(--mono);font-size:.66rem;color:var(--honey);letter-spacing:.14em}
-  .step .ic{font-size:1.5rem;display:block;margin:6px 0 4px}
-  .step b{font-family:var(--sans);font-size:.9rem}
+  /* Highlight */
+  .flow{background:linear-gradient(135deg, rgba(242,148,31,.14), rgba(255,194,77,.06));
+    border:1px solid var(--line); border-radius:20px; padding:clamp(20px,4vw,32px)}
+  .flow h2{font-size:clamp(1.4rem,4vw,2rem); font-weight:800}
+  .chain{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px; font-weight:600}
+  .chain .step{background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:10px 14px; font-size:.95rem}
+  .chain .arw{color:var(--naranja); font-weight:800}
+  .chain .out{background:rgba(37,211,102,.14); border-color:var(--wa-deep); color:var(--good)}
 
-  .price{border:1px solid var(--honey);border-radius:20px;overflow:hidden;background:linear-gradient(180deg,#1c1409,#120b05);box-shadow:0 24px 60px -34px var(--glow)}
-  .price .ph{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
-  .price .ph .hx{width:30px;height:33px;filter:drop-shadow(0 0 8px var(--glow))}
-  .price .ph .pl{font-family:var(--mono);font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--honey)}
-  .price .ph .pn{font-size:1.4rem;font-weight:800}
-  .price .pb{display:grid;grid-template-columns:1fr 1fr}
-  @media (max-width:520px){ .price .pb{grid-template-columns:1fr} }
-  .price .c{padding:18px 20px}
-  .price .c+.c{border-left:1px solid var(--line)}
-  @media (max-width:520px){ .price .c+.c{border-left:0;border-top:1px solid var(--line)} }
-  .price .k{font-size:.7rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
-  .price .v{font-size:1.7rem;font-weight:800;color:var(--bright);font-variant-numeric:tabular-nums;margin-top:2px}
-  .price .u{font-size:.8rem;color:var(--muted)}
-  .incluye{margin:0;padding:16px 20px 18px;list-style:none;display:grid;gap:7px;border-top:1px solid var(--line)}
-  .incluye li{display:flex;gap:9px;font-size:.9rem;color:#e7dcc4}
-  .incluye li::before{content:"⬢";color:var(--honey);font-size:.8rem}
+  /* Planes */
+  .plans{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; align-items:start}
+  .plan{background:var(--surface); border:1px solid var(--line); border-radius:20px; padding:22px; display:flex; flex-direction:column; gap:14px}
+  .plan.best{border-color:var(--naranja); box-shadow:0 0 0 1px var(--naranja), 0 20px 50px rgba(242,148,31,.14); position:relative}
+  .tag{position:absolute; top:-12px; left:22px; background:var(--naranja); color:#231602; font-weight:800;
+    font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; padding:5px 11px; border-radius:999px}
+  .plan .name{font-family:var(--serif); font-weight:800; font-size:1.5rem}
+  .plan .for{color:var(--muted); font-size:.88rem; min-height:2.4em}
+  .price{border-block:1px solid var(--line); padding-block:14px}
+  .price .mo{font-size:2rem; font-weight:800; font-family:var(--serif)}
+  .price .mo small{font-size:.9rem; color:var(--muted); font-weight:600; font-family:var(--sans)}
+  .price .mount{color:var(--muted); font-size:.9rem; margin-top:4px}
+  ul.feats{list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:9px; font-size:.93rem}
+  ul.feats li{display:flex; gap:9px; align-items:flex-start}
+  ul.feats li::before{content:"✓"; color:var(--good); font-weight:800; flex:none}
+  ul.feats li.off{color:var(--muted); opacity:.6}
+  ul.feats li.off::before{content:"–"; color:var(--muted)}
 
-  .extras{display:flex;flex-wrap:wrap;gap:8px}
-  .extra{font-size:.84rem;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface)}
-  .extra b{color:var(--bright);font-variant-numeric:tabular-nums}
+  .note{background:var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--naranja);
+    border-radius:12px; padding:16px 18px; color:var(--cream); margin-top:20px; font-size:.95rem}
+  .note b{color:var(--bright)}
 
-  .cta{position:relative;text-align:center;background:linear-gradient(135deg,var(--honey),var(--deep));color:#231605;border-radius:24px;padding:40px 24px;margin:32px 0 8px;overflow:hidden}
-  .cta h2{color:#231605;font-size:clamp(1.5rem,3.4vw,2.1rem);margin:0 0 8px;font-weight:800}
-  .cta p{max-width:46ch;margin:0 auto 20px;color:rgba(35,22,5,.85)}
-  .btn{display:inline-flex;align-items:center;gap:8px;font-weight:800;text-decoration:none;padding:13px 26px;border-radius:999px;background:#160f07;color:var(--bright)}
-  .fine{color:var(--muted);font-size:.8rem;text-align:center;margin-top:12px}
-  footer{padding:26px 0 44px;text-align:center;color:var(--muted);font-size:.8rem}
-  :focus-visible{outline:2px solid var(--bright);outline-offset:3px;border-radius:6px}
-  @media (prefers-reduced-motion:reduce){ .bee-hero{animation:none} }
-  @media print{
-    body{background:#fff;color:#111;background-image:none}
-    header.bar,.bee-stage{display:none}
-    section,.hero{border-color:#ddd;break-inside:avoid}
-    .cell,.step,.price{background:#fff;box-shadow:none} .cell p,.sec-h p,.hero .lede,.incluye li{color:#333}
-    .cell h3,.hero h1{color:#111} .hero h1 .lit{color:var(--deep);text-shadow:none}
-    .cta{background:#f4ede0;color:#111;-webkit-print-color-adjust:exact;print-color-adjust:exact} .cta h2,.cta p{color:#111}
-  }
+  /* Cotización desglosada */
+  .quote{background:var(--surface); border:1px solid var(--line); border-radius:18px; overflow:hidden}
+  .qrow{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:15px 18px; border-top:1px solid var(--line)}
+  .qrow:first-child{border-top:0}
+  .qn{font-weight:500}
+  .qv{font-weight:700; color:var(--cream); white-space:nowrap}
+  .qrow.qtot{background:var(--surface-2); border-top:2px solid var(--naranja)}
+  .qrow.qtot .qn{font-family:var(--serif); font-weight:800; font-size:1.1rem}
+  .qrow.qtot .qv{color:var(--bright); font-size:1.3rem; font-family:var(--serif); font-weight:800}
+  .qrow.qmes .qn{color:var(--good); font-weight:600}
+  .qrow.qmes .qv{color:var(--good)}
+
+  /* CTA */
+  .cta{display:grid; gap:14px; justify-items:center; text-align:center}
+  .cta h2{font-size:clamp(1.6rem,5vw,2.4rem); font-weight:800; font-style:italic}
+  .btn{display:inline-flex; align-items:center; gap:9px; background:var(--wa); color:#04220f; font-weight:800;
+    text-decoration:none; padding:14px 26px; border-radius:14px; font-size:1.05rem}
+  .contact{font-size:.95rem; color:var(--muted)}
+  .num{font-weight:700; color:var(--cream); font-variant-numeric:tabular-nums; user-select:all}
+  footer{padding-block:26px; color:var(--muted); font-size:.82rem; text-align:center; border-top:1px solid var(--line)}
 </style>
 
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-  <linearGradient id="gHoney" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd778"/><stop offset="1" stop-color="#d98a12"/></linearGradient>
-  <linearGradient id="gWing" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff3d6" stop-opacity=".85"/><stop offset="1" stop-color="#f6a821" stop-opacity=".25"/></linearGradient>
-  <radialGradient id="gEye" cx="50%" cy="45%" r="55%"><stop offset="0" stop-color="#fff7e0"/><stop offset=".5" stop-color="#ffce6a"/><stop offset="1" stop-color="#a8680f"/></radialGradient>
-  <symbol id="hexmark" viewBox="0 0 60 66"><path d="M30 2 56 17V49L30 64 4 49V17Z" fill="none" stroke="url(#gHoney)" stroke-width="3"/><path d="M30 16 44 24V40L30 48 16 40V24Z" fill="url(#gHoney)" opacity=".9"/><circle cx="30" cy="32" r="4.5" fill="#160f07"/></symbol>
-  <symbol id="bee" viewBox="0 0 260 190">
-    <g><g opacity=".9"><path d="M150 78 C 96 6, 26 12, 40 62 C 52 96, 120 96, 150 82 Z" fill="url(#gWing)" stroke="#fff3d6" stroke-opacity=".5"/><path d="M60 30 L120 74 M52 52 L128 70 M70 22 L110 76" stroke="#fff3d6" stroke-opacity=".45" stroke-width="1.4" fill="none"/></g><g opacity=".7"><path d="M158 88 C 108 34, 44 46, 62 92 C 74 120, 132 108, 158 90 Z" fill="url(#gWing)" stroke="#fff3d6" stroke-opacity=".4"/></g></g>
-    <path d="M196 70 C 214 44, 226 40, 236 30" stroke="#e9c27a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M198 78 C 220 60, 232 58, 246 52" stroke="#e9c27a" stroke-width="3" fill="none" stroke-linecap="round"/><circle cx="236" cy="30" r="5" fill="url(#gEye)"/><circle cx="246" cy="52" r="5" fill="url(#gEye)"/>
-    <g stroke="#3a250c" stroke-width="2"><path d="M44 96 l24 -20 h26 l24 20 -24 20 h-26 Z" fill="url(#gHoney)"/><path d="M92 96 l22 -18 h24 l22 18 -22 18 h-24 Z" fill="#241708"/><path d="M136 96 l22 -18 h22 l22 18 -22 18 h-22 Z" fill="url(#gHoney)"/></g>
-    <path d="M54 96 h150 M96 84 v24 M140 84 v24" stroke="#160f07" stroke-opacity=".55" stroke-width="1.6"/>
-    <path d="M178 96 l18 -16 h14 l14 16 -14 16 h-14 Z" fill="#2c1c0a" stroke="#3a250c" stroke-width="2"/><circle cx="204" cy="96" r="9" fill="url(#gEye)"/><circle cx="207" cy="93" r="2.4" fill="#fff7e0"/>
-    <path d="M44 96 l-16 -8 v16 Z" fill="#ffce6a" opacity=".8"/><path d="M30 96 l-14 -4 v8 Z" fill="#fff3d6" opacity=".5"/>
-    <path d="M84 116 l-6 16 M112 118 l0 18 M150 116 l8 16" stroke="#c9922f" stroke-width="3" stroke-linecap="round"/>
-  </symbol>
-</defs></svg>
-
-<script>
-/* ── Propuesta (edita esto para cada cliente) ─────────────────────────────── */
-const PROP = {
-  cliente: "Da'cris",
-  rubro: "🍔 Comida rápida · Local en Lota",
-  titulo: ["Tu negocio, ordenado y en el ", "celular", "."],
-  intro: "Hoy los pedidos, las ventas y la caja se llevan de memoria y en papeles. Con Panal, Da'cris tiene su propia app por rol y una central para el dueño: nada se pierde, todo queda registrado y sabes cuánto ganas — sin complicarte.",
-  incluye: [
-    {ic:"🧾", t:"Caja / Mostrador", d:"Vende comida y abarrotes, registra Caja Vecina, controla la caja del día."},
-    {ic:"👨‍🍳", t:"Cocina · Pedidos", d:"Los pedidos de WhatsApp y web caen en una bandeja; la cocina los prepara."},
-    {ic:"🛵", t:"Reparto", d:"Delivery con mapa y estados; el cliente ve su pedido en camino."},
-    {ic:"📦", t:"Inventario", d:"Productos e insumos con alertas antes de que falte algo."},
-    {ic:"🐝", t:"Tienda web + Portal", d:"Catálogo con tu marca; los pedidos llegan solos a tu WhatsApp."},
-    {ic:"📊", t:"La Central (dueño)", d:"Ventas, deudas y reporte diario a tu WhatsApp; solo tú ves los totales."},
-  ],
-  flujo: [
-    {k:"01", ic:"🧾", t:"Entra el pedido"},
-    {k:"02", ic:"👨‍🍳", t:"Cocina prepara"},
-    {k:"03", ic:"🛵", t:"Sale a delivery"},
-    {k:"04", ic:"📊", t:"Queda en la central"},
-  ],
-  plan: { nombre:"Plan Producción", instal:"$575.000", mes:"$50.000" },
-  incluyePlan: [
-    "App por rol (caja, cocina, reparto) + la central del dueño",
-    "Tienda web con pedidos por WhatsApp",
-    "Inventario, clientes y reporte diario",
-    "Instalación, capacitación y puesta en marcha",
-    "Soporte, hosting y mejoras (mensualidad)",
-  ],
-  extras: [
-    {t:"Landing sola", p:"$99.000"},
-    {t:"Marketing y redes", p:"$150.000/mes"},
-    {t:"Facturación electrónica (SII)", p:"a definir"},
-  ],
-  vigenciaDias: 15,
-  whatsapp: "56928005332",  // tu contacto Panal (el vendedor)
-};
-</script>
-
-<header class="bar"><div class="in">
-  <span class="brand"><svg class="hx"><use href="#hexmark"/></svg> Panal <small>· Propuesta</small></span>
-  <span class="eyebrow" id="pCliente2"></span>
-</div></header>
-
-<section class="hero"><div class="wrap hero-grid">
-  <div>
-    <span class="eyebrow" id="pRubro"></span>
-    <h1 id="pTitulo"></h1>
-    <p class="lede" id="pIntro"></p>
-    <p class="para">Preparada para <b id="pCliente"></b></p>
-  </div>
-  <div class="bee-stage" aria-hidden="true">
-    <div class="halo"></div>
-    <svg class="bee-hero" viewBox="0 0 260 190"><use href="#bee"/></svg>
-  </div>
-</div></section>
-
-<section><div class="wrap">
-  <div class="sec-h"><span class="eyebrow">Qué incluye</span><h2>La app y la central, a tu medida</h2></div>
-  <div class="cells" id="pIncluye"></div>
-</div></section>
-
-<section><div class="wrap">
-  <div class="sec-h"><span class="eyebrow">Cómo funciona</span><h2>Del pedido a la caja, conectado</h2></div>
-  <div class="flow" id="pFlujo"></div>
-</div></section>
-
-<section><div class="wrap">
-  <div class="sec-h"><span class="eyebrow">Inversión</span><h2>Simple y sin sorpresas</h2><p>Valores en pesos chilenos. La instalación es una vez; la mensualidad cubre soporte, hosting y mejoras.</p></div>
-  <div class="price">
-    <div class="ph"><svg class="hx"><use href="#hexmark"/></svg><div><div class="pl" id="pPlanL"></div><div class="pn" id="pPlanN"></div></div></div>
-    <div class="pb">
-      <div class="c"><div class="k">Instalación (una vez)</div><div class="v" id="pInstal"></div></div>
-      <div class="c"><div class="k">Mensualidad</div><div class="v" id="pMes"></div><div class="u">soporte · hosting · mejoras</div></div>
-    </div>
-    <ul class="incluye" id="pIncluyePlan"></ul>
-  </div>
-  <div style="margin-top:16px">
-    <div class="eyebrow" style="margin-bottom:8px">Opcionales (se suman si quieres)</div>
-    <div class="extras" id="pExtras"></div>
-  </div>
-</div></section>
-
 <div class="wrap">
-  <div class="cta">
-    <h2 id="pCtaH"></h2>
-    <p>Te lo dejamos funcionando y andando en tu celular. Nosotros hacemos todo lo técnico; tú solo lo usas.</p>
-    <a class="btn" id="pCta" target="_blank" rel="noopener">💬 Quiero avanzar</a>
+
+  <div class="top">
+    <div class="brand"><span class="hx">🐝</span> Panal</div>
+    <div class="meta">Propuesta de servicio · Lota · 2026</div>
   </div>
-  <p class="fine" id="pVig"></p>
+
+  <header class="hero">
+    <img class="logo" src="../clientes/assets/dacris-logo.jpg" alt="Da'cris — De todo si no, pa' qué">
+    <div>
+      <p class="eyebrow">Propuesta para</p>
+      <h1>Da'<span class="hl">cris</span></h1>
+      <p class="slo">Todo tu negocio, en el celular.</p>
+      <p class="lede">Completos, pichangas, papas, panadería, helados y Caja Vecina — manejados desde un solo lugar: lo que vendes, lo que fabricas, lo que te queda en bodega y tus deliverys. Sin planillas, con botones grandes y control por voz.</p>
+    </div>
+  </header>
+
+  <section>
+    <div class="sec-h">
+      <p class="eyebrow">Lo que tendrás</p>
+      <h2>Tu operación completa, conectada</h2>
+      <p>Cada parte habla con la otra: vendes en el local, se descuenta el stock, sabes qué fabricar y organizas el reparto — todo solo.</p>
+    </div>
+    <div class="grid">
+      <div class="pill"><div class="ic">🛒</div><h3>Local / Caja</h3><p>Vende rápido en el mesón y cierra la caja cuadrada al final del día. Sabes exactamente cuánto entró.</p></div>
+      <div class="pill"><div class="ic">🏭</div><h3>Fabricación con recetas</h3><p>Armas pichangas y completos y el sistema descuenta los insumos (pan, vienesa, palta…) por receta.</p></div>
+      <div class="pill"><div class="ic">📦</div><h3>Bodega / Stock</h3><p>Ves cuánto te queda de cada insumo y te avisa cuándo reponer. Nunca más quedarte sin pan un sábado.</p></div>
+      <div class="pill"><div class="ic">🚚</div><h3>Reparto</h3><p>Organiza los deliverys de Lota: quién pidió, cuánto y dónde. Todo ordenado en un solo panel.</p></div>
+      <div class="pill"><div class="ic">🛍️</div><h3>Tu tienda web</h3><p>Página propia con tu logo Da'cris. Tus clientes piden por WhatsApp directo desde el menú. <b>Ya está lista.</b></p></div>
+      <div class="pill"><div class="ic">🎂</div><h3>Fichero de clientes</h3><p>Guarda clientes, gustos y cumpleaños para mandarles promos y que vuelvan.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="flow">
+      <p class="eyebrow">El truco que te hace ganar</p>
+      <h2>Cada venta descuenta tus insumos, sola</h2>
+      <p style="color:var(--muted); margin-top:10px; max-width:60ch">Ya no adivinas cuánto gastaste. Vendes un completo y el sistema baja el stock exacto de lo que llevó. Al final del día sabes qué te queda y cuánto ganaste de verdad.</p>
+      <div class="chain">
+        <span class="step">🌭 Vendes un completo</span>
+        <span class="arw">→</span>
+        <span class="step">Descuenta pan + vienesa + palta</span>
+        <span class="arw">→</span>
+        <span class="step">Baja el stock de bodega</span>
+        <span class="arw">→</span>
+        <span class="step out">Sabes qué reponer y cuánto ganaste ✓</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h">
+      <p class="eyebrow">Cotización para Da'cris</p>
+      <h2>Lo que se arma y cuánto vale</h2>
+      <p>Se cobra por lo que montamos: tu tienda web, el panel central y cada app que uses. Se paga una vez y queda funcionando.</p>
+    </div>
+
+    <div class="quote">
+      <div class="qrow"><span class="qn">🛍️ Landing con catálogo (tu tienda web Da'cris)</span><span class="qv tnum">$120.000</span></div>
+      <div class="qrow"><span class="qn">📊 Central — panel de administración</span><span class="qv tnum">$50.000</span></div>
+      <div class="qrow"><span class="qn">🧾 App Caja / Local</span><span class="qv tnum">$30.000</span></div>
+      <div class="qrow"><span class="qn">🏭 App Producción (fabricación por receta)</span><span class="qv tnum">$30.000</span></div>
+      <div class="qrow"><span class="qn">📦 App Bodega (stock)</span><span class="qv tnum">$30.000</span></div>
+      <div class="qrow"><span class="qn">🚚 App Reparto (delivery)</span><span class="qv tnum">$30.000</span></div>
+      <div class="qrow qtot"><span class="qn">Montaje total (una vez)</span><span class="qv tnum">$290.000</span></div>
+      <div class="qrow qmes"><span class="qn">Mensualidad — hosting, mantención, actualizaciones y soporte</span><span class="qv tnum">$20.000 / mes</span></div>
+    </div>
+
+    <div class="note">
+      🌐 <b>Dominio aparte:</b> el dominio (ej. <span class="tnum">tudominio.cl</span>, ~$12.000/año) corre por cuenta de Da'cris; yo lo dejo conectado. &nbsp;·&nbsp; ➕ <b>¿Más usuarios?</b> Cada app adicional para sumar gente: <b>$15.000</b>. &nbsp;·&nbsp; 🎁 <b>Fundador:</b> mensualidad congelada 1 año.
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h">
+      <p class="eyebrow">El montaje se paga — tú eliges cómo</p>
+      <h2>Dos formas de pagar el arranque</h2>
+      <p>El montaje es dejarte todo configurado a tu medida: tus productos, tus recetas y tu tienda. Se paga una vez — al contado o repartido en la cuota.</p>
+    </div>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr))">
+      <div class="pill">
+        <div class="ic">💵</div>
+        <h3>Al contado</h3>
+        <p>Pagas el montaje al inicio y listo. Es la forma más barata en total. Da'cris: <b class="tnum" style="color:var(--bright)">$290.000</b> una vez + $20.000/mes.</p>
+      </div>
+      <div class="pill">
+        <div class="ic">📅</div>
+        <h3>Repartido en la cuota <span style="font-size:.7rem;font-weight:600;color:var(--naranja);vertical-align:middle">+20% recargo</span></h3>
+        <p>Si no quieres soltar todo de una: pagas un <b>arranque de $50.000</b> + una cuota más alta el primer año (Da'cris <b class="tnum" style="color:var(--bright)">~$45.000/mes</b>), y al año 2 baja a $20.000/mes. Permanencia 12 meses.</p>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:8px">Pagar en cuotas tiene un <b>recargo de ~20%</b> por el financiamiento (montaje $348.000). El contado siempre sale más barato.</p>
+      </div>
+    </div>
+    <div class="note">
+      🎓 <b>Capacitación:</b> la <b>primera capacitación va incluida</b> en el montaje (te dejamos usándolo de verdad). Sesiones extra — cuando entra gente nueva o quieren repasar — <b>$15.000 cada una</b>. El soporte del día a día por WhatsApp va incluido en la mensualidad.
+    </div>
+  </section>
+
+  <section>
+    <div class="cta">
+      <p class="eyebrow">¿Partimos?</p>
+      <h2>Dejemos Da'cris andando</h2>
+      <p class="contact">Escríbeme por WhatsApp y coordinamos la instalación:<br>
+        <span class="num">+56 9 2800 5332</span> · Javier — Panal</p>
+      <a class="btn" href="https://wa.me/56928005332?text=Hola%20Javier%2C%20quiero%20avanzar%20con%20Panal%20para%20Da'cris" target="_blank" rel="noopener">💬 Quiero avanzar con Da'cris</a>
+    </div>
+  </section>
+
+  <footer>
+    Panal · Sistema de gestión para negocios de comida · Propuesta sin compromiso para Da'cris (Lota)
+  </footer>
+
 </div>
-
-<footer>🍯 Panal · Ecosistema modular de gestión — celda por celda</footer>
-
-<script>
-  const $=function(id){return document.getElementById(id);};
-  const esc=function(s){return String(s==null?'':s).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
-  document.title = "Propuesta " + PROP.cliente;
-  $("pRubro").textContent = PROP.rubro;
-  const [a,hl,b]=PROP.titulo; $("pTitulo").innerHTML = esc(a)+'<span class="lit">'+esc(hl)+'</span>'+esc(b);
-  $("pCliente").textContent = PROP.cliente; $("pCliente2").textContent = "Para " + PROP.cliente;
-  $("pIntro").textContent = PROP.intro;
-  $("pIncluye").innerHTML = PROP.incluye.map(function(x){return '<div class="cell"><div class="badge"><svg viewBox="0 0 60 66"><use href="#hexmark"/></svg><span>'+x.ic+'</span></div><h3>'+esc(x.t)+'</h3><p>'+esc(x.d)+'</p></div>';}).join('');
-  $("pFlujo").innerHTML = PROP.flujo.map(function(x){return '<div class="step"><div class="k">'+esc(x.k)+'</div><span class="ic">'+x.ic+'</span><b>'+esc(x.t)+'</b></div>';}).join('');
-  $("pPlanL").textContent = "Recomendado para "+PROP.cliente;
-  $("pPlanN").textContent = PROP.plan.nombre;
-  $("pInstal").textContent = PROP.plan.instal;
-  $("pMes").textContent = PROP.plan.mes + " /mes";
-  $("pIncluyePlan").innerHTML = PROP.incluyePlan.map(function(x){return '<li>'+esc(x)+'</li>';}).join('');
-  $("pExtras").innerHTML = PROP.extras.map(function(x){return '<span class="extra">'+esc(x.t)+' <b>'+esc(x.p)+'</b></span>';}).join('');
-  $("pCtaH").textContent = "¿Lo dejamos andando en "+PROP.cliente+"?";
-  const msg = "Hola! Soy de "+PROP.cliente+" y quiero avanzar con la propuesta de Panal ("+PROP.plan.nombre+").";
-  $("pCta").href = "https://wa.me/"+PROP.whatsapp+"?text="+encodeURIComponent(msg);
-  $("pVig").textContent = "Propuesta válida por "+PROP.vigenciaDias+" días. Valores referenciales; se ajustan según lo que elijas.";
-</script>
