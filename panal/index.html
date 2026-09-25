@@ -1,0 +1,186 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Panal Home</title>
+<style>
+  :root{
+    color-scheme: dark;
+    --ground:#100b06; --surface:#19110a; --surface-2:#241a10; --line:#3c2d1a;
+    --honey:#f6a821; --bright:#ffce6a; --deep:#a8680f; --cream:#f4ecd8; --muted:#a99a7c; --teal:#5fd0c0;
+    --glow: rgba(246,168,33,.4);
+    --mono: ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--cream); font-family:var(--sans); line-height:1.6;
+    background-image:radial-gradient(1100px 480px at 80% -10%, rgba(246,168,33,.10), transparent 60%)}
+  a{color:inherit; text-decoration:none}
+  .wrap{max-width:920px; margin:0 auto; padding:0 20px}
+  h1,h2,h3{margin:0; text-wrap:balance}
+  .mono{font-family:var(--mono)}
+  .eyebrow{font-family:var(--mono); text-transform:uppercase; letter-spacing:.2em; font-size:.7rem; color:var(--honey); font-weight:700}
+
+  .hero{padding:56px 0 34px; text-align:center; border-bottom:1px solid var(--line)}
+  .logo{font-size:2.6rem; filter:drop-shadow(0 0 16px var(--glow))}
+  .hero h1{font-size:clamp(2rem,6vw,3.2rem); font-weight:800; letter-spacing:-.02em; margin:14px 0 12px; line-height:1.05}
+  .hero h1 .hl{color:var(--honey)}
+  .hero p{color:var(--muted); font-size:1.05rem; max-width:52ch; margin:0 auto}
+
+  section{padding:36px 0; border-bottom:1px solid var(--line)}
+  .sec-h{margin-bottom:20px}
+  .sec-h h2{font-size:clamp(1.4rem,3.4vw,1.9rem); font-weight:800; margin-top:6px}
+  .sec-h p{color:var(--muted); margin:6px 0 0}
+
+  .flow{display:grid; gap:12px}
+  .fstep{display:flex; gap:16px; padding:18px 20px; border:1px solid var(--line); border-radius:16px;
+    background:linear-gradient(180deg,var(--surface),#140d07); transition:transform .16s, border-color .16s, box-shadow .28s}
+  .fstep:hover{transform:translateY(-2px); border-color:var(--honey); box-shadow:0 18px 40px -26px var(--glow)}
+  .fstep .n{flex:0 0 auto; width:38px; height:42px; display:grid; place-items:center; font-family:var(--mono); font-weight:800; font-size:1rem; color:var(--honey);
+    clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%); background:rgba(246,168,33,.14)}
+  .fstep .bd{flex:1; min-width:0}
+  .fstep h3{font-size:1.08rem; font-weight:800; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .fstep p{color:var(--muted); font-size:.9rem; margin:4px 0 0}
+  .fstep .tools{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px}
+  .tool{display:inline-flex; align-items:center; gap:6px; font-size:.82rem; font-weight:700; padding:7px 13px; border-radius:999px;
+    border:1px solid var(--line); background:#0e0a05; color:var(--cream)}
+  .tool:hover{border-color:var(--honey); color:var(--bright)}
+  .tool.pub{border-color:rgba(95,208,192,.4)}
+  .note{align-self:center; font-family:var(--mono); font-size:.66rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); border:1px dashed var(--line); border-radius:999px; padding:6px 11px}
+
+  .ref{display:grid; grid-template-columns:repeat(3,1fr); gap:10px}
+  @media (max-width:640px){ .ref{grid-template-columns:1fr 1fr} }
+  .ref a{border:1px solid var(--line); border-radius:12px; padding:12px; background:var(--surface); font-size:.86rem; font-weight:700}
+  .ref a:hover{border-color:var(--honey); color:var(--bright)}
+  .ref a small{display:block; color:var(--muted); font-weight:400; font-size:.72rem; margin-top:2px}
+
+  footer{padding:26px 0 44px; text-align:center; color:var(--muted); font-size:.82rem}
+  :focus-visible{outline:2px solid var(--bright); outline-offset:3px; border-radius:8px}
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="logo">🍯</div>
+    <span class="eyebrow">Ecosistema modular de gestión</span>
+    <h1>Panal, <span class="hl">tu flujo de venta.</span></h1>
+    <p>Todo en orden, paso a paso. Sigue los números: cada paso tiene su herramienta. Empieza arriba y baja.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <span class="eyebrow">De principio a fin</span>
+      <h2>Tu flujo, paso a paso</h2>
+      <p>Del primer contacto a la mensualidad. Tú vendes y actualizas; yo hago lo técnico.</p>
+    </div>
+    <div class="flow">
+
+      <div class="fstep">
+        <div class="n">1</div>
+        <div class="bd">
+          <h3>🐝 Atrae</h3>
+          <p>Le envías la <b>landing</b> por WhatsApp/redes para que vea de qué se trata.</p>
+          <div class="tools"><a class="tool pub" href="landing.html">🐝 Landing →</a></div>
+        </div>
+      </div>
+
+      <div class="fstep">
+        <div class="n">2</div>
+        <div class="bd">
+          <h3>📊 Demo / reunión</h3>
+          <p>Vas donde el cliente o le agendas una demo. Le muestras la <b>presentación</b> y el <b>ejemplo real</b> (Da'cris).</p>
+          <div class="tools"><a class="tool pub" href="presentacion.html">📊 Presentación →</a><a class="tool pub" href="clientes/dacris.html">🌭 Ejemplo Da'cris →</a></div>
+        </div>
+      </div>
+
+      <div class="fstep">
+        <div class="n">3</div>
+        <div class="bd">
+          <h3>🧩 Selecciona qué le sirve</h3>
+          <p>Con el <b>Configurador</b> prendes/apagas los módulos (lo que sirve y lo que no) y ves cómo se ve cada uno.</p>
+          <div class="tools"><a class="tool" href="configurador.html">🧩 Configurador →</a></div>
+        </div>
+      </div>
+
+      <div class="fstep">
+        <div class="n">4</div>
+        <div class="bd">
+          <h3>🧮 Cotiza los valores</h3>
+          <p>El <b>Cotizador</b> arma el precio (instalación + mensualidad) por sector, con valor intermedio.</p>
+          <div class="tools"><a class="tool" href="cotizador.html">🧮 Cotizador →</a></div>
+        </div>
+      </div>
+
+      <div class="fstep">
+        <div class="n">5</div>
+        <div class="bd">
+          <h3>📄 Cierra con la propuesta</h3>
+          <p>Le envías la <b>propuesta</b> con lo que incluye y el valor. Lista para presentar o imprimir a PDF.</p>
+          <div class="tools"><a class="tool" href="propuestas/dacris.html">📄 Propuesta Da'cris →</a><a class="tool" href="propuestas/fabrica.html">🏭 Propuesta Fábrica →</a></div>
+        </div>
+      </div>
+
+      <div class="fstep">
+        <div class="n">6</div>
+        <div class="bd">
+          <h3>💵 Anticipo y acuerdo</h3>
+          <p>Acuerdan el pago: una parte de la instalación como anticipo para arrancar el montaje.</p>
+          <span class="note">Sin herramienta · lo cierras tú</span>
+        </div>
+      </div>
+
+      <div class="fstep">
+        <div class="n">7</div>
+        <div class="bd">
+          <h3>🎛️ Registras y yo monto</h3>
+          <p>Guardas el cliente en el <b>Centro de Control</b> (sale checklist + prompt) y <b>yo monto</b> su app + central. Su tienda pública la armas con la <b>Fábrica de Tiendas</b>.</p>
+          <div class="tools"><a class="tool" href="centro.html">🎛️ Centro de Control →</a><a class="tool" href="plantilla-tienda.html">🏪 Fábrica de Tiendas →</a></div>
+        </div>
+      </div>
+
+      <div class="fstep">
+        <div class="n">8</div>
+        <div class="bd">
+          <h3>✅ Entrega</h3>
+          <p>Capacitación corta, accesos por rol y prueba en el celular. Descargas el respaldo y queda funcionando.</p>
+          <span class="note">Lo técnico lo hago yo</span>
+        </div>
+      </div>
+
+      <div class="fstep">
+        <div class="n">9</div>
+        <div class="bd">
+          <h3>🔁 Postventa y mensualidad</h3>
+          <p>Cobras la mensualidad, tú actualizas contenido (productos/precios/fotos) desde la central, y <b>sumas módulos</b> cuando quiera (más venta). Todo con respaldo.</p>
+          <div class="tools"><a class="tool" href="RESPALDO.md">🛟 Plan de respaldo →</a></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="sec-h">
+      <span class="eyebrow">Referencia rápida</span>
+      <h2>Todas las piezas</h2>
+      <p>Por si buscas una directo, sin seguir el flujo.</p>
+    </div>
+    <div class="ref">
+      <a href="landing.html">🐝 Landing<small>mostrar al cliente</small></a>
+      <a href="presentacion.html">📊 Presentación<small>dossier / demo</small></a>
+      <a href="clientes/dacris.html">🌭 Da'cris<small>ejemplo real</small></a>
+      <a href="configurador.html">🧩 Configurador<small>qué módulos lleva</small></a>
+      <a href="cotizador.html">🧮 Cotizador<small>precio por sector</small></a>
+      <a href="propuestas/dacris.html">📄 Propuesta Da'cris<small>cerrar</small></a>
+      <a href="propuestas/fabrica.html">🏭 Propuesta Fábrica<small>cerrar (sin reparto)</small></a>
+      <a href="centro.html">🎛️ Centro de Control<small>gestionar clientes</small></a>
+      <a href="plantilla-tienda.html">🏪 Fábrica de Tiendas<small>armar su tienda</small></a>
+      <a href="RESPALDO.md">🛟 Respaldo<small>continuidad</small></a>
+      <a href="MONTAJE-CLIENTE.md">🏗️ Montaje<small>un cliente = un proyecto</small></a>
+    </div>
+  </div>
+</section>
+
+<footer>🍯 Panal · Home — sigue los números, del contacto a la mensualidad.</footer>
+
+</body></html>
