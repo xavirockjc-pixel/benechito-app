@@ -1,0 +1,172 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panadería con Panal</title>
+<meta name="description" content="Sistema modular de gestión Panal para panadería con varios locales: sala de venta, fabricación de pan, bodega, clientes, central y capacitación de fórmulas.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --ground:#faf3e6; --surface:#fffdf8; --surface-2:#f3e6ce; --line:#e7d5b6;
+    --pan:#c98a2b; --pan-deep:#a86e18; --miga:#8a5a2b; --trigo:#e6c168;
+    --ink:#2e2415; --muted:#8a7859; --red:#c0503a; --wa:#1faa55; --wa-ink:#fff; --good:#5a8a3a;
+    --serif:"Fraunces", Georgia, serif; --sans:"Instrument Sans", system-ui, sans-serif;
+    --gut: clamp(16px, 4vw, 40px);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--ink); font-family:var(--sans); line-height:1.6;
+    background-image:radial-gradient(120% 55% at 50% -10%, rgba(201,138,43,.12), transparent 60%);}
+  .wrap{max-width:1040px; margin-inline:auto; padding-inline:var(--gut)}
+  h1,h2,h3{font-family:var(--serif); margin:0; text-wrap:balance; line-height:1.08}
+  p{margin:0} a{color:var(--pan-deep)}
+  .eyebrow{font-family:var(--sans); text-transform:uppercase; letter-spacing:.18em; font-size:.72rem; font-weight:600; color:var(--pan-deep)}
+  .tnum{font-variant-numeric:tabular-nums}
+  .top{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding-block:16px; border-bottom:1px solid var(--line)}
+  .brand{display:flex; align-items:center; gap:9px; font-weight:800; font-family:var(--serif)}
+  .hx{width:28px; height:28px; display:grid; place-items:center; font-size:1.1rem; background:linear-gradient(135deg,var(--pan),var(--trigo)); border-radius:9px}
+  .top .meta{font-size:.8rem; color:var(--muted)}
+  .hero{padding-block:clamp(28px,6vw,52px)}
+  .scoops{font-size:clamp(2.2rem,7vw,3rem); margin-bottom:6px}
+  .hero h1{font-size:clamp(2.3rem,7vw,4rem); font-weight:800}
+  .hero h1 .hl{color:var(--pan)}
+  .hero .slo{font-size:clamp(1.05rem,3vw,1.4rem); font-weight:600; color:var(--miga); margin-top:8px}
+  .hero .lede{color:var(--muted); max-width:56ch; margin-top:14px; font-size:1.04rem}
+  section{padding-block:clamp(28px,5vw,46px); border-top:1px solid var(--line)}
+  .sec-h{margin-bottom:22px}
+  .sec-h h2{font-size:clamp(1.5rem,4vw,2.1rem); font-weight:800}
+  .sec-h p{color:var(--muted); margin-top:8px; max-width:60ch}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px}
+  .pill{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 6px 20px -14px rgba(120,90,40,.4)}
+  .pill.gift{background:linear-gradient(135deg, rgba(90,138,58,.14), rgba(230,193,104,.14)); border-color:var(--good)}
+  .pill .ic{font-size:1.7rem}
+  .pill h3{font-size:1.1rem; font-weight:700; margin:10px 0 4px; font-family:var(--sans)}
+  .pill p{color:var(--muted); font-size:.92rem}
+  .perks{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px}
+  .perk{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:2px}
+  .perk .pic{font-size:1.5rem}
+  .perk b{font-size:.98rem}
+  .perk small{color:var(--muted); font-size:.82rem}
+  .flow{background:linear-gradient(135deg, rgba(201,138,43,.12), rgba(230,193,104,.10)); border:1px solid var(--line); border-radius:20px; padding:clamp(20px,4vw,32px)}
+  .flow h2{font-size:clamp(1.4rem,4vw,2rem); font-weight:800}
+  .chain{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px; font-weight:600}
+  .chain .step{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px; font-size:.95rem}
+  .chain .arw{color:var(--pan); font-weight:800}
+  .chain .out{background:rgba(90,138,58,.14); border-color:var(--good); color:var(--good)}
+  .screen{max-width:330px; margin-inline:auto; background:var(--surface); border:1px solid var(--line); border-radius:24px; padding:12px; box-shadow:0 26px 60px -30px rgba(120,90,40,.6)}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; background:var(--pan); color:#fff; border-radius:16px; padding:11px 15px; font-weight:800; font-size:.92rem}
+  .screen .stag{font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; margin:12px 4px 4px}
+  .srow{display:flex; justify-content:space-between; gap:8px; padding:10px 12px; border-radius:11px; background:var(--surface-2); margin-top:8px; font-size:.87rem; font-weight:600}
+  .srow .neg{color:var(--red)} .srow .pos{color:var(--good)}
+  .sbtn{margin-top:12px; text-align:center; background:var(--good); color:#fff; border-radius:12px; padding:11px; font-weight:800; font-size:.9rem}
+  .quote{background:var(--surface); border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:0 10px 30px -20px rgba(120,90,40,.5)}
+  .qrow{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:15px 18px; border-top:1px solid var(--line)}
+  .qrow:first-child{border-top:0}
+  .qn{font-weight:500} .qv{font-weight:700; white-space:nowrap}
+  .qrow.qtot{background:var(--surface-2); border-top:2px solid var(--pan)}
+  .qrow.qtot .qn{font-family:var(--serif); font-weight:800; font-size:1.1rem}
+  .qrow.qtot .qv{color:var(--pan-deep); font-size:1.3rem; font-family:var(--serif); font-weight:800}
+  .qrow.qmes .qn{color:var(--good); font-weight:600} .qrow.qmes .qv{color:var(--good)}
+  .qrow.gift .qn{color:var(--good); font-weight:700} .qrow.gift .qv{color:var(--good)}
+  .note{background:var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--pan); border-radius:12px; padding:16px 18px; margin-top:20px; font-size:.95rem}
+  .note b{color:var(--pan-deep)}
+  .pay{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px}
+  .cta{display:grid; gap:14px; justify-items:center; text-align:center}
+  .cta h2{font-size:clamp(1.6rem,5vw,2.4rem); font-weight:800}
+  .btn{display:inline-flex; align-items:center; gap:9px; background:var(--wa); color:var(--wa-ink); font-weight:800; text-decoration:none; padding:14px 26px; border-radius:14px; font-size:1.05rem}
+  .contact{font-size:.95rem; color:var(--muted)}
+  .num{font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; user-select:all}
+  footer{padding-block:26px; color:var(--muted); font-size:.82rem; text-align:center; border-top:1px solid var(--line)}
+</style>
+
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><span class="hx">🥖</span> Panal</div>
+    <div class="meta">Sistema modular · Panadería</div>
+  </div>
+
+  <header class="hero">
+    <div class="scoops">🥖🏪</div>
+    <p class="eyebrow">Sistema modular de gestión</p>
+    <h1><span class="hl">Panadería</span></h1>
+    <p class="slo">Cada local ordenado y con la caja cuadrada.</p>
+    <p class="lede">Sistema modular para uno o varios locales: sala de venta y fabricación de pan, cada local con sus propios números. La receta descuenta los insumos y la central muestra cuánto vende y cuánto rinde cada local. Con capacitación de fórmulas para el equipo.</p>
+  </header>
+
+  <section>
+    <div class="perks">
+      <div class="perk"><span class="pic">🎤</span><b>Todo por voz</b><small>Hablas y queda hecho, sin teclear.</small></div>
+      <div class="perk"><span class="pic">📱</span><b>Solo un teléfono o tablet</b><small>Nada de equipos caros ni instalaciones.</small></div>
+      <div class="perk"><span class="pic">🗂️</span><b>Todo queda registrado</b><small>Sin fichas latosas ni impresiones sueltas.</small></div>
+      <div class="perk"><span class="pic">🔄</span><b>Mejoras cada mes</b><small>Actualizaciones incluidas en la mensualidad.</small></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h">
+      <p class="eyebrow">Módulos</p>
+      <h2>Las panaderías, conectadas</h2>
+      <p>Se vende en el mesón, baja el insumo del pan, y cada local se ve por separado.</p>
+    </div>
+    <div class="grid">
+      <div class="pill"><div class="ic">🛒</div><h3>Sala de venta / Caja</h3><p>Vende pan y productos en el mesón; cierra la caja cuadrada de cada local.</p></div>
+      <div class="pill"><div class="ic">🥖</div><h3>Fabricación de pan</h3><p>Producción por receta que descuenta harina, levadura y demás insumos.</p></div>
+      <div class="pill"><div class="ic">📖</div><h3>Capacitación de fórmulas</h3><p>Recetas de pan con clave para las secretas y capacitación del equipo con firma. Se enseña sin perder el secreto.</p></div>
+      <div class="pill"><div class="ic">📦</div><h3>Bodega / Stock</h3><p>Insumos y productos con aviso de reposición, por local.</p></div>
+      <div class="pill"><div class="ic">📊</div><h3>Central de control</h3><p>Ventas por local, costos y ganancias, reporte diario. Números privados del dueño.</p></div>
+      <div class="pill gift"><div class="ic">🎁</div><h3>Dashboard de números <small style="color:var(--good)">de regalo</small></h3><p>Ventas y balance de cada local de un vistazo.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h">
+      <p class="eyebrow">Cómo se ve por dentro</p>
+      <h2>Una muestra de la App de Sala de venta</h2>
+      <p>Así queda la caja del local: se marca lo vendido, cuadra el total y descuenta el stock solo.</p>
+    </div>
+    <div class="screen" aria-hidden="true">
+      <div class="bar"><span>🛒 Caja · Local Centro</span><span>Turno</span></div>
+      <div class="stag">Venta actual</div>
+      <div class="srow"><span>Pan amasado · 12</span><span>$3.600</span></div>
+      <div class="srow"><span>Marraqueta · 1 kg</span><span>$1.900</span></div>
+      <div class="srow"><span>Empanada queso · 3</span><span>$3.000</span></div>
+      <div class="srow" style="background:transparent;border:1px dashed var(--line)"><span>Total</span><span class="pos">$8.500</span></div>
+      <div class="sbtn">Cobrar y cuadrar caja</div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h"><p class="eyebrow">Cotización</p><h2>Lo que se arma y cuánto vale</h2><p>Se paga una vez el montaje y queda funcionando.</p></div>
+    <div class="quote">
+      <div class="qrow"><span class="qn">📊 Central — administración, clientes, deudas y facturación</span><span class="qv tnum">$80.000</span></div>
+      <div class="qrow"><span class="qn">🛒 App Sala de venta / Caja</span><span class="qv tnum">$40.000</span></div>
+      <div class="qrow"><span class="qn">🥖 App Producción (fabricación de pan + capacitación)</span><span class="qv tnum">$40.000</span></div>
+      <div class="qrow"><span class="qn">📦 App Bodega (stock)</span><span class="qv tnum">$40.000</span></div>
+      <div class="qrow gift"><span class="qn">🎁 Dashboard de números y balances</span><span class="qv">Incluido</span></div>
+      <div class="qrow qtot"><span class="qn">Montaje total (una vez)</span><span class="qv tnum">$200.000</span></div>
+      <div class="qrow qmes"><span class="qn">Mensualidad — hosting, mantención, mejoras mensuales y soporte</span><span class="qv tnum">$30.000 / mes</span></div>
+    </div>
+    <div class="note">🏪 <b>Varios locales:</b> cada local adicional <b>$40.000</b>. &nbsp;·&nbsp; 🌐 Dominio aparte (~$12.000/año). &nbsp;·&nbsp; 🧩 <b>Se complementa</b> con el sistema de Fábrica de Helados y con el Cerebro de Distribución (cada uno por separado).</div>
+    <div class="note">➕ <b>Servicios opcionales:</b> &nbsp;🌐 Página web con catálogo para vender —pedidos por WhatsApp, con opción de retiro, reparto o distribución— <b>$90.000</b> &nbsp;·&nbsp; 📣 <b>Marketing y redes $150.000/mes</b> — 3 publicaciones por semana (12 al mes) en Facebook e Instagram + catálogo enlazado al WhatsApp para coordinar pedidos. Chatbot opcional: lo paga el cliente según uso (es bajo).</div>
+  </section>
+
+  <section>
+    <div class="sec-h"><p class="eyebrow">El montaje se paga — se elige cómo</p><h2>Dos formas de pagar el arranque</h2></div>
+    <div class="pay">
+      <div class="pill"><div class="ic">💵</div><h3>Al contado</h3><p>Más barato en total: <b class="tnum" style="color:var(--pan-deep)">$200.000</b> una vez + $30.000/mes.</p></div>
+      <div class="pill"><div class="ic">📅</div><h3>Repartido en la cuota <span style="font-size:.7rem;font-weight:600;color:var(--pan-deep)">+20%</span></h3><p>Arranque $50.000 + cuota más alta el primer año, luego baja a $30.000/mes. Permanencia 12 meses.</p></div>
+    </div>
+    <div class="note">🎓 Primera capacitación incluida · sesiones extra $15.000 · soporte por WhatsApp incluido.</div>
+  </section>
+
+  <section>
+    <div class="cta">
+      <p class="eyebrow">¿Partimos?</p>
+      <h2>Dejar las panaderías andando</h2>
+      <p class="contact">Escríbeme por WhatsApp:<br><span class="num">+56 9 2800 5332</span> · Javier — Panal</p>
+      <a class="btn" href="https://wa.me/56928005332?text=Hola%20Javier%2C%20me%20interesa%20el%20sistema%20para%20panader%C3%ADa" target="_blank" rel="noopener">💬 Quiero avanzar</a>
+    </div>
+  </section>
+  <footer>Panal · Sistema modular de gestión para panaderías</footer>
+</div>
