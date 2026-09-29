@@ -162,8 +162,9 @@
       </div>
 
       <div class="card">
-        <span class="eyebrow">6 · Servicios adicionales (se venden aparte)</span>
-        <p class="muted" style="font-size:.8rem;margin-top:-4px;margin-bottom:8px">Precios de venta de Panal, editables. Úsalos sueltos o como add-on de un plan.</p>
+        <span class="eyebrow">6 · Servicios adicionales (landing, catálogo, RRSS y marketing)</span>
+        <p class="muted" style="font-size:.8rem;margin-top:-4px;margin-bottom:8px">Precios de venta de Panal, editables. Se suman aparte, o puedes incluirlos en el plan.</p>
+        <label class="cas" style="border:none;padding:0;margin-bottom:10px"><input type="checkbox" id="svcEnPlan" onchange="update()"><span class="cx"><b>Adaptar estos servicios al plan</b><small>Marcado: van incluidos en el plan. Sin marcar: se cotizan aparte.</small></span></label>
         <div class="grid2">
           <label class="fld">💻 Landing sola (CLP)<input type="text" id="sLanding" value="99.000" oninput="update()"></label>
           <label class="fld">🗂️ Catálogo / tienda (CLP)<input type="text" id="sCatalogo" value="120.000" oninput="update()"></label>
@@ -197,6 +198,8 @@
         <div class="chips" id="rsChips"></div>
         <div class="rs-line"><span>Módulos activos</span><b id="rsCount">0</b></div>
         <div class="rs-line"><span>Suma de celdas</span><b id="rsSuma">—</b></div>
+        <div class="rs-line"><span>Extensiones</span><b id="rsExt">—</b></div>
+        <div class="rs-line"><span>Servicios (landing/catálogo/RRSS)</span><b id="rsSvc">—</b></div>
         <div class="rs-line"><span>Plan</span><b id="rsPlan">—</b></div>
         <div class="rs-line"><span>Instalación</span><b id="rsInstal">—</b></div>
         <div class="rs-line"><span>Mensual sistema</span><b id="rsMes">—</b></div>
@@ -372,6 +375,26 @@ const MODULOS = [
       {k:"novedades", n:"🔥 Novedades y promos", d:"Publicas promos, nuevos productos y sabores que ven todos tus clientes en su portal."},
       {k:"autoreg", n:"🤝 Auto-registro de negocios", d:"Revendedores y distribuidores se dan de alta solos desde un portal y caen en tu CRM."},
     ]},
+  { id:"12", key:"distribucion", tl:true, star:false, nombre:"Distribución y proveedores", sub:"Proveedores, compras y estudio de costos",
+    demo:"Centraliza a <b>todos tus proveedores</b> con sus contactos, lleva las <b>órdenes de compra</b>, el <b>estudio de compras</b> (qué compras, a quién y a qué precio) y el <b>balance por proveedor</b> — para negociar mejor y no mezclar.",
+    cas:[
+      {k:"provee", n:"📇 Contactos de proveedores", d:"Ficha de cada proveedor: contacto, productos y condiciones."},
+      {k:"oc", n:"🧾 Órdenes de compra", d:"Genera y registra las compras a cada proveedor."},
+      {k:"estudio", n:"🔎 Estudio de compras", d:"Qué compras, a quién y a qué precio; histórico para comparar."},
+      {k:"balprov", n:"⚖️ Balance por proveedor", d:"Cuánto le compras a cada uno y cómo evoluciona."},
+      {k:"comparar", n:"📊 Comparar proveedores", d:"Mismo insumo, distintos proveedores: elige el mejor precio."},
+      {k:"reorden", n:"🔁 Punto de reorden", d:"Avisa cuándo volver a comprar según el consumo."},
+    ]},
+  { id:"13", key:"socio", tl:true, star:true, nombre:"Socio Benechito · Dashboards y análisis", sub:"El cerebro: tableros, análisis y balances por negocio",
+    demo:"Tu <b>socio virtual</b>: reúne los números de todos los negocios, los mantiene <b>separados</b> y arma <b>dashboards, análisis de rentabilidad y balances</b> — con proyecciones y alertas para decidir con datos.",
+    cas:[
+      {k:"dash", n:"📊 Dashboards por negocio", d:"Un tablero por negocio y uno consolidado del grupo."},
+      {k:"rent", n:"💹 Análisis de rentabilidad", d:"Qué gana y qué pierde cada negocio, y por qué."},
+      {k:"balcons", n:"⚖️ Balances consolidados", d:"El total del grupo y el detalle de cada uno, sin mezclar."},
+      {k:"proy", n:"📈 Proyecciones y alertas", d:"Tendencias, avisos y las prioridades del día."},
+      {k:"comp", n:"🆚 Comparativa entre negocios", d:"Compara ventas, costos y márgenes entre tus negocios."},
+      {k:"repwa", n:"🐝 Reporte a WhatsApp", d:"Resumen diario del grupo a tu teléfono."},
+    ]},
 ];
 const EXTS = [
   { id:"14", key:"sii", nombre:"Facturación electrónica (SII)", demo:"Emisión real de boletas/facturas electrónicas ante el SII (certificado y folios los carga el cliente)." },
@@ -424,16 +447,19 @@ function renderMods(){
           <div class="demo">${m.demo}</div>
           ${mk}
           ${cas}
+          <div class="customwrap" data-cw="${m.key}"></div>
+          <button type="button" class="btn btn-ghost btn-sm" data-add="${m.key}" style="margin-top:8px">+ Agregar / modificar ítem a medida</button>
         </div>
       </div>`);
     node.querySelector('[data-sw]').onclick=(e)=>{ e.stopPropagation(); toggleMod(m.key); };
+    node.querySelector('[data-add]').onclick=(e)=>{ e.stopPropagation(); addCustomRow(m.key); };
     node.querySelector('.mod-head').onclick=()=>toggleOpen(m.key);
     cont.appendChild(node);
   });
 }
 function renderExts(){
   const c = document.getElementById("exts"); c.innerHTML="";
-  EXTS.forEach(x=> c.appendChild(el(`<label class="cas" style="border-top:1px solid var(--line)"><input type="checkbox" data-ext="${x.key}" onchange="update()"><span class="cx"><b>${x.id} · ${x.nombre}</b><small>${x.demo}</small></span></label>`)));
+  EXTS.forEach(x=> c.appendChild(el(`<label class="cas" style="border-top:1px solid var(--line)"><input type="checkbox" data-ext="${x.key}" onchange="update()"><span class="cx"><b>${x.id} · ${x.nombre}</b><small>${x.demo}</small></span><input type="number" class="casp" min="0" step="1000" placeholder="$0" data-extprice="${x.key}" oninput="update()"></label>`)));
 }
 
 function toggleMod(key){
@@ -462,8 +488,26 @@ function toggleTheme(){ const r=document.documentElement; const cur=r.getAttribu
 function modsActivos(){ return MODULOS.filter(m=>document.getElementById("mod-"+m.key).classList.contains("on")); }
 function extsActivos(){ return EXTS.filter(x=>document.querySelector(`[data-ext="${x.key}"]`).checked); }
 function casActivas(m){ return m.cas.filter(c=>document.querySelector(`[data-cas="${m.key}.${c.k}"]`).checked); }
-function precioCas(m,c){ const pr=document.querySelector(`[data-price="${m.key}.${c.k}"]`); return Number((pr&&pr.value)||0); }
-function subtotalMod(m){ return casActivas(m).reduce((a,c)=>a+precioCas(m,c),0); }
+function num(v){ return Number(String(v==null?'':v).replace(/[^\d]/g,''))||0; }
+function casDom(m){
+  const mod=document.getElementById("mod-"+m.key); const out=[];
+  if(mod) mod.querySelectorAll('.cas').forEach(row=>{
+    const cb=row.querySelector('[data-cas]');
+    if(cb&&cb.checked){
+      const nmi=row.querySelector('.cnm'); const b=row.querySelector('.cx b');
+      const nombre=nmi?(nmi.value.trim()||'Ítem a medida'):(b?b.textContent:'');
+      out.push({n:nombre, p:num((row.querySelector('[data-price]')||{}).value)});
+    }
+  });
+  return out;
+}
+function subtotalMod(m){ return casDom(m).reduce((a,c)=>a+c.p,0); }
+function addCustomRow(key){
+  const wrap=document.querySelector(`[data-cw="${key}"]`); if(!wrap) return;
+  const n=wrap.children.length+1;
+  wrap.appendChild(el(`<label class="cas"><input type="checkbox" data-cas="${key}.c${n}" checked onchange="update()"><span class="cx"><input class="cnm" type="text" placeholder="Nombre del ítem a medida" oninput="update()"></span><input type="number" class="casp" min="0" step="1000" placeholder="$0" data-price="${key}.c${n}" oninput="update()"></label>`));
+  document.getElementById("mod-"+key).classList.add("open"); update();
+}
 
 function update(){
   const g=id=>document.getElementById(id);
@@ -473,25 +517,30 @@ function update(){
   const mkOn=g("mkOn").checked, mkMes=g("mkMes").value.trim(), mkFb=g("mkFb").value.trim();
   const activos=modsActivos(), exts=extsActivos();
 
-  // Suma de casillas seleccionadas por módulo (precios editables)
+  // Suma por módulo (incluye ítems a medida), extensiones y servicios
   let sumaCeldas=0;
   MODULOS.forEach(m=>{
-    const mod=document.getElementById("mod-"+m.key); let sub=0;
-    m.cas.forEach(c=>{
-      const cb=document.querySelector(`[data-cas="${m.key}.${c.k}"]`);
-      const pr=document.querySelector(`[data-price="${m.key}.${c.k}"]`);
-      if(cb&&cb.checked&&pr) sub+=Number(pr.value||0);
-    });
-    const subEl=document.querySelector(`[data-sub="${m.key}"]`);
+    const mod=document.getElementById("mod-"+m.key); if(!mod) return;
+    const sub=subtotalMod(m);
+    const subEl=mod.querySelector('[data-sub]');
     if(subEl) subEl.textContent=(mod.classList.contains("on")&&sub)?("$"+sub.toLocaleString('es-CL')):"";
     if(mod.classList.contains("on")) sumaCeldas+=sub;
   });
+  let extTotal=0;
+  EXTS.forEach(x=>{ const cb=document.querySelector(`[data-ext="${x.key}"]`); if(cb&&cb.checked) extTotal+=num((document.querySelector(`[data-extprice="${x.key}"]`)||{}).value); });
+  let svcUnaVez=0;
+  if(landing) svcUnaVez+=num(g("sLanding").value);
+  if(catalogo) svcUnaVez+=num(g("sCatalogo").value);
+  if(mkOn) svcUnaVez+=num(mkFb);
+  const svcEnPlan=g("svcEnPlan")&&g("svcEnPlan").checked;
 
   g("rsNombre").textContent=nombre;
   g("rsRubro").textContent=rubroActual?(RUBROS[rubroActual].icon+" "+RUBROS[rubroActual].label):"Sin rubro (a medida)";
   g("rsCount").textContent=activos.length;
   g("rsPlan").textContent=PLAN_LABEL[plan];
   g("rsSuma").textContent = sumaCeldas? "$"+sumaCeldas.toLocaleString('es-CL') : "—";
+  g("rsExt").textContent = extTotal? "$"+extTotal.toLocaleString('es-CL') : "—";
+  g("rsSvc").textContent = svcUnaVez? ("$"+svcUnaVez.toLocaleString('es-CL')+(svcEnPlan?" · en el plan":" · aparte")) : "—";
   { const pd=g("planDesc"); if(pd) pd.textContent=PLAN_DESC[plan]||""; }
   g("rsInstal").textContent=instal?"$"+instal:"—";
   g("rsMes").textContent=mes?"$"+mes+"/mes":"—";
@@ -505,7 +554,7 @@ function update(){
 }
 
 function ordenPegado(activos){
-  const orden=["recetas","inventario","produccion","agenda","ventas","tienda","repartos","clientes","facturacion","panel","mejoras"];
+  const orden=["recetas","inventario","produccion","agenda","ventas","tienda","repartos","clientes","distribucion","facturacion","panel","socio","mejoras"];
   return orden.filter(k=>activos.some(m=>m.key===k)).map(k=>MODULOS.find(m=>m.key===k).id).join(", ");
 }
 function textoImplementar(o){
@@ -514,11 +563,15 @@ function textoImplementar(o){
   s+=`Instalación: $${o.instal||"—"} · Mensual: $${o.mes||"—"}/mes\n`;
   s+=`Entregables: ${[o.landing?"Landing":null,o.catalogo?"Catálogo/tienda":null,"App por roles"].filter(Boolean).join(" · ")}\n`;
   s+=`\nMÓDULOS (${o.activos.length}):\n`;
-  o.activos.forEach(m=>{ const st=subtotalMod(m); s+=`• ${m.id} ${m.nombre}${st?(' — $'+st.toLocaleString('es-CL')):''}\n    ↳ ${casActivas(m).map(c=>c.n.replace(/^[^ ]+ /,'')).join(", ")||"(base)"}\n`; });
+  o.activos.forEach(m=>{ const st=subtotalMod(m); s+=`• ${m.id} ${m.nombre}${st?(' — $'+st.toLocaleString('es-CL')):''}\n    ↳ ${casDom(m).map(c=>c.n.replace(/^[^ ]+ /,'')).join(", ")||"(base)"}\n`; });
   const sumaTot=o.activos.reduce((a,m)=>a+subtotalMod(m),0);
-  if(sumaTot) s+=`Suma de celdas: $${sumaTot.toLocaleString('es-CL')}\n`;
-  if(o.exts.length){ s+=`\nEXTENSIONES:\n`; o.exts.forEach(x=>s+=`• ${x.id} ${x.nombre}\n`); }
-  if(o.mkOn){ s+=`\nMARKETING Y REDES:\n• Gestión mensual: $${o.mkMes} (3 posts/sem FB+IG, con seguimiento)\n• Creación página Facebook: $${o.mkFb}\n`; }
+  if(sumaTot) s+=`Suma de celdas (montaje): $${sumaTot.toLocaleString('es-CL')}\n`;
+  if(o.exts.length){ s+=`\nEXTENSIONES:\n`; let et=0; o.exts.forEach(x=>{ const ep=num((document.querySelector(`[data-extprice="${x.key}"]`)||{}).value); et+=ep; s+=`• ${x.id} ${x.nombre}${ep?(' — $'+ep.toLocaleString('es-CL')):''}\n`; }); if(et) s+=`Subtotal extensiones: $${et.toLocaleString('es-CL')}\n`; }
+  const svcPlan=document.getElementById('svcEnPlan')&&document.getElementById('svcEnPlan').checked;
+  s+=`\nSERVICIOS (landing/catálogo/RRSS): ${svcPlan?'INCLUIDOS EN EL PLAN':'COTIZADOS APARTE'}\n`;
+  if(o.landing) s+=`• Landing: $${document.getElementById('sLanding').value}\n`;
+  if(o.catalogo) s+=`• Catálogo / tienda: $${document.getElementById('sCatalogo').value}\n`;
+  if(o.mkOn){ s+=`\nMARKETING Y REDES:\n• Gestión mensual: $${o.mkMes} (3 posts/sem = 12 al mes, FB+IG, con seguimiento)\n• Creación página Facebook: $${o.mkFb}\n• Chatbot: lo paga el cliente según uso (bajo)\n`; }
   s+=`\nORDEN DE CONSTRUCCIÓN (pegar prompts):\n1) 09-Prompt-Maestro (relleno) → 2) módulos: ${ordenPegado(o.activos)}\n`;
   if(o.exts.length) s+=`3) extensiones: ${o.exts.map(x=>x.id).join(", ")}\n`;
   s+=`\nCHECKLIST:\n[ ] Login por roles  [ ] Usuarios y claves por rol\n[ ] Módulos conectados (stock descuenta, costos/ganancias en panel)\n[ ] Privacidad por rol  [ ] Claves cambiadas  [ ] Deploy probado en celular`;
@@ -535,7 +588,7 @@ function textoPrompt(o){
   let s=`Construye una app web de gestión comercial modular para:\n`;
   s+=`- Nombre del negocio: ${nom}\n- Rubro: ${rubroActual?RUBROS[rubroActual].label:"{RUBRO}"}\n- Idioma: español de Chile\n- Identidad visual: ${colores}\n- Módulos activos: ${o.activos.map(m=>m.nombre).join(", ")||"{MÓDULOS}"}\n\n`;
   s+=`Aplica la BASE del 09-Prompt-Maestro (base técnica, login por rol con clave, privacidad,\nmenú por rol, reglas de negocio e identidad visual moderna con modo claro/oscuro y PWA).\n\nCasillas activadas por módulo:\n`;
-  o.activos.forEach(m=>{ s+=`• ${m.nombre}: ${casActivas(m).map(c=>c.n.replace(/^[^ ]+ /,'')).join(", ")||"base"}\n`; });
+  o.activos.forEach(m=>{ s+=`• ${m.nombre}: ${casDom(m).map(c=>c.n.replace(/^[^ ]+ /,'')).join(", ")||"base"}\n`; });
   if(o.exts.length) s+=`\nExtensiones: ${o.exts.map(x=>x.nombre).join("; ")}\n`;
   s+=`\nDespués pega los módulos en orden: ${ordenPegado(o.activos)}.`;
   return s;
@@ -547,8 +600,10 @@ function resetAll(){
   rubroActual=null; document.querySelectorAll(".rubro").forEach(b=>b.classList.remove("active"));
   MODULOS.forEach(m=>{ const mod=document.getElementById("mod-"+m.key); mod.classList.remove("on","open"); mod.querySelectorAll('[data-cas]').forEach(c=>c.checked=false); });
   document.querySelectorAll('[data-ext]').forEach(e=>e.checked=false);
-  document.querySelectorAll('[data-price]').forEach(p=>p.value="");
+  document.querySelectorAll('[data-price],[data-extprice]').forEach(p=>p.value="");
+  document.querySelectorAll('.customwrap').forEach(w=>w.innerHTML="");
   ["cNombre","cWa","cCiudad","cColores","cNotas"].forEach(id=>{const el=document.getElementById(id); if(el) el.value="";});
+  const sp=document.getElementById("svcEnPlan"); if(sp) sp.checked=false;
   document.getElementById("mkOn").checked=false; update();
 }
 (function(){ try{const t=localStorage.getItem("panal-theme"); if(t) document.documentElement.setAttribute("data-theme",t);}catch(e){}
