@@ -176,7 +176,6 @@
         <label class="cas" style="border:none;padding:0;margin-bottom:10px"><input type="checkbox" id="svcEnPlan" onchange="update()"><span class="cx"><b>Adaptar estos servicios al plan</b><small>Marcado: van incluidos en el plan. Sin marcar: se cotizan aparte.</small></span></label>
         <div class="grid2">
           <label class="fld">💻 Landing sola (CLP)<input type="text" id="sLanding" value="99.000" oninput="update()"></label>
-          <label class="fld">📣 Marketing / redes (CLP)<input type="text" id="sCatalogo" value="150.000" oninput="update()"></label>
         </div>
         <div class="addon">
           <input type="checkbox" id="mkOn" onchange="update()">
@@ -586,7 +585,6 @@ function textoImplementar(o){
   const svcPlan=document.getElementById('svcEnPlan')&&document.getElementById('svcEnPlan').checked;
   s+=`\nSERVICIOS (landing/catálogo/RRSS): ${svcPlan?'INCLUIDOS EN EL PLAN':'COTIZADOS APARTE'}\n`;
   if(o.landing) s+=`• Landing: $${document.getElementById('sLanding').value}\n`;
-  if(document.getElementById('sCatalogo').value) s+=`• Marketing / redes: $${document.getElementById('sCatalogo').value}\n`;
   if(o.mkOn){ s+=`\nMARKETING Y REDES:\n• Gestión mensual: $${o.mkMes} (3 posts/sem = 12 al mes, FB+IG, con seguimiento)\n• Creación página Facebook: $${o.mkFb}\n• Chatbot: lo paga el cliente según uso (bajo)\n`; }
   s+=`\nORDEN DE CONSTRUCCIÓN (pegar prompts):\n1) 09-Prompt-Maestro (relleno) → 2) módulos: ${ordenPegado(o.activos)}\n`;
   if(o.exts.length) s+=`3) extensiones: ${o.exts.map(x=>x.id).join(", ")}\n`;
@@ -627,7 +625,7 @@ function resetAll(){
 const LS_KEY="panal-config-v1";
 function saveState(){ try{
   const st={rubro:rubroActual, fields:{}, cas:{}, price:{}, ext:{}, extprice:{}, custom:[], modOn:{}};
-  ["cNombre","cWa","cCiudad","cColores","cPlan","cInstal","cMes","cNotas","mkMes","mkFb","sLanding","sCatalogo"].forEach(id=>{const e=document.getElementById(id); if(e) st.fields[id]=e.value;});
+  ["cNombre","cWa","cCiudad","cColores","cPlan","cInstal","cMes","cNotas","mkMes","mkFb","sLanding"].forEach(id=>{const e=document.getElementById(id); if(e) st.fields[id]=e.value;});
   ["oLanding","oCatalogo","mkOn","svcEnPlan"].forEach(id=>{const e=document.getElementById(id); if(e) st.fields[id]=e.checked;});
   MODULOS.forEach(m=>{const mod=document.getElementById("mod-"+m.key); if(mod) st.modOn[m.key]=mod.classList.contains("on");});
   document.querySelectorAll('[data-cas]').forEach(cb=>{ if(!cb.closest('.customwrap')) st.cas[cb.getAttribute('data-cas')]=cb.checked; });
