@@ -158,15 +158,15 @@
         <div class="grid3">
           <label class="fld">Plan de soporte
             <select id="cPlan" onchange="update()">
-              <option value="basico">Básico · 2 cambios/mes</option>
-              <option value="produccion" selected>Pro · 4 cambios/mes</option>
-              <option value="completo">Max · 24/7</option>
+              <option value="basico">Básico · $30.000 · 2 cambios/mes</option>
+              <option value="produccion" selected>Pro · $50.000 · 4 cambios/mes</option>
+              <option value="completo">Full · $70.000 · 24/7</option>
               <option value="medida">A medida</option>
             </select>
             <small class="muted" id="planDesc" style="font-weight:600"></small>
           </label>
           <label class="fld">Instalación (auto = suma)<input type="text" id="cInstal" value="575.000" readonly style="opacity:.85"></label>
-          <label class="fld">Mensual base · Básico (CLP)<input type="text" id="cMes" value="30.000" oninput="update()"></label>
+          <label class="fld">Mensual (según plan)<input type="text" id="cMes" value="30.000" readonly style="opacity:.85"></label>
         </div>
       </div>
 
@@ -423,6 +423,7 @@ const RUBROS = {
 };
 const PLAN_LABEL = { basico:"Básico", produccion:"Pro", completo:"Max", medida:"A medida" };
 const PLAN_DESC = { basico:"2 cambios/mejoras al mes + seguimiento", produccion:"4 cambios/mejoras al mes + requerimientos", completo:"Cambios y requerimientos, soporte 24/7", medida:"A definir según necesidad" };
+const PLAN_MES = { basico:30000, produccion:50000, completo:70000, medida:0 };
 const PLAN_PRECIO = {
   basico:{i:"325.000", m:"32.500"},
   produccion:{i:"575.000", m:"50.000"},
@@ -543,8 +544,8 @@ function update(){
   const montaje = sumaCeldas + extTotal;
   { const tb=g("totalBig"); if(tb) tb.textContent="$"+montaje.toLocaleString('es-CL'); }
   g("cInstal").value = montaje.toLocaleString('es-CL');
-  const facMes={basico:1,produccion:1.3,completo:1.69,medida:1}[plan]||1;
-  const planMes=Math.round(num(mes)*facMes/1000)*1000;
+  const planMes=PLAN_MES[plan]||0;
+  g("cMes").value = planMes? planMes.toLocaleString('es-CL') : "";
 
   g("rsNombre").textContent=nombre;
   g("rsRubro").textContent=rubroActual?(RUBROS[rubroActual].icon+" "+RUBROS[rubroActual].label):"Sin rubro (a medida)";
@@ -553,9 +554,9 @@ function update(){
   g("rsSuma").textContent = sumaCeldas? "$"+sumaCeldas.toLocaleString('es-CL') : "—";
   g("rsExt").textContent = extTotal? "$"+extTotal.toLocaleString('es-CL') : "—";
   g("rsSvc").textContent = svcUnaVez? ("$"+svcUnaVez.toLocaleString('es-CL')+(svcEnPlan?" · en el plan":" · aparte")) : "—";
-  { const pd=g("planDesc"); if(pd) pd.textContent=(PLAN_DESC[plan]||"")+(num(mes)?(" · $"+planMes.toLocaleString('es-CL')+"/mes"):""); }
+  { const pd=g("planDesc"); if(pd) pd.textContent=(PLAN_DESC[plan]||"")+(planMes?(" · $"+planMes.toLocaleString('es-CL')+"/mes"):" · a definir"); }
   g("rsInstal").textContent = montaje? "$"+montaje.toLocaleString('es-CL') : "—";
-  g("rsMes").textContent = num(mes)? ("$"+planMes.toLocaleString('es-CL')+"/mes") : "—";
+  g("rsMes").textContent = planMes? ("$"+planMes.toLocaleString('es-CL')+"/mes") : "a definir";
   g("rsMk").textContent=mkOn&&mkMes?"$"+mkMes+"/mes":"—";
   g("rsLC").textContent=((landing?"Landing":"")+(landing&&catalogo?" + ":"")+(catalogo?"Catálogo":""))||"—";
   g("rsChips").innerHTML=activos.map(m=>`<span class="chip">${m.id} ${m.nombre.split(" ")[0]}</span>`).join("")+exts.map(x=>`<span class="chip tl">Ext ${x.id}</span>`).join("")+(mkOn?`<span class="chip tl">📣 Marketing</span>`:"");
@@ -573,9 +574,8 @@ function ordenPegado(activos){
 function textoImplementar(o){
   let s=`RESUMEN PARA IMPLEMENTAR — ${o.nombre}\n`;
   s+=`Rubro: ${rubroActual?RUBROS[rubroActual].label:"a medida"} · Plan ${PLAN_LABEL[o.plan]} (${PLAN_DESC[o.plan]})\n`;
-  const _f={basico:1,produccion:1.3,completo:1.69,medida:1}[o.plan]||1;
-  const _pm=Math.round(num(o.mes)*_f/1000)*1000;
-  s+=`Montaje: $${o.instal||"—"} · Plan ${PLAN_LABEL[o.plan]}: $${_pm.toLocaleString('es-CL')}/mes\n`;
+  const _pm=PLAN_MES[o.plan]||0;
+  s+=`Montaje: $${o.instal||"—"} · Plan ${PLAN_LABEL[o.plan]}: ${_pm?("$"+_pm.toLocaleString('es-CL')+"/mes"):"a definir"}\n`;
   s+=`Entregables: ${[o.landing?"Landing":null,o.catalogo?"Catálogo/tienda":null,"App por roles"].filter(Boolean).join(" · ")}\n`;
   s+=`\nMÓDULOS (${o.activos.length}):\n`;
   o.activos.forEach(m=>{ const st=subtotalMod(m); s+=`• ${m.id} ${m.nombre}${st?(' — $'+st.toLocaleString('es-CL')):''}\n    ↳ ${casDom(m).map(c=>c.n.replace(/^[^ ]+ /,'')).join(", ")||"(base)"}\n`; });
