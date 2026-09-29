@@ -127,6 +127,12 @@
     </select>
   </div>
 
+  <div class="card">
+    <h2>📝 Nota / requerimientos especiales</h2>
+    <p class="sub">Algo puntual que pida el cliente (horarios, integraciones, casos raros). Va incluido en la cotización.</p>
+    <textarea id="nota" rows="3" placeholder="Ej: 2 cajas en paralelo, integrar balanza, factura a fin de mes…" style="width:100%;background:#0e0a05;color:var(--cream);border:1px solid var(--line);border-radius:10px;padding:10px;font-family:var(--sans);font-size:.9rem;resize:vertical"></textarea>
+  </div>
+
   <div class="quote">
     <span class="plan" id="planLbl">Plan —</span>
     <div class="big">
@@ -149,7 +155,8 @@
     {k:"produccion",e:"🏭",n:"Producción y calidad (litros, cierre de turno)"},{k:"ventas",e:"🛒",n:"Ventas · Vendedor (precio por volumen)"},{k:"repartos",e:"🛵",n:"Repartos y retiros"},
     {k:"inventario",e:"📦",n:"Inventario"},{k:"clientes",e:"🧾",n:"Clientes y deudas"},{k:"panel",e:"📊",n:"Panel · Socio administrativo"},
     {k:"facturacion",e:"🧮",n:"Facturación"},{k:"recetas",e:"📖",n:"Recetas y capacitaciones"},{k:"agenda",e:"📅",n:"Agenda y citas"},
-    {k:"mejoras",e:"🌱",n:"Mejoras y proyecciones"},{k:"tienda",e:"🐝",n:"Tienda y Portal del Cliente"}
+    {k:"mejoras",e:"🌱",n:"Mejoras y proyecciones"},{k:"tienda",e:"🐝",n:"Tienda y Portal del Cliente"},
+    {k:"proveedores",e:"🚚",n:"Proveedores y compras (contactos + estudio de compras y balances)"}
   ];
   var EXTENS=[
     {k:"sii",e:"🧾",n:"Facturación electrónica (SII)"},{k:"cobranza",e:"📲",n:"Cobranza por WhatsApp"},
@@ -257,6 +264,7 @@
   function cotizacionTexto(){
     var mods=names('modulos',MODULOS), exts=names('extens',EXTENS), servs=names('servicios',SERVICIOS);
     var planKey=planActual(mods.length); var p=PLAN[planKey];
+    var nota=(document.getElementById('nota').value||'').trim();
     return 'COTIZACIÓN PANAL\n'
       +(sectorActual?('Sector: '+sectorActual.n+'\n'):'')
       +'Plan: '+p.label+'\n'
@@ -265,6 +273,7 @@
       +(servs.length?('Servicios (aparte): '+servs.join(', ')+'\n'):'')
       +'Implementación: '+(p.impl?rango(p.impl):'a definir')+'\n'
       +'Mensualidad: '+(p.mes?rango(p.mes)+' /mes':'a definir')+'\n'
+      +(nota?('Requerimientos especiales: '+nota+'\n'):'')
       +'(Servicios extra se cotizan aparte. Valores referenciales.)';
   }
 
@@ -279,10 +288,13 @@
     d+='<div class="dl"><b>Celdas:</b> '+(mods.join(', ')||'—')+'</div>';
     if(exts.length) d+='<div class="dl"><b>Extensiones:</b> '+exts.join(', ')+'</div>';
     if(servs.length) d+='<div class="dl"><b>Servicios (aparte):</b> '+servs.join(', ')+'</div>';
+    var nota=(document.getElementById('nota').value||'').trim();
+    if(nota) d+='<div class="dl"><b>Requerimientos:</b> '+nota.replace(/</g,'&lt;')+'</div>';
     document.getElementById('detalle').innerHTML=d;
     document.getElementById('wa').href='https://wa.me/'+WA+'?text='+encodeURIComponent(cotizacionTexto());
   }
   document.getElementById('planSel').addEventListener('change', calc);
+  document.getElementById('nota').addEventListener('input', calc);
 
   document.getElementById('copiar').addEventListener('click', function(){
     navigator.clipboard.writeText(cotizacionTexto()).then(function(){ var m=document.getElementById('msg'); m.textContent='✅ Cotización copiada'; setTimeout(function(){m.textContent='';},2500); });
