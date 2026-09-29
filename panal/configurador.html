@@ -99,6 +99,7 @@
   <div class="wrap nav">
     <div class="brand"><span class="hexmark"></span>Configurador Panal</div>
     <div style="display:flex;gap:8px">
+      <a class="btn btn-ghost btn-sm" href="index.html" style="text-decoration:none">← Panal</a>
       <button class="btn btn-ghost btn-sm" onclick="resetAll()">↺ Limpiar</button>
       <button class="btn btn-honey btn-sm" onclick="copyOut()">📋 Copiar resumen</button>
     </div>
@@ -551,6 +552,7 @@ function update(){
   g("outBox").value = tab==="impl"
     ? textoImplementar({nombre,plan,instal,mes,landing,catalogo,activos,exts,mkOn,mkMes,mkFb})
     : textoPrompt({nombre,activos,exts});
+  saveState();
 }
 
 function ordenPegado(activos){
@@ -604,10 +606,37 @@ function resetAll(){
   document.querySelectorAll('.customwrap').forEach(w=>w.innerHTML="");
   ["cNombre","cWa","cCiudad","cColores","cNotas"].forEach(id=>{const el=document.getElementById(id); if(el) el.value="";});
   const sp=document.getElementById("svcEnPlan"); if(sp) sp.checked=false;
-  document.getElementById("mkOn").checked=false; update();
+  document.getElementById("mkOn").checked=false;
+  try{ localStorage.removeItem(LS_KEY); }catch(e){}
+  update();
+}
+const LS_KEY="panal-config-v1";
+function saveState(){ try{
+  const st={rubro:rubroActual, fields:{}, cas:{}, price:{}, ext:{}, extprice:{}, custom:[], modOn:{}};
+  ["cNombre","cWa","cCiudad","cColores","cPlan","cInstal","cMes","cNotas","mkMes","mkFb","sLanding","sCatalogo"].forEach(id=>{const e=document.getElementById(id); if(e) st.fields[id]=e.value;});
+  ["oLanding","oCatalogo","mkOn","svcEnPlan"].forEach(id=>{const e=document.getElementById(id); if(e) st.fields[id]=e.checked;});
+  MODULOS.forEach(m=>{const mod=document.getElementById("mod-"+m.key); if(mod) st.modOn[m.key]=mod.classList.contains("on");});
+  document.querySelectorAll('[data-cas]').forEach(cb=>{ if(!cb.closest('.customwrap')) st.cas[cb.getAttribute('data-cas')]=cb.checked; });
+  document.querySelectorAll('[data-price]').forEach(p=>{ if(!p.closest('.customwrap')&&p.value) st.price[p.getAttribute('data-price')]=p.value; });
+  document.querySelectorAll('[data-ext]').forEach(cb=>{ st.ext[cb.getAttribute('data-ext')]=cb.checked; });
+  document.querySelectorAll('[data-extprice]').forEach(p=>{ if(p.value) st.extprice[p.getAttribute('data-extprice')]=p.value; });
+  document.querySelectorAll('.customwrap').forEach(w=>{ const key=w.getAttribute('data-cw'); w.querySelectorAll('.cas').forEach(row=>{ const cb=row.querySelector('[data-cas]'), nm=row.querySelector('.cnm'), pr=row.querySelector('[data-price]'); st.custom.push({cw:key, dc:cb.getAttribute('data-cas'), name:(nm?nm.value:''), val:(pr?pr.value:''), checked:cb.checked}); }); });
+  localStorage.setItem(LS_KEY, JSON.stringify(st));
+}catch(e){} }
+function loadState(){ let st; try{ st=JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){} if(!st) return;
+  try{
+    if(st.rubro){ rubroActual=st.rubro; document.querySelectorAll(".rubro").forEach(b=>b.classList.toggle("active",b.dataset.r===st.rubro)); }
+    MODULOS.forEach(m=>{ const mod=document.getElementById("mod-"+m.key); if(mod&&st.modOn&&st.modOn[m.key]) mod.classList.add("on"); });
+    (st.custom||[]).forEach(cr=>{ const wrap=document.querySelector(`[data-cw="${cr.cw}"]`); if(!wrap) return; wrap.appendChild(el(`<label class="cas"><input type="checkbox" data-cas="${cr.dc}" ${cr.checked?'checked':''} onchange="update()"><span class="cx"><input class="cnm" type="text" placeholder="Nombre del ítem a medida" oninput="update()"></span><input type="number" class="casp" min="0" step="1000" placeholder="$0" data-price="${cr.dc}" oninput="update()"></label>`)); const row=wrap.lastChild; const nm=row.querySelector('.cnm'), pr=row.querySelector('[data-price]'); if(nm) nm.value=cr.name||''; if(pr) pr.value=cr.val||''; });
+    Object.entries(st.cas||{}).forEach(([k,v])=>{ const cb=document.querySelector(`[data-cas="${k}"]`); if(cb) cb.checked=v; });
+    Object.entries(st.price||{}).forEach(([k,v])=>{ const p=document.querySelector(`[data-price="${k}"]`); if(p) p.value=v; });
+    Object.entries(st.ext||{}).forEach(([k,v])=>{ const cb=document.querySelector(`[data-ext="${k}"]`); if(cb) cb.checked=v; });
+    Object.entries(st.extprice||{}).forEach(([k,v])=>{ const p=document.querySelector(`[data-extprice="${k}"]`); if(p) p.value=v; });
+    Object.entries(st.fields||{}).forEach(([id,v])=>{ const e=document.getElementById(id); if(!e) return; if(e.type==="checkbox") e.checked=v; else e.value=v; });
+  }catch(e){}
 }
 (function(){ try{const t=localStorage.getItem("panal-theme"); if(t) document.documentElement.setAttribute("data-theme",t);}catch(e){}
-  renderRubros(); renderMods(); renderExts(); update(); })();
+  renderRubros(); renderMods(); renderExts(); loadState(); update(); })();
 </script>
 
 </body></html>
