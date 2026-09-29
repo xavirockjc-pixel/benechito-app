@@ -75,6 +75,8 @@
   .cas .cx{flex:1}
   .cas .cx b{font-size:.9rem;font-weight:700}
   .cas .cx small{display:block;color:var(--ink2);font-size:.8rem}
+  .cas .casp{width:104px;flex-shrink:0;text-align:right;font-weight:700;padding:6px 8px;font-size:.85rem}
+  .modsub{font-size:.82rem;font-weight:850;color:var(--honey-deep);white-space:nowrap;background:var(--honey-soft);padding:3px 9px;border-radius:999px}
 
   .resumen{position:sticky;top:76px}
   .rs-plan{font-size:1.3rem;font-weight:850;color:var(--honey-deep)}
@@ -145,13 +147,14 @@
         </div>
         <span class="eyebrow" style="margin-top:6px">Plan del sistema y precios (editables)</span>
         <div class="grid3">
-          <label class="fld">Plan
+          <label class="fld">Plan de soporte
             <select id="cPlan" onchange="update()">
-              <option value="basico">Básico</option>
-              <option value="produccion" selected>Producción</option>
-              <option value="completo">Completo</option>
+              <option value="basico">Básico · 2 cambios/mes</option>
+              <option value="produccion" selected>Pro · 4 cambios/mes</option>
+              <option value="completo">Max · 24/7</option>
               <option value="medida">A medida</option>
             </select>
+            <small class="muted" id="planDesc" style="font-weight:600"></small>
           </label>
           <label class="fld">Instalación (CLP)<input type="text" id="cInstal" value="575.000" oninput="update()"></label>
           <label class="fld">Mensual (CLP)<input type="text" id="cMes" value="50.000" oninput="update()"></label>
@@ -178,6 +181,12 @@
           </span>
         </div>
       </div>
+
+      <div class="card">
+        <span class="eyebrow">7 · Notas / ajustes</span>
+        <p class="muted" style="font-size:.8rem;margin:-4px 0 8px">Si el cliente necesita agregar o modificar algo (una casilla a medida, un caso especial). Va en el resumen.</p>
+        <textarea id="cNotas" placeholder="Ej: agregar control de temperatura por cámara; modificar la receta X; requiere 2 turnos…" oninput="update()" style="min-height:80px"></textarea>
+      </div>
     </div>
 
     <div class="resumen">
@@ -187,6 +196,7 @@
         <p class="muted" id="rsRubro" style="font-size:.85rem;margin-bottom:8px">Elige un rubro…</p>
         <div class="chips" id="rsChips"></div>
         <div class="rs-line"><span>Módulos activos</span><b id="rsCount">0</b></div>
+        <div class="rs-line"><span>Suma de celdas</span><b id="rsSuma">—</b></div>
         <div class="rs-line"><span>Plan</span><b id="rsPlan">—</b></div>
         <div class="rs-line"><span>Instalación</span><b id="rsInstal">—</b></div>
         <div class="rs-line"><span>Mensual sistema</span><b id="rsMes">—</b></div>
@@ -380,7 +390,8 @@ const RUBROS = {
   consultoria: { icon:"💼", label:"Consultoría (agenda y citas)", plan:"basico", mods:["agenda","clientes","panel","facturacion"], exts:[] },
   medida:      { icon:"🛠️", label:"A medida", plan:"medida", mods:["inventario","panel"], exts:[] },
 };
-const PLAN_LABEL = { basico:"Básico", produccion:"Producción", completo:"Completo", medida:"A medida" };
+const PLAN_LABEL = { basico:"Básico", produccion:"Pro", completo:"Max", medida:"A medida" };
+const PLAN_DESC = { basico:"2 cambios/mejoras al mes + seguimiento", produccion:"4 cambios/mejoras al mes + requerimientos", completo:"Cambios y requerimientos, soporte 24/7", medida:"A definir según necesidad" };
 const PLAN_PRECIO = {
   basico:{i:"325.000", m:"32.500"},
   produccion:{i:"575.000", m:"50.000"},
@@ -399,13 +410,14 @@ function renderMods(){
   const cont = document.getElementById("mods"); cont.innerHTML="";
   MODULOS.forEach(m=>{
     const color = m.tl ? "var(--teal)" : "var(--honey-deep)";
-    const cas = m.cas.map(c=>`<label class="cas"><input type="checkbox" data-cas="${m.key}.${c.k}" onchange="update()"><span class="cx"><b>${c.n}</b><small>${c.d}</small></span></label>`).join("");
+    const cas = m.cas.map(c=>`<label class="cas"><input type="checkbox" data-cas="${m.key}.${c.k}" onchange="update()"><span class="cx"><b>${c.n}</b><small>${c.d}</small></span><input type="number" class="casp" min="0" step="1000" placeholder="$0" data-price="${m.key}.${c.k}" oninput="update()"></label>`).join("");
     const mk = MOCK[m.key] ? `<div class="mockup">${MOCK[m.key](color)}<div class="cap">Así se ve · ${m.nombre}</div></div>` : "";
     const node = el(`
       <div class="mod ${m.tl?'tl':''}" id="mod-${m.key}">
         <div class="mod-head">
           <span class="num">${m.id}</span>
           <span class="tt"><b>${m.nombre} ${m.star?'<span class="star">★</span>':''}</b><small>${m.sub}</small></span>
+          <span class="modsub" data-sub="${m.key}"></span>
           <span class="sw" data-sw="${m.key}"></span>
         </div>
         <div class="mod-body">
@@ -450,6 +462,8 @@ function toggleTheme(){ const r=document.documentElement; const cur=r.getAttribu
 function modsActivos(){ return MODULOS.filter(m=>document.getElementById("mod-"+m.key).classList.contains("on")); }
 function extsActivos(){ return EXTS.filter(x=>document.querySelector(`[data-ext="${x.key}"]`).checked); }
 function casActivas(m){ return m.cas.filter(c=>document.querySelector(`[data-cas="${m.key}.${c.k}"]`).checked); }
+function precioCas(m,c){ const pr=document.querySelector(`[data-price="${m.key}.${c.k}"]`); return Number((pr&&pr.value)||0); }
+function subtotalMod(m){ return casActivas(m).reduce((a,c)=>a+precioCas(m,c),0); }
 
 function update(){
   const g=id=>document.getElementById(id);
@@ -459,10 +473,26 @@ function update(){
   const mkOn=g("mkOn").checked, mkMes=g("mkMes").value.trim(), mkFb=g("mkFb").value.trim();
   const activos=modsActivos(), exts=extsActivos();
 
+  // Suma de casillas seleccionadas por módulo (precios editables)
+  let sumaCeldas=0;
+  MODULOS.forEach(m=>{
+    const mod=document.getElementById("mod-"+m.key); let sub=0;
+    m.cas.forEach(c=>{
+      const cb=document.querySelector(`[data-cas="${m.key}.${c.k}"]`);
+      const pr=document.querySelector(`[data-price="${m.key}.${c.k}"]`);
+      if(cb&&cb.checked&&pr) sub+=Number(pr.value||0);
+    });
+    const subEl=document.querySelector(`[data-sub="${m.key}"]`);
+    if(subEl) subEl.textContent=(mod.classList.contains("on")&&sub)?("$"+sub.toLocaleString('es-CL')):"";
+    if(mod.classList.contains("on")) sumaCeldas+=sub;
+  });
+
   g("rsNombre").textContent=nombre;
   g("rsRubro").textContent=rubroActual?(RUBROS[rubroActual].icon+" "+RUBROS[rubroActual].label):"Sin rubro (a medida)";
   g("rsCount").textContent=activos.length;
   g("rsPlan").textContent=PLAN_LABEL[plan];
+  g("rsSuma").textContent = sumaCeldas? "$"+sumaCeldas.toLocaleString('es-CL') : "—";
+  { const pd=g("planDesc"); if(pd) pd.textContent=PLAN_DESC[plan]||""; }
   g("rsInstal").textContent=instal?"$"+instal:"—";
   g("rsMes").textContent=mes?"$"+mes+"/mes":"—";
   g("rsMk").textContent=mkOn&&mkMes?"$"+mkMes+"/mes":"—";
@@ -480,11 +510,13 @@ function ordenPegado(activos){
 }
 function textoImplementar(o){
   let s=`RESUMEN PARA IMPLEMENTAR — ${o.nombre}\n`;
-  s+=`Rubro: ${rubroActual?RUBROS[rubroActual].label:"a medida"} · Plan: ${PLAN_LABEL[o.plan]}\n`;
+  s+=`Rubro: ${rubroActual?RUBROS[rubroActual].label:"a medida"} · Plan ${PLAN_LABEL[o.plan]} (${PLAN_DESC[o.plan]})\n`;
   s+=`Instalación: $${o.instal||"—"} · Mensual: $${o.mes||"—"}/mes\n`;
   s+=`Entregables: ${[o.landing?"Landing":null,o.catalogo?"Catálogo/tienda":null,"App por roles"].filter(Boolean).join(" · ")}\n`;
   s+=`\nMÓDULOS (${o.activos.length}):\n`;
-  o.activos.forEach(m=>{ s+=`• ${m.id} ${m.nombre}\n    ↳ ${casActivas(m).map(c=>c.n.replace(/^[^ ]+ /,'')).join(", ")||"(base)"}\n`; });
+  o.activos.forEach(m=>{ const st=subtotalMod(m); s+=`• ${m.id} ${m.nombre}${st?(' — $'+st.toLocaleString('es-CL')):''}\n    ↳ ${casActivas(m).map(c=>c.n.replace(/^[^ ]+ /,'')).join(", ")||"(base)"}\n`; });
+  const sumaTot=o.activos.reduce((a,m)=>a+subtotalMod(m),0);
+  if(sumaTot) s+=`Suma de celdas: $${sumaTot.toLocaleString('es-CL')}\n`;
   if(o.exts.length){ s+=`\nEXTENSIONES:\n`; o.exts.forEach(x=>s+=`• ${x.id} ${x.nombre}\n`); }
   if(o.mkOn){ s+=`\nMARKETING Y REDES:\n• Gestión mensual: $${o.mkMes} (3 posts/sem FB+IG, con seguimiento)\n• Creación página Facebook: $${o.mkFb}\n`; }
   s+=`\nORDEN DE CONSTRUCCIÓN (pegar prompts):\n1) 09-Prompt-Maestro (relleno) → 2) módulos: ${ordenPegado(o.activos)}\n`;
@@ -493,6 +525,8 @@ function textoImplementar(o){
   if(o.landing) s+=`\n[ ] Landing del cliente publicada`;
   if(o.catalogo) s+=`\n[ ] Catálogo con productos y precios cargados`;
   if(o.mkOn) s+=`\n[ ] Redes creadas y calendario de publicaciones armado`;
+  const notas=(document.getElementById('cNotas').value||'').trim();
+  if(notas) s+=`\n\nNOTAS / AJUSTES:\n${notas}`;
   return s;
 }
 function textoPrompt(o){
@@ -513,7 +547,8 @@ function resetAll(){
   rubroActual=null; document.querySelectorAll(".rubro").forEach(b=>b.classList.remove("active"));
   MODULOS.forEach(m=>{ const mod=document.getElementById("mod-"+m.key); mod.classList.remove("on","open"); mod.querySelectorAll('[data-cas]').forEach(c=>c.checked=false); });
   document.querySelectorAll('[data-ext]').forEach(e=>e.checked=false);
-  ["cNombre","cWa","cCiudad","cColores"].forEach(id=>document.getElementById(id).value="");
+  document.querySelectorAll('[data-price]').forEach(p=>p.value="");
+  ["cNombre","cWa","cCiudad","cColores","cNotas"].forEach(id=>{const el=document.getElementById(id); if(el) el.value="";});
   document.getElementById("mkOn").checked=false; update();
 }
 (function(){ try{const t=localStorage.getItem("panal-theme"); if(t) document.documentElement.setAttribute("data-theme",t);}catch(e){}
