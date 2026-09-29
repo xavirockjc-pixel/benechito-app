@@ -623,7 +623,7 @@ function saveState(){ try{
   document.querySelectorAll('.customwrap').forEach(w=>{ const key=w.getAttribute('data-cw'); w.querySelectorAll('.cas').forEach(row=>{ const cb=row.querySelector('[data-cas]'), nm=row.querySelector('.cnm'), pr=row.querySelector('[data-price]'); st.custom.push({cw:key, dc:cb.getAttribute('data-cas'), name:(nm?nm.value:''), val:(pr?pr.value:''), checked:cb.checked}); }); });
   localStorage.setItem(LS_KEY, JSON.stringify(st));
 }catch(e){} }
-function loadState(){ let st; try{ st=JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){} if(!st) return;
+function loadState(){ let st; try{ st=JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){} if(!st) return false;
   try{
     if(st.rubro){ rubroActual=st.rubro; document.querySelectorAll(".rubro").forEach(b=>b.classList.toggle("active",b.dataset.r===st.rubro)); }
     MODULOS.forEach(m=>{ const mod=document.getElementById("mod-"+m.key); if(mod&&st.modOn&&st.modOn[m.key]) mod.classList.add("on"); });
@@ -633,10 +633,24 @@ function loadState(){ let st; try{ st=JSON.parse(localStorage.getItem(LS_KEY)); 
     Object.entries(st.ext||{}).forEach(([k,v])=>{ const cb=document.querySelector(`[data-ext="${k}"]`); if(cb) cb.checked=v; });
     Object.entries(st.extprice||{}).forEach(([k,v])=>{ const p=document.querySelector(`[data-extprice="${k}"]`); if(p) p.value=v; });
     Object.entries(st.fields||{}).forEach(([id,v])=>{ const e=document.getElementById(id); if(!e) return; if(e.type==="checkbox") e.checked=v; else e.value=v; });
-  }catch(e){}
+    return true;
+  }catch(e){ return false; }
+}
+function applyPrefill(){
+  const P={ produccion:33000, clientes:22000, panel:41000, facturacion:14000, agenda:20000, mejoras:16000, tienda:92000 };
+  Object.keys(P).forEach(key=>{
+    const mod=document.getElementById("mod-"+key); if(!mod) return;
+    mod.classList.add("on");
+    mod.querySelectorAll('[data-cas]').forEach(c=>c.checked=true);
+    const fp=mod.querySelector('[data-price]'); if(fp) fp.value=P[key];
+  });
+  const ext=document.querySelector('[data-ext="capacita"]'); if(ext) ext.checked=true;
+  const pl=document.getElementById("cPlan"); if(pl) pl.value="completo";
+  const cm=document.getElementById("cMes"); if(cm) cm.value="60.000";
+  const ci=document.getElementById("cInstal"); if(ci) ci.value="238.000";
 }
 (function(){ try{const t=localStorage.getItem("panal-theme"); if(t) document.documentElement.setAttribute("data-theme",t);}catch(e){}
-  renderRubros(); renderMods(); renderExts(); loadState(); update(); })();
+  renderRubros(); renderMods(); renderExts(); if(!loadState()) applyPrefill(); update(); })();
 </script>
 
 </body></html>
