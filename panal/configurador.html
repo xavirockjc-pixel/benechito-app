@@ -623,6 +623,18 @@ function resetAll(){
   update();
 }
 const LS_KEY="panal-config-v1";
+function buildResumen(){
+  const gg=id=>document.getElementById(id);
+  const on=MODULOS.filter(m=>{const mod=document.getElementById("mod-"+m.key); return mod&&mod.classList.contains("on");});
+  const mods=on.map(m=>({key:m.key, nombre:m.nombre, sub:subtotalMod(m), items:casDom(m)}));
+  const exts=EXTS.filter(x=>{const cb=document.querySelector(`[data-ext="${x.key}"]`); return cb&&cb.checked;}).map(x=>({key:x.key, nombre:x.nombre, p:num((document.querySelector(`[data-extprice="${x.key}"]`)||{}).value)}));
+  const plan=gg("cPlan").value;
+  const montaje=mods.reduce((a,m)=>a+m.sub,0)+exts.reduce((a,x)=>a+x.p,0);
+  const serv=[];
+  if(gg("oLanding")&&gg("oLanding").checked) serv.push({n:"Landing / página web", p:num(gg("sLanding").value)});
+  if(gg("mkOn")&&gg("mkOn").checked){ if(num(gg("mkMes").value)) serv.push({n:"Marketing y redes (mensual)", p:num(gg("mkMes").value)}); if(num(gg("mkFb").value)) serv.push({n:"Creación página Facebook", p:num(gg("mkFb").value)}); }
+  return { negocio:gg("cNombre").value.trim(), ciudad:gg("cCiudad").value.trim(), wa:gg("cWa").value.trim(), colores:gg("cColores").value.trim(), fecha:new Date().toLocaleDateString('es-CL'), montaje, plan, planLabel:PLAN_LABEL[plan], planDesc:PLAN_DESC[plan], mensual:(PLAN_MES[plan]||0), mods, exts, serv, svcEnPlan:(gg("svcEnPlan")&&gg("svcEnPlan").checked), notas:(gg("cNotas")?gg("cNotas").value.trim():"") };
+}
 function saveState(){ try{
   const st={rubro:rubroActual, fields:{}, cas:{}, price:{}, ext:{}, extprice:{}, custom:[], modOn:{}};
   ["cNombre","cWa","cCiudad","cColores","cPlan","cInstal","cMes","cNotas","mkMes","mkFb","sLanding"].forEach(id=>{const e=document.getElementById(id); if(e) st.fields[id]=e.value;});
@@ -633,6 +645,7 @@ function saveState(){ try{
   document.querySelectorAll('[data-ext]').forEach(cb=>{ st.ext[cb.getAttribute('data-ext')]=cb.checked; });
   document.querySelectorAll('[data-extprice]').forEach(p=>{ if(p.value) st.extprice[p.getAttribute('data-extprice')]=p.value; });
   document.querySelectorAll('.customwrap').forEach(w=>{ const key=w.getAttribute('data-cw'); w.querySelectorAll('.cas').forEach(row=>{ const cb=row.querySelector('[data-cas]'), nm=row.querySelector('.cnm'), pr=row.querySelector('[data-price]'); st.custom.push({cw:key, dc:cb.getAttribute('data-cas'), name:(nm?nm.value:''), val:(pr?pr.value:''), checked:cb.checked}); }); });
+  st.resumen=buildResumen();
   localStorage.setItem(LS_KEY, JSON.stringify(st));
 }catch(e){} }
 function loadState(){ let st; try{ st=JSON.parse(localStorage.getItem(LS_KEY)); }catch(e){} if(!st) return false;
