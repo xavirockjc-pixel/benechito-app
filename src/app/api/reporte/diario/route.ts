@@ -165,7 +165,8 @@ export async function GET(req: NextRequest) {
       const f = r.fechaObjetivo ? new Date(r.fechaObjetivo) : null;
       const venc = f && f < inicio;
       const fs = f ? f.toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : "";
-      return `   • ${r.texto}${venc ? ` (⚠️ venció ${fs})` : ""}`;
+      const hs = f && (f.getHours() || f.getMinutes()) ? f.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }) : "";
+      return `   • ${r.texto}${hs ? ` — ${hs}` : ""}${venc ? ` (⚠️ venció ${fs})` : ""}`;
     }).join("\n"));
   }
   if (porConfirmar > 0) {

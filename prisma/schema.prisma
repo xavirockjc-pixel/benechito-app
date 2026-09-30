@@ -1297,6 +1297,7 @@ model Nota {
   itemNombre    String? // nombre libre del ítem detectado (si no calzó con el catálogo)
   cantidad      Int? // cantidad detectada para la acción de stock
   fechaObjetivo DateTime? // para tareas/recordatorios programados (cae a Pendientes)
+  avisadoEn     DateTime? // cuándo se envió la alarma (Telegram/WhatsApp) para no repetir
   refMovimientoId String? // MovimientoStock creado al aplicar la acción
   createdAt DateTime  @default(now())
   hechaEn   DateTime?

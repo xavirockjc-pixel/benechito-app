@@ -119,15 +119,54 @@ export function detectaCantidad(t: string): number | null {
 }
 
 /** Fecha relativa simple → Date (para tareas programadas). */
+/**
+ * Detecta una hora en el texto: "a las 15", "a las 15:30", "3 de la tarde",
+ * "8 de la mañana", "20 hrs", "mediodía". Devuelve {h, m} en 24h, o null.
+ */
+export function detectaHoraNota(t: string): { h: number; m: number } | null {
+  if (/\bmediodia\b/.test(t)) return { h: 12, m: 0 };
+  if (/\bmedianoche\b/.test(t)) return { h: 0, m: 0 };
+  // "a las 15", "a las 3:30", "a las 3 y media", o "20 hrs/horas"
+  const m = t.match(/\ba\s*las?\s*(\d{1,2})(?::(\d{2}))?/) || t.match(/\b(\d{1,2})(?::(\d{2}))?\s*(?:hrs?|horas?)\b/);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  let min = m[2] ? parseInt(m[2], 10) : 0;
+  if (/\by\s*media\b/.test(t) && !m[2]) min = 30;
+  if (/\by\s*cuarto\b/.test(t) && !m[2]) min = 15;
+  // Franja del día para pasar a 24h.
+  if (/(de la tarde|en la tarde|pm)/.test(t) && h >= 1 && h <= 11) h += 12;
+  else if (/(de la noche|en la noche)/.test(t) && h >= 1 && h <= 11) h += 12;
+  else if (/(de la manana|en la manana|am)/.test(t) && h === 12) h = 0;
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return { h, m: min };
+}
+
 export function detectaFechaNota(t: string): Date | null {
+  const ahora = new Date();
   const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
-  if (/\bhoy\b/.test(t)) return hoy;
-  if (/\bmanana\b/.test(t)) { const d = new Date(hoy); d.setDate(d.getDate() + 1); return d; }
-  if (/(pasado manana)/.test(t)) { const d = new Date(hoy); d.setDate(d.getDate() + 2); return d; }
-  if (/(proxima semana|otra semana)/.test(t)) { const d = new Date(hoy); d.setDate(d.getDate() + 7); return d; }
-  const dias = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
-  for (let i = 0; i < 7; i++) if (t.includes(dias[i])) { const d = new Date(hoy); const diff = (i - d.getDay() + 7) % 7 || 7; d.setDate(d.getDate() + diff); return d; }
-  return null;
+  const hora = detectaHoraNota(t);
+
+  // 1) Día base (si se menciona uno). diaExplicito controla si empujamos a mañana.
+  let base: Date | null = null;
+  let diaExplicito = true;
+  if (/\bhoy\b/.test(t)) base = new Date(hoy);
+  else if (/(pasado manana)/.test(t)) { base = new Date(hoy); base.setDate(base.getDate() + 2); }
+  else if (/\bmanana\b/.test(t)) { base = new Date(hoy); base.setDate(base.getDate() + 1); }
+  else if (/(proxima semana|otra semana)/.test(t)) { base = new Date(hoy); base.setDate(base.getDate() + 7); }
+  else {
+    const dias = ["domingo", "lunes", "martes", "miercoles", "jueves", "viernes", "sabado"];
+    for (let i = 0; i < 7; i++) if (t.includes(dias[i])) { base = new Date(hoy); const diff = (i - base.getDay() + 7) % 7 || 7; base.setDate(base.getDate() + diff); break; }
+  }
+  // 2) Solo hora, sin día → hoy (y si ya pasó, mañana).
+  if (!base && hora) { base = new Date(hoy); diaExplicito = false; }
+  if (!base) return null;
+
+  // 3) Aplica la hora (si hay).
+  if (hora) {
+    base.setHours(hora.h, hora.m, 0, 0);
+    if (!diaExplicito && base < ahora) base.setDate(base.getDate() + 1); // "a las 8" ya pasada → mañana
+  }
+  return base;
 }
 
 /** Calza el ítem dictado con un producto del catálogo (por tokens en común). */
