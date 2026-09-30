@@ -33,10 +33,10 @@ function construirModulos(L: Etiquetas): Modulo[] {
       titulo: "Inicio",
       activo: true,
       items: [
+        { href: "/admin/primeros-pasos", label: "Primeros pasos", icon: "🚀" },
         { href: "/admin", label: "Panel", icon: "📊" },
         { href: "/admin/notas", label: "Notas y acciones", icon: "📝" },
         { href: "/admin/agenda", label: "Agenda", icon: "📅" },
-        { href: "/admin/mejoras", label: "Mejoras y proyecciones", icon: "🚀" },
       ],
     },
     {
@@ -48,7 +48,6 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/ventas", label: "Ventas", icon: "💵" },
         { href: "/admin/pedidos", label: "Pedidos", icon: "🧾" },
         { href: "/admin/repartos", label: "Vehículo y reparto", icon: "🚚" },
-        { href: "/admin/repartidores", label: "Repartidores (mapa)", icon: "📍" },
       ],
     },
     {
@@ -76,9 +75,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       activo: true,
       items: [
         { href: "/admin/finanzas", label: "Finanzas", icon: "💰" },
-        { href: "/admin/estado-financiero", label: "Estado financiero", icon: "📋" },
         { href: "/admin/cobranza", label: "Cobranza", icon: "💸" },
-        { href: "/admin/balance-ruta", label: "Balance de reparto", icon: "🚚" },
         { href: "/admin/sueldos", label: "Pagos al equipo", icon: "💵" },
         { href: "/admin/cuadratura", label: "Cuadratura diaria", icon: "⚖️" },
       ],
@@ -89,7 +86,6 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/equipo", label: "Equipo", icon: "👥" },
         { href: "/admin/usuarios", label: "Usuarios", icon: "🔑" },
-        { href: "/admin/correcciones", label: "Correcciones (deshacer)", icon: "🧹" },
         { href: "/admin/reiniciar", label: "Reiniciar números", icon: "🔄" },
         { href: "/admin/configuracion", label: "Configuración", icon: "⚙️" },
       ],
@@ -100,6 +96,11 @@ function construirModulos(L: Etiquetas): Modulo[] {
       activo: true,
       avanzado: true,
       items: [
+        { href: "/admin/mejoras", label: "Mejoras y proyecciones", icon: "🚀" },
+        { href: "/admin/estado-financiero", label: "Estado financiero", icon: "📋" },
+        { href: "/admin/balance-ruta", label: "Balance de reparto", icon: "🚚" },
+        { href: "/admin/repartidores", label: "Repartidores (mapa)", icon: "📍" },
+        { href: "/admin/correcciones", label: "Correcciones (deshacer)", icon: "🧹" },
         { href: "/admin/panorama", label: "Panorama general", icon: "🌎" },
         { href: "/admin/socio", label: "Socio administrativo", icon: "🐝" },
         { href: "/admin/recordatorios", label: "Recordatorios (clientes)", icon: "🔔" },
