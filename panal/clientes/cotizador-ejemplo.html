@@ -1,0 +1,699 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:dark}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#141210;color:#f5ecdd}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
+<title>Cotizador de Servicios</title>
+<style>
+  /* ════════════════════════════════════════════════════════════════════════
+     COTIZADOR DE SERVICIOS — app de marca blanca para prestadores de servicios.
+     El proveedor arma su catálogo (con fotos, pasos y video), marca qué incluye,
+     guarda sus trabajos y envía al cliente un REPORTE de lo que se hará para que
+     acepte o agende. "⬇️ Descargar cotizador listo" baja un .html autónomo.
+     Todo config-driven (objeto NEGOCIO) y editable desde la misma app.
+     ════════════════════════════════════════════════════════════════════════ */
+  :root{
+    color-scheme: dark;
+    --bg:#141210; --bg2:#0e0b08; --card:#211b14; --ink:#f5ecdd; --muted:#a9997f; --line:#352b1f;
+    --accent:#f2941f; --accentDark:#d1741a; --bright:#ffc24d; --good:#5fd0a6; --red:#f0755c; --blue:#6ab0f2;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --shadow:0 18px 40px -26px rgba(0,0,0,.7);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 18px}
+  h1,h2,h3{margin:0}
+  .mono{font-family:var(--mono)} .tab{font-variant-numeric:tabular-nums}
+  a{color:var(--blue)}
+
+  .banner{background:color-mix(in srgb,var(--accent) 16%,#000);color:var(--bright);text-align:center;font-size:.8rem;padding:8px 14px;border-bottom:1px solid var(--line)}
+  .banner b{color:var(--ink)}
+  header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:linear-gradient(180deg,var(--accent),var(--accentDark));color:#160f07;box-shadow:0 6px 20px -12px rgba(0,0,0,.7)}
+  .bar .in{max-width:1080px;margin:0 auto;padding:10px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .bar .brand{display:flex;align-items:center;gap:9px;font-weight:900;font-size:1.12rem;min-width:0}
+  .bar .brand img{height:36px;width:36px;object-fit:cover;border-radius:9px;flex:none;background:#fff2}
+  .bar .brand .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.1}
+  .bar .rubro{font-size:.72rem;font-weight:700;opacity:.85}
+  .btns{display:flex;gap:6px;flex-wrap:wrap}
+  .tgl{border:1.5px solid rgba(0,0,0,.25);background:rgba(0,0,0,.12);color:#160f07;border-radius:999px;padding:7px 11px;font-weight:800;font-size:.8rem;cursor:pointer}
+
+  /* navegación de vistas */
+  nav.views{position:sticky;top:calc(56px + env(safe-area-inset-top,0px));z-index:15;background:var(--bg2);border-bottom:1px solid var(--line)}
+  nav.views .in{max-width:1080px;margin:0 auto;display:flex;gap:4px;padding:8px 14px;overflow:auto}
+  nav.views button{flex:0 0 auto;border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:999px;padding:8px 15px;font-weight:800;font-size:.84rem;cursor:pointer}
+  nav.views button.on{background:linear-gradient(180deg,var(--accent),var(--accentDark));color:#160f07;border-color:transparent}
+
+  .layout{display:grid;grid-template-columns:1fr 372px;gap:18px;align-items:start;padding-block:20px}
+  @media (max-width:900px){ .layout{grid-template-columns:1fr} }
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:var(--shadow)}
+  .panel h2{font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px;font-weight:800}
+  label.f{display:flex;flex-direction:column;gap:4px;font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+  input,select,textarea{font:inherit;font-size:.92rem;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);width:100%}
+  textarea{min-height:64px;resize:vertical}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}@media(max-width:520px){.grid2{grid-template-columns:1fr}}
+  .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}@media(max-width:520px){.grid3{grid-template-columns:1fr}}
+  .colorrow{display:flex;gap:8px;align-items:center}.colorrow input[type=color]{width:44px;height:38px;padding:2px;border-radius:8px;flex:none}
+
+  /* barra de selección */
+  .selbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .selbar .count{font-size:.82rem;color:var(--muted)} .selbar .count b{color:var(--bright)}
+  .selbar .acts{display:flex;gap:6px}
+  .mini{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 13px;font-weight:800;font-size:.78rem;cursor:pointer}
+  .mini.danger{color:var(--red);border-color:color-mix(in srgb,var(--red) 40%,var(--line))}
+
+  /* seleccionador de servicios */
+  .svc{border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--bg);overflow:hidden;transition:border-color .12s,opacity .12s}
+  .svc .top{display:flex;align-items:center;gap:12px;padding:12px 14px;cursor:pointer}
+  .svc .chk{flex:none;width:26px;height:26px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;font-weight:900;color:transparent;background:var(--card)}
+  .svc .thumb{flex:none;width:44px;height:44px;border-radius:9px;object-fit:cover;border:1px solid var(--line);display:none}
+  .svc.hasimg .thumb{display:block}
+  .svc .info{flex:1;min-width:0}
+  .svc .info b{font-size:.98rem}
+  .svc .info small{display:block;color:var(--muted);font-size:.8rem}
+  .svc .pr{font-weight:800;color:var(--bright);white-space:nowrap;text-align:right}
+  .svc .pr small{display:block;color:var(--muted);font-weight:400;font-size:.7rem}
+  .svc .qty{flex:none;display:none;align-items:center}
+  .svc .more{flex:none;border:0;background:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:4px}
+  .svc.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+  .svc.on .chk{background:linear-gradient(180deg,var(--accent),var(--accentDark));border-color:var(--accent);color:#160f07}
+  .svc.on .qty{display:flex}
+  .svc.off{opacity:.62}
+  .svc .detail{display:none;padding:0 14px 14px 52px;font-size:.86rem;color:var(--muted)}
+  .svc.open .detail{display:block}
+  .svc .detail img{border-radius:10px;border:1px solid var(--line);margin-bottom:8px;max-height:200px}
+  .svc .detail ol{margin:6px 0;padding-left:20px} .svc .detail li{margin:2px 0}
+  .svc .edit{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;width:34px;height:34px;cursor:pointer;display:none}
+  .editing .svc .top{cursor:default}
+  .editing .svc .edit{display:inline-block} .editing .svc .chk,.editing .svc .qty,.editing .svc .more{visibility:hidden;width:0;padding:0;margin:0}
+  .qty button{width:26px;height:28px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;font-weight:800}
+  .qty button:first-child{border-radius:8px 0 0 8px}.qty button:last-child{border-radius:0 8px 8px 0}
+  .qty input{width:40px;text-align:center;border-radius:0;border-left:0;border-right:0;padding:6px 2px}
+
+  /* cotización (resumen) */
+  .quote{position:sticky;top:calc(112px + env(safe-area-inset-top,0px))}
+  .qhead{font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:800;margin-bottom:10px}
+  .line{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .line .nm{flex:1;min-width:0;font-size:.88rem}
+  .line .nm small{display:block;color:var(--muted);font-size:.72rem}
+  .line .lt{font-weight:800;white-space:nowrap;min-width:64px;text-align:right}
+  .empty{color:var(--muted);font-size:.86rem;text-align:center;padding:18px 6px}
+  .totrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:.9rem}
+  .totrow.grand{border-top:1px solid var(--line);margin-top:6px;padding-top:12px;font-size:1.05rem}
+  .totrow .v{font-weight:800;color:var(--bright)} .totrow.grand .v{font-size:1.5rem}
+  .cta{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+  .btn{border:0;border-radius:12px;font-weight:800;padding:12px;font-size:.92rem;cursor:pointer;text-align:center;text-decoration:none;display:block}
+  .btn-wa{background:#25D366;color:#fff} .btn-a{background:linear-gradient(180deg,var(--accent),var(--accentDark));color:#160f07}
+  .btn-g{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+  .btn-row{display:flex;gap:8px}.btn-row .btn{flex:1}
+  .msg{font-size:.78rem;color:var(--good);text-align:center;min-height:1em}
+  .hint{font-size:.78rem;color:var(--muted);margin-top:8px}
+  .photo-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}
+  .fprev{width:58px;height:58px;border-radius:12px;border:2px dashed var(--line);display:grid;place-items:center;font-size:1.4rem;background:var(--bg);overflow:hidden}.fprev img{width:100%;height:100%;object-fit:cover}
+  input[type=file]{display:none}
+  :focus-visible{outline:2px solid var(--bright);outline-offset:2px}
+  .pill{display:inline-block;font-size:.7rem;font-weight:800;padding:2px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .pill.Cotizado{color:var(--bright);border-color:color-mix(in srgb,var(--bright) 40%,var(--line))}
+  .pill.Agendado{color:var(--blue);border-color:color-mix(in srgb,var(--blue) 40%,var(--line))}
+  .pill.Aceptado{color:var(--good);border-color:color-mix(in srgb,var(--good) 40%,var(--line))}
+  .pill.Hecho{color:#c9b89a}
+
+  /* fotos del trabajo / galería */
+  .gal{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+  .gal .ph{position:relative;width:88px;height:88px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+  .gal .ph img{width:100%;height:100%;object-fit:cover}
+  .gal .ph button{position:absolute;top:2px;right:2px;border:0;background:rgba(0,0,0,.6);color:#fff;border-radius:6px;width:22px;height:22px;cursor:pointer}
+  .gal .addph{width:88px;height:88px;border:2px dashed var(--line);border-radius:10px;display:grid;place-items:center;font-size:1.6rem;color:var(--muted);cursor:pointer;background:var(--bg)}
+
+  /* trabajos guardados */
+  .job{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--bg);cursor:pointer}
+  .job .jt{flex:1;min-width:0}
+  .job .jt b{font-size:.96rem}
+  .job .jt small{display:block;color:var(--muted);font-size:.78rem}
+  .job .jv{font-weight:800;color:var(--bright);white-space:nowrap}
+
+  /* reporte para el cliente */
+  .report-sheet{background:#fff;color:#1c1712;border-radius:16px;padding:22px;max-width:720px;margin:0 auto;box-shadow:var(--shadow)}
+  .report-sheet .rhead{display:flex;align-items:center;gap:12px;border-bottom:2px solid #eee;padding-bottom:12px;margin-bottom:14px}
+  .report-sheet .rhead img{height:52px;width:52px;object-fit:cover;border-radius:10px}
+  .report-sheet .rhead h2{font-size:1.25rem;color:#1c1712}
+  .report-sheet .rhead .rr{font-size:.8rem;color:#8a7a5f;font-weight:700}
+  .report-sheet .rmeta{display:flex;flex-wrap:wrap;gap:4px 18px;font-size:.84rem;color:#5b5145;margin-bottom:14px}
+  .report-sheet .rmeta b{color:#1c1712}
+  .report-sheet .ritem{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid #eee}
+  .report-sheet .ritem img{width:92px;height:92px;object-fit:cover;border-radius:10px;flex:none}
+  .report-sheet .ritem .rn{flex:1}
+  .report-sheet .ritem .rn b{font-size:1rem;color:#1c1712}
+  .report-sheet .ritem .rn ol{margin:6px 0 0;padding-left:18px;font-size:.84rem;color:#5b5145}
+  .report-sheet .ritem .rn a{font-size:.82rem}
+  .report-sheet .ritem .rp{font-weight:800;color:#b5730f;white-space:nowrap}
+  .report-sheet .rtot{margin-top:12px;font-size:.92rem}
+  .report-sheet .rtot .tr{display:flex;justify-content:space-between;padding:3px 0}
+  .report-sheet .rtot .tr.g{border-top:2px solid #1c1712;margin-top:6px;padding-top:10px;font-size:1.2rem;font-weight:800}
+  .report-sheet .rnota{margin-top:14px;font-size:.82rem;color:#5b5145;background:#faf6ee;border:1px solid #efe6d5;border-radius:10px;padding:10px 12px}
+  .report-sheet .racc{margin-top:12px;text-align:center;font-weight:800;color:#1c7a45}
+
+  @media print{
+    body{background:#fff}
+    .banner,header.bar,nav.views,#cotizarView,#trabajosView,.noprint{display:none!important}
+    #reporteView{display:block!important}
+    .report-sheet{box-shadow:none;max-width:none;border-radius:0;padding:0}
+    .report-sheet .ritem img{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+
+<div class="banner" id="banner">🐝 <b>Plantilla Panal</b> · toca <b>⚙️ Negocio</b>, elige tu <b>🗂️ Rubro</b>, arma tus <b>🧰 Servicios</b> (con foto, pasos y video) y <b>⬇️ Descarga</b> el cotizador del cliente.</div>
+
+<header class="bar"><div class="in">
+  <span class="brand"><img id="bLogo" alt="" hidden><span><span class="nm" id="bMarca"></span><span class="rubro" id="bRubro" style="display:block"></span></span></span>
+  <div class="btns">
+    <button class="tgl" id="tRubro">🗂️ Rubro</button>
+    <button class="tgl" id="tNeg">⚙️ Negocio</button>
+    <button class="tgl" id="tSvc">🧰 Servicios</button>
+  </div>
+</div></header>
+
+<nav class="views"><div class="in">
+  <button data-v="cotizar" class="on">🧾 Cotizar</button>
+  <button data-v="reporte">📄 Reporte</button>
+  <button data-v="trabajos">📁 Mis trabajos</button>
+</div></nav>
+
+<!-- ======================= VISTA: COTIZAR ======================= -->
+<div id="cotizarView">
+<div class="wrap layout">
+  <div>
+    <!-- selector de rubro -->
+    <div class="panel" id="rubroPanel" hidden>
+      <h2>🗂️ Elige tu rubro (carga servicios de ejemplo)</h2>
+      <p class="hint" style="margin:0 0 10px">Al elegir un rubro se cargan servicios y precios típicos que puedes editar. Cambia, borra o agrega los tuyos en 🧰 Servicios.</p>
+      <div id="rubroGrid" class="grid3"></div>
+    </div>
+
+    <!-- editor negocio -->
+    <div class="panel" id="negPanel" hidden>
+      <h2>⚙️ Datos del negocio</h2>
+      <div class="grid2">
+        <label class="f">Nombre / marca<input id="nMarca"></label>
+        <label class="f">Rubro (ej: Servicios eléctricos)<input id="nRubro"></label>
+        <label class="f">WhatsApp (con código país)<input id="nWa" placeholder="56912345678"></label>
+        <label class="f">Moneda<input id="nMon" value="$"></label>
+        <label class="f">IVA % (0 = sin IVA)<input id="nIva" type="number" min="0" step="1"></label>
+        <label class="f">Validez (días)<input id="nVal" type="number" min="1" step="1"></label>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <label class="f">Color principal<div class="colorrow"><input type="color" id="nAccent"><input id="nAccentHex"></div></label>
+        <label class="f">Nota al pie (condiciones)<input id="nNota" placeholder="Ej: 50% para comenzar, saldo al entregar."></label>
+      </div>
+      <div class="photo-row">
+        <div class="fprev" id="logoPrev">🧰</div>
+        <button type="button" class="mini" id="logoBtn">🖼️ Subir logo</button>
+        <button type="button" class="mini" id="logoDel" style="display:none">✕ Quitar</button>
+        <input id="logoFile" type="file" accept="image/*">
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
+        <button class="btn-a btn" style="flex:1;min-width:140px" id="negGuardar">Guardar</button>
+        <button class="btn-g btn" style="flex:1;min-width:140px" id="negDescargar">⬇️ Descargar cotizador listo</button>
+        <button class="mini" id="negExport">💾 Config</button>
+        <button class="mini" id="negImport">📥 Importar</button>
+        <input id="cfgFile" type="file" accept="application/json">
+      </div>
+      <p class="hint">“Descargar cotizador listo” baja un archivo <b>.html</b> con tu marca, servicios y fotos incrustados: es el cotizador del cliente, se abre con doble clic o se sube a un hosting.</p>
+    </div>
+
+    <!-- editor de servicio -->
+    <div class="panel" id="svcEdit" hidden>
+      <h2 id="seTitle">➕ Agregar servicio</h2>
+      <div class="grid2">
+        <label class="f">Servicio<input id="sNombre" placeholder="Ej: Instalación de motor"></label>
+        <label class="f">Unidad<input id="sUnidad" placeholder="por trabajo / por hora / por m²"></label>
+        <label class="f">Precio<input id="sPrecio" type="number" min="0" step="100" placeholder="15000"></label>
+        <label class="f">Descripción corta<input id="sDesc" placeholder="Detalle (opcional)"></label>
+      </div>
+      <label class="f" style="margin-top:10px">Pasos de cómo se hace (uno por línea, opcional)<textarea id="sPasos" placeholder="Desmontaje&#10;Limpieza de piezas&#10;Cambio de repuesto&#10;Prueba de funcionamiento"></textarea></label>
+      <label class="f" style="margin-top:10px">Link de video (YouTube / Drive / Instagram, opcional)<input id="sVideo" placeholder="https://..."></label>
+      <div class="photo-row">
+        <div class="fprev" id="sFotoPrev">📷</div>
+        <button type="button" class="mini" id="sFotoBtn">📷 Foto del servicio</button>
+        <button type="button" class="mini" id="sFotoDel" style="display:none">✕ Quitar</button>
+        <input id="sFotoFile" type="file" accept="image/*" capture="environment">
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn-a btn" style="flex:1" id="sGuardar">Agregar</button>
+        <button class="btn-g btn" style="flex:1" id="sCancelar">Limpiar</button>
+      </div>
+    </div>
+
+    <!-- seleccionador de servicios -->
+    <div class="panel" id="svcPanel">
+      <div class="selbar">
+        <div class="count" id="selCount">Marca los servicios que incluyes</div>
+        <div class="acts">
+          <button class="mini" id="selAll">Todos</button>
+          <button class="mini" id="selNone">Ninguno</button>
+        </div>
+      </div>
+      <div id="svcList"></div>
+    </div>
+  </div>
+
+  <!-- resumen de cotización -->
+  <div>
+    <div class="panel quote">
+      <div class="qhead">🧾 Cotización</div>
+      <div class="grid2" style="margin-bottom:8px">
+        <label class="f">Cliente<input id="cCliente" placeholder="Nombre" oninput="saveQ()"></label>
+        <label class="f">Teléfono<input id="cFono" placeholder="Opcional" oninput="saveQ()"></label>
+      </div>
+      <div class="grid2" style="margin-bottom:8px">
+        <label class="f">Dirección<input id="cDir" placeholder="Opcional" oninput="saveQ()"></label>
+        <label class="f">Proyecto / trabajo<input id="cProyecto" placeholder="Opcional" oninput="saveQ()"></label>
+      </div>
+      <div id="lines"></div>
+      <label class="f" style="margin:12px 0 0">Descuento (opcional)<input id="cDesc" type="number" min="0" step="500" placeholder="0" oninput="calc()"></label>
+      <div style="margin-top:12px">
+        <div class="totrow"><span>Subtotal</span><span class="v tab" id="tSub">$0</span></div>
+        <div class="totrow" id="ivaRow"><span id="ivaLbl">IVA</span><span class="v tab" id="tIva">$0</span></div>
+        <div class="totrow" id="descRow" hidden><span>Descuento</span><span class="v tab" id="tDescV" style="color:var(--red)">-$0</span></div>
+        <div class="totrow grand"><span>TOTAL</span><span class="v tab" id="tTot">$0</span></div>
+      </div>
+      <div class="cta">
+        <a class="btn btn-wa" id="btnWa" target="_blank" rel="noopener">💬 Enviar cotización por WhatsApp</a>
+        <button class="btn btn-a" id="btnRep">📄 Ver reporte para el cliente</button>
+        <div class="btn-row">
+          <button class="btn btn-g" id="btnCita">📅 Agendar cita</button>
+          <button class="btn btn-g" id="btnGuardar">💾 Guardar trabajo</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-g" id="btnCopy">📋 Copiar</button>
+          <button class="btn btn-g" id="btnNuevo">✨ Nuevo</button>
+        </div>
+      </div>
+      <p class="msg" id="msg"></p>
+      <p class="hint" id="validezTxt"></p>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ======================= VISTA: REPORTE ======================= -->
+<div id="reporteView" hidden>
+  <div class="wrap" style="padding-block:20px">
+    <div class="btn-row noprint" style="max-width:720px;margin:0 auto 14px">
+      <a class="btn btn-wa" id="rWa" target="_blank" rel="noopener">💬 Enviar al cliente</a>
+      <button class="btn btn-a" id="rPrint">🖨️ Guardar PDF / Imprimir</button>
+      <button class="btn btn-g" id="rDl">⬇️ Descargar</button>
+    </div>
+    <div class="report-sheet" id="reportSheet"></div>
+    <p class="hint noprint" style="text-align:center;max-width:720px;margin:12px auto">Envíaselo al cliente para que apruebe. En el celular, “Guardar PDF” te deja compartirlo por WhatsApp como archivo.</p>
+  </div>
+</div>
+
+<!-- ======================= VISTA: TRABAJOS ======================= -->
+<div id="trabajosView" hidden>
+  <div class="wrap" style="padding-block:20px">
+    <div class="panel">
+      <div class="selbar">
+        <h2 style="margin:0">📁 Mis trabajos guardados</h2>
+        <div class="acts"><button class="mini danger" id="jobsClear">Vaciar</button></div>
+      </div>
+      <div id="jobsList"></div>
+    </div>
+    <!-- detalle de trabajo -->
+    <div class="panel" id="jobDetail" hidden>
+      <div class="selbar">
+        <h2 style="margin:0" id="jdTitle">Trabajo</h2>
+        <div class="acts"><button class="mini" id="jdClose">Cerrar</button></div>
+      </div>
+      <div class="grid2">
+        <label class="f">Estado<select id="jdEstado"><option>Cotizado</option><option>Agendado</option><option>Aceptado</option><option>Hecho</option></select></label>
+        <label class="f">Fecha<input id="jdFecha" readonly></label>
+      </div>
+      <label class="f" style="margin-top:10px">Notas del trabajo<textarea id="jdNotas" placeholder="Observaciones, materiales, acuerdos..."></textarea></label>
+      <div>
+        <div class="qhead" style="margin-top:12px">📷 Fotos del trabajo (antes / durante / después)</div>
+        <div class="gal" id="jdGal"></div>
+        <input id="jdPhotoFile" type="file" accept="image/*" capture="environment" multiple>
+      </div>
+      <div id="jdItems" style="margin-top:12px"></div>
+      <div class="btn-row" style="margin-top:12px">
+        <button class="btn btn-a" id="jdCargar">↩️ Cargar en cotizador</button>
+        <button class="btn btn-g" id="jdGuardar">💾 Guardar cambios</button>
+      </div>
+      <button class="btn btn-g" id="jdDel" style="margin-top:8px;color:var(--red)">🗑️ Eliminar trabajo</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/*NEGOCIO_START*/
+const NEGOCIO = {
+  marca:"ClimaSur",
+  rubro:"Instalación y mantención de aire acondicionado",
+  logo:"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><rect width='120' height='120' rx='24' fill='%230f2b45'/><text x='60' y='82' font-size='64' text-anchor='middle'>❄️</text></svg>",
+  color:{ bg:"#0c1520", accent:"#2aa5e0", accentDark:"#1c7fb4" },
+  whatsapp:"56912345678",
+  moneda:"$",
+  iva:19,
+  validezDias:10,
+  nota:"Incluye traslado dentro de la ciudad. 50% al agendar, saldo al terminar el trabajo.",
+  servicios:[
+    { nombre:"Visita y diagnóstico en terreno", desc:"Revisión del equipo y recomendación.", unidad:"por visita", precio:18000, on:true, cant:1,
+      foto:"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='200' height='200' fill='%23123a57'/><text x='100' y='128' font-size='96' text-anchor='middle'>🔎</text></svg>",
+      pasos:["Revisión del equipo y conexiones","Medición de presión y gas","Informe con recomendaciones"], video:"" },
+    { nombre:"Instalación aire split 9.000–12.000 BTU", desc:"Unidad muro, hasta 3 m de cañería.", unidad:"c/u", precio:120000, on:true, cant:1,
+      foto:"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='200' height='200' fill='%230f2b45'/><text x='100' y='128' font-size='96' text-anchor='middle'>❄️</text></svg>",
+      pasos:["Montaje de unidad interior","Montaje de unidad exterior","Vacío y carga de gas","Prueba de funcionamiento y entrega"], video:"https://www.youtube.com/results?search_query=instalacion+aire+split" },
+    { nombre:"Instalación aire split 18.000 BTU", desc:"Mayor potencia, incluye soportes.", unidad:"c/u", precio:160000, on:false, cant:1, foto:"", pasos:["Montaje de unidades","Vacío y carga de gas","Prueba y entrega"], video:"" },
+    { nombre:"Mantención y limpieza de equipo", desc:"Deja el equipo como nuevo.", unidad:"c/u", precio:35000, on:true, cant:1,
+      foto:"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><rect width='200' height='200' fill='%23123a57'/><text x='100' y='128' font-size='96' text-anchor='middle'>🧼</text></svg>",
+      pasos:["Desmontaje de filtros","Lavado de serpentín","Sanitización","Prueba de funcionamiento"], video:"" },
+    { nombre:"Recarga de gas refrigerante", desc:"Según tipo de gas del equipo.", unidad:"por trabajo", precio:45000, on:false, cant:1, foto:"", pasos:[], video:"" },
+    { nombre:"Reparación de motor / compresor", desc:"Diagnóstico y cambio de pieza.", unidad:"por trabajo", precio:90000, on:false, cant:1,
+      pasos:["Desmontaje","Diagnóstico de la falla","Cambio de pieza","Prueba de carga"], video:"", foto:"" },
+    { nombre:"Contrato de mantención (2 visitas al año)", desc:"Equipo siempre a punto.", unidad:"por año", precio:70000, on:false, cant:1, foto:"", pasos:[], video:"" },
+    { nombre:"Urgencia / fuera de horario", desc:"Atención prioritaria.", unidad:"por visita", precio:35000, on:false, cant:1, foto:"", pasos:[], video:"" }
+  ]
+};
+/*NEGOCIO_END*/
+
+// Presets por rubro — servicios y precios típicos (editables). No se descargan como parte del cotizador del cliente.
+const RUBROS = {
+  general:{label:"General / Varios",emoji:"🧰",servicios:[{nombre:"Visita y diagnóstico",unidad:"por visita",precio:12000},{nombre:"Mano de obra",unidad:"por hora",precio:15000},{nombre:"Materiales (aparte)",unidad:"según trabajo",precio:0},{nombre:"Servicio a domicilio",unidad:"por visita",precio:10000}]},
+  electricidad:{label:"Electricidad",emoji:"⚡",servicios:[{nombre:"Visita y diagnóstico eléctrico",unidad:"por visita",precio:15000},{nombre:"Instalación de enchufe / interruptor",unidad:"c/u",precio:12000},{nombre:"Instalación de luminaria",unidad:"c/u",precio:14000},{nombre:"Tablero eléctrico (revisión / normalización)",unidad:"por trabajo",precio:60000,pasos:["Corte de energía","Revisión de circuitos","Cambio de protecciones","Prueba de disparo"]},{nombre:"Cableado por punto",unidad:"por punto",precio:18000},{nombre:"Automático / diferencial",unidad:"c/u",precio:22000},{nombre:"Urgencia / fuera de horario",unidad:"por visita",precio:30000}]},
+  gasfiteria:{label:"Gasfitería / Plomería",emoji:"🚰",servicios:[{nombre:"Visita y diagnóstico",unidad:"por visita",precio:15000},{nombre:"Destape de cañería",unidad:"por trabajo",precio:35000},{nombre:"Cambio de llave / grifería",unidad:"c/u",precio:18000},{nombre:"Reparación de filtración",unidad:"por trabajo",precio:40000},{nombre:"Instalación WC / lavamanos",unidad:"c/u",precio:45000},{nombre:"Calefont (instalación)",unidad:"c/u",precio:55000},{nombre:"Urgencia / fuera de horario",unidad:"por visita",precio:30000}]},
+  limpieza:{label:"Limpieza",emoji:"🧽",servicios:[{nombre:"Limpieza profunda hogar",unidad:"por jornada",precio:45000,pasos:["Orden y despeje","Baños y cocina","Pisos y superficies","Vidrios y terminaciones"]},{nombre:"Limpieza post-obra",unidad:"por m²",precio:2500},{nombre:"Limpieza de oficina",unidad:"por jornada",precio:50000},{nombre:"Lavado de alfombras / tapiz",unidad:"por m²",precio:4000},{nombre:"Sanitización",unidad:"por m²",precio:1500},{nombre:"Vidrios en altura",unidad:"por trabajo",precio:60000}]},
+  jardineria:{label:"Jardinería",emoji:"🌿",servicios:[{nombre:"Corte de césped",unidad:"por m²",precio:900},{nombre:"Poda de árboles / arbustos",unidad:"por trabajo",precio:40000},{nombre:"Mantención mensual de jardín",unidad:"por mes",precio:60000},{nombre:"Instalación de pasto",unidad:"por m²",precio:6000},{nombre:"Sistema de riego",unidad:"por trabajo",precio:80000},{nombre:"Retiro de ramas / escombros",unidad:"por viaje",precio:35000}]},
+  climatizacion:{label:"Climatización / Motores",emoji:"❄️",servicios:[{nombre:"Visita y diagnóstico",unidad:"por visita",precio:18000},{nombre:"Instalación aire split",unidad:"c/u",precio:120000,pasos:["Montaje unidad interior","Montaje unidad exterior","Vacío y carga de gas","Prueba de funcionamiento"]},{nombre:"Mantención / limpieza de equipo",unidad:"c/u",precio:35000},{nombre:"Recarga de gas",unidad:"por trabajo",precio:45000},{nombre:"Reparación de motor / compresor",unidad:"por trabajo",precio:90000,pasos:["Desmontaje","Diagnóstico de falla","Cambio de pieza","Prueba de carga"]},{nombre:"Urgencia",unidad:"por visita",precio:35000}]},
+  pintura:{label:"Pintura y terminaciones",emoji:"🎨",servicios:[{nombre:"Pintura de muro interior",unidad:"por m²",precio:3500,pasos:["Protección y preparación","Empaste y lijado","Primera mano","Segunda mano"]},{nombre:"Pintura exterior / fachada",unidad:"por m²",precio:5000},{nombre:"Esmalte en puertas / ventanas",unidad:"c/u",precio:15000},{nombre:"Reparación de muro (empaste)",unidad:"por m²",precio:4000},{nombre:"Cielo / estuco",unidad:"por m²",precio:4500}]},
+  construccion:{label:"Construcción / Maestro",emoji:"🧱",servicios:[{nombre:"Visita y presupuesto",unidad:"por visita",precio:20000},{nombre:"Instalación de cerámica / piso",unidad:"por m²",precio:9000},{nombre:"Tabique volcanita",unidad:"por m²",precio:12000},{nombre:"Radier / hormigón",unidad:"por m²",precio:15000},{nombre:"Ampliación (m² construido)",unidad:"por m²",precio:220000},{nombre:"Techumbre",unidad:"por m²",precio:18000}]},
+  cerrajeria:{label:"Cerrajería",emoji:"🔑",servicios:[{nombre:"Apertura de puerta",unidad:"por trabajo",precio:25000},{nombre:"Cambio de cerradura",unidad:"c/u",precio:20000},{nombre:"Copia de llave",unidad:"c/u",precio:3000},{nombre:"Reparación de chapa",unidad:"por trabajo",precio:18000},{nombre:"Urgencia / fuera de horario",unidad:"por visita",precio:35000}]},
+  automotriz:{label:"Mecánica / Automotriz",emoji:"🔧",servicios:[{nombre:"Diagnóstico / escáner",unidad:"por servicio",precio:15000},{nombre:"Cambio de aceite y filtro",unidad:"por servicio",precio:35000},{nombre:"Frenos (pastillas)",unidad:"por eje",precio:40000},{nombre:"Afinamiento de motor",unidad:"por servicio",precio:60000},{nombre:"Servicio a domicilio",unidad:"por visita",precio:25000}]},
+  tecnologia:{label:"Tecnología / Soporte",emoji:"💻",servicios:[{nombre:"Formateo / instalación de sistema",unidad:"por equipo",precio:20000},{nombre:"Eliminación de virus",unidad:"por equipo",precio:15000},{nombre:"Cambio de componente (RAM / SSD)",unidad:"por equipo",precio:18000},{nombre:"Configuración de red / router",unidad:"por visita",precio:20000},{nombre:"Instalación de cámaras",unidad:"por cámara",precio:35000},{nombre:"Soporte a domicilio",unidad:"por visita",precio:20000}]},
+  belleza:{label:"Belleza a domicilio",emoji:"💅",servicios:[{nombre:"Corte de cabello",unidad:"por persona",precio:8000},{nombre:"Peinado / evento",unidad:"por persona",precio:20000},{nombre:"Manicure",unidad:"por persona",precio:12000},{nombre:"Maquillaje",unidad:"por persona",precio:25000},{nombre:"Traslado a domicilio",unidad:"por visita",precio:6000}]},
+  eventos:{label:"Fotografía / Eventos",emoji:"📸",servicios:[{nombre:"Sesión fotográfica",unidad:"por hora",precio:40000},{nombre:"Cobertura de evento",unidad:"por jornada",precio:180000},{nombre:"Edición y entrega digital",unidad:"por servicio",precio:50000},{nombre:"Video resumen",unidad:"por servicio",precio:120000},{nombre:"Toma con dron",unidad:"por servicio",precio:80000}]},
+  fletes:{label:"Mudanzas / Fletes",emoji:"🚚",servicios:[{nombre:"Flete dentro de la ciudad",unidad:"por viaje",precio:35000},{nombre:"Mudanza con ayudantes",unidad:"por jornada",precio:120000},{nombre:"Ayudante extra",unidad:"por persona",precio:30000},{nombre:"Embalaje",unidad:"por servicio",precio:25000},{nombre:"Km adicional fuera de radio",unidad:"por km",precio:1200}]},
+  proyectos:{label:"Consultoría / Proyectos",emoji:"📊",nota:"Ideal para postulaciones CORFO, colegios, eventos y emprendimientos.",servicios:[{nombre:"Diagnóstico inicial",unidad:"por servicio",precio:80000},{nombre:"Formulación de proyecto",unidad:"por proyecto",precio:250000},{nombre:"Asesoría por hora",unidad:"por hora",precio:25000},{nombre:"Capacitación / taller",unidad:"por jornada",precio:150000},{nombre:"Informe final",unidad:"por servicio",precio:120000}]}
+};
+
+(function(){
+  "use strict";
+  var LS_NEG="panal-cotz-neg", LS_Q="panal-cotz-q", LS_TRAB="panal-cotz-trab";
+  function normSvc(s){ return { nombre:s.nombre||"", desc:s.desc||"", unidad:s.unidad||"", precio:Number(s.precio)||0, foto:s.foto||"", pasos:Array.isArray(s.pasos)?s.pasos:[], video:s.video||"", on:s.on===undefined?true:!!s.on, cant:Math.max(1,s.cant||1) }; }
+  var cfg = JSON.parse(JSON.stringify(NEGOCIO));
+  try{ var s=localStorage.getItem(LS_NEG); if(s) cfg=Object.assign(cfg, JSON.parse(s)); }catch(e){}
+  if(!cfg.color) cfg.color={bg:"#141210",accent:"#f2941f",accentDark:"#d1741a"};
+  cfg.servicios = (cfg.servicios||[]).map(normSvc);
+  try{ var q=JSON.parse(localStorage.getItem(LS_Q)||"null"); if(q&&q.sel&&q.sel.length===cfg.servicios.length){ q.sel.forEach(function(st,i){ cfg.servicios[i].on=!!st.on; cfg.servicios[i].cant=Math.max(1,st.cant||1); }); } }catch(e){}
+  var trabajos=[]; try{ trabajos=JSON.parse(localStorage.getItem(LS_TRAB)||"[]")||[]; }catch(e){}
+
+  var $=function(id){return document.getElementById(id);};
+  var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+  function money(n){ return (cfg.moneda||"$")+Math.round(Number(n)||0).toLocaleString("es-CL"); }
+  function darken(hex){ try{var c=hex.replace('#','');if(c.length===3)c=c.split('').map(function(x){return x+x;}).join('');var r=Math.max(0,parseInt(c.slice(0,2),16)-30),g=Math.max(0,parseInt(c.slice(2,4),16)-30),b=Math.max(0,parseInt(c.slice(4,6),16)-30);return '#'+[r,g,b].map(function(x){return x.toString(16).padStart(2,'0');}).join('');}catch(e){return hex;} }
+  function waLink(msg){ return "https://wa.me/"+(cfg.whatsapp||'').replace(/\D/g,'')+"?text="+encodeURIComponent(msg); }
+  function saveNeg(){ try{localStorage.setItem(LS_NEG,JSON.stringify(cfg));}catch(e){ flash("⚠️ Memoria llena (fotos muy pesadas)"); } }
+  function saveTrab(){ try{localStorage.setItem(LS_TRAB,JSON.stringify(trabajos));}catch(e){ flash("⚠️ Memoria llena: borra fotos o trabajos"); } }
+  window.saveQ=function(){ try{ var sel=cfg.servicios.map(function(s){return {on:!!s.on,cant:s.cant||1};}); localStorage.setItem(LS_Q,JSON.stringify({sel:sel,cli:$("cCliente").value,fono:$("cFono").value,dir:$("cDir").value,pro:$("cProyecto").value}));}catch(e){} };
+  function flash(m){ $("msg").textContent=m; setTimeout(function(){$("msg").textContent="";},2600); }
+  function comprimir(file,max,q){ return new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){ var im=new Image(); im.onload=function(){ var w=im.width,h=im.height; if(w>h&&w>max){h=Math.round(h*max/w);w=max;} else if(h>max){w=Math.round(w*max/h);h=max;} var cv=document.createElement("canvas"); cv.width=w;cv.height=h; cv.getContext("2d").drawImage(im,0,0,w,h); res(cv.toDataURL("image/jpeg",q||0.78)); }; im.onerror=rej; im.src=r.result; }; r.onerror=rej; r.readAsDataURL(file); }); }
+
+  function applyBrand(){
+    var r=document.documentElement.style;
+    r.setProperty('--accent', cfg.color.accent||'#f2941f');
+    r.setProperty('--accentDark', cfg.color.accentDark||darken(cfg.color.accent||'#f2941f'));
+    r.setProperty('--bg', cfg.color.bg||'#141210');
+    document.title = (cfg.marca||"Cotizador")+" · Cotizador";
+    $("bMarca").textContent = cfg.marca||"Mi Negocio";
+    $("bRubro").textContent = cfg.rubro||"";
+    var lg=$("bLogo"); if(cfg.logo){ lg.src=cfg.logo; lg.hidden=false; } else lg.hidden=true;
+    $("validezTxt").textContent = "Cotización válida por "+(cfg.validezDias||15)+" días."+(cfg.nota?(" "+cfg.nota):"");
+  }
+
+  // ---- seleccionador de servicios ----
+  var editing=false;
+  function seleccionados(){ return cfg.servicios.filter(function(s){return s.on;}); }
+  function renderSvc(){
+    var c=$("svcList"); c.innerHTML="";
+    if(!cfg.servicios.length){ c.innerHTML='<div class="empty">Sin servicios aún. Toca 🗂️ Rubro para cargar ejemplos o 🧰 Servicios para agregar.</div>'; $("selCount").textContent=""; return; }
+    cfg.servicios.forEach(function(s,i){
+      var hasDet = s.foto || (s.pasos&&s.pasos.length) || s.video;
+      var d=document.createElement("div"); d.className="svc "+(editing?"":(s.on?"on":"off"))+(s.foto?" hasimg":"");
+      d.innerHTML='<div class="top">'
+        +'<div class="chk">✓</div>'
+        +(s.foto?'<img class="thumb" alt="" src="'+s.foto+'">':'')
+        +'<div class="info"><b>'+esc(s.nombre)+'</b><small>'+esc(s.desc||'')+(hasDet&&!editing?' · <span style="color:var(--bright)">ver detalle ▾</span>':'')+'</small></div>'
+        +'<div class="qty"><button aria-label="menos">−</button><input class="tab" inputmode="numeric" value="'+(s.cant||1)+'"><button aria-label="más">+</button></div>'
+        +'<div class="pr tab">'+money(s.precio)+'<small>'+esc(s.unidad||'')+'</small></div>'
+        +'<button class="edit" title="Editar">✏️</button>'
+        +'</div>'
+        +'<div class="detail">'+(s.foto?'<img alt="" src="'+s.foto+'">':'')+(s.pasos&&s.pasos.length?'<b>Pasos:</b><ol>'+s.pasos.map(function(p){return '<li>'+esc(p)+'</li>';}).join('')+'</ol>':'')+(s.video?'<a href="'+esc(s.video)+'" target="_blank" rel="noopener">🎥 Ver video del trabajo</a>':'')+'</div>';
+      if(editing){ d.querySelector(".edit").onclick=function(e){ e.stopPropagation(); editSvc(i); }; }
+      else{
+        var top=d.querySelector(".top");
+        top.onclick=function(ev){ if(ev.target.closest(".qty")||ev.target.closest(".more")) return; s.on=!s.on; if(s.on&&(!s.cant||s.cant<1))s.cant=1; saveQ(); renderSvc(); renderLines(); calc(); };
+        if(hasDet){ var inf=d.querySelector(".info"); inf.style.cursor="pointer"; inf.onclick=function(ev){ ev.stopPropagation(); d.classList.toggle("open"); }; }
+        var qb=d.querySelectorAll(".qty button"), qi=d.querySelector(".qty input");
+        qb[0].onclick=function(e){ e.stopPropagation(); s.cant=Math.max(1,(s.cant||1)-1); qi.value=s.cant; saveQ(); renderLines(); calc(); };
+        qb[1].onclick=function(e){ e.stopPropagation(); s.cant=(s.cant||1)+1; qi.value=s.cant; saveQ(); renderLines(); calc(); };
+        qi.onclick=function(e){ e.stopPropagation(); };
+        qi.onchange=function(){ s.cant=Math.max(1,parseInt(qi.value,10)||1); qi.value=s.cant; saveQ(); renderLines(); calc(); };
+      }
+      c.appendChild(d);
+    });
+    $("svcPanel").classList.toggle("editing", editing);
+    var n=seleccionados().length;
+    $("selCount").innerHTML = editing ? "Editando servicios · toca ✏️ para modificar, o agrega uno nuevo" : ("<b>"+n+"</b> de "+cfg.servicios.length+" servicios incluidos");
+  }
+
+  // ---- cotización (deriva de la selección) ----
+  function renderLines(){
+    var c=$("lines"); c.innerHTML=""; var sel=seleccionados();
+    if(!sel.length){ c.innerHTML='<div class="empty">Marca servicios de la lista para armar la cotización.</div>'; return; }
+    sel.forEach(function(l){
+      var d=document.createElement("div"); d.className="line";
+      d.innerHTML='<div class="nm">'+esc(l.nombre)+(l.cant>1?(' ×'+l.cant):'')+'<small>'+money(l.precio)+' '+esc(l.unidad||'')+'</small></div>'
+        +'<div class="lt tab">'+money(l.precio*(l.cant||1))+'</div>';
+      c.appendChild(d);
+    });
+  }
+  function totales(){
+    var sel=seleccionados();
+    var sub=sel.reduce(function(a,l){return a+l.precio*(l.cant||1);},0);
+    var ivaPct=Number(cfg.iva)||0;
+    var desc=Math.min(Math.max(0,Number($("cDesc").value)||0),sub);
+    var iva=Math.round((sub-desc)*ivaPct/100);
+    var tot=Math.max(0,sub-desc+iva);
+    return {sel:sel,sub:sub,ivaPct:ivaPct,desc:desc,iva:iva,tot:tot};
+  }
+  window.calc=function(){
+    var t=totales();
+    $("tSub").textContent=money(t.sub);
+    $("ivaRow").hidden = t.ivaPct<=0;
+    $("ivaLbl").textContent="IVA ("+t.ivaPct+"%)";
+    $("tIva").textContent=money(t.iva);
+    $("descRow").hidden = t.desc<=0;
+    $("tDescV").textContent="-"+money(t.desc);
+    $("tTot").textContent=money(t.tot);
+    $("btnWa").href=waLink(cotizaTexto());
+  };
+  function datosCliente(){ return {cli:$("cCliente").value.trim(),fono:$("cFono").value.trim(),dir:$("cDir").value.trim(),pro:$("cProyecto").value.trim()}; }
+  function cotizaTexto(){
+    var hoy=new Date().toLocaleDateString("es-CL",{day:"2-digit",month:"short",year:"numeric"});
+    var t=totales(), dc=datosCliente();
+    var x="COTIZACIÓN — "+(cfg.marca||"")+"\n";
+    if(dc.cli) x+="Cliente: "+dc.cli+"\n"; if(dc.pro) x+="Trabajo: "+dc.pro+"\n";
+    x+="Fecha: "+hoy+"\n\nINCLUYE:\n";
+    t.sel.forEach(function(l){ x+="• "+l.nombre+(l.cant>1?(" x"+l.cant):"")+"  "+money(l.precio*(l.cant||1))+"\n"; });
+    x+="\nSubtotal: "+money(t.sub)+"\n";
+    if(t.desc>0) x+="Descuento: -"+money(t.desc)+"\n";
+    if(t.ivaPct>0) x+="IVA ("+t.ivaPct+"%): "+money(t.iva)+"\n";
+    x+="TOTAL: "+money(t.tot)+"\n";
+    x+="\nVálida por "+(cfg.validezDias||15)+" días."+(cfg.nota?(" "+cfg.nota):"");
+    return x;
+  }
+  $("btnCopy").onclick=function(){ var t=cotizaTexto();
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(function(){flash("✅ Cotización copiada");},function(){selCopy(t);}); } else selCopy(t); };
+  function selCopy(t){ var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");flash("✅ Copiada");}catch(e){flash("Copia manual");} ta.remove(); }
+  $("selAll").onclick=function(){ cfg.servicios.forEach(function(s){s.on=true;}); saveQ(); renderSvc(); renderLines(); calc(); };
+  $("selNone").onclick=function(){ cfg.servicios.forEach(function(s){s.on=false;}); saveQ(); renderSvc(); renderLines(); calc(); };
+  $("btnNuevo").onclick=function(){ cfg.servicios.forEach(function(s){s.on=false;s.cant=1;}); ["cCliente","cFono","cDir","cProyecto","cDesc"].forEach(function(id){$(id).value="";}); saveQ(); renderSvc(); renderLines(); calc(); flash("✨ Nueva cotización"); };
+
+  // ---- cita ----
+  $("btnCita").onclick=function(){
+    var dc=datosCliente(), t=totales();
+    var msg="Hola"+(dc.cli?" "+dc.cli:"")+"! Soy "+(cfg.marca||"")+". "
+      +"Para "+(dc.pro||"tu servicio")+" te propongo agendar una visita. ¿Qué día y hora te acomoda? "
+      +"Valor estimado: "+money(t.tot)+".";
+    window.open(waLink(msg),"_blank");
+  };
+
+  // ---- guardar trabajo ----
+  $("btnGuardar").onclick=function(){
+    var dc=datosCliente(), t=totales();
+    if(!t.sel.length){ flash("Marca al menos un servicio"); return; }
+    var job={ id:"t"+Date.now(), fecha:new Date().toISOString(), cliente:dc.cli||"Sin nombre", fono:dc.fono, dir:dc.dir, proyecto:dc.pro, estado:"Cotizado",
+      items:t.sel.map(function(l){return {nombre:l.nombre,unidad:l.unidad,precio:l.precio,cant:l.cant||1};}),
+      descuento:t.desc, ivaPct:t.ivaPct, subtotal:t.sub, iva:t.iva, total:t.tot, notas:"", fotos:[] };
+    trabajos.unshift(job); saveTrab(); flash("💾 Trabajo guardado en 📁 Mis trabajos"); renderJobs();
+  };
+
+  // ---- reporte para el cliente ----
+  function buildReport(){
+    var hoy=new Date().toLocaleDateString("es-CL",{day:"2-digit",month:"long",year:"numeric"});
+    var t=totales(), dc=datosCliente();
+    var h='<div class="rhead">'+(cfg.logo?'<img alt="" src="'+cfg.logo+'">':'')+'<div><h2>'+esc(cfg.marca||"")+'</h2><div class="rr">'+esc(cfg.rubro||"")+'</div></div></div>';
+    h+='<div class="rmeta"><span><b>Para:</b> '+esc(dc.cli||"—")+'</span>'+(dc.fono?'<span><b>Tel:</b> '+esc(dc.fono)+'</span>':'')+(dc.dir?'<span><b>Dirección:</b> '+esc(dc.dir)+'</span>':'')+(dc.pro?'<span><b>Trabajo:</b> '+esc(dc.pro)+'</span>':'')+'<span><b>Fecha:</b> '+hoy+'</span></div>';
+    h+='<div style="font-weight:800;color:#1c1712;margin-bottom:4px">Esto es lo que haremos:</div>';
+    if(!t.sel.length){ h+='<p style="color:#8a7a5f">Aún no hay servicios seleccionados.</p>'; }
+    t.sel.forEach(function(l){
+      h+='<div class="ritem">'+(l.foto?'<img alt="" src="'+l.foto+'">':'')+'<div class="rn"><b>'+esc(l.nombre)+(l.cant>1?(' ×'+l.cant):'')+'</b>'
+        +(l.desc?'<div style="font-size:.85rem;color:#5b5145">'+esc(l.desc)+'</div>':'')
+        +(l.pasos&&l.pasos.length?'<ol>'+l.pasos.map(function(p){return '<li>'+esc(p)+'</li>';}).join('')+'</ol>':'')
+        +(l.video?'<a href="'+esc(l.video)+'" target="_blank" rel="noopener">🎥 Ver video</a>':'')
+        +'</div><div class="rp">'+money(l.precio*(l.cant||1))+'</div></div>';
+    });
+    h+='<div class="rtot"><div class="tr"><span>Subtotal</span><span>'+money(t.sub)+'</span></div>';
+    if(t.desc>0) h+='<div class="tr"><span>Descuento</span><span>-'+money(t.desc)+'</span></div>';
+    if(t.ivaPct>0) h+='<div class="tr"><span>IVA ('+t.ivaPct+'%)</span><span>'+money(t.iva)+'</span></div>';
+    h+='<div class="tr g"><span>TOTAL</span><span>'+money(t.tot)+'</span></div></div>';
+    h+='<div class="rnota">Cotización válida por '+(cfg.validezDias||15)+' días.'+(cfg.nota?(' '+esc(cfg.nota)):'')+'</div>';
+    h+='<div class="racc">✅ Para confirmar, responde <b>ACEPTO</b> por WhatsApp o agenda tu visita.</div>';
+    return h;
+  }
+  function showReport(){ $("reportSheet").innerHTML=buildReport();
+    var dc=datosCliente(); var msg="Hola"+(dc.cli?" "+dc.cli:"")+"! Te envío el detalle de lo que haremos y el valor. ✅ Responde ACEPTO para confirmar.\n\n"+cotizaTexto();
+    $("rWa").href=waLink(msg);
+  }
+  $("btnRep").onclick=function(){ setView("reporte"); };
+  $("rPrint").onclick=function(){ window.print(); };
+  $("rDl").onclick=function(){ var html='<!doctype html><meta charset=utf8><title>Reporte '+esc(datosCliente().cli||"cliente")+'</title><style>body{font-family:system-ui,sans-serif;background:#eee;margin:0;padding:20px}'+document.querySelector("style").textContent.split("@media print")[0]+'</style><body>'+$("reportSheet").outerHTML;
+    dl(html,"reporte-"+((datosCliente().cli||"cliente").replace(/\W+/g,"-").toLowerCase())+".html","text/html"); };
+
+  // ---- editor negocio ----
+  var negP=$("negPanel"), svcP=$("svcEdit"), rubP=$("rubroPanel");
+  function hideEditors(){ negP.hidden=true; svcP.hidden=true; rubP.hidden=true; }
+  $("tNeg").onclick=function(){ var on=negP.hidden; hideEditors(); if(on){ setView("cotizar"); negP.hidden=false; editing=false; renderSvc(); fillNeg(); } };
+  $("tRubro").onclick=function(){ var on=rubP.hidden; hideEditors(); if(on){ setView("cotizar"); rubP.hidden=false; editing=false; renderSvc(); renderRubros(); } };
+  $("tSvc").onclick=function(){ if(svcP.hidden){ setView("cotizar"); hideEditors(); editing=true; svcP.hidden=false; limpiarSvc(); } else { editing=false; svcP.hidden=true; } renderSvc(); };
+
+  function renderRubros(){
+    var g=$("rubroGrid"); g.innerHTML="";
+    Object.keys(RUBROS).forEach(function(k){ var r=RUBROS[k];
+      var b=document.createElement("button"); b.className="mini"; b.style.cssText="padding:12px 10px;text-align:left;border-radius:12px";
+      b.innerHTML='<div style="font-size:1.3rem">'+r.emoji+'</div>'+esc(r.label)+'<div style="font-weight:400;color:var(--muted);font-size:.72rem">'+r.servicios.length+' servicios</div>';
+      b.onclick=function(){ if(!confirm("Cargar servicios de “"+r.label+"”? Reemplaza la lista actual (tu marca y logo se mantienen).")) return;
+        cfg.servicios=r.servicios.map(function(x){return normSvc(Object.assign({on:true,cant:1},x));});
+        if(!cfg.rubro||cfg.rubro==="Servicios (edítalo)") cfg.rubro=r.label;
+        if(r.nota&&(!cfg.nota)) cfg.nota=r.nota;
+        saveNeg(); applyBrand(); renderSvc(); renderLines(); calc(); rubP.hidden=true; flash("✅ Cargado: "+r.label); };
+      g.appendChild(b);
+    });
+  }
+
+  function fillNeg(){
+    $("nMarca").value=cfg.marca||""; $("nRubro").value=cfg.rubro||""; $("nWa").value=cfg.whatsapp||"";
+    $("nMon").value=cfg.moneda||"$"; $("nIva").value=cfg.iva!=null?cfg.iva:19; $("nVal").value=cfg.validezDias||15;
+    $("nNota").value=cfg.nota||""; $("nAccent").value=/^#([0-9a-f]{6})$/i.test(cfg.color.accent||'')?cfg.color.accent:'#f2941f'; $("nAccentHex").value=cfg.color.accent||'';
+    logoPrev();
+  }
+  $("nAccent").oninput=function(){ $("nAccentHex").value=this.value; }; $("nAccentHex").oninput=function(){ if(/^#([0-9a-f]{6})$/i.test(this.value)) $("nAccent").value=this.value; };
+  function logoPrev(){ var p=$("logoPrev"); if(cfg.logo){ p.innerHTML='<img alt="" src="'+cfg.logo+'">'; $("logoDel").style.display=''; } else { p.textContent='🧰'; $("logoDel").style.display='none'; } }
+  $("logoBtn").onclick=function(){ $("logoFile").click(); };
+  $("logoFile").onchange=function(){ var f=this.files&&this.files[0]; if(!f)return; comprimir(f,300,0.85).then(function(d){ cfg.logo=d; logoPrev(); }); this.value=""; };
+  $("logoDel").onclick=function(){ cfg.logo=""; logoPrev(); };
+  $("negGuardar").onclick=function(){
+    cfg.marca=$("nMarca").value.trim()||"Mi Negocio"; cfg.rubro=$("nRubro").value.trim();
+    cfg.whatsapp=$("nWa").value.replace(/\D/g,''); cfg.moneda=$("nMon").value.trim()||"$";
+    cfg.iva=Math.max(0,Number($("nIva").value)||0); cfg.validezDias=Math.max(1,Number($("nVal").value)||15);
+    cfg.nota=$("nNota").value.trim(); cfg.color.accent=$("nAccentHex").value.trim()||"#f2941f"; cfg.color.accentDark=darken(cfg.color.accent);
+    saveNeg(); applyBrand(); renderLines(); calc(); flash("✅ Guardado");
+  };
+
+  // ---- editor de servicio ----
+  var eIdx=-1, sFoto="";
+  function limpiarSvc(){ eIdx=-1; sFoto=""; $("seTitle").textContent="➕ Agregar servicio"; $("sGuardar").textContent="Agregar"; ["sNombre","sUnidad","sPrecio","sDesc","sPasos","sVideo"].forEach(function(id){$(id).value="";}); sFotoPrev(); }
+  function sFotoPrev(){ var p=$("sFotoPrev"); if(sFoto){ p.innerHTML='<img alt="" src="'+sFoto+'">'; $("sFotoDel").style.display=''; } else { p.textContent='📷'; $("sFotoDel").style.display='none'; } }
+  $("sFotoBtn").onclick=function(){ $("sFotoFile").click(); };
+  $("sFotoFile").onchange=function(){ var f=this.files&&this.files[0]; if(!f)return; comprimir(f,900,0.72).then(function(d){ sFoto=d; sFotoPrev(); }); this.value=""; };
+  $("sFotoDel").onclick=function(){ sFoto=""; sFotoPrev(); };
+  function editSvc(i){ editing=true; hideEditors(); svcP.hidden=false; renderSvc(); eIdx=i; var s=cfg.servicios[i];
+    $("seTitle").textContent="✏️ Editar servicio"; $("sGuardar").textContent="Guardar";
+    $("sNombre").value=s.nombre; $("sUnidad").value=s.unidad||""; $("sPrecio").value=s.precio; $("sDesc").value=s.desc||"";
+    $("sPasos").value=(s.pasos||[]).join("\n"); $("sVideo").value=s.video||""; sFoto=s.foto||""; sFotoPrev();
+    svcP.scrollIntoView({behavior:"smooth",block:"center"}); }
+  $("sGuardar").onclick=function(){ var n=$("sNombre").value.trim(); if(!n){ $("sNombre").focus(); return; }
+    var obj=normSvc({ nombre:n, unidad:$("sUnidad").value.trim(), precio:Number($("sPrecio").value)||0, desc:$("sDesc").value.trim(),
+      pasos:$("sPasos").value.split("\n").map(function(x){return x.trim();}).filter(Boolean), video:$("sVideo").value.trim(), foto:sFoto, on:true, cant:1 });
+    if(eIdx>=0){ obj.on=cfg.servicios[eIdx].on; obj.cant=cfg.servicios[eIdx].cant||1; cfg.servicios[eIdx]=obj; } else cfg.servicios.push(obj);
+    saveNeg(); limpiarSvc(); renderSvc(); renderLines(); calc(); flash("✅ Servicio guardado"); };
+  $("sCancelar").onclick=limpiarSvc;
+
+  // ---- vistas ----
+  function setView(v){
+    ["cotizar","reporte","trabajos"].forEach(function(x){ var el=$(x+"View"); if(el) el.hidden = x!==v; });
+    document.querySelectorAll("nav.views button").forEach(function(b){ b.classList.toggle("on", b.dataset.v===v); });
+    if(v==="reporte") showReport();
+    if(v==="trabajos") renderJobs();
+    window.scrollTo(0,0);
+  }
+  document.querySelectorAll("nav.views button").forEach(function(b){ b.onclick=function(){ setView(b.dataset.v); }; });
+
+  // ---- trabajos guardados ----
+  var jIdx=-1;
+  function renderJobs(){
+    var c=$("jobsList"); c.innerHTML="";
+    if(!trabajos.length){ c.innerHTML='<div class="empty">Aún no guardas trabajos. En 🧾 Cotizar arma uno y toca “💾 Guardar trabajo”.</div>'; $("jobDetail").hidden=true; return; }
+    trabajos.forEach(function(j,i){
+      var f=new Date(j.fecha).toLocaleDateString("es-CL",{day:"2-digit",month:"short"});
+      var d=document.createElement("div"); d.className="job";
+      d.innerHTML='<div class="jt"><b>'+esc(j.cliente)+'</b><small>'+esc(j.proyecto||"—")+' · '+f+' · '+(j.items?j.items.length:0)+' ítems'+(j.fotos&&j.fotos.length?(' · 📷'+j.fotos.length):'')+'</small></div>'
+        +'<div style="text-align:right"><div class="jv tab">'+money(j.total)+'</div><span class="pill '+esc(j.estado||"Cotizado")+'">'+esc(j.estado||"Cotizado")+'</span></div>';
+      d.onclick=function(){ openJob(i); };
+      c.appendChild(d);
+    });
+  }
+  function openJob(i){ jIdx=i; var j=trabajos[i]; $("jobDetail").hidden=false;
+    $("jdTitle").textContent=j.cliente; $("jdEstado").value=j.estado||"Cotizado";
+    $("jdFecha").value=new Date(j.fecha).toLocaleString("es-CL",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
+    $("jdNotas").value=j.notas||"";
+    var it=$("jdItems"); it.innerHTML='<div class="qhead">Ítems cotizados</div>'+(j.items||[]).map(function(l){return '<div class="line"><div class="nm">'+esc(l.nombre)+(l.cant>1?(' ×'+l.cant):'')+'</div><div class="lt tab">'+money(l.precio*(l.cant||1))+'</div></div>';}).join('')+'<div class="totrow grand"><span>TOTAL</span><span class="v tab">'+money(j.total)+'</span></div>';
+    renderJobGal(); $("jobDetail").scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  function renderJobGal(){ var j=trabajos[jIdx]; if(!j) return; if(!j.fotos)j.fotos=[]; var g=$("jdGal"); g.innerHTML="";
+    j.fotos.forEach(function(ph,k){ var d=document.createElement("div"); d.className="ph"; d.innerHTML='<img alt="" src="'+ph+'"><button title="Quitar">✕</button>'; d.querySelector("button").onclick=function(){ j.fotos.splice(k,1); saveTrab(); renderJobGal(); renderJobs(); }; g.appendChild(d); });
+    var add=document.createElement("div"); add.className="addph"; add.textContent="＋"; add.onclick=function(){ $("jdPhotoFile").click(); }; g.appendChild(add);
+  }
+  $("jdPhotoFile").onchange=function(){ var fs=this.files; if(!fs||!fs.length)return; var j=trabajos[jIdx]; if(!j)return; if(!j.fotos)j.fotos=[];
+    var arr=[].slice.call(fs); (function next(){ if(!arr.length){ saveTrab(); renderJobGal(); renderJobs(); return; } comprimir(arr.shift(),900,0.7).then(function(d){ j.fotos.push(d); next(); }).catch(next); })(); this.value=""; };
+  $("jdEstado").onchange=function(){ if(trabajos[jIdx]){ trabajos[jIdx].estado=this.value; saveTrab(); renderJobs(); } };
+  $("jdGuardar").onclick=function(){ if(trabajos[jIdx]){ trabajos[jIdx].notas=$("jdNotas").value.trim(); trabajos[jIdx].estado=$("jdEstado").value; saveTrab(); renderJobs(); flash("💾 Cambios guardados"); } };
+  $("jdDel").onclick=function(){ if(trabajos[jIdx]&&confirm("¿Eliminar este trabajo?")){ trabajos.splice(jIdx,1); saveTrab(); $("jobDetail").hidden=true; renderJobs(); } };
+  $("jdClose").onclick=function(){ $("jobDetail").hidden=true; };
+  $("jdCargar").onclick=function(){ var j=trabajos[jIdx]; if(!j)return;
+    $("cCliente").value=j.cliente||""; $("cFono").value=j.fono||""; $("cDir").value=j.dir||""; $("cProyecto").value=j.proyecto||""; $("cDesc").value=j.descuento||"";
+    // marca en el catálogo los servicios de este trabajo (por nombre)
+    var nombres=(j.items||[]).reduce(function(m,l){m[l.nombre]=l.cant||1;return m;},{});
+    cfg.servicios.forEach(function(s){ if(nombres[s.nombre]){ s.on=true; s.cant=nombres[s.nombre]; } else s.on=false; });
+    saveQ(); setView("cotizar"); renderSvc(); renderLines(); calc(); flash("↩️ Trabajo cargado en el cotizador");
+  };
+  $("jobsClear").onclick=function(){ if(trabajos.length&&confirm("¿Vaciar TODOS los trabajos guardados?")){ trabajos=[]; saveTrab(); renderJobs(); } };
+
+  // ---- respaldo / descarga cotizador listo ----
+  function dl(text,name,type){ try{ var b=new Blob([text],{type:type}); var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000); flash("⬇️ Descargado"); }catch(e){ flash("Ábrelo como archivo para descargar"); } }
+  $("negExport").onclick=function(){ dl(JSON.stringify(cfg,null,2), (cfg.marca||"negocio").replace(/\W+/g,"-").toLowerCase()+"-cotizador.json","application/json"); };
+  $("negImport").onclick=function(){ $("cfgFile").click(); };
+  $("cfgFile").onchange=function(){ var f=this.files&&this.files[0]; if(!f)return; var r=new FileReader(); r.onload=function(){ try{ var j=JSON.parse(r.result); cfg=Object.assign(cfg,j); if(j.servicios){ cfg.servicios=j.servicios.map(normSvc); } saveNeg(); applyBrand(); renderSvc(); renderLines(); calc(); fillNeg(); flash("✅ Importado"); }catch(e){ flash("Archivo inválido"); } }; r.readAsText(f); this.value=""; };
+  $("negDescargar").onclick=function(){
+    var clean=JSON.parse(JSON.stringify(cfg));
+    var html=document.documentElement.outerHTML;
+    var conf="/*NEGOCIO_START*/\nconst NEGOCIO = "+JSON.stringify(clean,null,2)+";\n/*NEGOCIO_END*/";
+    html=html.replace(/\/\*NEGOCIO_START\*\/[\s\S]*?\/\*NEGOCIO_END\*\//, conf.replace(/\$/g,"$$$$"));
+    dl("<!doctype html>\n"+html, "cotizador-"+(cfg.marca||"negocio").replace(/\W+/g,"-").toLowerCase()+".html","text/html");
+  };
+
+  // restaurar cliente del borrador
+  try{ var qd=JSON.parse(localStorage.getItem(LS_Q)||"null"); if(qd){ if(qd.cli)$("cCliente").value=qd.cli; if(qd.fono)$("cFono").value=qd.fono; if(qd.dir)$("cDir").value=qd.dir; if(qd.pro)$("cProyecto").value=qd.pro; } }catch(e){}
+  if(cfg.marca && cfg.marca!=="Mi Negocio de Servicios"){ var bn=$("banner"); if(bn) bn.remove(); }
+  applyBrand(); renderSvc(); renderLines(); calc();
+})();
+</script>
+
+</body></html>
