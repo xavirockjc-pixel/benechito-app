@@ -45,6 +45,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/primeros-pasos", label: "Primeros pasos", icon: "🚀" },
         { href: "/admin", label: "Panel", icon: "📊" },
+        { href: "/admin/pendientes", label: "Pendientes del cerebro", icon: "🐝" },
         { href: "/admin/notas", label: "Notas y acciones", icon: "📝" },
         { href: "/admin/agenda", label: "Agenda", icon: "📅" },
       ],

@@ -73,6 +73,10 @@ export default async function Panel() {
   const listosArranque = [nTrab > 0, nProd > 0, nPrec > 0, nStk > 0, Number(sumaVentas._sum.total ?? 0) > 0].filter(Boolean).length;
   const arranqueCompleto = listosArranque === 5;
 
+  // El cerebro: cuántas cosas notó que faltó actualizar/revisar.
+  const { contarPendientesCerebro } = await import("@/lib/dominio/cerebroPendientes");
+  const nCerebro = await contarPendientesCerebro();
+
   return (
     <div>
       <AvisoAccesoAdmin />
@@ -83,6 +87,15 @@ export default async function Panel() {
             <span className="block text-sm text-white/90">{listosArranque} de 5 pasos listos — te faltan {5 - listosArranque}. Toca para continuar.</span>
           </span>
           <span className="shrink-0 text-2xl">→</span>
+        </Link>
+      )}
+      {nCerebro > 0 && (
+        <Link href="/admin/pendientes" className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm transition hover:brightness-[0.99]">
+          <span className="min-w-0">
+            <span className="block text-base font-extrabold text-amber-800">🐝 El cerebro notó {nCerebro} cosa{nCerebro > 1 ? "s" : ""} por revisar</span>
+            <span className="block text-sm text-amber-700">Algo quedó sin actualizar o sin cuadrar. Toca para arreglar u omitir.</span>
+          </span>
+          <span className="shrink-0 text-2xl text-amber-500">→</span>
         </Link>
       )}
       {/* Encabezado */}
