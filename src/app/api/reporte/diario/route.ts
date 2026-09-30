@@ -108,6 +108,18 @@ export async function GET(req: NextRequest) {
     [] as { titulo: string; fechaObjetivo: Date | null }[],
   );
 
+  // Recordatorios personales ("recuérdame…") para hoy o vencidos, sin cerrar.
+  const finHoy = new Date(inicio.getTime() + 24 * 3600 * 1000);
+  const recordatorios = await safe(
+    () => prisma.nota.findMany({
+      where: { estado: { not: "hecha" }, tipo: { in: ["recordatorio", "tarea"] }, fechaObjetivo: { not: null, lt: finHoy } },
+      orderBy: { fechaObjetivo: "asc" }, take: 8, select: { texto: true, fechaObjetivo: true },
+    }),
+    [] as { texto: string; fechaObjetivo: Date | null }[],
+  );
+  // Cosas anotadas que mueven stock y no se confirmaron ("llegó leche"…).
+  const porConfirmar = await safe(() => prisma.nota.count({ where: { accionEstado: "sugerida" } }), 0);
+
   // --- Armado del texto ---
   const fecha = new Date().toLocaleDateString("es-CL", { weekday: "long", day: "2-digit", month: "long" });
   const L: string[] = [];
@@ -145,6 +157,20 @@ export async function GET(req: NextRequest) {
       const fs = f ? f.toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : "";
       return `   • ${m.titulo}${fs ? ` (${venc ? "⚠️ venció " : ""}${fs})` : ""}`;
     }).join("\n"));
+  }
+  if (recordatorios.length) {
+    L.push("");
+    L.push(`🔔 *Recordatorios de hoy (${recordatorios.length}):*`);
+    L.push(recordatorios.map((r) => {
+      const f = r.fechaObjetivo ? new Date(r.fechaObjetivo) : null;
+      const venc = f && f < inicio;
+      const fs = f ? f.toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : "";
+      return `   • ${r.texto}${venc ? ` (⚠️ venció ${fs})` : ""}`;
+    }).join("\n"));
+  }
+  if (porConfirmar > 0) {
+    L.push("");
+    L.push(`⚡ *Por confirmar (${porConfirmar}):* cosas anotadas sin actualizar (ej. “llegó…”). Revísalas en Pendientes del cerebro.`);
   }
   L.push("");
   L.push(`🐝 Tu socio Panal · benechito.com/admin`);
