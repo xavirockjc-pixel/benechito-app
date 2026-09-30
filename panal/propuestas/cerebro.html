@@ -1,0 +1,169 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cerebro de Distribución</title>
+<meta name="description" content="El socio virtual de Panal que consolida y analiza varios negocios sin mezclarlos, con dashboard de balances.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    color-scheme: dark;
+    --ground:#0f1020; --surface:#181a30; --surface-2:#20233f; --line:#33375c;
+    --violeta:#8b7cff; --violeta-deep:#6b5bff; --cian:#4fd6d0; --dorado:#ffcf6a;
+    --ink:#ecebfb; --muted:#a6a4c9; --red:#ff7a90; --wa:#25D366; --wa-ink:#04220f; --good:#5fd6a6;
+    --serif:"Fraunces", Georgia, serif; --sans:"Instrument Sans", system-ui, sans-serif;
+    --gut: clamp(16px, 4vw, 40px);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--ink); font-family:var(--sans); line-height:1.6;
+    background-image:radial-gradient(120% 60% at 50% -10%, rgba(139,124,255,.18), transparent 60%);}
+  .wrap{max-width:1040px; margin-inline:auto; padding-inline:var(--gut)}
+  h1,h2,h3{font-family:var(--serif); margin:0; text-wrap:balance; line-height:1.08}
+  p{margin:0} a{color:var(--violeta)}
+  .eyebrow{font-family:var(--sans); text-transform:uppercase; letter-spacing:.18em; font-size:.72rem; font-weight:600; color:var(--violeta)}
+  .tnum{font-variant-numeric:tabular-nums}
+  .top{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding-block:16px; border-bottom:1px solid var(--line)}
+  .brand{display:flex; align-items:center; gap:9px; font-weight:800; font-family:var(--serif)}
+  .hx{width:28px; height:28px; display:grid; place-items:center; font-size:1.1rem; background:linear-gradient(135deg,var(--violeta),var(--cian)); border-radius:9px; color:#0f1020}
+  .top .meta{font-size:.8rem; color:var(--muted)}
+  .hero{padding-block:clamp(28px,6vw,52px)}
+  .scoops{font-size:clamp(2.2rem,7vw,3rem); margin-bottom:6px}
+  .hero h1{font-size:clamp(2.3rem,7vw,4rem); font-weight:800}
+  .hero h1 .hl{color:var(--violeta)}
+  .hero .slo{font-size:clamp(1.05rem,3vw,1.4rem); font-weight:600; color:var(--cian); margin-top:8px}
+  .hero .lede{color:var(--muted); max-width:56ch; margin-top:14px; font-size:1.04rem}
+  section{padding-block:clamp(28px,5vw,46px); border-top:1px solid var(--line)}
+  .sec-h{margin-bottom:22px}
+  .sec-h h2{font-size:clamp(1.5rem,4vw,2.1rem); font-weight:800}
+  .sec-h p{color:var(--muted); margin-top:8px; max-width:60ch}
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px}
+  .pill{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px}
+  .pill.gift{background:linear-gradient(135deg, rgba(79,214,208,.14), rgba(139,124,255,.14)); border-color:var(--cian)}
+  .pill .ic{font-size:1.7rem}
+  .pill h3{font-size:1.1rem; font-weight:700; margin:10px 0 4px; font-family:var(--sans)}
+  .pill p{color:var(--muted); font-size:.92rem}
+  .perks{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px}
+  .perk{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:14px; display:flex; flex-direction:column; gap:2px}
+  .perk .pic{font-size:1.5rem}
+  .perk b{font-size:.98rem}
+  .perk small{color:var(--muted); font-size:.82rem}
+  .value{background:linear-gradient(135deg, rgba(139,124,255,.16), rgba(255,207,106,.10)); border:1px solid var(--line); border-radius:20px; padding:clamp(20px,4vw,32px)}
+  .value h2{font-size:clamp(1.4rem,4vw,2rem); font-weight:800}
+  .mult{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-top:18px}
+  .multcard{flex:1 1 180px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:16px; text-align:center}
+  .multcard .big{font-family:var(--serif); font-weight:800; font-size:2rem}
+  .multcard.lo .big{color:var(--muted)} .multcard.hi .big{color:var(--dorado)}
+  .multcard small{color:var(--muted); font-size:.82rem}
+  .screen{max-width:340px; margin-inline:auto; background:var(--surface); border:1px solid var(--line); border-radius:24px; padding:12px; box-shadow:0 26px 60px -30px rgba(0,0,0,.7)}
+  .screen .bar{display:flex; align-items:center; justify-content:space-between; background:linear-gradient(135deg,var(--violeta-deep),var(--violeta)); color:#fff; border-radius:16px; padding:11px 15px; font-weight:800; font-size:.92rem}
+  .screen .stag{font-size:.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:.12em; margin:12px 4px 4px}
+  .srow{display:flex; justify-content:space-between; gap:8px; padding:10px 12px; border-radius:11px; background:var(--surface-2); margin-top:8px; font-size:.87rem; font-weight:600}
+  .srow .neg{color:var(--red)} .srow .pos{color:var(--good)}
+  .quote{background:var(--surface); border:1px solid var(--line); border-radius:18px; overflow:hidden}
+  .qrow{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:15px 18px; border-top:1px solid var(--line)}
+  .qrow:first-child{border-top:0}
+  .qn{font-weight:500} .qv{font-weight:700; white-space:nowrap}
+  .qrow.qtot{background:var(--surface-2); border-top:2px solid var(--violeta)}
+  .qrow.qtot .qn{font-family:var(--serif); font-weight:800; font-size:1.1rem}
+  .qrow.qtot .qv{color:var(--violeta); font-size:1.3rem; font-family:var(--serif); font-weight:800}
+  .qrow.qmes .qn{color:var(--good); font-weight:600} .qrow.qmes .qv{color:var(--good)}
+  .qrow.gift .qn{color:var(--cian); font-weight:700} .qrow.gift .qv{color:var(--cian)}
+  .note{background:var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--violeta); border-radius:12px; padding:16px 18px; margin-top:20px; font-size:.95rem}
+  .note b{color:var(--violeta)}
+  .cta{display:grid; gap:14px; justify-items:center; text-align:center}
+  .cta h2{font-size:clamp(1.6rem,5vw,2.4rem); font-weight:800}
+  .btn{display:inline-flex; align-items:center; gap:9px; background:var(--wa); color:var(--wa-ink); font-weight:800; text-decoration:none; padding:14px 26px; border-radius:14px; font-size:1.05rem}
+  .contact{font-size:.95rem; color:var(--muted)}
+  .num{font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; user-select:all}
+  footer{padding-block:26px; color:var(--muted); font-size:.82rem; text-align:center; border-top:1px solid var(--line)}
+</style>
+
+<a href="#" onclick="if(history.length>1)history.back();return false" title="Volver" style="position:fixed;top:12px;left:12px;z-index:99999;background:rgba(0,0,0,.55);color:#fff;font:700 13px system-ui,-apple-system,sans-serif;text-decoration:none;padding:9px 14px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.4)">← Volver</a>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><span class="hx">🧠</span> Panal</div>
+    <div class="meta">Módulo avanzado · Cerebro de Distribución</div>
+  </div>
+
+  <header class="hero">
+    <div class="scoops">🧠📊</div>
+    <p class="eyebrow">Módulo avanzado</p>
+    <h1>Cerebro de <span class="hl">Distribución</span></h1>
+    <p class="slo">El socio virtual que controla varios negocios a la vez.</p>
+    <p class="lede">Cuando se compra en cantidad para varios negocios sale más barato, pero todo se mezcla. El Cerebro consolida cada negocio, <b>los mantiene separados</b>, reparte los costos y muestra, uno por uno, cuánto rinde de verdad.</p>
+  </header>
+
+  <section>
+    <div class="perks">
+      <div class="perk"><span class="pic">🎤</span><b>Todo por voz</b><small>Hablas y queda hecho, sin teclear.</small></div>
+      <div class="perk"><span class="pic">📱</span><b>Solo un teléfono o tablet</b><small>Nada de equipos caros ni instalaciones.</small></div>
+      <div class="perk"><span class="pic">🗂️</span><b>Todo queda registrado</b><small>Sin fichas latosas ni impresiones sueltas.</small></div>
+      <div class="perk"><span class="pic">🔄</span><b>Mejoras cada mes</b><small>Actualizaciones incluidas en la mensualidad.</small></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h"><p class="eyebrow">Qué hace</p><h2>El socio administrativo virtual</h2><p>No es una app más: es el que piensa y calcula por encima de todos los negocios.</p></div>
+    <div class="grid">
+      <div class="pill"><div class="ic">🔀</div><h3>Separa cada negocio</h3><p>Cada negocio con sus propios números. Nada se mezcla.</p></div>
+      <div class="pill"><div class="ic">🧮</div><h3>Hace los cálculos</h3><p>Reparte el costo de lo que se compra en cantidad entre cada negocio, automático.</p></div>
+      <div class="pill"><div class="ic">📊</div><h3>Rentabilidad por negocio</h3><p>Dice cuál gana, cuál pierde y por qué — con números, no a ojo.</p></div>
+      <div class="pill"><div class="ic">📈</div><h3>Análisis y proyecciones</h3><p>Tendencias, alertas y proyección de cada negocio para decidir con cabeza.</p></div>
+      <div class="pill"><div class="ic">💰</div><h3>Balance consolidado</h3><p>El total del grupo en una pantalla, y el detalle de cada negocio.</p></div>
+      <div class="pill gift"><div class="ic">🎁</div><h3>Dashboard con balances <small style="color:var(--cian)">de regalo</small></h3><p>Ventas, costos, ganancias y balance de cada negocio, a la vista.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h">
+      <p class="eyebrow">Cómo se ve por dentro</p>
+      <h2>Una muestra del panel de Distribución</h2>
+      <p>Así se ve el balance del grupo: cada negocio por separado y el consolidado abajo.</p>
+    </div>
+    <div class="screen" aria-hidden="true">
+      <div class="bar"><span>🧠 Distribución</span><span>Este mes</span></div>
+      <div class="stag">Resultado por negocio</div>
+      <div class="srow"><span>Fábrica de helados</span><span class="pos">+$1.240.000</span></div>
+      <div class="srow"><span>Panadería · Centro</span><span class="pos">+$860.000</span></div>
+      <div class="srow"><span>Panadería · Norte</span><span class="neg">−$120.000</span></div>
+      <div class="srow" style="background:transparent;border:1px dashed var(--line)"><span>Consolidado</span><span class="pos">+$1.980.000</span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="value">
+      <p class="eyebrow">Lo que casi nadie mide</p>
+      <h2>Un negocio ordenado vale mucho más</h2>
+      <p style="color:var(--muted); margin-top:10px; max-width:62ch">Un negocio se valoriza por sus ganancias anuales <b>multiplicadas por un número</b> (el múltiplo). Mientras más ordenado y con datos, más alto el múltiplo — porque vale más algo que funciona solo y con números claros.</p>
+      <div class="mult">
+        <div class="multcard lo"><div class="big">2×</div><small>Sin orden<br>(todo en la cabeza)</small></div>
+        <div style="color:var(--violeta);font-weight:800;font-size:1.4rem">→</div>
+        <div class="multcard hi"><div class="big">7×</div><small>Con sistema,<br>datos y procesos</small></div>
+      </div>
+      <p style="color:var(--ink); margin-top:16px; font-weight:600">El Cerebro convierte cada negocio en un <b style="color:var(--dorado)">activo con números claros</b>: mejores decisiones hoy, y mucho más valor el día de mañana.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h"><p class="eyebrow">Cotización</p><h2>Lo que se arma y cuánto vale</h2><p>Es el cerebro que conecta y analiza todos los negocios.</p></div>
+    <div class="quote">
+      <div class="qrow"><span class="qn">🧠 Cerebro — consolidación, cálculos, análisis y socio virtual</span><span class="qv tnum">$150.000</span></div>
+      <div class="qrow gift"><span class="qn">🎁 Dashboard con números y balances</span><span class="qv">Incluido</span></div>
+      <div class="qrow qtot"><span class="qn">Montaje total (una vez)</span><span class="qv tnum">$150.000</span></div>
+      <div class="qrow qmes"><span class="qn">Mensualidad — hosting, mantención, mejoras mensuales y soporte</span><span class="qv tnum">$30.000 / mes</span></div>
+    </div>
+    <div class="note">🌐 <b>Dominio aparte</b> (~$12.000/año). &nbsp;·&nbsp; 🧩 <b>Se complementa</b> con el sistema de Fábrica de Helados y el de Panadería (cada uno por separado). El Cerebro toma los números de esos sistemas y los analiza en conjunto.</div>
+    <div class="note">➕ <b>Servicios opcionales:</b> &nbsp;🌐 Página web con catálogo para vender —pedidos por WhatsApp, con opción de retiro, reparto o distribución— <b>$90.000</b> &nbsp;·&nbsp; 📣 <b>Marketing y redes $150.000/mes</b> — 3 publicaciones por semana (12 al mes) en Facebook e Instagram + catálogo enlazado al WhatsApp para coordinar pedidos. Chatbot opcional: lo paga el cliente según uso (es bajo).</div>
+  </section>
+
+  <section>
+    <div class="cta">
+      <p class="eyebrow">¿Le damos cabeza al grupo?</p>
+      <h2>Que cada negocio valga más</h2>
+      <p class="contact">Escríbeme por WhatsApp:<br><span class="num">+56 9 2800 5332</span> · Javier — Panal</p>
+      <a class="btn" href="https://wa.me/56928005332?text=Hola%20Javier%2C%20me%20interesa%20el%20Cerebro%20de%20Distribuci%C3%B3n" target="_blank" rel="noopener">💬 Quiero avanzar</a>
+    </div>
+  </section>
+  <footer>Panal · Cerebro de Distribución — el socio virtual que ordena y valoriza los negocios</footer>
+</div>

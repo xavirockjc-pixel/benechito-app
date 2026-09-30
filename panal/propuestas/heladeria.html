@@ -1,0 +1,197 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heladería con Panal</title>
+<meta name="description" content="Propuesta de servicio Panal para una heladería con panadería que distribuye: local, fabricación con recetas, bodega, clientes y central.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&family=Instrument+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    color-scheme: light;
+    --ground:#fbf5ec; --surface:#ffffff; --surface-2:#fdeee1; --line:#efe0d0;
+    --frutilla:#e35d7a; --frutilla-deep:#c6425f; --menta:#3fae93; --vainilla:#e9a712;
+    --ink:#2b211c; --muted:#8c7a6b; --wa:#1faa55; --wa-ink:#ffffff; --good:#2f9d74;
+    --serif:"Fraunces", Georgia, serif;
+    --sans:"Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --gut: clamp(16px, 4vw, 40px);
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--ink); font-family:var(--sans); line-height:1.6;
+    background-image:radial-gradient(120% 55% at 50% -10%, rgba(227,93,122,.10), transparent 60%);}
+  .wrap{max-width:1040px; margin-inline:auto; padding-inline:var(--gut)}
+  h1,h2,h3{font-family:var(--serif); margin:0; text-wrap:balance; line-height:1.08}
+  p{margin:0}
+  a{color:var(--frutilla-deep)}
+  .eyebrow{font-family:var(--sans); text-transform:uppercase; letter-spacing:.18em; font-size:.72rem; font-weight:600; color:var(--frutilla-deep)}
+  .tnum{font-variant-numeric:tabular-nums}
+
+  .top{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    padding-block:16px; border-bottom:1px solid var(--line)}
+  .brand{display:flex; align-items:center; gap:9px; font-weight:800; font-family:var(--serif)}
+  .hx{width:28px; height:28px; display:grid; place-items:center; font-size:1.1rem;
+    background:linear-gradient(135deg,var(--frutilla),var(--vainilla)); border-radius:9px}
+  .top .meta{font-size:.8rem; color:var(--muted)}
+
+  .hero{padding-block:clamp(28px,6vw,52px)}
+  .hero h1{font-size:clamp(2.3rem,7vw,4rem); font-weight:800}
+  .hero h1 .hl{color:var(--frutilla)}
+  .hero .slo{font-size:clamp(1.05rem,3vw,1.4rem); font-weight:600; color:var(--menta); margin-top:8px; font-family:var(--sans)}
+  .hero .lede{color:var(--muted); max-width:56ch; margin-top:14px; font-size:1.04rem}
+  .scoops{font-size:clamp(2.2rem,7vw,3rem); margin-bottom:6px}
+
+  section{padding-block:clamp(28px,5vw,46px); border-top:1px solid var(--line)}
+  .sec-h{margin-bottom:22px}
+  .sec-h h2{font-size:clamp(1.5rem,4vw,2.1rem); font-weight:800}
+  .sec-h p{color:var(--muted); margin-top:8px; max-width:60ch}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px}
+  .pill{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:0 6px 20px -14px rgba(120,80,60,.4)}
+  .pill .ic{font-size:1.7rem}
+  .pill h3{font-size:1.1rem; font-weight:700; margin:10px 0 4px; font-family:var(--sans)}
+  .pill p{color:var(--muted); font-size:.92rem}
+
+  .flow{background:linear-gradient(135deg, rgba(227,93,122,.10), rgba(63,174,147,.08));
+    border:1px solid var(--line); border-radius:20px; padding:clamp(20px,4vw,32px)}
+  .flow h2{font-size:clamp(1.4rem,4vw,2rem); font-weight:800}
+  .chain{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:18px; font-weight:600}
+  .chain .step{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:10px 14px; font-size:.95rem}
+  .chain .arw{color:var(--frutilla); font-weight:800}
+  .chain .out{background:rgba(47,157,116,.12); border-color:var(--good); color:var(--good)}
+
+  .quote{background:var(--surface); border:1px solid var(--line); border-radius:18px; overflow:hidden; box-shadow:0 10px 30px -20px rgba(120,80,60,.5)}
+  .qrow{display:flex; align-items:center; justify-content:space-between; gap:14px; padding:15px 18px; border-top:1px solid var(--line)}
+  .qrow:first-child{border-top:0}
+  .qn{font-weight:500}
+  .qv{font-weight:700; white-space:nowrap}
+  .qrow.qtot{background:var(--surface-2); border-top:2px solid var(--frutilla)}
+  .qrow.qtot .qn{font-family:var(--serif); font-weight:800; font-size:1.1rem}
+  .qrow.qtot .qv{color:var(--frutilla-deep); font-size:1.3rem; font-family:var(--serif); font-weight:800}
+  .qrow.qmes .qn{color:var(--good); font-weight:600}
+  .qrow.qmes .qv{color:var(--good)}
+
+  .note{background:var(--surface-2); border:1px solid var(--line); border-left:3px solid var(--frutilla);
+    border-radius:12px; padding:16px 18px; margin-top:20px; font-size:.95rem}
+  .note b{color:var(--frutilla-deep)}
+
+  .pay{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px}
+
+  .cta{display:grid; gap:14px; justify-items:center; text-align:center}
+  .cta h2{font-size:clamp(1.6rem,5vw,2.4rem); font-weight:800}
+  .btn{display:inline-flex; align-items:center; gap:9px; background:var(--wa); color:var(--wa-ink); font-weight:800;
+    text-decoration:none; padding:14px 26px; border-radius:14px; font-size:1.05rem}
+  .contact{font-size:.95rem; color:var(--muted)}
+  .num{font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; user-select:all}
+  footer{padding-block:26px; color:var(--muted); font-size:.82rem; text-align:center; border-top:1px solid var(--line)}
+</style>
+
+<a href="#" onclick="if(history.length>1)history.back();return false" title="Volver" style="position:fixed;top:12px;left:12px;z-index:99999;background:rgba(0,0,0,.55);color:#fff;font:700 13px system-ui,-apple-system,sans-serif;text-decoration:none;padding:9px 14px;border-radius:999px;box-shadow:0 4px 14px rgba(0,0,0,.4)">← Volver</a>
+<div class="wrap">
+
+  <div class="top">
+    <div class="brand"><span class="hx">🍦</span> Panal</div>
+    <div class="meta">Propuesta de servicio · 2026</div>
+  </div>
+
+  <header class="hero">
+    <div class="scoops">🍨🥖</div>
+    <p class="eyebrow">Propuesta para</p>
+    <h1>Tu <span class="hl">Heladería</span></h1>
+    <p class="slo">Helados y panadería, bajo control.</p>
+    <p class="lede">Fabricas helados y pan, vendes en el local y le distribuyes a varios negocios. Con Panal manejas todo desde el celular: lo que produces, lo que te queda de insumo, a quién le vendes, quién te debe y cuánto ganas de verdad — sin planillas ni andar adivinando.</p>
+  </header>
+
+  <section>
+    <div class="sec-h">
+      <p class="eyebrow">Lo que tendrás</p>
+      <h2>Tu operación completa, conectada</h2>
+      <p>Cada parte habla con la otra: fabricas, se descuenta el insumo, sabes qué te queda y a quién le vendiste. Todo junto.</p>
+    </div>
+    <div class="grid">
+      <div class="pill"><div class="ic">🛒</div><h3>Local / Caja</h3><p>Vende helados y pan en el mesón y cierra la caja cuadrada al final del día.</p></div>
+      <div class="pill"><div class="ic">🏭</div><h3>Fabricación con recetas</h3><p>Produces helados y pan; el sistema descuenta los insumos (leche, azúcar, harina…) por receta.</p></div>
+      <div class="pill"><div class="ic">📦</div><h3>Bodega / Stock</h3><p>Control de insumos y de lo que produces para distribuir. Te avisa cuándo reponer.</p></div>
+      <div class="pill"><div class="ic">🧾</div><h3>Clientes y deudas</h3><p>Los negocios a los que distribuyes con su cuenta corriente: cuánto llevaron, cuánto deben, cuánto pagaron.</p></div>
+      <div class="pill"><div class="ic">📊</div><h3>Central del dueño</h3><p>Ventas, costos, ganancias y reporte diario a tu WhatsApp. Los números solo los ves tú.</p></div>
+      <div class="pill"><div class="ic">🧮</div><h3>Facturación</h3><p>Boletas, guías y facturas ordenadas para tu venta y tu distribución.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="flow">
+      <p class="eyebrow">El truco que te hace ganar</p>
+      <h2>Cada helado y cada pan descuenta sus insumos, solo</h2>
+      <p style="color:var(--muted); margin-top:10px; max-width:60ch">Ya no adivinas cuánto gastaste. Fabricas un lote y el sistema baja el stock exacto de lo que llevó. Sabes tu costo real y cuánto ganas por producto.</p>
+      <div class="chain">
+        <span class="step">🏭 Fabricas un lote</span>
+        <span class="arw">→</span>
+        <span class="step">Descuenta leche + azúcar + harina</span>
+        <span class="arw">→</span>
+        <span class="step">Baja el stock de bodega</span>
+        <span class="arw">→</span>
+        <span class="step out">Sabes tu costo y tu ganancia ✓</span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h">
+      <p class="eyebrow">Cotización</p>
+      <h2>Lo que se arma y cuánto vale</h2>
+      <p>Se cobra por lo que montamos: tu tienda web, la central y cada app que uses. Se paga una vez y queda funcionando.</p>
+    </div>
+
+    <div class="quote">
+      <div class="qrow"><span class="qn">🛍️ Landing con catálogo (tu tienda web)</span><span class="qv tnum">$120.000</span></div>
+      <div class="qrow"><span class="qn">📊 Central — administración, clientes, deudas y facturación</span><span class="qv tnum">$50.000</span></div>
+      <div class="qrow"><span class="qn">🧾 App Caja / Local</span><span class="qv tnum">$30.000</span></div>
+      <div class="qrow"><span class="qn">🏭 App Producción (fabricación por receta)</span><span class="qv tnum">$30.000</span></div>
+      <div class="qrow"><span class="qn">📦 App Bodega (stock)</span><span class="qv tnum">$30.000</span></div>
+      <div class="qrow qtot"><span class="qn">Montaje total (una vez)</span><span class="qv tnum">$260.000</span></div>
+      <div class="qrow qmes"><span class="qn">Mensualidad — hosting, mantención, actualizaciones y soporte</span><span class="qv tnum">$20.000 / mes</span></div>
+    </div>
+
+    <div class="note">
+      🌐 <b>Dominio aparte:</b> el dominio (~$12.000/año) corre por tu cuenta; lo dejamos conectado. &nbsp;·&nbsp; ➕ <b>¿Más usuarios?</b> Cada app adicional para sumar gente: <b>$15.000</b>. &nbsp;·&nbsp; 🎁 <b>Fundador:</b> mensualidad congelada 1 año.
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h">
+      <p class="eyebrow">El montaje se paga — tú eliges cómo</p>
+      <h2>Dos formas de pagar el arranque</h2>
+      <p>El montaje es dejarte todo configurado a tu medida: tus productos, tus recetas y tu tienda. Se paga una vez — al contado o repartido en la cuota.</p>
+    </div>
+    <div class="pay">
+      <div class="pill">
+        <div class="ic">💵</div>
+        <h3>Al contado</h3>
+        <p>Pagas el montaje al inicio y listo. Es la forma más barata en total: <b class="tnum" style="color:var(--frutilla-deep)">$260.000</b> una vez + $20.000/mes.</p>
+      </div>
+      <div class="pill">
+        <div class="ic">📅</div>
+        <h3>Repartido en la cuota <span style="font-size:.7rem;font-weight:600;color:var(--frutilla-deep);vertical-align:middle">+20% recargo</span></h3>
+        <p>Si no quieres soltar todo de una: <b>arranque de $50.000</b> + cuota más alta el primer año (<b class="tnum" style="color:var(--frutilla-deep)">~$41.000/mes</b>), y al año 2 baja a $20.000/mes. Permanencia 12 meses.</p>
+        <p style="color:var(--muted);font-size:.85rem;margin-top:8px">Pagar en cuotas tiene un recargo de ~20% por el financiamiento. El contado siempre sale más barato.</p>
+      </div>
+    </div>
+    <div class="note">
+      🎓 <b>Capacitación:</b> la primera va incluida en el montaje. Sesiones extra $15.000 cada una. El soporte del día a día por WhatsApp va incluido en la mensualidad.
+    </div>
+  </section>
+
+  <section>
+    <div class="cta">
+      <p class="eyebrow">¿Partimos?</p>
+      <h2>Dejemos tu heladería andando</h2>
+      <p class="contact">Escríbeme por WhatsApp y coordinamos la instalación:<br>
+        <span class="num">+56 9 2800 5332</span> · Javier — Panal</p>
+      <a class="btn" href="https://wa.me/56928005332?text=Hola%20Javier%2C%20quiero%20avanzar%20con%20Panal%20para%20mi%20helader%C3%ADa" target="_blank" rel="noopener">💬 Quiero avanzar</a>
+    </div>
+  </section>
+
+  <footer>
+    Panal · Sistema de gestión para heladerías y panaderías · Propuesta sin compromiso
+  </footer>
+
+</div>
