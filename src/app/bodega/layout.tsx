@@ -40,6 +40,7 @@ export default async function BodegaLayout({ children }: { children: React.React
         items={[
           { href: "/bodega", label: rubro.labels.bodega, icon: "📦" },
           { href: "/bodega/surtidos", label: rubro.labels.surtidos, icon: "🍬" },
+          { href: "/bodega/cierre", label: "Cierre", icon: "🧾" },
           { href: "/bodega/insumos", label: "Insumos", icon: "🧪" },
           { href: "/bodega/checklist", label: "Higiene", icon: "🧼" },
         ]}

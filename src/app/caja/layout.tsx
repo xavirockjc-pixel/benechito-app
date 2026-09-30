@@ -70,6 +70,7 @@ export default async function CajaLayout({ children }: { children: React.ReactNo
         <NavLink href="/caja/vecina">🏧 Caja Vecina</NavLink>
         <NavLink href="/caja/inventario">🍫 Productos</NavLink>
         <NavLink href="/caja/sabores">🍧 Sabores</NavLink>
+        <NavLink href="/caja/cierre-stock">🧾 Cierre stock</NavLink>
         <NavLink href="/caja/checklist">🌡️ Higiene</NavLink>
       </nav>
       <AvisoAperturas />
