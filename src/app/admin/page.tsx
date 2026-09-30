@@ -63,9 +63,28 @@ export default async function Panel() {
   const helados = ranking.filter((r) => LINEAS_HELADO.has(r.p!.linea)).slice(0, 6);
   const dulces = ranking.filter((r) => !LINEAS_HELADO.has(r.p!.linea)).slice(0, 6);
 
+  // Estado de puesta en marcha (para invitar a "Primeros pasos" si falta algo).
+  const [nTrab, nProd, nPrec, nStk] = await Promise.all([
+    prisma.trabajador.count(),
+    prisma.producto.count({ where: { activo: true } }),
+    prisma.precioProducto.count(),
+    prisma.stock.count({ where: { cantidad: { gt: 0 } } }),
+  ]);
+  const listosArranque = [nTrab > 0, nProd > 0, nPrec > 0, nStk > 0, Number(sumaVentas._sum.total ?? 0) > 0].filter(Boolean).length;
+  const arranqueCompleto = listosArranque === 5;
+
   return (
     <div>
       <AvisoAccesoAdmin />
+      {!arranqueCompleto && (
+        <Link href="/admin/primeros-pasos" className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-[#f28a1e] to-[#e0730c] px-5 py-4 text-white shadow-md transition hover:brightness-105">
+          <span className="min-w-0">
+            <span className="block text-base font-extrabold">🚀 Termina de dejar tu sistema andando</span>
+            <span className="block text-sm text-white/90">{listosArranque} de 5 pasos listos — te faltan {5 - listosArranque}. Toca para continuar.</span>
+          </span>
+          <span className="shrink-0 text-2xl">→</span>
+        </Link>
+      )}
       {/* Encabezado */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
