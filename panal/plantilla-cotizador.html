@@ -1,7 +1,9 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:dark}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#141210;color:#f5ecdd}img{max-width:100%}[hidden]{display:none!important}</style></head><body>
 <title>Cotizador de Servicios</title>
 <style>
-  /* Cotizador de marca blanca para prestadores de servicios — config-driven, tema oscuro miel (editable por cliente) */
+  /* Cotizador de marca blanca para prestadores de servicios — estilo SELECCIONADOR.
+     El proveedor edita el objeto NEGOCIO (o usa ⚙️ y 🧰), marca qué servicios incluye,
+     y envía la cotización al cliente. "⬇️ Descargar cotizador listo" baja un .html autónomo. */
   :root{
     color-scheme: dark;
     --bg:#141210; --bg2:#0e0b08; --card:#211b14; --ink:#f5ecdd; --muted:#a9997f; --line:#352b1f;
@@ -38,29 +40,39 @@
   .grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}@media(max-width:520px){.grid3{grid-template-columns:1fr}}
   .colorrow{display:flex;gap:8px;align-items:center}.colorrow input[type=color]{width:44px;height:38px;padding:2px;border-radius:8px;flex:none}
 
-  /* lista de servicios */
-  .svc{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--bg)}
+  /* barra de selección */
+  .selbar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .selbar .count{font-size:.82rem;color:var(--muted)} .selbar .count b{color:var(--bright)}
+  .selbar .acts{display:flex;gap:6px}
+  .mini{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 13px;font-weight:800;font-size:.78rem;cursor:pointer}
+
+  /* seleccionador de servicios: cada fila = incluir / no incluir */
+  .svc{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;margin-bottom:8px;background:var(--bg);cursor:pointer;transition:border-color .12s,background .12s,opacity .12s}
+  .svc .chk{flex:none;width:26px;height:26px;border-radius:8px;border:2px solid var(--line);display:grid;place-items:center;font-weight:900;color:transparent;background:var(--card)}
   .svc .info{flex:1;min-width:0}
   .svc .info b{font-size:.98rem}
   .svc .info small{display:block;color:var(--muted);font-size:.8rem}
-  .svc .pr{font-weight:800;color:var(--bright);white-space:nowrap}
+  .svc .pr{font-weight:800;color:var(--bright);white-space:nowrap;text-align:right}
   .svc .pr small{display:block;color:var(--muted);font-weight:400;font-size:.7rem}
-  .svc .add{flex:none;border:0;border-radius:10px;background:linear-gradient(180deg,var(--accent),var(--accentDark));color:#160f07;font-weight:800;padding:9px 13px;cursor:pointer}
+  .svc .qty{flex:none;display:none;align-items:center}
+  .svc.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--bg))}
+  .svc.on .chk{background:linear-gradient(180deg,var(--accent),var(--accentDark));border-color:var(--accent);color:#160f07}
+  .svc.on .qty{display:flex}
+  .svc.off{opacity:.62}
   .svc .edit{flex:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:9px;width:34px;height:34px;cursor:pointer;display:none}
-  .editing .svc .edit{display:inline-block} .editing .svc .add{display:none}
+  .editing .svc{cursor:default}
+  .editing .svc .edit{display:inline-block} .editing .svc .chk,.editing .svc .qty{visibility:hidden}
+  .qty button{width:26px;height:28px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;font-weight:800}
+  .qty button:first-child{border-radius:8px 0 0 8px}.qty button:last-child{border-radius:0 8px 8px 0}
+  .qty input{width:40px;text-align:center;border-radius:0;border-left:0;border-right:0;padding:6px 2px}
 
   /* cotización (resumen) */
   .quote{position:sticky;top:calc(64px + env(safe-area-inset-top,0px))}
   .qhead{font-size:.78rem;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:800;margin-bottom:10px}
-  .line{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--line)}
-  .line .nm{flex:1;min-width:0;font-size:.9rem}
+  .line{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed var(--line)}
+  .line .nm{flex:1;min-width:0;font-size:.88rem}
   .line .nm small{display:block;color:var(--muted);font-size:.72rem}
-  .qty{display:flex;align-items:center;gap:0;flex:none}
-  .qty button{width:26px;height:28px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;font-weight:800}
-  .qty button:first-child{border-radius:8px 0 0 8px}.qty button:last-child{border-radius:0 8px 8px 0}
-  .qty input{width:38px;text-align:center;border-radius:0;border-left:0;border-right:0;padding:6px 2px}
   .line .lt{font-weight:800;white-space:nowrap;min-width:64px;text-align:right}
-  .line .rm{flex:none;border:0;background:none;color:var(--muted);cursor:pointer;font-size:1rem}
   .empty{color:var(--muted);font-size:.86rem;text-align:center;padding:18px 6px}
   .totrow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:.9rem}
   .totrow.grand{border-top:1px solid var(--line);margin-top:6px;padding-top:12px;font-size:1.05rem}
@@ -70,7 +82,6 @@
   .btn-wa{background:#25D366;color:#fff} .btn-a{background:linear-gradient(180deg,var(--accent),var(--accentDark));color:#160f07}
   .btn-g{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
   .msg{font-size:.78rem;color:var(--good);text-align:center;min-height:1em}
-  .mini{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 13px;font-weight:800;font-size:.78rem;cursor:pointer}
   .hint{font-size:.78rem;color:var(--muted);margin-top:8px}
   .photo-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}
   .fprev{width:58px;height:58px;border-radius:12px;border:2px dashed var(--line);display:grid;place-items:center;font-size:1.4rem;background:var(--bg);overflow:hidden}.fprev img{width:100%;height:100%;object-fit:cover}
@@ -80,13 +91,13 @@
 
 <!--
   ╔══════════════════════════════════════════════════════════════════════════╗
-  ║  COTIZADOR DE SERVICIOS — plantilla de marca blanca para replicar          ║
-  ║  El proveedor edita el objeto NEGOCIO (o usa los botones ⚙️ y 🧰), arma su ║
-  ║  cotización y la envía al cliente. "⬇️ Descargar cotizador listo" baja un  ║
-  ║  .html autónomo con todo incrustado (marca, servicios, IVA).               ║
+  ║  COTIZADOR DE SERVICIOS — plantilla de marca blanca (estilo seleccionador) ║
+  ║  El proveedor edita el objeto NEGOCIO (o usa los botones ⚙️ y 🧰), marca   ║
+  ║  qué servicios incluye y envía la cotización al cliente. "⬇️ Descargar     ║
+  ║  cotizador listo" baja un .html autónomo con todo incrustado.              ║
   ╚══════════════════════════════════════════════════════════════════════════╝
 -->
-<div class="banner" id="banner">🐝 <b>Plantilla Panal</b> · toca <b>⚙️ Negocio</b> y <b>🧰 Servicios</b> para personalizar, y <b>⬇️ Descargar</b> el cotizador del cliente.</div>
+<div class="banner" id="banner">🐝 <b>Plantilla Panal</b> · toca <b>⚙️ Negocio</b> y <b>🧰 Servicios</b> para personalizar, marca lo que incluyes y <b>⬇️ Descarga</b> el cotizador del cliente.</div>
 
 <header class="bar"><div class="in">
   <span class="brand"><img id="bLogo" alt="" hidden><span><span class="nm" id="bMarca"></span><span class="rubro" id="bRubro" style="display:block"></span></span></span>
@@ -144,9 +155,15 @@
       </div>
     </div>
 
-    <!-- lista de servicios -->
-    <div class="panel">
-      <h2 id="listTitle">Servicios · toca “Agregar” para sumarlos a la cotización</h2>
+    <!-- seleccionador de servicios -->
+    <div class="panel" id="svcPanel">
+      <div class="selbar">
+        <div class="count" id="selCount">Marca los servicios que incluyes</div>
+        <div class="acts">
+          <button class="mini" id="selAll">Todos</button>
+          <button class="mini" id="selNone">Ninguno</button>
+        </div>
+      </div>
       <div id="svcList"></div>
     </div>
   </div>
@@ -191,9 +208,9 @@ const NEGOCIO = {
   validezDias:15,
   nota:"Valores en pesos. 50% para comenzar, saldo contra entrega.",
   servicios:[
-    { nombre:"Visita y diagnóstico", desc:"Revisión en terreno.", unidad:"por visita", precio:12000 },
-    { nombre:"Mano de obra", desc:"Trabajo por hora.", unidad:"por hora", precio:15000 },
-    { nombre:"Instalación estándar", desc:"Incluye materiales básicos.", unidad:"por trabajo", precio:35000 }
+    { nombre:"Visita y diagnóstico", desc:"Revisión en terreno.", unidad:"por visita", precio:12000, on:true },
+    { nombre:"Mano de obra", desc:"Trabajo por hora.", unidad:"por hora", precio:15000, on:true },
+    { nombre:"Instalación estándar", desc:"Incluye materiales básicos.", unidad:"por trabajo", precio:35000, on:false }
   ]
 };
 /*NEGOCIO_END*/
@@ -205,7 +222,9 @@ const NEGOCIO = {
   try{ var s=localStorage.getItem(LS_NEG); if(s) cfg=Object.assign(cfg, JSON.parse(s)); }catch(e){}
   if(!cfg.color) cfg.color={bg:"#141210",accent:"#f2941f",accentDark:"#d1741a"};
   if(!cfg.servicios) cfg.servicios=[];
-  var quote=[]; try{ var q=localStorage.getItem(LS_Q); if(q) quote=JSON.parse(q)||[]; }catch(e){}
+  // estado de selección/cantidad por servicio (se restaura del borrador)
+  cfg.servicios.forEach(function(s){ if(s.on===undefined) s.on=true; if(!s.cant||s.cant<1) s.cant=1; });
+  try{ var q=JSON.parse(localStorage.getItem(LS_Q)||"null"); if(q&&q.sel&&q.sel.length===cfg.servicios.length){ q.sel.forEach(function(st,i){ cfg.servicios[i].on=!!st.on; cfg.servicios[i].cant=Math.max(1,st.cant||1); }); } }catch(e){}
 
   var $=function(id){return document.getElementById(id);};
   var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
@@ -213,7 +232,7 @@ const NEGOCIO = {
   function darken(hex){ try{var c=hex.replace('#','');if(c.length===3)c=c.split('').map(function(x){return x+x;}).join('');var r=Math.max(0,parseInt(c.slice(0,2),16)-30),g=Math.max(0,parseInt(c.slice(2,4),16)-30),b=Math.max(0,parseInt(c.slice(4,6),16)-30);return '#'+[r,g,b].map(function(x){return x.toString(16).padStart(2,'0');}).join('');}catch(e){return hex;} }
   function waLink(msg){ return "https://wa.me/"+(cfg.whatsapp||'').replace(/\D/g,'')+"?text="+encodeURIComponent(msg); }
   function saveNeg(){ try{localStorage.setItem(LS_NEG,JSON.stringify(cfg));}catch(e){} }
-  window.saveQ=function(){ try{localStorage.setItem(LS_Q,JSON.stringify(quote));}catch(e){} };
+  window.saveQ=function(){ try{ var sel=cfg.servicios.map(function(s){return {on:!!s.on,cant:s.cant||1};}); localStorage.setItem(LS_Q,JSON.stringify({sel:sel,cli:$("cCliente").value,pro:$("cProyecto").value}));}catch(e){} };
 
   function applyBrand(){
     var r=document.documentElement.style;
@@ -227,50 +246,49 @@ const NEGOCIO = {
     $("validezTxt").textContent = "Cotización válida por "+(cfg.validezDias||15)+" días."+(cfg.nota?(" "+cfg.nota):"");
   }
 
-  // ---- lista de servicios ----
+  // ---- seleccionador de servicios ----
   var editing=false;
+  function seleccionados(){ return cfg.servicios.filter(function(s){return s.on;}); }
   function renderSvc(){
     var c=$("svcList"); c.innerHTML="";
-    if(!cfg.servicios.length){ c.innerHTML='<div class="empty">Sin servicios aún. Toca 🧰 Servicios para agregar.</div>'; return; }
+    if(!cfg.servicios.length){ c.innerHTML='<div class="empty">Sin servicios aún. Toca 🧰 Servicios para agregar.</div>'; $("selCount").textContent=""; return; }
     cfg.servicios.forEach(function(s,i){
-      var d=document.createElement("div"); d.className="svc";
-      d.innerHTML='<div class="info"><b>'+esc(s.nombre)+'</b><small>'+esc(s.desc||'')+'</small></div>'
+      var d=document.createElement("div"); d.className="svc "+(editing?"":(s.on?"on":"off"));
+      d.innerHTML='<div class="chk">✓</div>'
+        +'<div class="info"><b>'+esc(s.nombre)+'</b><small>'+esc(s.desc||'')+'</small></div>'
+        +'<div class="qty"><button aria-label="menos">−</button><input class="tab" inputmode="numeric" value="'+(s.cant||1)+'"><button aria-label="más">+</button></div>'
         +'<div class="pr tab">'+money(s.precio)+'<small>'+esc(s.unidad||'')+'</small></div>'
-        +'<button class="add">+ Agregar</button>'
         +'<button class="edit" title="Editar">✏️</button>';
-      d.querySelector(".add").onclick=function(){ addLine(i); };
-      d.querySelector(".edit").onclick=function(){ editSvc(i); };
+      if(editing){ d.querySelector(".edit").onclick=function(e){ e.stopPropagation(); editSvc(i); }; }
+      else{
+        d.onclick=function(ev){ if(ev.target.closest(".qty")) return; s.on=!s.on; if(s.on&&(!s.cant||s.cant<1))s.cant=1; saveQ(); renderSvc(); renderLines(); calc(); };
+        var qb=d.querySelectorAll(".qty button"), qi=d.querySelector(".qty input");
+        qb[0].onclick=function(e){ e.stopPropagation(); s.cant=Math.max(1,(s.cant||1)-1); qi.value=s.cant; saveQ(); renderLines(); calc(); };
+        qb[1].onclick=function(e){ e.stopPropagation(); s.cant=(s.cant||1)+1; qi.value=s.cant; saveQ(); renderLines(); calc(); };
+        qi.onclick=function(e){ e.stopPropagation(); };
+        qi.onchange=function(){ s.cant=Math.max(1,parseInt(qi.value,10)||1); qi.value=s.cant; saveQ(); renderLines(); calc(); };
+      }
       c.appendChild(d);
     });
-    document.getElementById("svcList").parentElement.classList.toggle("editing", editing);
+    $("svcPanel").classList.toggle("editing", editing);
+    var n=seleccionados().length;
+    $("selCount").innerHTML = editing ? "Editando servicios · toca ✏️ para modificar" : ("<b>"+n+"</b> de "+cfg.servicios.length+" servicios incluidos");
   }
 
-  // ---- cotización ----
-  function addLine(i){
-    var s=cfg.servicios[i]; if(!s) return;
-    var ex=quote.filter(function(l){return l.nombre===s.nombre && l.precio===s.precio;})[0];
-    if(ex){ ex.cant++; } else quote.push({ nombre:s.nombre, unidad:s.unidad||"", precio:Number(s.precio)||0, cant:1 });
-    saveQ(); renderLines(); calc();
-  }
+  // ---- cotización (deriva de la selección) ----
   function renderLines(){
-    var c=$("lines"); c.innerHTML="";
-    if(!quote.length){ c.innerHTML='<div class="empty">Agrega servicios de la lista para armar la cotización.</div>'; return; }
-    quote.forEach(function(l,idx){
+    var c=$("lines"); c.innerHTML=""; var sel=seleccionados();
+    if(!sel.length){ c.innerHTML='<div class="empty">Marca servicios de la lista para armar la cotización.</div>'; return; }
+    sel.forEach(function(l){
       var d=document.createElement("div"); d.className="line";
-      d.innerHTML='<div class="nm">'+esc(l.nombre)+'<small>'+money(l.precio)+' '+esc(l.unidad||'')+'</small></div>'
-        +'<div class="qty"><button aria-label="menos">−</button><input class="tab" inputmode="numeric" value="'+l.cant+'"><button aria-label="más">+</button></div>'
-        +'<div class="lt tab">'+money(l.precio*l.cant)+'</div>'
-        +'<button class="rm" title="Quitar">✕</button>';
-      var btns=d.querySelectorAll(".qty button"), inp=d.querySelector(".qty input");
-      btns[0].onclick=function(){ l.cant=Math.max(1,l.cant-1); inp.value=l.cant; saveQ(); renderLines(); calc(); };
-      btns[1].onclick=function(){ l.cant++; inp.value=l.cant; saveQ(); renderLines(); calc(); };
-      inp.onchange=function(){ l.cant=Math.max(1,parseInt(inp.value,10)||1); inp.value=l.cant; saveQ(); renderLines(); calc(); };
-      d.querySelector(".rm").onclick=function(){ quote.splice(idx,1); saveQ(); renderLines(); calc(); };
+      d.innerHTML='<div class="nm">'+esc(l.nombre)+(l.cant>1?(' ×'+l.cant):'')+'<small>'+money(l.precio)+' '+esc(l.unidad||'')+'</small></div>'
+        +'<div class="lt tab">'+money(l.precio*(l.cant||1))+'</div>';
       c.appendChild(d);
     });
   }
   window.calc=function(){
-    var sub=quote.reduce(function(a,l){return a+l.precio*l.cant;},0);
+    var sel=seleccionados();
+    var sub=sel.reduce(function(a,l){return a+l.precio*(l.cant||1);},0);
     var ivaPct=Number(cfg.iva)||0;
     var desc=Math.max(0,Number($("cDesc").value)||0);
     var iva=Math.round((sub-Math.min(desc,sub))*ivaPct/100);
@@ -286,7 +304,8 @@ const NEGOCIO = {
   };
   function cotizaTexto(){
     var hoy=new Date().toLocaleDateString("es-CL",{day:"2-digit",month:"short",year:"numeric"});
-    var sub=quote.reduce(function(a,l){return a+l.precio*l.cant;},0);
+    var sel=seleccionados();
+    var sub=sel.reduce(function(a,l){return a+l.precio*(l.cant||1);},0);
     var ivaPct=Number(cfg.iva)||0;
     var desc=Math.min(Math.max(0,Number($("cDesc").value)||0),sub);
     var iva=Math.round((sub-desc)*ivaPct/100);
@@ -295,7 +314,8 @@ const NEGOCIO = {
     var cli=$("cCliente").value.trim(), pro=$("cProyecto").value.trim();
     if(cli) t+="Cliente: "+cli+"\n"; if(pro) t+="Proyecto: "+pro+"\n";
     t+="Fecha: "+hoy+"\n\n";
-    quote.forEach(function(l){ t+="• "+l.nombre+" x"+l.cant+"  "+money(l.precio*l.cant)+"\n"; });
+    t+="INCLUYE:\n";
+    sel.forEach(function(l){ t+="• "+l.nombre+(l.cant>1?(" x"+l.cant):"")+"  "+money(l.precio*(l.cant||1))+"\n"; });
     t+="\nSubtotal: "+money(sub)+"\n";
     if(desc>0) t+="Descuento: -"+money(desc)+"\n";
     if(ivaPct>0) t+="IVA ("+ivaPct+"%): "+money(iva)+"\n";
@@ -308,6 +328,10 @@ const NEGOCIO = {
     if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(function(){flash("✅ Cotización copiada");},function(){selCopy(t);}); } else selCopy(t); };
   function selCopy(t){ var ta=document.createElement("textarea"); ta.value=t; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");flash("✅ Copiada");}catch(e){flash("Copia manual");} ta.remove(); }
   $("btnDl").onclick=function(){ dl(cotizaTexto(), "cotizacion-"+(($("cCliente").value.trim()||"cliente").replace(/\W+/g,"-").toLowerCase())+".txt","text/plain"); };
+
+  // atajos seleccionar todos / ninguno
+  $("selAll").onclick=function(){ cfg.servicios.forEach(function(s){s.on=true;}); saveQ(); renderSvc(); renderLines(); calc(); };
+  $("selNone").onclick=function(){ cfg.servicios.forEach(function(s){s.on=false;}); saveQ(); renderSvc(); renderLines(); calc(); };
 
   // ---- editor negocio ----
   var negP=$("negPanel"), svcP=$("svcEdit");
@@ -339,23 +363,26 @@ const NEGOCIO = {
   function limpiarSvc(){ eIdx=-1; $("seTitle").textContent="➕ Agregar servicio"; $("sGuardar").textContent="Agregar"; ["sNombre","sUnidad","sPrecio","sDesc"].forEach(function(id){$(id).value="";}); }
   function editSvc(i){ editing=true; svcP.hidden=false; negP.hidden=true; renderSvc(); eIdx=i; var s=cfg.servicios[i]; $("seTitle").textContent="✏️ Editar servicio"; $("sGuardar").textContent="Guardar"; $("sNombre").value=s.nombre; $("sUnidad").value=s.unidad||""; $("sPrecio").value=s.precio; $("sDesc").value=s.desc||""; svcP.scrollIntoView({behavior:"smooth",block:"center"}); }
   $("sGuardar").onclick=function(){ var n=$("sNombre").value.trim(); if(!n){ $("sNombre").focus(); return; }
-    var obj={ nombre:n, unidad:$("sUnidad").value.trim(), precio:Math.max(0,Number($("sPrecio").value)||0), desc:$("sDesc").value.trim() };
-    if(eIdx>=0) cfg.servicios[eIdx]=obj; else cfg.servicios.push(obj);
-    saveNeg(); limpiarSvc(); renderSvc(); };
+    var obj={ nombre:n, unidad:$("sUnidad").value.trim(), precio:Math.max(0,Number($("sPrecio").value)||0), desc:$("sDesc").value.trim(), on:true, cant:1 };
+    if(eIdx>=0){ obj.on=cfg.servicios[eIdx].on; obj.cant=cfg.servicios[eIdx].cant||1; cfg.servicios[eIdx]=obj; } else cfg.servicios.push(obj);
+    saveNeg(); limpiarSvc(); renderSvc(); renderLines(); calc(); };
   $("sCancelar").onclick=limpiarSvc;
 
   // ---- respaldo / descarga cotizador listo ----
   function dl(text,name,type){ try{ var b=new Blob([text],{type:type}); var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000); flash("⬇️ Descargado"); }catch(e){ flash("Ábrelo como archivo para descargar"); } }
   $("negExport").onclick=function(){ dl(JSON.stringify(cfg,null,2), (cfg.marca||"negocio").replace(/\W+/g,"-").toLowerCase()+"-cotizador.json","application/json"); };
   $("negImport").onclick=function(){ $("cfgFile").click(); };
-  $("cfgFile").onchange=function(){ var f=this.files&&this.files[0]; if(!f)return; var r=new FileReader(); r.onload=function(){ try{ var j=JSON.parse(r.result); cfg=Object.assign(cfg,j); if(j.servicios) cfg.servicios=j.servicios; saveNeg(); applyBrand(); renderSvc(); renderLines(); calc(); fillNeg(); flash("✅ Importado"); }catch(e){ flash("Archivo inválido"); } }; r.readAsText(f); this.value=""; };
+  $("cfgFile").onchange=function(){ var f=this.files&&this.files[0]; if(!f)return; var r=new FileReader(); r.onload=function(){ try{ var j=JSON.parse(r.result); cfg=Object.assign(cfg,j); if(j.servicios){ cfg.servicios=j.servicios; cfg.servicios.forEach(function(s){ if(s.on===undefined)s.on=true; if(!s.cant)s.cant=1; }); } saveNeg(); applyBrand(); renderSvc(); renderLines(); calc(); fillNeg(); flash("✅ Importado"); }catch(e){ flash("Archivo inválido"); } }; r.readAsText(f); this.value=""; };
   $("negDescargar").onclick=function(){
+    var clean=JSON.parse(JSON.stringify(cfg));
     var html=document.documentElement.outerHTML;
-    var conf="/*NEGOCIO_START*/\nconst NEGOCIO = "+JSON.stringify(cfg,null,2)+";\n/*NEGOCIO_END*/";
+    var conf="/*NEGOCIO_START*/\nconst NEGOCIO = "+JSON.stringify(clean,null,2)+";\n/*NEGOCIO_END*/";
     html=html.replace(/\/\*NEGOCIO_START\*\/[\s\S]*?\/\*NEGOCIO_END\*\//, conf.replace(/\$/g,"$$$$"));
     dl("<!doctype html>\n"+html, "cotizador-"+(cfg.marca||"negocio").replace(/\W+/g,"-").toLowerCase()+".html","text/html");
   };
 
+  // restaurar cliente/proyecto del borrador
+  try{ var qd=JSON.parse(localStorage.getItem(LS_Q)||"null"); if(qd){ if(qd.cli)$("cCliente").value=qd.cli; if(qd.pro)$("cProyecto").value=qd.pro; } }catch(e){}
   if(cfg.marca && cfg.marca!=="Mi Negocio de Servicios"){ var bn=$("banner"); if(bn) bn.remove(); }
   applyBrand(); renderSvc(); renderLines(); calc();
 })();

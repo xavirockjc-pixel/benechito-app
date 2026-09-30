@@ -71,6 +71,17 @@ reconstruye todo. Detalle en `RESPALDO.md`.
 **Servicios que se venden aparte:** Landing sola $99.000 · Catálogo/tienda $120.000 ·
 Marketing y redes $150.000/mes (3 posts/sem FB+IG) · Creación fanpage $120.000.
 
+**Cotizador de Servicios (marca blanca) — producto para prestadores de servicios**
+(mantención, instalaciones, técnicos, eventos, proyectos CORFO/colegios): cotizador
+estilo *seleccionador* con su logo, colores, servicios y valores; marca qué incluye,
+calcula total con IVA y lo envía al cliente por WhatsApp. Plantilla: `plantilla-cotizador.html`.
+
+| Qué vendes | Valor |
+|---|---|
+| Cotizador de Servicios con su marca (armado y entregado listo) | $120.000 (una vez) |
+| Cotizador + Landing del servicio | $180.000 (una vez) |
+| App online (dominio, se instala en el celular, tú se lo actualizas) | $20.000/mes |
+
 ## Packs recomendados por rubro
 
 Heladería/Dulces · Distribuidora · Panadería · Fábrica · Almacén/Minimarket ·
