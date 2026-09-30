@@ -52,6 +52,11 @@ export default async function CierreCajaPage() {
       <Link href="/caja" className="text-sm font-semibold text-[#0f7a44]">← Volver a vender</Link>
       <h1 className="mt-1 text-xl font-extrabold text-slate-900">Cerrar caja</h1>
 
+      <Link href="/caja/cierre-stock" className="mt-3 flex items-center justify-between gap-2 rounded-xl border border-[#0f7a44]/30 bg-[#0f7a44]/5 px-4 py-3 text-sm font-bold text-[#0f7a44]">
+        <span>🧾 Cerrar también la mercadería (contar stock)</span>
+        <span>→</span>
+      </Link>
+
       {/* Resumen del día */}
       <section className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-sm">
         <h2 className="mb-2 font-bold text-slate-900">Resumen</h2>
