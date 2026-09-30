@@ -71,16 +71,31 @@ reconstruye todo. Detalle en `RESPALDO.md`.
 **Servicios que se venden aparte:** Landing sola $99.000 · Catálogo/tienda $120.000 ·
 Marketing y redes $150.000/mes (3 posts/sem FB+IG) · Creación fanpage $120.000.
 
-**Cotizador de Servicios (marca blanca) — producto para prestadores de servicios**
-(mantención, instalaciones, técnicos, eventos, proyectos CORFO/colegios): cotizador
-estilo *seleccionador* con su logo, colores, servicios y valores; marca qué incluye,
-calcula total con IVA y lo envía al cliente por WhatsApp. Plantilla: `plantilla-cotizador.html`.
+**Cotizador de Servicios (marca blanca) — producto/app para prestadores de servicios**
+(mantención, instalaciones, técnicos, eventos, proyectos CORFO/colegios). Plantilla:
+`plantilla-cotizador.html`. Es una app que el proveedor usa desde el celular:
+
+- **Su marca**: logo, nombre, colores y WhatsApp propios.
+- **🗂️ Rubro**: 15 oficios con servicios y precios de ejemplo listos para editar
+  (electricidad, gasfitería, limpieza, jardinería, climatización/motores, pintura,
+  construcción, cerrajería, automotriz, tecnología, belleza, eventos, fletes,
+  consultoría/proyectos, general).
+- **🧰 Catálogo**: cada servicio con **foto**, **pasos** de cómo se hace y **link de video**.
+- **Seleccionador**: marca qué incluye y qué no, con cantidad; calcula total con IVA y descuento.
+- **📄 Reporte al cliente**: hoja visual con fotos y pasos de "lo que se hará" → se envía por
+  WhatsApp o se guarda como PDF para que el cliente **acepte** o **agende** la visita.
+- **📁 Mis trabajos**: guarda cada cotización, con estado (Cotizado/Agendado/Aceptado/Hecho),
+  notas y fotos del trabajo (antes/durante/después).
+- **⬇️ Descargar cotizador listo**: baja un `.html` autónomo con todo incrustado (el del cliente).
 
 | Qué vendes | Valor |
 |---|---|
 | Cotizador de Servicios con su marca (armado y entregado listo) | $120.000 (una vez) |
 | Cotizador + Landing del servicio | $180.000 (una vez) |
 | App online (dominio, se instala en el celular, tú se lo actualizas) | $20.000/mes |
+
+> Datos y fotos se guardan en el celular del proveedor (localStorage). Para varios
+> dispositivos o respaldo en la nube, va la versión integrada al ecosistema Benechito.
 
 ## Packs recomendados por rubro
 
