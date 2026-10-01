@@ -5,6 +5,8 @@ import CorregirStock from "./CorregirStock";
 import NuevoProductoBodega from "./NuevoProductoBodega";
 import RetirosDepto from "@/app/_shared/RetirosDepto";
 import EmpezarNuevoDia from "@/app/_shared/EmpezarNuevoDia";
+import EnviarWhatsApp from "@/components/EnviarWhatsApp";
+import { site } from "@/lib/config";
 import { empezarNuevoDia } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +53,14 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
     ...productos.map((p) => ({ id: `prod:${p.id}`, nombre: p.nombre, actual: stockProdMap.get(p.id) ?? 0, grupo: "Productos" as const })),
     ...sabores.map((s) => ({ id: `sab:${s.id}`, nombre: s.nombre, actual: stockSabMap.get(s.id) ?? 0, grupo: "Sabores" as const })),
   ];
+
+  // Texto del stock para enviar por WhatsApp (al dueño).
+  const fechaTxt = new Date().toLocaleDateString("es-CL", { weekday: "long", day: "2-digit", month: "long" });
+  const lineasStock = [`📦 *Stock Bodega* · ${fechaTxt}`, ""];
+  if (enBodega.length) lineasStock.push(...enBodega.map((s) => `• ${s.producto.nombre}: ${s.cantidad}`));
+  if (saboresBodega.length) { lineasStock.push("", "*Sabores:*", ...saboresBodega.map((s) => `• ${s.sabor.nombre}: ${s.cantidad}`)); }
+  if (enBodega.length === 0 && saboresBodega.length === 0) lineasStock.push("Bodega vacía.");
+  const textoStock = lineasStock.join("\n");
 
   return (
     <div className="space-y-5">
@@ -113,6 +123,14 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
             )}
           </>
         )}
+
+        {/* Enviar el stock por WhatsApp al dueño */}
+        <details className="mt-3 border-t border-slate-100 pt-3">
+          <summary className="cursor-pointer text-sm font-bold text-[#1faa55]">📲 Enviar el stock por WhatsApp</summary>
+          <div className="mt-2">
+            <EnviarWhatsApp texto={textoStock} telefono={site.whatsapp} />
+          </div>
+        </details>
       </section>
 
       {/* Registro del día */}
