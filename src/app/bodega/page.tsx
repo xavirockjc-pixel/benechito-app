@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { inicioDelDia } from "@/lib/dominio/empresa";
 import MovimientoBodegaVoz from "./MovimientoBodegaVoz";
 import CorregirStock from "./CorregirStock";
+import StockActualFix from "./StockActualFix";
 import NuevoProductoBodega from "./NuevoProductoBodega";
 import RetirosDepto from "@/app/_shared/RetirosDepto";
 import EmpezarNuevoDia from "@/app/_shared/EmpezarNuevoDia";
@@ -45,6 +46,12 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
 
   const enBodega = stockProd.filter((s) => s.cantidad !== 0).sort((a, b) => a.producto.nombre.localeCompare(b.producto.nombre));
   const saboresBodega = stockSab.filter((s) => s.cantidad !== 0).sort((a, b) => a.sabor.nombre.localeCompare(b.sabor.nombre));
+
+  // Lo que hay ahora, editable directo (para corregir o dejar en 0 de un toque).
+  const itemsActual = [
+    ...enBodega.map((s) => ({ id: `prod:${s.productoId}`, nombre: s.producto.nombre, cantidad: s.cantidad, grupo: "Productos" as const })),
+    ...saboresBodega.map((s) => ({ id: `sab:${s.saborId}`, nombre: s.sabor.nombre, cantidad: s.cantidad, grupo: "Sabores" as const })),
+  ];
 
   // Conteo/corrección: TODOS los productos y sabores con su stock actual (0 si no hay).
   const stockProdMap = new Map(stockProd.map((s) => [s.productoId, s.cantidad]));
@@ -91,37 +98,14 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
       {/* Corregir/poner el stock real directo (conteo), sin pasar por ventas/entradas */}
       <CorregirStock items={itemsConteo} />
 
-      {/* Stock actual (el bodeguero SÍ ve lo que hay; NO ve ventas del mes) */}
+      {/* Stock actual EDITABLE (el bodeguero ve lo que hay y lo corrige ahí mismo) */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="mb-2 text-sm font-bold text-slate-900">📊 Stock actual en bodega</h2>
-        {enBodega.length === 0 && saboresBodega.length === 0 ? (
+        <h2 className="text-sm font-bold text-slate-900">📊 Stock actual en bodega</h2>
+        <p className="mb-2 text-[11px] text-slate-400">¿Un número está mal? Tócalo y corrígelo, o pon <b>0</b> para dejarlo en cero. Luego “Guardar”.</p>
+        {itemsActual.length === 0 ? (
           <p className="text-sm text-slate-500">Bodega vacía.</p>
         ) : (
-          <>
-            {enBodega.length > 0 && (
-              <ul className="divide-y divide-slate-100 text-sm">
-                {enBodega.map((s) => (
-                  <li key={s.id} className="flex justify-between py-1.5">
-                    <span className="text-slate-800">{s.producto.nombre}</span>
-                    <span className="font-bold text-slate-900">{s.cantidad}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-            {saboresBodega.length > 0 && (
-              <>
-                <p className="mt-3 mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">Sabores</p>
-                <ul className="grid grid-cols-2 gap-x-4 text-sm">
-                  {saboresBodega.map((s) => (
-                    <li key={s.id} className="flex justify-between py-1">
-                      <span className="text-slate-800">{s.sabor.nombre}</span>
-                      <span className="font-bold text-slate-900">{s.cantidad}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-          </>
+          <StockActualFix items={itemsActual} />
         )}
 
         {/* Enviar el stock por WhatsApp al dueño */}
