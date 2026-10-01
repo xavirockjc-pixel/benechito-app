@@ -60,3 +60,24 @@ Abre **https://benechito.com/admin** y revisa:
 | Agregar `REPORTE_TOKEN` | Tú |
 | Importar/activar workflows n8n + URL interna | Tú |
 | Conectar WhatsApp (QR) si hace falta | Tú (tu teléfono) |
+
+---
+
+## 🕒 Zona horaria (fecha y hora correctas)
+
+El sistema debe mostrar la **hora de Chile**. Viene fijada en la imagen
+(`TZ=America/Santiago`), así que normalmente **no hay que hacer nada** — solo
+que EasyPanel **reconstruya** al implementar (un redeploy normal lo hace).
+
+### Dónde revisarla
+- **Fácil (en la app):** crea una **nota** y mira su hora (🕒), o abre
+  `https://benechito.com/api/reporte/diario?token=benechito-reporte-2026`
+  y revisa la hora de los recordatorios. Si coincide con tu celular → OK.
+- **En EasyPanel:** proyecto **benechito** → servicio **App** → **Environment**
+  → busca la variable **`TZ`**.
+  - Si **no aparece**: la zona ya viene fija (`America/Santiago`). Nada que hacer.
+  - Si **aparece con otro valor** (`UTC`, `Etc/UTC`…): esa manda por encima.
+    Cámbiala a **`America/Santiago`**, guarda y vuelve a **Implementar**.
+
+> Si tras implementar la hora sigue +3/+4, casi seguro hay un `TZ` por fuera en
+> Environment (paso de arriba). Corrígelo ahí.
