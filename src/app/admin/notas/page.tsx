@@ -6,6 +6,8 @@ import {
 } from "@/lib/dominio/notas";
 import { prioridadLabel, prioridadColor } from "@/lib/dominio/mejoras";
 import { toggleNota, eliminarNota, aplicarAccionNota, descartarAccionNota } from "@/app/notas/actions";
+import EnviarWhatsApp from "@/components/EnviarWhatsApp";
+import { site } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +42,14 @@ export default async function NotasPage({ searchParams }: { searchParams: Promis
     });
   const observaciones = abiertas.filter((n) => n.tipo === "observacion" || n.tipo === "idea");
   const hechas = notas.filter((n) => n.estado === "hecha");
+
+  // Texto para enviar las notas/tareas por WhatsApp (al dueño).
+  const fechaWA = new Date().toLocaleDateString("es-CL", { weekday: "long", day: "2-digit", month: "long" });
+  const lineasWA = [`📝 *Notas y tareas* · ${fechaWA}`, ""];
+  if (pendientes.length) lineasWA.push("*Pendientes:*", ...pendientes.map((n) => `• ${tipoNotaIcono[n.tipo] ?? ""} ${n.texto}${n.fechaObjetivo ? ` (📅 ${fmtDia(n.fechaObjetivo)})` : ""}`));
+  if (observaciones.length) lineasWA.push("", "*Observaciones e ideas:*", ...observaciones.map((n) => `• ${tipoNotaIcono[n.tipo] ?? ""} ${n.texto}`));
+  if (pendientes.length === 0 && observaciones.length === 0) lineasWA.push("Sin notas pendientes. ✅");
+  const textoNotasWA = lineasWA.join("\n");
 
   const qs = (patch: Partial<SP>) => {
     const merged = { area: fArea, tipo: fTipo, vista, mes, ...patch };
@@ -78,6 +88,14 @@ export default async function NotasPage({ searchParams }: { searchParams: Promis
         <h1 className="font-display text-2xl font-extrabold text-slate-900">📝 Notas y acciones</h1>
         <p className="text-sm text-slate-500">Lo que dicta el equipo (botón 📝) se vuelve <b>acción con un clic</b> y cae a pendientes. Alimenta el <Link href="/admin/supercerebro" className="font-semibold text-amber-600 hover:underline">🧠 Supercerebro</Link>.</p>
       </div>
+
+      {/* Enviar las notas/tareas por WhatsApp */}
+      <details className="mt-4">
+        <summary className="cursor-pointer rounded-xl border border-[#1faa55]/30 bg-[#1faa55]/5 px-4 py-2.5 text-sm font-bold text-[#1faa55]">📲 Enviar las notas por WhatsApp</summary>
+        <div className="mt-2">
+          <EnviarWhatsApp texto={textoNotasWA} telefono={site.whatsapp} />
+        </div>
+      </details>
 
       {/* Acciones sugeridas (bandeja) */}
       {sugeridas.length > 0 && (
