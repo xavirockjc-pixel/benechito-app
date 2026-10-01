@@ -16,11 +16,13 @@ RUN npm run build
 
 # ---- Runtime ----
 FROM node:22-alpine AS runner
-RUN apk add --no-cache libc6-compat openssl
+# tzdata = base de zonas horarias; TZ = hora local de Chile (fechas y horas correctas).
+RUN apk add --no-cache libc6-compat openssl tzdata
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
+ENV TZ=America/Santiago
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nextjs -u 1001
 
