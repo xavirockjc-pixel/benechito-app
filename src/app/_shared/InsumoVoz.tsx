@@ -15,9 +15,16 @@ type SpeechRec = {
 
 const NUM: Record<string, number> = {
   cero: 0, un: 1, una: 1, uno: 1, dos: 2, tres: 3, cuatro: 4, cinco: 5, seis: 6, siete: 7, ocho: 8,
-  nueve: 9, diez: 10, once: 11, doce: 12, docena: 12, trece: 13, catorce: 14, quince: 15, veinte: 20,
-  treinta: 30, cuarenta: 40, cincuenta: 50, cien: 100, ciento: 100,
+  nueve: 9, diez: 10, once: 11, doce: 12, trece: 13, catorce: 14, quince: 15,
+  dieciseis: 16, diecisiete: 17, dieciocho: 18, diecinueve: 19, veinte: 20,
+  veintiuno: 21, veintidos: 22, veintitres: 23, veinticuatro: 24, veinticinco: 25,
+  veintiseis: 26, veintisiete: 27, veintiocho: 28, veintinueve: 29,
+  treinta: 30, cuarenta: 40, cincuenta: 50, sesenta: 60, setenta: 70, ochenta: 80, noventa: 90,
+  cien: 100, ciento: 100, doscientos: 200, trescientos: 300, cuatrocientos: 400, quinientos: 500,
+  seiscientos: 600, setecientos: 700, ochocientos: 800, novecientos: 900, mil: 1000,
 };
+// Fracciones habladas: "medio kilo", "dos kilos y medio", "un cuarto".
+const FRACCION: Record<string, number> = { medio: 0.5, media: 0.5, cuarto: 0.25 };
 // Palabras de unidad → unidad del sistema
 const UNIDAD: Record<string, string> = {
   kilo: "kg", kilos: "kg", kilogramo: "kg", kilogramos: "kg", kg: "kg",
@@ -36,20 +43,30 @@ function normaliza(s: string) {
   return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
-/** Extrae { cantidad, unidad, nombre } de la frase dictada. */
+/** Extrae { cantidad, unidad, nombre } de la frase dictada. Entiende números
+ *  grandes/compuestos ("ciento cincuenta", "mil doscientos") y fracciones
+ *  ("medio kilo", "dos kilos y medio"). */
 function parsear(texto: string): { cantidad: number; unidad: string | null; nombre: string } {
-  const tokens = normaliza(texto).replace(/[.,;]/g, " ").split(/\s+/).filter(Boolean);
-  let cantidad = 0;
+  // Deja comas decimales ("2,5") y puntos como separador de tokens solo en texto.
+  const tokens = normaliza(texto).replace(/;/g, " ").split(/\s+/).filter(Boolean);
   let unidad: string | null = null;
+  const numTokens: string[] = [];
   const resto: string[] = [];
+  const esDigito = (w: string) => /^\d+([.,]\d+)?$/.test(w);
   for (const t of tokens) {
-    if (/^\d+$/.test(t)) { cantidad = parseInt(t, 10); continue; }
-    if (NUM[t] != null && cantidad === 0) { cantidad = NUM[t]; continue; }
     if (UNIDAD[t]) { unidad = UNIDAD[t]; continue; }
-    if (RELLENO.has(t)) continue;
+    if (RELLENO.has(t)) continue; // incluye "de", "y", artículos
+    if (esDigito(t) || t in NUM || t in FRACCION) { numTokens.push(t); continue; }
     resto.push(t);
   }
-  return { cantidad, unidad, nombre: resto.join(" ").trim() };
+  // Compone la cantidad: cientos/mil se suman, fracciones se agregan.
+  let total = 0, cur = 0, frac = 0;
+  for (const w of numTokens) {
+    if (esDigito(w)) cur += parseFloat(w.replace(",", "."));
+    else if (w in FRACCION) frac += FRACCION[w];
+    else { const v = NUM[w]; if (v === 1000) { cur = (cur === 0 ? 1 : cur) * 1000; total += cur; cur = 0; } else cur += v; }
+  }
+  return { cantidad: total + cur + frac, unidad, nombre: resto.join(" ").trim() };
 }
 
 /**
@@ -66,6 +83,7 @@ export default function InsumoVoz({ materiales, color = "#b45309" }: { materiale
   useEffect(() => {
     const w = window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec };
     const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!Ctor) { setSoportado(false); return; }
     const rec = new Ctor();
     rec.lang = "es-CL"; rec.interimResults = false; rec.continuous = false; rec.maxAlternatives = 1;

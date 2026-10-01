@@ -120,6 +120,16 @@ export async function GET(req: NextRequest) {
   // Cosas anotadas que mueven stock y no se confirmaron ("llegó leche"…).
   const porConfirmar = await safe(() => prisma.nota.count({ where: { accionEstado: "sugerida" } }), 0);
 
+  // Notas y tareas del equipo de hoy (bitácora/observaciones/ideas) → van al reporte.
+  const notasEquipo = await safe(
+    () => prisma.nota.findMany({
+      where: { estado: { not: "hecha" }, tipo: { not: "recordatorio" }, accionEstado: { not: "sugerida" }, createdAt: { gte: inicio } },
+      orderBy: [{ prioridad: "asc" }, { createdAt: "desc" }], take: 8,
+      select: { texto: true, tipo: true, area: true, autor: true },
+    }),
+    [] as { texto: string; tipo: string; area: string; autor: string | null }[],
+  );
+
   // --- Armado del texto ---
   const fecha = new Date().toLocaleDateString("es-CL", { weekday: "long", day: "2-digit", month: "long" });
   const L: string[] = [];
@@ -172,6 +182,12 @@ export async function GET(req: NextRequest) {
   if (porConfirmar > 0) {
     L.push("");
     L.push(`⚡ *Por confirmar (${porConfirmar}):* cosas anotadas sin actualizar (ej. “llegó…”). Revísalas en Pendientes del cerebro.`);
+  }
+  if (notasEquipo.length) {
+    const ic: Record<string, string> = { tarea: "✅", observacion: "👁️", idea: "💡" };
+    L.push("");
+    L.push(`📝 *Notas del equipo hoy (${notasEquipo.length}):*`);
+    L.push(notasEquipo.map((n) => `   • ${ic[n.tipo] ?? "•"} ${n.texto}${n.autor ? ` — ${n.autor}` : ""}`).join("\n"));
   }
   L.push("");
   L.push(`🐝 Tu socio Panal · benechito.com/admin`);
