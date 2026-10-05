@@ -7,6 +7,16 @@ export const categoriaLabel: Record<string, string> = {
 };
 export const categoriaIcono: Record<string, string> = { insumo: "🧪", material: "📦" };
 
+// Subtipos de materia prima (para agrupar en producción: esencias, colores, polvos…).
+export const SUBTIPOS = ["esencia", "colorante", "otro", "base"] as const;
+export const subtipoLabel: Record<string, string> = {
+  esencia: "Esencias y sabores",
+  colorante: "Colorantes",
+  otro: "Polvos y otros (dextrosa, estabilizante…)",
+  base: "Bases (azúcar, leche…)",
+};
+export const subtipoIcono: Record<string, string> = { esencia: "🧴", colorante: "🎨", otro: "🧂", base: "🥛" };
+
 export const UNIDADES = ["kg", "g", "l", "ml", "unidad"] as const;
 export const unidadLabel: Record<string, string> = {
   kg: "kg",
