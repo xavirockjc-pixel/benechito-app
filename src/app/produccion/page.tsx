@@ -65,14 +65,10 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
         </Link>
       </div>
 
-      {ok && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Reporte del turno enviado. ¡Gracias!</p>}
+      {ok && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Guardado. ¡Gracias! Toca otro producto para seguir.</p>}
 
-      {/* Reporte del turno (lo principal) */}
-      <section className="rounded-2xl border-2 border-teal-300 bg-white p-4 shadow-sm">
-        <h2 className="mb-1 text-base font-extrabold text-teal-800">✍️ Reporte del turno</h2>
-        <p className="mb-3 text-xs text-slate-500">Turno, tipo, cuántos salieron por sabor y quiénes trabajaron.</p>
-        <ProduccionForm saboresPorLinea={saboresProd} equipo={equipoTrato} recomendaciones={recomendaciones} />
-      </section>
+      {/* Reporte por producto (elige → ventana del producto → guarda → ← Volver) */}
+      <ProduccionForm saboresPorLinea={saboresProd} equipo={equipoTrato} recomendaciones={recomendaciones} />
 
       {/* Producido hoy (resumen) */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

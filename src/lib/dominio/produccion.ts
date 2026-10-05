@@ -45,16 +45,16 @@ export const lineaLabel: Record<string, string> = {
  * No todos son iguales: los de moldeo (tú y yo, paletas) van por litros de mezcla;
  * las cremas llevan overrun (batido); trufas/cuchuflís/postres van por unidad.
  */
-export type PerfilLinea = { icono: string; litros: boolean; overrun: boolean; hint?: string };
+export type PerfilLinea = { icono: string; color: string; litros: boolean; overrun: boolean; hint?: string };
 export const PERFIL_LINEA: Record<string, PerfilLinea> = {
-  tuyyo:          { icono: "🍦", litros: true,  overrun: false, hint: "Moldeo: pon los litros de mezcla; el sistema estima las unidades." },
-  paletas:        { icono: "🧊", litros: true,  overrun: false, hint: "Agua o leche. Moldeo por litros de mezcla." },
-  paletas_premium:{ icono: "⭐", litros: true,  overrun: false, hint: "Moldeo por litros de mezcla." },
-  cremas:         { icono: "🍨", litros: true,  overrun: true,  hint: "Pasteurizado + maduración + overrun (batido)." },
-  cassatas:       { icono: "🎂", litros: true,  overrun: true,  hint: "Lleva overrun (batido)." },
-  postres_500:    { icono: "🍮", litros: false, overrun: false, hint: "Por unidad / formato (500 ml)." },
-  trufas:         { icono: "🍫", litros: false, overrun: false, hint: "Dulce: por unidad, por sabor." },
-  cuchufli:       { icono: "🥖", litros: false, overrun: false, hint: "Dulce: por unidad, por sabor/relleno." },
+  tuyyo:          { icono: "🍦", color: "#1479c4", litros: true,  overrun: false, hint: "Moldeo: pon los litros de mezcla; el sistema estima las unidades." },
+  paletas:        { icono: "🧊", color: "#0ea5e9", litros: true,  overrun: false, hint: "Agua o leche. Moldeo por litros de mezcla." },
+  paletas_premium:{ icono: "⭐", color: "#a855f7", litros: true,  overrun: false, hint: "Moldeo por litros de mezcla." },
+  cremas:         { icono: "🍨", color: "#ec4899", litros: true,  overrun: true,  hint: "Pasteurizado + maduración + overrun (batido)." },
+  cassatas:       { icono: "🎂", color: "#f59e0b", litros: true,  overrun: true,  hint: "Lleva overrun (batido)." },
+  postres_500:    { icono: "🍮", color: "#8b5cf6", litros: false, overrun: false, hint: "Por unidad / formato (500 ml)." },
+  trufas:         { icono: "🍫", color: "#92400e", litros: false, overrun: false, hint: "Dulce: por unidad, por sabor." },
+  cuchufli:       { icono: "🥖", color: "#d97706", litros: false, overrun: false, hint: "Dulce: por unidad, por sabor/relleno." },
 };
 /** Orden en que se muestran los productos (helados primero, dulces al final). */
 export const ORDEN_LINEAS = ["tuyyo", "paletas", "paletas_premium", "cremas", "cassatas", "postres_500", "trufas", "cuchufli"];
