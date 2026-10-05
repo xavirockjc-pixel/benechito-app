@@ -186,26 +186,35 @@ export async function registrarProduccion(formData: FormData) {
   if (!bod) return;
   const u = await usuarioActual();
 
-  // Quién(es) produjo esto (tablet compartido: por TRABAJADOR, con o sin login).
-  // Compatibilidad: también acepta el campo viejo "participantes" (usuarioId).
-  const trabIds = [...new Set(String(formData.get("trabajadores") ?? "").split(",").map((s) => s.trim()).filter(Boolean))];
-  const trabajadores = trabIds.length > 0
-    ? await prisma.trabajador.findMany({ where: { id: { in: trabIds } }, select: { id: true, nombre: true, usuarioId: true } })
-    : [];
+  // Quién(es) lo hizo: se ESCRIBEN los nombres (tablet compartido, con o sin login).
+  // Compatibilidad: también acepta el campo viejo "trabajadores" (ids).
+  const nombresLibres = [...new Set(String(formData.get("nombres") ?? "").split(",").map((s) => s.trim()).filter(Boolean))];
+  const trabIdsViejo = [...new Set(String(formData.get("trabajadores") ?? "").split(",").map((s) => s.trim()).filter(Boolean))];
+  // Calza cada nombre escrito con un trabajador existente (para el pago), sin obligar.
+  let trabajadores: { id: string; nombre: string; usuarioId: string | null }[] = [];
+  if (nombresLibres.length > 0) {
+    const todos = await prisma.trabajador.findMany({ where: { activo: true }, select: { id: true, nombre: true, usuarioId: true } });
+    const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+    trabajadores = nombresLibres
+      .map((n) => todos.find((t) => norm(t.nombre) === norm(n)))
+      .filter((t): t is { id: string; nombre: string; usuarioId: string | null } => !!t);
+  } else if (trabIdsViejo.length > 0) {
+    trabajadores = await prisma.trabajador.findMany({ where: { id: { in: trabIdsViejo } }, select: { id: true, nombre: true, usuarioId: true } });
+  }
   const participantesTrab = trabajadores.map((t) => t.id).join(",") || null;
   // usuarioIds para que el pago actual (que cruza por usuarioId) siga funcionando con los que tengan cuenta.
   const partUsu = trabajadores.map((t) => t.usuarioId).filter((x): x is string => !!x);
   const partRaw = String(formData.get("participantes") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
   const participantes = [...new Set(partUsu.length > 0 ? partUsu : (partRaw.length > 0 ? partRaw : (u?.sub ? [u.sub] : [])))].join(",") || null;
-  // Nombres de quienes produjeron (para el registro de cada área y el panel).
-  const operarios: string | null = trabajadores.length > 0 ? trabajadores.map((t) => t.nombre).join(", ") : (u?.nombre ?? null);
+  // Nombres para mostrar en el registro: lo que se escribió (o los calzados / quien registra).
+  const operarios: string | null = (nombresLibres.length > 0 ? nombresLibres.join(", ") : (trabajadores.length > 0 ? trabajadores.map((t) => t.nombre).join(", ") : (u?.nombre ?? null)));
 
   // Datos internos del turno (no se muestran en la app del operario).
   const turno = String(formData.get("turno") ?? "").trim() || null;
   const litros = Number(String(formData.get("litros") ?? "").replace(",", ".")) || 0;
   const overrun = Number(String(formData.get("overrun") ?? "").replace(",", ".")) || 0;
+  const valorUnit = Number(String(formData.get("valorUnit") ?? "").replace(/[^0-9]/g, "")) || 0;
   const obsBase = String(formData.get("observaciones") ?? "").trim();
-  const observaciones = [obsBase, overrun > 0 ? `Overrun: ${overrun}%` : ""].filter(Boolean).join(" · ") || null;
 
   for (const it of items) {
     let saborId = it.saborId?.trim();
@@ -253,6 +262,13 @@ export async function registrarProduccion(formData: FormData) {
 
   const total = items.reduce((s, i) => s + i.cantidad, 0);
   const sabores = items.map((i) => `${i.cantidad} ${i.nombre.trim()}`).join(", ");
+  // Observaciones del registro: lo escrito + overrun + cálculo de dinero (si hay valor).
+  const dinero = valorUnit > 0 ? valorUnit * total : 0;
+  const observaciones = [
+    obsBase,
+    overrun > 0 ? `Overrun: ${overrun}%` : "",
+    dinero > 0 ? `💰 ${total} u × $${valorUnit.toLocaleString("es-CL")} = $${dinero.toLocaleString("es-CL")}` : "",
+  ].filter(Boolean).join(" · ") || null;
 
   // Registro interno del turno → panel (rendimiento, pago vs producción, historial).
   // NO se muestra en la app del operario.

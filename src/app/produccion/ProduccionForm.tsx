@@ -63,13 +63,45 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
   const lineaFinal = esNuevo ? nuevoTipo.trim() : linea;
   const cfg = esNuevo || !linea ? null : PERFIL_LINEA[linea];
   const accent = cfg?.color ?? "#0f766e";
-  const [sel, setSel] = useState<string[]>([]);
-  const toggleSel = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  // Nombres de quién(es) lo hizo: se ESCRIBEN y se agregan (no lista fija). Se recuerdan por producto.
+  const [nombres, setNombres] = useState<string[]>([]);
+  const [nuevoNombre, setNuevoNombre] = useState("");
+  const agregarNombre = (n: string) => {
+    const v = n.trim();
+    if (!v) return;
+    setNombres((s) => (s.some((x) => x.toLowerCase() === v.toLowerCase()) ? s : [...s, v]));
+    setNuevoNombre("");
+  };
+  const quitarNombre = (n: string) => setNombres((s) => s.filter((x) => x !== n));
   const saboresTipo = esNuevo ? [] : (saboresPorLinea[linea] ?? []);
   const [filas, setFilas] = useState<Fila[]>([{ key: 1, nombre: "", cantidad: "" }]);
   const [litros, setLitros] = useState("");
   const [overrun, setOverrun] = useState("");
+  const [valorUnit, setValorUnit] = useState("");
   const [observaciones, setObservaciones] = useState("");
+
+  // Recuerda por producto: nombres del equipo y valor por unidad (en este tablet).
+  useEffect(() => {
+    if (!linea || esNuevo) return;
+    let noms: string[] = []; let val = "";
+    try {
+      const rawN = localStorage.getItem(`prod-nombres-${linea}`);
+      if (rawN) noms = JSON.parse(rawN);
+      val = localStorage.getItem(`prod-valor-${linea}`) ?? "";
+    } catch { /* sin storage */ }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setNombres(Array.isArray(noms) ? noms : []);
+    setValorUnit(val);
+  }, [linea, esNuevo]);
+
+  useEffect(() => {
+    if (!linea || esNuevo) return;
+    try { localStorage.setItem(`prod-nombres-${linea}`, JSON.stringify(nombres)); } catch { /* */ }
+  }, [nombres, linea, esNuevo]);
+  useEffect(() => {
+    if (!linea || esNuevo) return;
+    try { localStorage.setItem(`prod-valor-${linea}`, valorUnit); } catch { /* */ }
+  }, [valorUnit, linea, esNuevo]);
   const recRef = useRef<SpeechRec | null>(null);
   const [soportado, setSoportado] = useState(true);
   const [escuchando, setEscuchando] = useState(false);
@@ -90,9 +122,9 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
   const addFila = () => setFilas((f) => [...f, { key: Date.now() + f.length, nombre: "", cantidad: "" }]);
   const delFila = (key: number) => setFilas((f) => (f.length > 1 ? f.filter((x) => x.key !== key) : f));
 
-  // Volver a elegir producto: limpia todo para el siguiente.
+  // Volver a elegir producto: limpia lo del reporte (los nombres/valor se recuerdan por producto).
   const volver = () => {
-    setLinea(""); setNuevoTipo(""); setSel([]); setFilas([{ key: 1, nombre: "", cantidad: "" }]);
+    setLinea(""); setNuevoTipo(""); setNuevoNombre(""); setFilas([{ key: 1, nombre: "", cantidad: "" }]);
     setLitros(""); setOverrun(""); setObservaciones("");
   };
 
@@ -115,8 +147,12 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
     .map((f) => ({ nombre: f.nombre.trim(), cantidad: Number(f.cantidad.replace(/[^0-9]/g, "")) || 0 }))
     .filter((i) => i.nombre && i.cantidad > 0);
   const total = items.reduce((s, i) => s + i.cantidad, 0);
-  const listo = total > 0 && lineaFinal.length > 0 && sel.length > 0;
+  const listo = total > 0 && lineaFinal.length > 0 && nombres.length > 0;
   const notasRec = esNuevo ? [] : [...(recomendaciones["__todas__"] ?? []), ...(recomendaciones[linea] ?? [])];
+  // Calculadora (solo tú y yo / postres / paletas): total unidades × valor por unidad.
+  const valorNum = Number(valorUnit.replace(/[^0-9]/g, "")) || 0;
+  const dinero = total * valorNum;
+  const fmtCLP = (n: number) => "$" + n.toLocaleString("es-CL");
 
   // ===== Pantalla 1: elegir producto (ventana por producto, con su color) =====
   if (!linea) {
@@ -152,9 +188,10 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
       <input type="hidden" name="turno" value={turno} />
       <input type="hidden" name="linea" value={lineaFinal} />
       <input type="hidden" name="items" value={JSON.stringify(items)} />
-      <input type="hidden" name="trabajadores" value={sel.join(",")} />
+      <input type="hidden" name="nombres" value={nombres.join(",")} />
       <input type="hidden" name="litros" value={litros} />
       <input type="hidden" name="overrun" value={overrun} />
+      <input type="hidden" name="valorUnit" value={String(valorNum)} />
       <input type="hidden" name="observaciones" value={observaciones} />
 
       {/* Encabezado del producto (color propio) + Volver */}
@@ -185,26 +222,32 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
           </div>
         </div>
 
-        {/* ¿Quién lo produjo? (obligatorio) */}
-        {equipo.length > 0 && (
-          <div className={`rounded-xl border-2 p-3 ${sel.length === 0 ? "border-amber-300 bg-amber-50" : ""}`}
-            style={sel.length > 0 ? { borderColor: `${accent}55`, background: `${accent}0d` } : undefined}>
-            <p className="mb-2 text-sm font-extrabold text-slate-700">👤 ¿Quién lo produjo? {sel.length === 0 && <span className="font-bold text-amber-600">— elige el nombre</span>}</p>
-            <div className="flex flex-wrap gap-2">
-              {equipo.map((e) => {
-                const on = sel.includes(e.id);
-                return (
-                  <button key={e.id} type="button" onClick={() => toggleSel(e.id)}
-                    className="rounded-full border px-3.5 py-2 text-sm font-bold transition"
-                    style={on ? { borderColor: accent, background: accent, color: "#fff" } : { borderColor: "#cbd5e1", background: "#fff", color: "#475569" }}>
-                    {on ? "✓ " : ""}{e.nombre}
-                  </button>
-                );
-              })}
+        {/* ¿Quién lo produjo? Se ESCRIBE y se agrega (varios). Se recuerda por producto. */}
+        <div className={`rounded-xl border-2 p-3 ${nombres.length === 0 ? "border-amber-300 bg-amber-50" : ""}`}
+          style={nombres.length > 0 ? { borderColor: `${accent}55`, background: `${accent}0d` } : undefined}>
+          <p className="mb-2 text-sm font-extrabold text-slate-700">👤 ¿Quién lo hizo? {nombres.length === 0 && <span className="font-bold text-amber-600">— escribe el nombre y agrega</span>}</p>
+          {nombres.length > 0 && (
+            <div className="mb-2 flex flex-wrap gap-2">
+              {nombres.map((n) => (
+                <span key={n} className="flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-bold text-white" style={{ background: accent }}>
+                  {n}
+                  <button type="button" onClick={() => quitarNombre(n)} aria-label="Quitar" className="ml-0.5 text-white/80">✕</button>
+                </span>
+              ))}
             </div>
-            {sel.length > 1 && <p className="mt-2 text-[11px] font-semibold text-amber-600">👥 Fue en equipo: se reparte entre {sel.length} personas.</p>}
+          )}
+          <div className="flex gap-2">
+            <input value={nuevoNombre} onChange={(e) => setNuevoNombre(e.target.value)} list="equipo-sug"
+              onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); agregarNombre(nuevoNombre); } }}
+              placeholder="Nombre de la persona"
+              className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
+            <button type="button" onClick={() => agregarNombre(nuevoNombre)}
+              className="shrink-0 rounded-lg px-4 py-2.5 text-sm font-extrabold text-white active:scale-95" style={{ background: accent }}>➕ Agregar</button>
           </div>
-        )}
+          <datalist id="equipo-sug">{equipo.map((e) => <option key={e.id} value={e.nombre} />)}</datalist>
+          {nombres.length > 1 && <p className="mt-2 text-[11px] font-semibold text-amber-600">👥 Fue en equipo ({nombres.length}): se reparte entre ellos.</p>}
+          <p className="mt-1 text-[11px] text-slate-400">Queda recordado para este producto; el siguiente solo agrega o quita su nombre. (Útil cuando hay 2 máquinas del mismo producto.)</p>
+        </div>
 
         {/* Recomendación de la central (sugerencia) */}
         {notasRec.length > 0 && (
@@ -216,7 +259,7 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
 
         {/* Cuántos y de qué (por voz) */}
         <div>
-          <p className="mb-1.5 text-sm font-bold text-slate-700">¿Cuántos hizo? Por sabor (unidades)</p>
+          <p className="mb-1.5 text-sm font-bold text-slate-700">¿Cuánto hicieron hoy? Por sabor — <span className="font-semibold text-slate-500">escribe o dicta</span></p>
           {soportado && (
             <button type="button" onClick={escuchar} disabled={escuchando}
               className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl py-3 text-sm font-extrabold text-white"
@@ -252,6 +295,25 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
             <input value={overrun} onChange={(e) => setOverrun(e.target.value)} inputMode="decimal" placeholder="Ej: 35"
               className="mt-1 w-32 rounded-lg border border-slate-300 px-3 py-2.5 text-base" />
           </label>
+        )}
+
+        {/* Calculadora: multiplica lo hecho por el valor por unidad (solo tú y yo / postres / paletas) */}
+        {cfg?.calc && (
+          <div className="rounded-xl border-2 p-3" style={{ borderColor: `${accent}55`, background: `${accent}0d` }}>
+            <p className="mb-2 text-sm font-extrabold" style={{ color: accent }}>🧮 Calculadora</p>
+            <label className="flex items-center justify-between gap-2 text-sm font-bold text-slate-700">Valor por unidad
+              <span className="flex items-center rounded-lg border border-slate-300 bg-white px-2">
+                <span className="text-slate-400">$</span>
+                <input value={valorUnit} onChange={(e) => setValorUnit(e.target.value)} inputMode="numeric" placeholder="Ej: 120"
+                  className="w-24 rounded-r-lg px-1 py-2 text-right text-base font-semibold outline-none" />
+              </span>
+            </label>
+            <div className="mt-2 flex items-center justify-between border-t pt-2" style={{ borderColor: `${accent}33` }}>
+              <span className="text-sm text-slate-600">{total} u. × {fmtCLP(valorNum)}</span>
+              <span className="text-xl font-extrabold" style={{ color: accent }}>{fmtCLP(dinero)}</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-400">Se multiplica solo con lo que lleva ingresado. El valor queda recordado para este producto.</p>
+          </div>
         )}
 
         {/* Anotar algo que faltó (queda como nota para la central) */}
