@@ -203,7 +203,9 @@ export async function registrarProduccion(formData: FormData) {
   // Datos internos del turno (no se muestran en la app del operario).
   const turno = String(formData.get("turno") ?? "").trim() || null;
   const litros = Number(String(formData.get("litros") ?? "").replace(",", ".")) || 0;
-  const observaciones = String(formData.get("observaciones") ?? "").trim() || null;
+  const overrun = Number(String(formData.get("overrun") ?? "").replace(",", ".")) || 0;
+  const obsBase = String(formData.get("observaciones") ?? "").trim();
+  const observaciones = [obsBase, overrun > 0 ? `Overrun: ${overrun}%` : ""].filter(Boolean).join(" · ") || null;
 
   for (const it of items) {
     let saborId = it.saborId?.trim();
@@ -265,9 +267,10 @@ export async function registrarProduccion(formData: FormData) {
   });
 
   // Si anotó un ajuste/falta, queda como nota para la central (ej: faltó edulcorante).
-  if (observaciones) {
+  // El overrun solo (sin observación escrita) no genera nota.
+  if (obsBase) {
     await prisma.nota.create({
-      data: { texto: observaciones, tipo: "observacion", area: "produccion", prioridad: "media", autor: u?.nombre ?? "Producción" },
+      data: { texto: observaciones ?? obsBase, tipo: "observacion", area: "produccion", prioridad: "media", autor: u?.nombre ?? "Producción" },
     });
     revalidatePath("/admin/notas");
   }

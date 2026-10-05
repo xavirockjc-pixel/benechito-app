@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { LINEAS_PRODUCCION, lineaLabel } from "@/lib/dominio/produccion";
+import { LINEAS_PRODUCCION, lineaLabel, PERFIL_LINEA, ORDEN_LINEAS } from "@/lib/dominio/produccion";
 import { registrarProduccion } from "./actions";
 
 type Fila = { key: number; nombre: string; cantidad: string };
@@ -62,9 +62,13 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
   const [sel, setSel] = useState<string[]>([]);
   const toggleSel = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   const saboresTipo = esNuevo ? [] : (saboresPorLinea[linea] ?? []);
+  const cfg = esNuevo ? null : PERFIL_LINEA[linea];
   const [filas, setFilas] = useState<Fila[]>([{ key: 1, nombre: "", cantidad: "" }]);
   const [litros, setLitros] = useState("");
+  const [overrun, setOverrun] = useState("");
   const [observaciones, setObservaciones] = useState("");
+  // Productos ordenados (los conocidos en orden; el resto al final).
+  const lineasOrdenadas = [...ORDEN_LINEAS.filter((l) => (LINEAS_PRODUCCION as readonly string[]).includes(l)), ...LINEAS_PRODUCCION.filter((l) => !ORDEN_LINEAS.includes(l))];
   const recRef = useRef<SpeechRec | null>(null);
   const [soportado, setSoportado] = useState(true);
   const [escuchando, setEscuchando] = useState(false);
@@ -113,6 +117,7 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
       <input type="hidden" name="items" value={JSON.stringify(items)} />
       <input type="hidden" name="trabajadores" value={sel.join(",")} />
       <input type="hidden" name="litros" value={litros} />
+      <input type="hidden" name="overrun" value={overrun} />
       <input type="hidden" name="observaciones" value={observaciones} />
 
       {/* Turno */}
@@ -147,17 +152,34 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
         </div>
       )}
 
-      {/* Tipo (o nuevo) */}
-      <label className="block text-sm font-bold text-slate-700">Tipo de producto
-        <select value={linea} onChange={(e) => setLinea(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#0f766e]">
-          {LINEAS_PRODUCCION.map((l) => <option key={l} value={l}>{lineaLabel[l] ?? l}</option>)}
-          <option value="__nuevo__">➕ Nuevo producto…</option>
-        </select>
-      </label>
+      {/* Producto: una "ventana" por producto (cada uno con sus campos) */}
+      <div>
+        <p className="mb-1.5 text-sm font-bold text-slate-700">¿Qué produjo?</p>
+        <div className="grid grid-cols-3 gap-2">
+          {lineasOrdenadas.map((l) => {
+            const on = linea === l;
+            const ic = PERFIL_LINEA[l]?.icono ?? "📦";
+            return (
+              <button key={l} type="button" onClick={() => setLinea(l)}
+                className={`flex flex-col items-center gap-0.5 rounded-xl border-2 px-1 py-2.5 text-center text-xs font-bold transition ${on ? "border-[#0f766e] bg-teal-50 text-[#0f766e]" : "border-slate-200 bg-white text-slate-600"}`}>
+                <span className="text-xl leading-none">{ic}</span>
+                <span className="leading-tight">{lineaLabel[l] ?? l}</span>
+              </button>
+            );
+          })}
+          <button type="button" onClick={() => setLinea("__nuevo__")}
+            className={`flex flex-col items-center gap-0.5 rounded-xl border-2 border-dashed px-1 py-2.5 text-center text-xs font-bold transition ${esNuevo ? "border-[#0f766e] bg-teal-50 text-[#0f766e]" : "border-slate-300 bg-white text-slate-500"}`}>
+            <span className="text-xl leading-none">➕</span>
+            <span className="leading-tight">Nuevo</span>
+          </button>
+        </div>
+      </div>
       {esNuevo && (
         <input value={nuevoTipo} onChange={(e) => setNuevoTipo(e.target.value)} placeholder="Nombre del producto nuevo (ej: Sándwich de helado)"
           className="w-full rounded-lg border-2 border-[#0f766e] px-3 py-2.5 text-sm" />
+      )}
+      {cfg?.hint && (
+        <p className="rounded-lg bg-teal-50 px-3 py-2 text-xs font-semibold text-[#0f766e]">💡 {cfg.hint}</p>
       )}
 
       {/* Recomendación de la central (sugerencia, no obligación) — colapsable */}
@@ -198,11 +220,21 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
         </button>
       </div>
 
-      {/* Litros (mezcla) */}
-      <label className="block text-sm font-bold text-slate-700">Litros de mezcla (opcional)
-        <input value={litros} onChange={(e) => setLitros(e.target.value)} inputMode="decimal" placeholder="Ej: 53"
-          className="mt-1 w-32 rounded-lg border border-slate-300 px-3 py-2.5 text-base" />
-      </label>
+      {/* Litros (mezcla) — solo para los de moldeo/mezcla */}
+      {(cfg?.litros ?? true) && (
+        <label className="block text-sm font-bold text-slate-700">Litros de mezcla {esNuevo ? "(opcional)" : ""}
+          <input value={litros} onChange={(e) => setLitros(e.target.value)} inputMode="decimal" placeholder="Ej: 53"
+            className="mt-1 w-32 rounded-lg border border-slate-300 px-3 py-2.5 text-base" />
+        </label>
+      )}
+
+      {/* Overrun (batido) — solo cremas/cassatas */}
+      {cfg?.overrun && (
+        <label className="block text-sm font-bold text-slate-700">Overrun / batido (%) <span className="font-normal text-slate-400">(opcional)</span>
+          <input value={overrun} onChange={(e) => setOverrun(e.target.value)} inputMode="decimal" placeholder="Ej: 35"
+            className="mt-1 w-32 rounded-lg border border-slate-300 px-3 py-2.5 text-base" />
+        </label>
+      )}
 
       {/* Observaciones / ajustes de receta */}
       <label className="block text-sm font-bold text-slate-700">¿Faltó algo o cambiaron la receta? (opcional)
