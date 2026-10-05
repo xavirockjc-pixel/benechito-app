@@ -48,10 +48,9 @@ const TURNOS = [
  * quiénes trabajaron y observaciones (faltó algo / cambiaron la receta).
  * Todo lo interno (rendimiento, costos) se calcula en el panel, no aquí.
  */
-export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId, recomendaciones = {} }: {
+export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], recomendaciones = {} }: {
   saboresPorLinea?: Record<string, string[]>;
-  equipo?: { usuarioId: string; nombre: string }[];
-  yoId?: string;
+  equipo?: { id: string; nombre: string }[];
   recomendaciones?: Record<string, string[]>; // por línea + clave "__todas__" para las globales
 }) {
   const [turno, setTurno] = useState("1");
@@ -59,8 +58,8 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId
   const [nuevoTipo, setNuevoTipo] = useState("");
   const esNuevo = linea === "__nuevo__";
   const lineaFinal = esNuevo ? nuevoTipo.trim() : linea;
-  // Quiénes trabajaron este turno (para dividir el pago por trato). Por defecto: yo.
-  const [sel, setSel] = useState<string[]>(yoId && equipo.some((e) => e.usuarioId === yoId) ? [yoId] : []);
+  // Quién(es) produjo esto (tablet compartido: SIEMPRE se elige el trabajador). Divide el pago si son varios.
+  const [sel, setSel] = useState<string[]>([]);
   const toggleSel = (id: string) => setSel((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   const saboresTipo = esNuevo ? [] : (saboresPorLinea[linea] ?? []);
   const [filas, setFilas] = useState<Fila[]>([{ key: 1, nombre: "", cantidad: "" }]);
@@ -103,7 +102,7 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId
     .map((f) => ({ nombre: f.nombre.trim(), cantidad: Number(f.cantidad.replace(/[^0-9]/g, "")) || 0 }))
     .filter((i) => i.nombre && i.cantidad > 0);
   const total = items.reduce((s, i) => s + i.cantidad, 0);
-  const listo = total > 0 && lineaFinal.length > 0;
+  const listo = total > 0 && lineaFinal.length > 0 && sel.length > 0;
   // Recomendaciones de la central: las globales + las del producto elegido (solo sugerencia).
   const notasRec = esNuevo ? [] : [...(recomendaciones["__todas__"] ?? []), ...(recomendaciones[linea] ?? [])];
 
@@ -112,7 +111,7 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId
       <input type="hidden" name="turno" value={turno} />
       <input type="hidden" name="linea" value={lineaFinal} />
       <input type="hidden" name="items" value={JSON.stringify(items)} />
-      <input type="hidden" name="participantes" value={sel.join(",")} />
+      <input type="hidden" name="trabajadores" value={sel.join(",")} />
       <input type="hidden" name="litros" value={litros} />
       <input type="hidden" name="observaciones" value={observaciones} />
 
@@ -128,6 +127,25 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId
           ))}
         </div>
       </div>
+
+      {/* ¿Quién produjo? (tablet compartido: cada quien elige su nombre; obligatorio) */}
+      {equipo.length > 0 && (
+        <div className={`rounded-xl border-2 p-3 ${sel.length === 0 ? "border-amber-300 bg-amber-50" : "border-[#0f766e]/30 bg-teal-50/50"}`}>
+          <p className="mb-2 text-sm font-extrabold text-slate-700">👤 ¿Quién lo produjo? {sel.length === 0 && <span className="font-bold text-amber-600">— elige tu nombre</span>}</p>
+          <div className="flex flex-wrap gap-2">
+            {equipo.map((e) => {
+              const on = sel.includes(e.id);
+              return (
+                <button key={e.id} type="button" onClick={() => toggleSel(e.id)}
+                  className={`rounded-full border px-3.5 py-2 text-sm font-bold transition ${on ? "border-[#0f766e] bg-[#0f766e] text-white" : "border-slate-300 bg-white text-slate-600"}`}>
+                  {on ? "✓ " : ""}{e.nombre}
+                </button>
+              );
+            })}
+          </div>
+          {sel.length > 1 && <p className="mt-2 text-[11px] font-semibold text-amber-600">👥 Fue en equipo: la producción se reparte entre {sel.length} personas.</p>}
+        </div>
+      )}
 
       {/* Tipo (o nuevo) */}
       <label className="block text-sm font-bold text-slate-700">Tipo de producto
@@ -186,25 +204,6 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId
           className="mt-1 w-32 rounded-lg border border-slate-300 px-3 py-2.5 text-base" />
       </label>
 
-      {/* Quiénes trabajaron el turno (pago por trato se divide entre los marcados) */}
-      {equipo.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-          <p className="mb-2 text-xs font-bold text-slate-600">👥 ¿Quiénes trabajaron este turno?</p>
-          <div className="flex flex-wrap gap-2">
-            {equipo.map((e) => {
-              const on = sel.includes(e.usuarioId);
-              return (
-                <button key={e.usuarioId} type="button" onClick={() => toggleSel(e.usuarioId)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${on ? "border-[#0f766e] bg-[#0f766e] text-white" : "border-slate-300 bg-white text-slate-600"}`}>
-                  {on ? "✓ " : ""}{e.nombre}{e.usuarioId === yoId ? " (tú)" : ""}
-                </button>
-              );
-            })}
-          </div>
-          {sel.length > 1 && <p className="mt-2 text-[11px] font-semibold text-amber-600">Se reparte entre {sel.length} personas.</p>}
-        </div>
-      )}
-
       {/* Observaciones / ajustes de receta */}
       <label className="block text-sm font-bold text-slate-700">¿Faltó algo o cambiaron la receta? (opcional)
         <textarea value={observaciones} onChange={(e) => setObservaciones(e.target.value)} rows={2}
@@ -216,7 +215,7 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], yoId
         className="w-full rounded-2xl bg-[#0f766e] py-4 text-base font-extrabold text-white shadow active:brightness-95 disabled:opacity-40">
         ✅ Enviar reporte del turno {total > 0 ? `(${total} u.)` : ""}
       </button>
-      <p className="text-center text-[11px] text-slate-400">Queda registrado con tu nombre, la hora y quiénes trabajaron.</p>
+      <p className="text-center text-[11px] text-slate-400">Queda registrado con el nombre de quién lo produjo, el producto y la hora. Cada operario registra lo suyo en este mismo tablet.</p>
     </form>
   );
 }

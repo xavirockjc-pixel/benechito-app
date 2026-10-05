@@ -186,9 +186,19 @@ export async function registrarProduccion(formData: FormData) {
   if (!bod) return;
   const u = await usuarioActual();
 
-  // Quiénes trabajaron el turno (para dividir el pago por trato). Por defecto, quien registra.
+  // Quién(es) produjo esto (tablet compartido: por TRABAJADOR, con o sin login).
+  // Compatibilidad: también acepta el campo viejo "participantes" (usuarioId).
+  const trabIds = [...new Set(String(formData.get("trabajadores") ?? "").split(",").map((s) => s.trim()).filter(Boolean))];
+  const trabajadores = trabIds.length > 0
+    ? await prisma.trabajador.findMany({ where: { id: { in: trabIds } }, select: { id: true, nombre: true, usuarioId: true } })
+    : [];
+  const participantesTrab = trabajadores.map((t) => t.id).join(",") || null;
+  // usuarioIds para que el pago actual (que cruza por usuarioId) siga funcionando con los que tengan cuenta.
+  const partUsu = trabajadores.map((t) => t.usuarioId).filter((x): x is string => !!x);
   const partRaw = String(formData.get("participantes") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
-  const participantes = (partRaw.length > 0 ? [...new Set(partRaw)] : (u?.sub ? [u.sub] : [])).join(",") || null;
+  const participantes = [...new Set(partUsu.length > 0 ? partUsu : (partRaw.length > 0 ? partRaw : (u?.sub ? [u.sub] : [])))].join(",") || null;
+  // Nombres de quienes produjeron (para el registro de cada área y el panel).
+  const operarios: string | null = trabajadores.length > 0 ? trabajadores.map((t) => t.nombre).join(", ") : (u?.nombre ?? null);
 
   // Datos internos del turno (no se muestran en la app del operario).
   const turno = String(formData.get("turno") ?? "").trim() || null;
@@ -210,7 +220,8 @@ export async function registrarProduccion(formData: FormData) {
       data: {
         zona: "produccion", ubicacionId: bod, tipo: "entrada", clase: "sabor",
         refId: saborId, nombre: `${it.nombre.trim()} (${linea})`, cantidad: it.cantidad,
-        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null, participantes,
+        detalle: operarios, // quién lo produjo (para el registro del día)
+        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null, participantes, participantesTrab,
       },
     });
   }
@@ -238,13 +249,6 @@ export async function registrarProduccion(formData: FormData) {
     }
   }
 
-  // Nombres de quienes trabajaron (para el registro interno del turno).
-  const ids = participantes ? participantes.split(",").map((s) => s.trim()).filter(Boolean) : [];
-  let operarios: string | null = u?.nombre ?? null;
-  if (ids.length > 0) {
-    const us = await prisma.usuario.findMany({ where: { id: { in: ids } }, select: { nombre: true } });
-    operarios = us.map((x) => x.nombre).filter(Boolean).join(", ") || operarios;
-  }
   const total = items.reduce((s, i) => s + i.cantidad, 0);
   const sabores = items.map((i) => `${i.cantidad} ${i.nombre.trim()}`).join(", ");
 

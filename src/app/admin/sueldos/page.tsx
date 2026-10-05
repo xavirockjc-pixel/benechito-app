@@ -30,13 +30,23 @@ export default async function SueldosPage({ searchParams }: { searchParams: Prom
     // Producción registrada por voz en el período (para el pago por trato automático).
     prisma.movimientoBodega.findMany({
       where: { zona: "produccion", tipo: "entrada", fecha: { gte: inicio, lt: fin } },
-      select: { cantidad: true, usuarioId: true, participantes: true },
+      select: { cantidad: true, usuarioId: true, participantes: true, participantesTrab: true },
     }),
   ]);
   const tarifas = tarifasRaw.map((t) => ({ id: t.id, nombre: t.nombre, valorUnit: Number(t.valorUnit) }));
-  // Unidades atribuidas a cada usuario: si un turno lo trabajaron N personas, se divide entre N.
-  const prodMap = new Map<string, number>();
+  // Unidades producidas atribuidas a cada persona (si fueron N, se divide entre N).
+  // Nuevo: por trabajadorId (participantesTrab). Viejo: por usuarioId (participantes).
+  const prodMapTrab = new Map<string, number>(); // key = trabajadorId
+  const prodMap = new Map<string, number>();     // key = usuarioId (retrocompatible)
   for (const e of prodEventos) {
+    const trabIds = e.participantesTrab && e.participantesTrab.trim()
+      ? e.participantesTrab.split(",").map((s) => s.trim()).filter(Boolean)
+      : [];
+    if (trabIds.length > 0) {
+      const share = e.cantidad / trabIds.length;
+      for (const id of trabIds) prodMapTrab.set(id, (prodMapTrab.get(id) ?? 0) + share);
+      continue;
+    }
     const ids = e.participantes && e.participantes.trim()
       ? e.participantes.split(",").map((s) => s.trim()).filter(Boolean)
       : e.usuarioId ? [e.usuarioId] : [];
@@ -51,8 +61,8 @@ export default async function SueldosPage({ searchParams }: { searchParams: Prom
     const movimientos = t.movimientos.map((m) => ({ tipo: m.tipo, monto: Number(m.monto) }));
     const tratoMonto = movimientos.filter((m) => m.tipo === "trato").reduce((s, m) => s + m.monto, 0);
     const pagado = movimientos.filter((m) => m.tipo === "pago").reduce((s, m) => s + m.monto, 0);
-    // Producción propia (por voz) en el período — para el pago por trato automático.
-    const unidadesProduccion = t.usuarioId ? (prodMap.get(t.usuarioId) ?? 0) : 0;
+    // Producción propia en el período — por trabajador (nuevo) o por usuario (registros viejos).
+    const unidadesProduccion = (prodMapTrab.get(t.id) ?? 0) + (t.usuarioId ? (prodMap.get(t.usuarioId) ?? 0) : 0);
     // tarifa con retrocompatibilidad
     const tarifa = t.tarifa != null
       ? Number(t.tarifa)
@@ -129,9 +139,8 @@ export default async function SueldosPage({ searchParams }: { searchParams: Prom
 
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-400">
                 <span>🕒 {horas.toFixed(0)} h · 📅 {dias} día(s) trabajados</span>
-                {esTrato && t.usuarioId && <span className="font-semibold text-amber-600">🏭 {Number.isInteger(unidadesProduccion) ? unidadesProduccion : unidadesProduccion.toFixed(1)} u. producidas (automático, ya dividido si fue en equipo)</span>}
-                {esTrato && !t.usuarioId && <span className="font-semibold text-rose-600">⚠️ enlaza su usuario en <Link href={`/admin/equipo/${t.id}`} className="underline">Equipo</Link> para que la producción se sume sola</span>}
-                {esTrato && t.usuarioId && t.tarifa == null && <span className="font-semibold text-amber-600">⚠️ define el valor por unidad ↓</span>}
+                {esTrato && <span className="font-semibold text-amber-600">🏭 {Number.isInteger(unidadesProduccion) ? unidadesProduccion : unidadesProduccion.toFixed(1)} u. producidas (automático, ya dividido si fue en equipo)</span>}
+                {esTrato && t.tarifa == null && <span className="font-semibold text-amber-600">⚠️ define el valor por unidad ↓</span>}
                 {pagado > 0 && <span className="font-semibold text-emerald-600">✓ pagado en este período: {CLP(pagado)}</span>}
                 {sinTarifa && <span className="font-semibold text-amber-600">⚠️ falta definir la tarifa ↓</span>}
               </div>

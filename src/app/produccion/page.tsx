@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { usuarioActual } from "@/lib/auth";
 import ProduccionForm from "./ProduccionForm";
 import { inicioDelDia } from "@/lib/dominio/empresa";
 
@@ -24,14 +23,14 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   }
 
   const hoy = await inicioDelDia();
-  const yo = await usuarioActual();
 
   const [registroHoy, saboresAll, equipoTratoRaw, recs] = await Promise.all([
     prisma.movimientoBodega.findMany({ where: { fecha: { gte: hoy }, zona: "produccion" }, orderBy: { fecha: "desc" }, take: 100 }),
     prisma.sabor.findMany({ where: { activo: true }, select: { nombre: true, linea: true }, orderBy: { nombre: "asc" } }),
     prisma.trabajador.findMany({
-      where: { activo: true, modalidadPago: "por_trato", usuarioId: { not: null } },
-      select: { usuarioId: true, nombre: true },
+      // Tablet compartido: cualquier trabajador de producción puede registrar su producción por su nombre.
+      where: { activo: true, cargo: { in: ["operario", "otro"] } },
+      select: { id: true, nombre: true },
       orderBy: { nombre: "asc" },
     }),
     prisma.recomendacionProduccion.findMany({ where: { activo: true }, orderBy: { createdAt: "desc" }, take: 40 }),
@@ -47,7 +46,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   // Recomendaciones de la central por producto (más las de "todos" bajo la clave __todas__).
   const recomendaciones: Record<string, string[]> = {};
   for (const r of recs) (recomendaciones[r.linea ?? "__todas__"] ??= []).push(r.texto);
-  const equipoTrato = equipoTratoRaw.map((t) => ({ usuarioId: t.usuarioId as string, nombre: t.nombre }));
+  const equipoTrato = equipoTratoRaw.map((t) => ({ id: t.id, nombre: t.nombre }));
   const totalHoy = registroHoy.reduce((s, m) => s + m.cantidad, 0);
 
   return (
@@ -72,7 +71,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
       <section className="rounded-2xl border-2 border-teal-300 bg-white p-4 shadow-sm">
         <h2 className="mb-1 text-base font-extrabold text-teal-800">✍️ Reporte del turno</h2>
         <p className="mb-3 text-xs text-slate-500">Turno, tipo, cuántos salieron por sabor y quiénes trabajaron.</p>
-        <ProduccionForm saboresPorLinea={saboresProd} equipo={equipoTrato} yoId={yo?.sub} recomendaciones={recomendaciones} />
+        <ProduccionForm saboresPorLinea={saboresProd} equipo={equipoTrato} recomendaciones={recomendaciones} />
       </section>
 
       {/* Producido hoy (resumen) */}
@@ -90,9 +89,10 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
                 <span className="min-w-0">
                   <span className="font-bold text-teal-700">+{m.cantidad}</span>{" "}
                   <span className="text-slate-800">{m.nombre}</span>
+                  {m.detalle && <span className="block text-[11px] font-semibold text-[#0f766e]">👤 {m.detalle}</span>}
                 </span>
                 <span className="shrink-0 text-xs text-slate-400">
-                  {m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}
+                  {fmtHora(m.fecha)}
                 </span>
               </li>
             ))}
