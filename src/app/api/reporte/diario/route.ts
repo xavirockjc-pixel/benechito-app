@@ -24,6 +24,8 @@ export async function GET(req: NextRequest) {
 
   const inicio = new Date();
   inicio.setHours(0, 0, 0, 0);
+  // Día anterior (para el reporte de la mañana: "qué se fabricó ayer").
+  const inicioAyer = new Date(inicio.getTime() - 24 * 3600 * 1000);
 
   // Cada sección va protegida: si un modelo/campo no existe, no rompe el reporte.
   const safe = async <T,>(fn: () => Promise<T>, def: T): Promise<T> => {
@@ -71,6 +73,19 @@ export async function GET(req: NextRequest) {
     { _sum: { cantidadReal: null } } as any,
   );
   const unidadesProd = Number(prodHoy._sum.cantidadReal ?? 0);
+
+  // Fabricado AYER (lo que anotó la app de producción: MovimientoBodega zona=produccion).
+  const fabAyerMovs = await safe(
+    () => prisma.movimientoBodega.findMany({
+      where: { zona: "produccion", fecha: { gte: inicioAyer, lt: inicio } },
+      select: { nombre: true, cantidad: true },
+    }),
+    [] as { nombre: string; cantidad: number }[],
+  );
+  const fabAyerMap = new Map<string, number>();
+  for (const m of fabAyerMovs) fabAyerMap.set(m.nombre, (fabAyerMap.get(m.nombre) ?? 0) + m.cantidad);
+  const fabAyer = [...fabAyerMap.entries()].map(([nombre, total]) => ({ nombre, total })).sort((a, b) => b.total - a.total);
+  const fabAyerTotal = fabAyer.reduce((s, p) => s + p.total, 0);
 
   // Asistencia de hoy.
   const asistHoy = await safe(
@@ -154,6 +169,12 @@ export async function GET(req: NextRequest) {
     L.push(canales.map((c) => `   • ${c.canal}: ${fmtCLP(Number(c._sum.total ?? 0))}`).join("\n"));
   }
   if (unidadesProd > 0) L.push(`🏭 *Producción hoy:* ${unidadesProd} u.`);
+  if (fabAyer.length) {
+    L.push("");
+    L.push(`🏭 *Fabricado ayer (${fabAyerTotal} u.):*`);
+    L.push(fabAyer.slice(0, 15).map((p) => `   • ${p.nombre}: ${p.total}`).join("\n"));
+    if (fabAyer.length > 15) L.push(`   • …y ${fabAyer.length - 15} más.`);
+  }
   L.push(`👥 *Equipo hoy:* ${Number(asistHoy._count ?? 0)} presentes · ${Number(asistHoy._sum.horas ?? 0)} h`);
   L.push("");
   L.push(`📦 *Pendientes:*`);
@@ -163,8 +184,9 @@ export async function GET(req: NextRequest) {
   L.push(`   • Caja: ${cajaAbierta > 0 ? "⚠️ abierta sin cerrar" : "✅ cerrada"}`);
   if (bajoStock.length) {
     L.push("");
-    L.push(`🔴 *Insumos bajo mínimo (${bajoStock.length}):*`);
-    L.push(bajoStock.slice(0, 8).map((m) => `   • ${m.nombre}: ${m.stock} ${m.unidad} (mín ${m.stockMinimo})`).join("\n"));
+    L.push(`🛒 *Comprar — insumos bajos (${bajoStock.length}):*`);
+    L.push(bajoStock.slice(0, 12).map((m) => `   • ${m.nombre}: quedan ${m.stock} ${m.unidad} (mín ${m.stockMinimo})`).join("\n"));
+    if (bajoStock.length > 12) L.push(`   • …y ${bajoStock.length - 12} más.`);
   }
   if (prodBajo.length) {
     L.push("");
