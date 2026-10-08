@@ -148,6 +148,25 @@ export async function GET(req: NextRequest) {
   // Cosas anotadas que mueven stock y no se confirmaron ("llegó leche"…).
   const porConfirmar = await safe(() => prisma.nota.count({ where: { accionEstado: "sugerida" } }), 0);
 
+  // Accesos de AYER: quién entró a qué ventana (Socio, Higiene, etc.) → al reporte.
+  const accesosAyer = await safe(
+    () => prisma.auditoria.findMany({
+      where: { accion: "entrar", entidad: "acceso", createdAt: { gte: inicioAyer, lt: inicio } },
+      orderBy: { createdAt: "asc" }, select: { detalle: true },
+    }),
+    [] as { detalle: string | null }[],
+  );
+  // Agrupa por persona → set de secciones visitadas.
+  const accesosPorPersona = new Map<string, Set<string>>();
+  for (const a of accesosAyer) {
+    try {
+      const d = JSON.parse(a.detalle ?? "{}");
+      const quien = d.nombre || "—";
+      const sec = d.seccion || "—";
+      (accesosPorPersona.get(quien) ?? accesosPorPersona.set(quien, new Set()).get(quien)!).add(sec);
+    } catch { /* detalle no-JSON: ignora */ }
+  }
+
   // Notas y tareas del equipo de hoy (bitácora/observaciones/ideas) → van al reporte.
   const notasEquipo = await safe(
     () => prisma.nota.findMany({
@@ -230,6 +249,13 @@ export async function GET(req: NextRequest) {
     L.push("");
     L.push(`📝 *Notas del equipo hoy (${notasEquipo.length}):*`);
     L.push(notasEquipo.map((n) => `   • ${ic[n.tipo] ?? "•"} ${n.texto}${n.autor ? ` — ${n.autor}` : ""}`).join("\n"));
+  }
+  if (accesosPorPersona.size > 0) {
+    L.push("");
+    L.push(`🕑 *Accesos de ayer (${accesosPorPersona.size}):*`);
+    L.push([...accesosPorPersona.entries()].slice(0, 10).map(
+      ([quien, secs]) => `   • ${quien}: ${[...secs].join(", ")}`,
+    ).join("\n"));
   }
   L.push("");
   L.push(`🐝 Tu socio Panal · benechito.com/admin`);
