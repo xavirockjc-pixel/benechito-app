@@ -97,6 +97,19 @@ export async function GET(req: NextRequest) {
     .map((p) => ({ nombre: p.nombre, total: p.stock.reduce((s, x) => s + x.cantidad, 0), min: p.stockMinimo }))
     .filter((p) => p.total <= p.min);
 
+  // Stock del día (productos terminados con existencia) → el socio manda el stock cada día.
+  const stockProductos = await safe(
+    () => prisma.producto.findMany({
+      where: { activo: true },
+      select: { nombre: true, stock: { select: { cantidad: true } } },
+    }),
+    [] as { nombre: string; stock: { cantidad: number }[] }[],
+  );
+  const stockHoy = stockProductos
+    .map((p) => ({ nombre: p.nombre, total: p.stock.reduce((s, x) => s + x.cantidad, 0) }))
+    .filter((p) => p.total > 0)
+    .sort((a, b) => b.total - a.total);
+
   // Mejoras/proyecciones a la vista: pendientes con fecha en los próximos 7 días o vencidas.
   const en7 = new Date(inicio); en7.setDate(en7.getDate() + 7); en7.setHours(23, 59, 59, 999);
   const mejoras = await safe(
@@ -157,6 +170,13 @@ export async function GET(req: NextRequest) {
     L.push("");
     L.push(`🔴 *Productos bajo mínimo (${prodBajo.length}):*`);
     L.push(prodBajo.slice(0, 8).map((p) => `   • ${p.nombre}: ${p.total} (mín ${p.min})`).join("\n"));
+  }
+  if (stockHoy.length) {
+    const totalU = stockHoy.reduce((s, p) => s + p.total, 0);
+    L.push("");
+    L.push(`📦 *Stock del día (${stockHoy.length} productos · ${totalU} u.):*`);
+    L.push(stockHoy.slice(0, 20).map((p) => `   • ${p.nombre}: ${p.total}`).join("\n"));
+    if (stockHoy.length > 20) L.push(`   • …y ${stockHoy.length - 20} más (ve el detalle en benechito.com/admin).`);
   }
   if (mejoras.length) {
     L.push("");

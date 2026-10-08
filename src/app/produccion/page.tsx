@@ -56,6 +56,14 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
         <p className="text-xs text-slate-500">Anota el reporte del turno. Simple y rápido.</p>
       </div>
 
+      <Link href="/produccion/mantenimiento" className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 px-4 py-3 text-amber-950 shadow-sm active:opacity-90">
+        <span className="text-2xl">🐝</span>
+        <span className="min-w-0">
+          <span className="block text-sm font-extrabold">Socio Benechito · Mantenimiento</span>
+          <span className="block text-[11px] font-semibold leading-tight">Pendientes, mejoras y recordatorios. Anota lo que falta.</span>
+        </span>
+      </Link>
+
       <div className="grid grid-cols-2 gap-2">
         <Link href="/produccion/checklist" className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 shadow-sm active:bg-slate-50">
           🧼 Higiene y BPM
