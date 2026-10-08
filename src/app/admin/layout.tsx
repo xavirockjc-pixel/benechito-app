@@ -46,6 +46,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/primeros-pasos", label: "Primeros pasos", icon: "🚀" },
         { href: "/admin", label: "Panel", icon: "📊" },
         { href: "/admin/pendientes", label: "Pendientes del cerebro", icon: "🐝" },
+        { href: "/admin/accesos", label: "Historial de movimiento", icon: "🕑" },
         { href: "/admin/notas", label: "Notas y acciones", icon: "📝" },
         { href: "/admin/agenda", label: "Agenda", icon: "📅" },
       ],
@@ -77,6 +78,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/produccion", label: L.produccion, icon: "🏭" },
         { href: "/admin/produccion-analisis", label: "Análisis de producción", icon: "📊" },
+        { href: "/admin/produccion-pines", label: "Códigos por producto", icon: "🔒" },
         { href: "/admin/materias", label: L.materias, icon: "🧪" },
         { href: "/admin/sabores", label: L.sabores, icon: "🍫" },
       ],

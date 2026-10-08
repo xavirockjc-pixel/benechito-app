@@ -1,3 +1,4 @@
+import { registrarAcceso } from "@/lib/dominio/accesos";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { tipoNotaIcono, tipoNotaLabel } from "@/lib/dominio/notas";
@@ -11,6 +12,7 @@ const fmt = (d: Date) => new Date(d).toLocaleString("es-CL", { day: "2-digit", m
 
 export default async function BitacoraPage({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
   const { ok } = await searchParams;
+  await registrarAcceso("produccion", "Bitácora");
   const notas = await prisma.nota.findMany({
     where: { area: "produccion" },
     orderBy: [{ estado: "asc" }, { createdAt: "desc" }],

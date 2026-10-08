@@ -3,8 +3,12 @@ import { inicioDelDia } from "@/lib/dominio/empresa";
 import { prioridadColor, estadoMejoraIcono } from "@/lib/dominio/mejoras";
 import { avanzarMejoraProd } from "./actions";
 import PendienteVoz from "./PendienteVoz";
+import GastoRapido from "./GastoRapido";
+import { registrarAcceso } from "@/lib/dominio/accesos";
 
 export const dynamic = "force-dynamic";
+
+const fmtCLP = (n: number) => "$" + n.toLocaleString("es-CL");
 
 const fmtFecha = (d: Date | null) =>
   d ? new Date(d).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : null;
@@ -16,10 +20,12 @@ const fmtHora = (d: Date | null) => {
 
 export default async function MantenimientoProd({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
   await searchParams;
+  await registrarAcceso("produccion", "Socio Benechito / Mantenimiento");
   const hoy = await inicioDelDia();
   const finHoy = new Date(hoy.getTime() + 24 * 3600 * 1000);
+  const hace30 = new Date(hoy.getTime() - 30 * 24 * 3600 * 1000);
 
-  const [mejoras, recordatorios, negativos] = await Promise.all([
+  const [mejoras, recordatorios, negativos, gastos] = await Promise.all([
     // Mejoras de producción (y generales) que siguen abiertas.
     prisma.mejora.findMany({
       where: { estado: { not: "hecha" }, area: { in: ["produccion", "general", "calidad"] } },
@@ -40,10 +46,18 @@ export default async function MantenimientoProd({ searchParams }: { searchParams
     }),
     // Stock en negativo (alerta que el socio querría ver).
     prisma.stock.count({ where: { cantidad: { lt: 0 } } }),
+    // Compras/gastos registrados desde producción (últimos 30 días).
+    prisma.gasto.findMany({
+      where: { origen: "produccion", fecha: { gte: hace30 } },
+      orderBy: { fecha: "desc" },
+      take: 10,
+      select: { id: true, concepto: true, monto: true, categoria: true, proveedor: true, fecha: true },
+    }),
   ]);
 
   const enProceso = mejoras.filter((m) => m.estado === "en_proceso");
   const porHacer = mejoras.filter((m) => m.estado === "pendiente");
+  const gastoMes = gastos.reduce((s, g) => s + Number(g.monto), 0);
 
   return (
     <div className="space-y-5">
@@ -118,6 +132,32 @@ export default async function MantenimientoProd({ searchParams }: { searchParams
           <p className="mt-0.5 text-xs text-rose-600">
             Se usó o vendió algo que no se había ingresado. Avisa al socio para corregir el conteo.
           </p>
+        </section>
+      )}
+
+      {/* Control de gastos / compras */}
+      <GastoRapido />
+
+      {gastos.length > 0 && (
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-900">💸 Últimas compras</h2>
+            <span className="text-xs font-semibold text-emerald-700">{fmtCLP(gastoMes)} · 30 días</span>
+          </div>
+          <ul className="divide-y divide-slate-100 text-sm">
+            {gastos.map((g) => (
+              <li key={g.id} className="flex items-center justify-between gap-2 py-1.5">
+                <span className="min-w-0">
+                  <span className="text-slate-800">{g.concepto}</span>
+                  <span className="block text-[11px] text-slate-400">
+                    {g.categoria ?? "otros"}{g.proveedor ? ` · ${g.proveedor}` : ""} · {new Date(g.fecha).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })}
+                  </span>
+                </span>
+                <span className="shrink-0 font-bold text-slate-700">{fmtCLP(Number(g.monto))}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="mt-2 text-[11px] text-slate-400">Estas compras quedan en Finanzas de la central.</p>
         </section>
       )}
 

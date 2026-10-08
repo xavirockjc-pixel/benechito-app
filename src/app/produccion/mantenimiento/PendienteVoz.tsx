@@ -24,6 +24,7 @@ export default function PendienteVoz() {
   useEffect(() => {
     const w = window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec };
     const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!Ctor) { setSoportado(false); return; }
     const rec = new Ctor();
     rec.lang = "es-CL"; rec.interimResults = false; rec.continuous = false; rec.maxAlternatives = 1;

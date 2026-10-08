@@ -24,6 +24,10 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
 
   const hoy = await inicioDelDia();
 
+  const empresa = await prisma.empresa.findFirst({ select: { pinesProduccion: true } });
+  let pines: Record<string, string> = {};
+  try { pines = empresa?.pinesProduccion ? JSON.parse(empresa.pinesProduccion) : {}; } catch { pines = {}; }
+
   const [registroHoy, saboresAll, equipoTratoRaw, recs] = await Promise.all([
     prisma.movimientoBodega.findMany({ where: { fecha: { gte: hoy }, zona: "produccion" }, orderBy: { fecha: "desc" }, take: 100 }),
     prisma.sabor.findMany({ where: { activo: true }, select: { nombre: true, linea: true }, orderBy: { nombre: "asc" } }),
@@ -76,7 +80,7 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
       {ok && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Guardado. ¡Gracias! Toca otro producto para seguir.</p>}
 
       {/* Reporte por producto (elige → ventana del producto → guarda → ← Volver) */}
-      <ProduccionForm saboresPorLinea={saboresProd} equipo={equipoTrato} recomendaciones={recomendaciones} />
+      <ProduccionForm saboresPorLinea={saboresProd} equipo={equipoTrato} recomendaciones={recomendaciones} pines={pines} />
 
       {/* Producido hoy (resumen) */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

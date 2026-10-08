@@ -25,6 +25,26 @@ export async function crearPendienteProd(formData: FormData) {
   revalidatePath("/admin/mejoras");
 }
 
+const CATS_GASTO = ["insumos", "herramienta", "mantencion", "otros"] as const;
+
+/**
+ * Registro de gasto/compra desde el sector Socio (producción): materia prima,
+ * herramienta, mantención, etc. Queda en Gasto (origen=produccion) y aparece en
+ * Finanzas de la central.
+ */
+export async function registrarGastoProd(formData: FormData) {
+  const concepto = String(formData.get("concepto") ?? "").trim();
+  const monto = Number(String(formData.get("monto") ?? "").replace(/[^0-9]/g, "")) || 0;
+  if (!concepto || monto <= 0) return;
+  const categoria = pick(formData.get("categoria"), CATS_GASTO, "insumos");
+  const proveedor = String(formData.get("proveedor") ?? "").trim() || null;
+  await prisma.gasto.create({
+    data: { concepto, monto, categoria, proveedor, origen: "produccion" },
+  });
+  revalidatePath("/produccion/mantenimiento");
+  revalidatePath("/admin/finanzas");
+}
+
 /** Avanza el estado de una mejora (por hacer → en proceso → hecha). */
 export async function avanzarMejoraProd(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();

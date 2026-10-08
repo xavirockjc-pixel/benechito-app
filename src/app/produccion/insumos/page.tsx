@@ -1,3 +1,4 @@
+import { registrarAcceso } from "@/lib/dominio/accesos";
 import { prisma } from "@/lib/prisma";
 import { fmtCant, subtipoLabel, subtipoIcono, stockBajo } from "@/lib/dominio/materias";
 
@@ -12,6 +13,7 @@ const ORDEN = ["esencia", "colorante", "otro", "base"];
  * hay; si falta algo, se le avisa a bodega. No muestra costos.
  */
 export default async function ProduccionInsumos() {
+  await registrarAcceso("produccion", "Insumos disponibles");
   const materiales = await prisma.materiaPrima.findMany({
     where: { activo: true, categoria: "insumo" },
     orderBy: [{ subtipo: "asc" }, { nombre: "asc" }],

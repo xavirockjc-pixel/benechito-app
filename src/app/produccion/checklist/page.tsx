@@ -1,3 +1,4 @@
+import { registrarAcceso } from "@/lib/dominio/accesos";
 import ChecklistSeccion from "@/components/ChecklistSeccion";
 import MicDictado from "@/components/MicDictado";
 
@@ -5,6 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ChecklistPage({ searchParams }: { searchParams: Promise<{ ok?: string }> }) {
   const { ok } = await searchParams;
+  await registrarAcceso("produccion", "Higiene y BPM");
   return (
     <div>
       <h1 className="font-display text-xl font-extrabold text-slate-900">🧼 Higiene y seguridad</h1>

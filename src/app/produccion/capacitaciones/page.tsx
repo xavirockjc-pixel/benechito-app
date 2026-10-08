@@ -1,3 +1,4 @@
+import { registrarAcceso } from "@/lib/dominio/accesos";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { urlEmbed } from "@/lib/dominio/checklists";
@@ -9,6 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function CapacitacionesProduccion({ searchParams }: { searchParams: Promise<{ firmado?: string }> }) {
   const { firmado } = await searchParams;
+  await registrarAcceso("produccion", "Capacitaciones");
   const cookieStore = await cookies();
   const worker = (cookieStore.get("cap_trab")?.value ?? "").trim();
 

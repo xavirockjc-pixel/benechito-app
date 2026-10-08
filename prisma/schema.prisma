@@ -236,6 +236,8 @@ model Empresa {
   accesoExtraRoles  String? // roles autorizados, CSV
   // Menú: modo simple oculta el grupo "Extras / En revisión"; completo lo muestra.
   modoSimple        Boolean    @default(true)
+  // PIN/código por producto en Producción (JSON {linea: pin}). Vacío = sin bloqueo.
+  pinesProduccion   String?
   sucursales Sucursal[]
   configFacturacion ConfigFacturacion?
   createdAt  DateTime   @default(now())

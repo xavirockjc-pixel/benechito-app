@@ -51,13 +51,28 @@ const TURNOS = [
  * (cada uno su ventana con su color), luego quién lo hizo, cuántos y de qué (por voz).
  * Botón ← Volver para que entre el siguiente. Cada reporte queda con el nombre.
  */
-export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], recomendaciones = {} }: {
+export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], recomendaciones = {}, pines = {} }: {
   saboresPorLinea?: Record<string, string[]>;
   equipo?: { id: string; nombre: string }[];
   recomendaciones?: Record<string, string[]>;
+  pines?: Record<string, string>; // {linea: pin} — si el producto tiene pin, pide código para abrir
 }) {
   const [turno, setTurno] = useState("1");
   const [linea, setLinea] = useState<string>(""); // "" = pantalla de elegir producto
+  // Bloqueo por PIN: producto que espera código + lo tecleado + error.
+  const [pinPara, setPinPara] = useState<string>("");
+  const [pinInput, setPinInput] = useState("");
+  const [pinError, setPinError] = useState(false);
+  // Abre el producto; si tiene PIN configurado, primero pide el código.
+  const abrirLinea = (l: string) => {
+    const pin = pines[l];
+    if (pin) { setPinPara(l); setPinInput(""); setPinError(false); }
+    else setLinea(l);
+  };
+  const confirmarPin = () => {
+    if (pinInput.trim() === (pines[pinPara] ?? "")) { setLinea(pinPara); setPinPara(""); setPinInput(""); setPinError(false); }
+    else setPinError(true);
+  };
   const [nuevoTipo, setNuevoTipo] = useState("");
   const esNuevo = linea === "__nuevo__";
   const lineaFinal = esNuevo ? nuevoTipo.trim() : linea;
@@ -77,31 +92,24 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
   const [filas, setFilas] = useState<Fila[]>([{ key: 1, nombre: "", cantidad: "" }]);
   const [litros, setLitros] = useState("");
   const [overrun, setOverrun] = useState("");
-  const [valorUnit, setValorUnit] = useState("");
   const [observaciones, setObservaciones] = useState("");
 
-  // Recuerda por producto: nombres del equipo y valor por unidad (en este tablet).
+  // Recuerda por producto: nombres del equipo (en este tablet).
   useEffect(() => {
     if (!linea || esNuevo) return;
-    let noms: string[] = []; let val = "";
+    let noms: string[] = [];
     try {
       const rawN = localStorage.getItem(`prod-nombres-${linea}`);
       if (rawN) noms = JSON.parse(rawN);
-      val = localStorage.getItem(`prod-valor-${linea}`) ?? "";
     } catch { /* sin storage */ }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setNombres(Array.isArray(noms) ? noms : []);
-    setValorUnit(val);
   }, [linea, esNuevo]);
 
   useEffect(() => {
     if (!linea || esNuevo) return;
     try { localStorage.setItem(`prod-nombres-${linea}`, JSON.stringify(nombres)); } catch { /* */ }
   }, [nombres, linea, esNuevo]);
-  useEffect(() => {
-    if (!linea || esNuevo) return;
-    try { localStorage.setItem(`prod-valor-${linea}`, valorUnit); } catch { /* */ }
-  }, [valorUnit, linea, esNuevo]);
   const recRef = useRef<SpeechRec | null>(null);
   const [soportado, setSoportado] = useState(true);
   const [escuchando, setEscuchando] = useState(false);
@@ -149,13 +157,11 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
   const total = items.reduce((s, i) => s + i.cantidad, 0);
   const listo = total > 0 && lineaFinal.length > 0 && nombres.length > 0;
   const notasRec = esNuevo ? [] : [...(recomendaciones["__todas__"] ?? []), ...(recomendaciones[linea] ?? [])];
-  // Calculadora (solo tú y yo / postres / paletas): total unidades × valor por unidad.
-  const valorNum = Number(valorUnit.replace(/[^0-9]/g, "")) || 0;
-  const dinero = total * valorNum;
-  const fmtCLP = (n: number) => "$" + n.toLocaleString("es-CL");
 
   // ===== Pantalla 1: elegir producto (ventana por producto, con su color) =====
   if (!linea) {
+    const pinCfg = pinPara ? PERFIL_LINEA[pinPara] : null;
+    const pinColor = pinCfg?.color ?? "#0f766e";
     return (
       <div>
         <p className="mb-3 text-sm font-bold text-slate-700">¿Qué vas a reportar? Elige el producto 👇</p>
@@ -164,9 +170,10 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
             const p = PERFIL_LINEA[l];
             const c = p?.color ?? "#0f766e";
             return (
-              <button key={l} type="button" onClick={() => setLinea(l)}
-                className="flex flex-col items-center gap-1 rounded-2xl border-2 bg-white p-4 text-center shadow-sm transition active:scale-95"
+              <button key={l} type="button" onClick={() => abrirLinea(l)}
+                className="relative flex flex-col items-center gap-1 rounded-2xl border-2 bg-white p-4 text-center shadow-sm transition active:scale-95"
                 style={{ borderColor: c }}>
+                {pines[l] && <span className="absolute right-2 top-2 text-sm" title="Protegido con código">🔒</span>}
                 <span className="grid h-12 w-12 place-items-center rounded-xl text-2xl" style={{ background: `${c}1a` }}>{p?.icono ?? "📦"}</span>
                 <span className="text-sm font-extrabold" style={{ color: c }}>{lineaLabel[l] ?? l}</span>
               </button>
@@ -178,6 +185,34 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
             <span className="text-sm font-extrabold">Nuevo producto</span>
           </button>
         </div>
+
+        {/* Modal de PIN para abrir un producto protegido */}
+        {pinPara && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-6" onClick={() => setPinPara("")}>
+            <div className="w-full max-w-xs rounded-2xl bg-white p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
+              <p className="flex items-center gap-2 text-base font-extrabold" style={{ color: pinColor }}>
+                <span className="text-2xl">{pinCfg?.icono ?? "🔒"}</span>
+                {lineaLabel[pinPara] ?? pinPara}
+              </p>
+              <p className="mt-1 text-xs text-slate-500">Escribe el código para abrir este producto.</p>
+              <input
+                value={pinInput}
+                onChange={(e) => { setPinInput(e.target.value); setPinError(false); }}
+                onKeyDown={(e) => { if (e.key === "Enter") confirmarPin(); }}
+                inputMode="numeric"
+                autoFocus
+                type="password"
+                placeholder="Código"
+                className={`mt-3 w-full rounded-xl border-2 px-3 py-3 text-center text-xl font-bold tracking-widest ${pinError ? "border-rose-400" : "border-slate-300"}`}
+              />
+              {pinError && <p className="mt-1 text-center text-xs font-bold text-rose-600">Código incorrecto</p>}
+              <div className="mt-3 flex gap-2">
+                <button type="button" onClick={() => setPinPara("")} className="flex-1 rounded-xl border border-slate-300 py-2.5 text-sm font-bold text-slate-600">Cancelar</button>
+                <button type="button" onClick={confirmarPin} className="flex-1 rounded-xl py-2.5 text-sm font-bold text-white" style={{ background: pinColor }}>Abrir</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -191,7 +226,6 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
       <input type="hidden" name="nombres" value={nombres.join(",")} />
       <input type="hidden" name="litros" value={litros} />
       <input type="hidden" name="overrun" value={overrun} />
-      <input type="hidden" name="valorUnit" value={String(valorNum)} />
       <input type="hidden" name="observaciones" value={observaciones} />
 
       {/* Encabezado del producto (color propio) + Volver */}
@@ -297,24 +331,8 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
           </label>
         )}
 
-        {/* Calculadora: multiplica lo hecho por el valor por unidad (solo tú y yo / postres / paletas) */}
-        {cfg?.calc && (
-          <div className="rounded-xl border-2 p-3" style={{ borderColor: `${accent}55`, background: `${accent}0d` }}>
-            <p className="mb-2 text-sm font-extrabold" style={{ color: accent }}>🧮 Calculadora</p>
-            <label className="flex items-center justify-between gap-2 text-sm font-bold text-slate-700">Valor por unidad
-              <span className="flex items-center rounded-lg border border-slate-300 bg-white px-2">
-                <span className="text-slate-400">$</span>
-                <input value={valorUnit} onChange={(e) => setValorUnit(e.target.value)} inputMode="numeric" placeholder="Ej: 120"
-                  className="w-24 rounded-r-lg px-1 py-2 text-right text-base font-semibold outline-none" />
-              </span>
-            </label>
-            <div className="mt-2 flex items-center justify-between border-t pt-2" style={{ borderColor: `${accent}33` }}>
-              <span className="text-sm text-slate-600">{total} u. × {fmtCLP(valorNum)}</span>
-              <span className="text-xl font-extrabold" style={{ color: accent }}>{fmtCLP(dinero)}</span>
-            </div>
-            <p className="mt-1 text-[11px] text-slate-400">Se multiplica solo con lo que lleva ingresado. El valor queda recordado para este producto.</p>
-          </div>
-        )}
+        {/* El valor/pago por unidad NO se muestra aquí: se calcula en la central
+            (panel) para que no todos vean cuánto ganó cada uno. */}
 
         {/* Anotar algo que faltó (queda como nota para la central) */}
         <label className="block text-sm font-bold text-slate-700">📝 ¿Faltó algo o cambiaron la receta? (opcional)
