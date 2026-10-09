@@ -43,6 +43,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       titulo: "Inicio",
       activo: true,
       items: [
+        { href: "/admin/esencial", label: "Lo esencial", icon: "⭐" },
         { href: "/admin/primeros-pasos", label: "Primeros pasos", icon: "🚀" },
         { href: "/admin", label: "Panel", icon: "📊" },
         { href: "/admin/pendientes", label: "Pendientes del cerebro", icon: "🐝" },
@@ -78,6 +79,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/produccion", label: L.produccion, icon: "🏭" },
         { href: "/admin/produccion-analisis", label: "Análisis de producción", icon: "📊" },
+        { href: "/admin/rentabilidad-productos", label: "Producción y rentabilidad", icon: "💹" },
         { href: "/admin/produccion-pines", label: "Códigos por producto", icon: "🔒" },
         { href: "/admin/materias", label: L.materias, icon: "🧪" },
         { href: "/admin/sabores", label: L.sabores, icon: "🍫" },

@@ -1354,6 +1354,21 @@ model Flete {
 }
 
 /// Tarifas de "trato" (pago a destajo): valor por unidad producida, por tipo de producto.
+/**
+ * Costeo por línea de producto (tú y yo, paletas, postres…). Guarda el pago
+ * estimado por unidad (mano de obra), el precio de venta y el costo real por
+ * unidad. Alimenta las calculadoras de pago / ganancia / margen y el dashboard.
+ */
+model CostoLinea {
+  id          String   @id @default(cuid())
+  linea       String   @unique
+  pagoUnit    Decimal? @db.Decimal(12, 2) // pago estimado por unidad (mano de obra)
+  precioVenta Decimal? @db.Decimal(12, 2) // precio de venta por unidad
+  costoReal   Decimal? @db.Decimal(12, 2) // costo real por unidad (insumos + otros)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
 model TarifaTrato {
   id        String   @id @default(cuid())
   nombre    String // ej: Tuyoyo, Paleta, Postre, Canasta, Balde 5 L
