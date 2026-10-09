@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
+import { lineaLabel } from "@/lib/dominio/produccion";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -74,17 +75,19 @@ export async function GET(req: NextRequest) {
   );
   const unidadesProd = Number(prodHoy._sum.cantidadReal ?? 0);
 
-  // Fabricado AYER (lo que anotó la app de producción: MovimientoBodega zona=produccion).
-  const fabAyerMovs = await safe(
-    () => prisma.movimientoBodega.findMany({
-      where: { zona: "produccion", fecha: { gte: inicioAyer, lt: inicio } },
-      select: { nombre: true, cantidad: true },
+  // Fabricado AYER por TIPO (lo que registró la app de producción). groupBy solo
+  // devuelve los tipos con producción → solo aparece lo que de verdad se trabajó.
+  const fabAyerTipo = await safe(
+    () => prisma.controlCalidad.groupBy({
+      by: ["refId"], _sum: { cantidad: true },
+      where: { clase: "linea", fecha: { gte: inicioAyer, lt: inicio } },
     }),
-    [] as { nombre: string; cantidad: number }[],
+    [] as { refId: string | null; _sum: { cantidad: number | null } }[],
   );
-  const fabAyerMap = new Map<string, number>();
-  for (const m of fabAyerMovs) fabAyerMap.set(m.nombre, (fabAyerMap.get(m.nombre) ?? 0) + m.cantidad);
-  const fabAyer = [...fabAyerMap.entries()].map(([nombre, total]) => ({ nombre, total })).sort((a, b) => b.total - a.total);
+  const fabAyer = fabAyerTipo
+    .map((r) => ({ tipo: r.refId ?? "—", total: Number(r._sum.cantidad ?? 0) }))
+    .filter((p) => p.total > 0)
+    .sort((a, b) => b.total - a.total);
   const fabAyerTotal = fabAyer.reduce((s, p) => s + p.total, 0);
 
   // Asistencia de hoy.
@@ -190,9 +193,8 @@ export async function GET(req: NextRequest) {
   if (unidadesProd > 0) L.push(`🏭 *Producción hoy:* ${unidadesProd} u.`);
   if (fabAyer.length) {
     L.push("");
-    L.push(`🏭 *Fabricado ayer (${fabAyerTotal} u.):*`);
-    L.push(fabAyer.slice(0, 15).map((p) => `   • ${p.nombre}: ${p.total}`).join("\n"));
-    if (fabAyer.length > 15) L.push(`   • …y ${fabAyer.length - 15} más.`);
+    L.push(`🏭 *Fabricado ayer por tipo (${fabAyerTotal} u.):*`);
+    L.push(fabAyer.map((p) => `   • ${lineaLabel[p.tipo] ?? p.tipo}: ${p.total}`).join("\n"));
   }
   L.push(`👥 *Equipo hoy:* ${Number(asistHoy._count ?? 0)} presentes · ${Number(asistHoy._sum.horas ?? 0)} h`);
   L.push("");
