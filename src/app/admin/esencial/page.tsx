@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
+import { lineaLabel, PERFIL_LINEA, ORDEN_LINEAS } from "@/lib/dominio/produccion";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +16,8 @@ export default async function Esencial() {
   const [
     prodHoy, prod7, stockRows, localHoy, rutaHoy, deben, agenda, agendaCount, mejoras, notasAb, sugeridas,
   ] = await Promise.all([
-    prisma.controlCalidad.aggregate({ _sum: { cantidad: true }, where: { clase: "linea", fecha: { gte: inicioHoy } } }),
-    prisma.controlCalidad.aggregate({ _sum: { cantidad: true }, where: { clase: "linea", fecha: { gte: inicio7 } } }),
+    prisma.controlCalidad.groupBy({ by: ["refId"], _sum: { cantidad: true }, where: { clase: "linea", fecha: { gte: inicioHoy } } }),
+    prisma.controlCalidad.groupBy({ by: ["refId"], _sum: { cantidad: true }, where: { clase: "linea", fecha: { gte: inicio7 } } }),
     prisma.stock.groupBy({ by: ["productoId"], _sum: { cantidad: true }, where: { cantidad: { gt: 0 } } }),
     prisma.venta.aggregate({ _sum: { total: true }, _count: true, where: { canal: "local", fecha: { gte: inicioHoy } } }),
     prisma.venta.aggregate({ _sum: { total: true }, _count: true, where: { canal: "terreno", fecha: { gte: inicioHoy } } }),
@@ -31,6 +32,17 @@ export default async function Esencial() {
     prisma.nota.count({ where: { accionEstado: "sugerida" } }),
   ]);
 
+  // Producción por tipo (hoy y 7 días).
+  const prodHoyMap = new Map(prodHoy.map((p) => [p.refId ?? "", num(p._sum.cantidad)]));
+  const prod7Map = new Map(prod7.map((p) => [p.refId ?? "", num(p._sum.cantidad)]));
+  const totHoy = [...prodHoyMap.values()].reduce((s, n) => s + n, 0);
+  const tot7 = [...prod7Map.values()].reduce((s, n) => s + n, 0);
+  const tiposSet = new Set([...prodHoyMap.keys(), ...prod7Map.keys()].filter(Boolean));
+  const tipos = [
+    ...ORDEN_LINEAS.filter((l) => tiposSet.has(l)),
+    ...[...tiposSet].filter((l) => !ORDEN_LINEAS.includes(l)),
+  ];
+
   const stockU = stockRows.reduce((s, r) => s + num(r._sum.cantidad), 0);
   const debenTotal = deben.reduce((s, d) => s + num(d._sum.total), 0);
   const debenClientes = deben.filter((d) => d.negocioId).length;
@@ -43,13 +55,44 @@ export default async function Esencial() {
       <h1 className="font-display text-2xl font-extrabold text-slate-900">⭐ Lo esencial</h1>
       <p className="text-sm text-slate-500">Lo importante de un vistazo. Toca cualquier tarjeta para ver el detalle.</p>
 
-      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {/* Producción */}
-        <Card href="/admin/rentabilidad-productos" icon="🏭" titulo="Producción" acento="#1479c4">
-          <Dato grande={`${num(prodHoy._sum.cantidad)} u.`} chico="hoy" />
-          <Dato grande={`${num(prod7._sum.cantidad)} u.`} chico="últimos 7 días" />
-        </Card>
+      {/* Producción por tipo */}
+      <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="mb-2 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-sm font-bold text-slate-900">🏭 Producción por tipo</h2>
+          <Link href="/admin/rentabilidad-productos" className="text-xs font-bold text-[#1479c4]">Ver rentabilidad →</Link>
+        </div>
+        {tipos.length === 0 ? (
+          <p className="text-sm text-slate-500">Aún no hay producción registrada.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 border-b border-slate-100 pb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">
+              <span>Tipo</span><span className="text-right">Hoy</span><span className="text-right">7 días</span>
+            </div>
+            <ul className="divide-y divide-slate-100">
+              {tipos.map((t) => {
+                const c = PERFIL_LINEA[t]?.color ?? "#64748b";
+                return (
+                  <li key={t} className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 py-1.5 text-sm">
+                    <span className="flex items-center gap-2 font-semibold text-slate-700">
+                      <span>{PERFIL_LINEA[t]?.icono ?? "📦"}</span>
+                      <span style={{ color: c }}>{lineaLabel[t] ?? t}</span>
+                    </span>
+                    <span className="text-right font-extrabold text-slate-900">{prodHoyMap.get(t) ?? 0}</span>
+                    <span className="text-right font-semibold text-slate-500">{prod7Map.get(t) ?? 0}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="mt-1 grid grid-cols-[1fr_auto_auto] items-center gap-x-4 border-t border-slate-200 pt-1.5 text-sm font-extrabold">
+              <span className="text-slate-700">Total</span>
+              <span className="text-right text-[#1479c4]">{totHoy} u.</span>
+              <span className="text-right text-slate-500">{tot7} u.</span>
+            </div>
+          </>
+        )}
+      </section>
 
+      <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
         {/* Stock */}
         <Card href="/admin/inventario" icon="📦" titulo="Lo que hay en stock" acento="#0f766e">
           <Dato grande={`${stockU} u.`} chico={`${stockRows.length} productos con existencia`} />
