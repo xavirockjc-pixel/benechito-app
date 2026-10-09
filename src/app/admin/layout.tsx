@@ -35,6 +35,58 @@ const APPS: Item[] = [
   { href: "/portal", label: "Portal", icon: "🤝" },
 ];
 
+// Menú SIMPLE (modo simple): solo lo esencial del día a día. Todo lo demás
+// queda disponible al desactivar el modo simple en Configuración.
+function construirModulosSimple(L: Etiquetas): Modulo[] {
+  return [
+    {
+      titulo: "Día a día",
+      activo: true,
+      items: [
+        { href: "/admin/esencial", label: "Lo esencial", icon: "⭐" },
+        { href: "/admin", label: "Panel", icon: "📊" },
+        { href: "/admin/agenda", label: "Agenda", icon: "📅" },
+        { href: "/admin/notas", label: "Notas y acciones", icon: "📝" },
+        { href: "/admin/mejoras", label: "Asuntos por hacer", icon: "✅" },
+      ],
+    },
+    {
+      titulo: "Ventas y clientes",
+      activo: true,
+      items: [
+        { href: "/admin/pos", label: "Vender", icon: "🛒" },
+        { href: "/admin/ventas", label: "Ventas", icon: "💵" },
+        { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
+        { href: "/admin/cobranza", label: "Clientes que deben", icon: "💸" },
+      ],
+    },
+    {
+      titulo: "Producción y stock",
+      activo: true,
+      items: [
+        { href: "/admin/produccion", label: L.produccion, icon: "🏭" },
+        { href: "/admin/rentabilidad-productos", label: "Producción y rentabilidad", icon: "💹" },
+        { href: "/admin/inventario", label: "Inventario / Stock", icon: "📦" },
+      ],
+    },
+    {
+      titulo: "Dinero y equipo",
+      activo: true,
+      items: [
+        { href: "/admin/finanzas", label: "Finanzas", icon: "💰" },
+        { href: "/admin/sueldos", label: "Pagos al equipo", icon: "💵" },
+      ],
+    },
+    {
+      titulo: "Ajustes",
+      activo: true,
+      items: [
+        { href: "/admin/configuracion", label: "Configuración", icon: "⚙️" },
+      ],
+    },
+  ];
+}
+
 // El menú se construye con las etiquetas del rubro activo (plantilla).
 // Menú del día a día arriba; lo poco usado queda en "Más herramientas" (oculto en modo simple).
 function construirModulos(L: Etiquetas): Modulo[] {
@@ -160,7 +212,8 @@ export default async function AdminLayout({
   const rubro = await rubroActivo();
   const empresa = await prisma.empresa.findFirst({ select: { modoSimple: true } });
   const modoSimple = empresa?.modoSimple ?? true;
-  const modulos = construirModulos(rubro.labels);
+  // En modo simple, menú corto y curado. En modo completo, el menú modular de siempre.
+  const modulos = modoSimple ? construirModulosSimple(rubro.labels) : construirModulos(rubro.labels);
   const ocultos = new Set(rubro.ocultar);
   const tema = rubro.tema;
   const gradMarca = `linear-gradient(135deg, ${tema.degradado[0]}, ${tema.degradado[1]})`;
