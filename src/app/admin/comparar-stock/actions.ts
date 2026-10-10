@@ -4,6 +4,13 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { ubicacionBodegaId, ubicacionProduccionId } from "@/lib/dominio/ubicaciones";
+import { ROLES_FULL } from "@/lib/dominio/permisos";
+
+/** Solo el dueño/admin puede arrancar bodega o cuadrar (acciones sensibles). */
+async function esDueno(): Promise<boolean> {
+  const u = await usuarioActual();
+  return ROLES_FULL.includes(u?.rol ?? "");
+}
 
 function revalidar() {
   revalidatePath("/admin/comparar-stock");
@@ -17,6 +24,7 @@ function revalidar() {
  * el bodeguero lo "pase" (reciba) ordenado. Nada se borra; queda el registro.
  */
 export async function devolverBodegaAProduccion() {
+  if (!(await esDueno())) return;
   const bodUb = await ubicacionBodegaId();
   const prodUb = await ubicacionProduccionId();
   if (!bodUb || !prodUb) return;
@@ -45,6 +53,7 @@ export async function devolverBodegaAProduccion() {
  * limpio y que el bodeguero reciba desde producción lo que haya. Deja registro.
  */
 export async function vaciarBodegaCero() {
+  if (!(await esDueno())) return;
   const bodUb = await ubicacionBodegaId();
   if (!bodUb) return;
   const u = await usuarioActual();
@@ -68,6 +77,7 @@ export async function vaciarBodegaCero() {
  * algo quedó colgado (ej. se vendió directo y nunca llegó a bodega). Deja registro.
  */
 export async function cuadrarItem(formData: FormData) {
+  if (!(await esDueno())) return;
   const clase = String(formData.get("clase") ?? "");
   const refId = String(formData.get("refId") ?? "").trim();
   const donde = String(formData.get("donde") ?? "") === "bodega" ? "bodega" : "produccion";

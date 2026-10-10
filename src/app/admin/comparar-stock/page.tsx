@@ -3,12 +3,16 @@ import { prisma } from "@/lib/prisma";
 import { ubicacionBodegaId, ubicacionProduccionId } from "@/lib/dominio/ubicaciones";
 import { devolverBodegaAProduccion, vaciarBodegaCero, cuadrarItem } from "./actions";
 import AccionConfirm from "./AccionConfirm";
+import { usuarioActual } from "@/lib/auth";
+import { ROLES_FULL } from "@/lib/dominio/permisos";
 
 export const dynamic = "force-dynamic";
 
 type Fila = { key: string; nombre: string; clase: string; produccion: number; bodega: number };
 
 export default async function CompararStock() {
+  const u = await usuarioActual();
+  const esDueno = ROLES_FULL.includes(u?.rol ?? "");
   const [prodUb, bodUb] = await Promise.all([ubicacionProduccionId(), ubicacionBodegaId()]);
 
   const [sabProd, sabBod, pProd, pBod] = await Promise.all([
@@ -55,7 +59,8 @@ export default async function CompararStock() {
         </div>
       )}
 
-      {/* Arrancar bodega desde cero (dos formas) */}
+      {/* Arrancar bodega desde cero (dos formas) — solo dueño/admin */}
+      {esDueno && (
       <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <p className="text-sm font-bold text-slate-900">🔄 Arrancar bodega desde cero</p>
         <p className="mt-0.5 text-[11px] text-slate-500">Para partir limpio. Nada se borra del historial; queda el registro del movimiento.</p>
@@ -78,6 +83,7 @@ export default async function CompararStock() {
           <b> Vaciar a 0</b>: bodega parte limpia y se llena recibiendo desde producción.
         </p>
       </div>
+      )}
 
       <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         {filas.length === 0 ? (
@@ -101,7 +107,7 @@ export default async function CompararStock() {
                     </span>
                     <span className="flex items-center justify-end gap-1.5">
                       <span className={`font-extrabold ${f.produccion > 0 ? "text-amber-600" : "text-slate-300"}`}>{f.produccion}</span>
-                      {f.produccion > 0 && (
+                      {esDueno && f.produccion > 0 && (
                         <AccionConfirm action={cuadrarItem} hidden={{ clase: mclase, refId, donde: "produccion" }}
                           confirmMsg={`¿Poner en 0 "${f.nombre}" en producción? (para cuadrar lo que no llegó a bodega)`}
                           className="rounded border border-amber-300 px-1.5 text-[10px] font-bold text-amber-600 active:bg-amber-50">0</AccionConfirm>
@@ -109,7 +115,7 @@ export default async function CompararStock() {
                     </span>
                     <span className="flex items-center justify-end gap-1.5">
                       <span className="font-semibold text-[#0f766e]">{f.bodega}</span>
-                      {f.bodega > 0 && (
+                      {esDueno && f.bodega > 0 && (
                         <AccionConfirm action={cuadrarItem} hidden={{ clase: mclase, refId, donde: "bodega" }}
                           confirmMsg={`¿Poner en 0 "${f.nombre}" en bodega?`}
                           className="rounded border border-slate-300 px-1.5 text-[10px] font-bold text-slate-500 active:bg-slate-50">0</AccionConfirm>
