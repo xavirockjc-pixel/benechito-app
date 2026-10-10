@@ -10,7 +10,8 @@ import EnviarWhatsApp from "@/components/EnviarWhatsApp";
 import { site } from "@/lib/config";
 import Link from "next/link";
 import { ubicacionProduccionId } from "@/lib/dominio/ubicaciones";
-import { empezarNuevoDia } from "./actions";
+import { POSTRE_LINEAS } from "@/lib/dominio/produccion";
+import { empezarNuevoDia, productosPostre } from "./actions";
 
 export const dynamic = "force-dynamic";
 
@@ -32,12 +33,14 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
   }
 
   const hoy = await inicioDelDia();
+  // Asegura que existan los 2 ítems de postres de bodega (sueltos + pack x16).
+  await productosPostre();
 
   const [productos, sabores, stockProd, stockSab, registroHoy] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true, soloLocal: false }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
-    prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
+    prisma.sabor.findMany({ where: { activo: true, linea: { notIn: POSTRE_LINEAS } }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.stock.findMany({ where: { ubicacionId: bodega.id }, include: { producto: { select: { nombre: true } } } }),
-    prisma.stockSabor.findMany({ where: { ubicacionId: bodega.id }, include: { sabor: { select: { nombre: true } } } }),
+    prisma.stockSabor.findMany({ where: { ubicacionId: bodega.id, sabor: { linea: { notIn: POSTRE_LINEAS } } }, include: { sabor: { select: { nombre: true } } } }),
     prisma.movimientoBodega.findMany({ where: { fecha: { gte: hoy }, zona: "bodega" }, orderBy: { fecha: "desc" }, take: 100 }),
   ]);
 

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
 import { ubicacionBodegaId, ubicacionProduccionId } from "@/lib/dominio/ubicaciones";
+import { POSTRE_LINEAS } from "@/lib/dominio/produccion";
 
 /** Cierra la sesión. */
 export async function logout() {
@@ -29,12 +30,28 @@ export async function empezarNuevoDia() {
  * de Producción → Bodega (baja en producción, sube en bodega) y lo deja en el
  * registro de bodega como entrada. Así los dos stocks cuadran.
  */
+/** Busca (o crea) un producto de bodega por nombre fijo. */
+async function productoPorNombre(nombre: string): Promise<string> {
+  const ex = await prisma.producto.findFirst({ where: { nombre } });
+  if (ex) return ex.id;
+  const c = await prisma.producto.create({
+    data: { nombre, linea: "postres_500", tipo: "propio", seccion: "propio", activo: true },
+  });
+  return c.id;
+}
+export async function productosPostre() {
+  const sueltos = await productoPorNombre("Postres sueltos");
+  const pack = await productoPorNombre("Pack postres x16");
+  return { sueltos, pack };
+}
+
 export async function recibirDeProduccion(formData: FormData) {
-  type Item = { clase: "sab" | "prod"; refId: string; cantidad: number; nombre?: string };
+  type Item =
+    | { clase: "sab" | "prod"; refId: string; cantidad: number; nombre?: string }
+    | { clase: "postre"; sueltos: number; packs: number };
   let items: Item[] = [];
   try { items = JSON.parse(String(formData.get("items") ?? "[]")); } catch { return; }
-  items = items.filter((i) => i && (i.clase === "sab" || i.clase === "prod") && i.refId && Number.isFinite(i.cantidad) && i.cantidad > 0);
-  if (items.length === 0) { revalidatePath("/bodega/recibir"); return; }
+  if (!Array.isArray(items) || items.length === 0) { revalidatePath("/bodega/recibir"); return; }
 
   const prodUb = await ubicacionProduccionId();
   const bodUb = await ubicacionBodegaId();
@@ -42,6 +59,36 @@ export async function recibirDeProduccion(formData: FormData) {
   const u = await usuarioActual();
 
   for (const it of items) {
+    if (it.clase === "postre") {
+      // Consolida los sabores de postre de producción en "Postres sueltos" + "Pack x16".
+      const sueltos = Math.max(0, Math.floor(Number(it.sueltos) || 0));
+      const packs = Math.max(0, Math.floor(Number(it.packs) || 0));
+      let necesarias = sueltos + packs * 16;
+      if (necesarias <= 0) continue;
+      const filas = await prisma.stockSabor.findMany({
+        where: { ubicacionId: prodUb, cantidad: { gt: 0 }, sabor: { linea: { in: POSTRE_LINEAS } } },
+        include: { sabor: { select: { nombre: true } } },
+      });
+      // Baja de producción (reparte entre los sabores disponibles).
+      for (const f of filas) {
+        if (necesarias <= 0) break;
+        const baja = Math.min(f.cantidad, necesarias);
+        if (baja <= 0) continue;
+        await prisma.stockSabor.update({ where: { id: f.id }, data: { cantidad: { decrement: baja } } });
+        necesarias -= baja;
+      }
+      const { sueltos: idSueltos, pack: idPack } = await productosPostre();
+      if (sueltos > 0) {
+        await prisma.stock.upsert({ where: { productoId_ubicacionId: { productoId: idSueltos, ubicacionId: bodUb } }, update: { cantidad: { increment: sueltos } }, create: { productoId: idSueltos, ubicacionId: bodUb, cantidad: sueltos } });
+        await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "entrada", clase: "producto", refId: idSueltos, nombre: "Postres sueltos", cantidad: sueltos, detalle: "Recibido de producción", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+      }
+      if (packs > 0) {
+        await prisma.stock.upsert({ where: { productoId_ubicacionId: { productoId: idPack, ubicacionId: bodUb } }, update: { cantidad: { increment: packs } }, create: { productoId: idPack, ubicacionId: bodUb, cantidad: packs } });
+        await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "entrada", clase: "producto", refId: idPack, nombre: "Pack postres x16", cantidad: packs, detalle: `Recibido de producción (${packs * 16} u.)`, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+      }
+      continue;
+    }
+    if (!it.refId || !Number.isFinite(it.cantidad) || it.cantidad <= 0) continue;
     if (it.clase === "sab") {
       const origen = await prisma.stockSabor.findUnique({ where: { saborId_ubicacionId: { saborId: it.refId, ubicacionId: prodUb } } });
       const mover = Math.min(it.cantidad, origen?.cantidad ?? 0);

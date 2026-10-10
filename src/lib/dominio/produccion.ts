@@ -59,6 +59,9 @@ export const PERFIL_LINEA: Record<string, PerfilLinea> = {
 /** Orden en que se muestran los productos (helados primero, dulces al final). */
 export const ORDEN_LINEAS = ["tuyyo", "paletas", "paletas_premium", "cremas", "cassatas", "postres_500", "trufas", "cuchufli"];
 
+/** Líneas que son "postre": en bodega NO se llevan por sabor (solo unidades / packs). */
+export const POSTRE_LINEAS = ["postres_500", "postres", "postre"];
+
 export const turnoLabel: Record<string, string> = {
   manana: "Mañana",
   tarde: "Tarde",

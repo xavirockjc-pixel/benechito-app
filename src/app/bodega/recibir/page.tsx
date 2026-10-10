@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ubicacionProduccionId } from "@/lib/dominio/ubicaciones";
+import { POSTRE_LINEAS } from "@/lib/dominio/produccion";
 import RecibirProduccion from "./RecibirProduccion";
 
 export const dynamic = "force-dynamic";
@@ -11,14 +12,18 @@ export default async function RecibirPage({ searchParams }: { searchParams: Prom
 
   const [stockSab, stockProd] = prodUb
     ? await Promise.all([
-        prisma.stockSabor.findMany({ where: { ubicacionId: prodUb, cantidad: { gt: 0 } }, include: { sabor: { select: { nombre: true } } } }),
+        prisma.stockSabor.findMany({ where: { ubicacionId: prodUb, cantidad: { gt: 0 } }, include: { sabor: { select: { nombre: true, linea: true } } } }),
         prisma.stock.findMany({ where: { ubicacionId: prodUb, cantidad: { gt: 0 } }, include: { producto: { select: { nombre: true } } } }),
       ])
     : [[], []];
 
+  // Los postres NO se reciben por sabor: se consolidan en un total de unidades.
+  const esPostre = (linea: string) => POSTRE_LINEAS.includes(linea);
+  const postrePend = stockSab.filter((s) => esPostre(s.sabor.linea)).reduce((n, s) => n + s.cantidad, 0);
+
   const items = [
     ...stockProd.map((s) => ({ clase: "prod" as const, refId: s.productoId, nombre: s.producto.nombre, disponible: s.cantidad })),
-    ...stockSab.map((s) => ({ clase: "sab" as const, refId: s.saborId, nombre: s.sabor.nombre, disponible: s.cantidad })),
+    ...stockSab.filter((s) => !esPostre(s.sabor.linea)).map((s) => ({ clase: "sab" as const, refId: s.saborId, nombre: s.sabor.nombre, disponible: s.cantidad })),
   ].sort((a, b) => a.nombre.localeCompare(b.nombre));
 
   return (
@@ -33,7 +38,7 @@ export default async function RecibirPage({ searchParams }: { searchParams: Prom
 
       {ok && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Recibido. Ya está en el stock de bodega.</p>}
 
-      <RecibirProduccion items={items} />
+      <RecibirProduccion items={items} postrePend={postrePend} />
     </div>
   );
 }
