@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { lineaLabel } from "@/lib/dominio/produccion";
+import { ubicacionProduccionId } from "@/lib/dominio/ubicaciones";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -89,6 +90,19 @@ export async function GET(req: NextRequest) {
     .filter((p) => p.total > 0)
     .sort((a, b) => b.total - a.total);
   const fabAyerTotal = fabAyer.reduce((s, p) => s + p.total, 0);
+
+  // Pendiente por RECIBIR en bodega (lo que fabricó Producción y aún no entra a bodega).
+  // Si algo queda colgado aquí, puede ser que se vendió directo de producción y no llegó a bodega.
+  const prodUbId = await safe(() => ubicacionProduccionId(), null as string | null);
+  const pendRec = prodUbId
+    ? await safe(async () => {
+        const [a, b] = await Promise.all([
+          prisma.stockSabor.aggregate({ _sum: { cantidad: true }, _count: true, where: { ubicacionId: prodUbId, cantidad: { gt: 0 } } }),
+          prisma.stock.aggregate({ _sum: { cantidad: true }, _count: true, where: { ubicacionId: prodUbId, cantidad: { gt: 0 } } }),
+        ]);
+        return { items: Number(a._count ?? 0) + Number(b._count ?? 0), u: Number(a._sum.cantidad ?? 0) + Number(b._sum.cantidad ?? 0) };
+      }, { items: 0, u: 0 })
+    : { items: 0, u: 0 };
 
   // Asistencia de hoy.
   const asistHoy = await safe(
@@ -203,6 +217,9 @@ export async function GET(req: NextRequest) {
   L.push(`   • Preventa sin respuesta: ${preventaAbierta}`);
   L.push(`   • Por cobrar: ${fmtCLP(Number(porCobrar._sum.total ?? 0))} (${Number(porCobrar._count ?? 0)})`);
   L.push(`   • Caja: ${cajaAbierta > 0 ? "⚠️ abierta sin cerrar" : "✅ cerrada"}`);
+  if (pendRec.items > 0) {
+    L.push(`   • 📥 Por recibir de producción: ${pendRec.u} u. (${pendRec.items} ítem${pendRec.items === 1 ? "" : "s"}) — revisa que no se haya vendido directo sin pasar por bodega.`);
+  }
   if (bajoStock.length) {
     L.push("");
     L.push(`🛒 *Comprar — insumos bajos (${bajoStock.length}):*`);
