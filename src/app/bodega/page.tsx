@@ -8,6 +8,8 @@ import RetirosDepto from "@/app/_shared/RetirosDepto";
 import EmpezarNuevoDia from "@/app/_shared/EmpezarNuevoDia";
 import EnviarWhatsApp from "@/components/EnviarWhatsApp";
 import { site } from "@/lib/config";
+import Link from "next/link";
+import { ubicacionProduccionId } from "@/lib/dominio/ubicaciones";
 import { empezarNuevoDia } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -69,6 +71,17 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
   if (enBodega.length === 0 && saboresBodega.length === 0) lineasStock.push("Bodega vacía.");
   const textoStock = lineasStock.join("\n");
 
+  // Pendiente por recibir de Producción (stock que fabricó Producción y aún no entra a bodega).
+  const prodUb = await ubicacionProduccionId();
+  const [pendSab, pendProd] = prodUb
+    ? await Promise.all([
+        prisma.stockSabor.aggregate({ _sum: { cantidad: true }, _count: true, where: { ubicacionId: prodUb, cantidad: { gt: 0 } } }),
+        prisma.stock.aggregate({ _sum: { cantidad: true }, _count: true, where: { ubicacionId: prodUb, cantidad: { gt: 0 } } }),
+      ])
+    : [{ _sum: { cantidad: 0 }, _count: 0 }, { _sum: { cantidad: 0 }, _count: 0 }];
+  const pendItems = Number(pendSab._count ?? 0) + Number(pendProd._count ?? 0);
+  const pendU = Number(pendSab._sum.cantidad ?? 0) + Number(pendProd._sum.cantidad ?? 0);
+
   return (
     <div className="space-y-5">
       <div>
@@ -77,6 +90,21 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
       </div>
 
       {ok && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Stock actualizado</p>}
+
+      {/* Recibir de producción (lo que fabricó Producción y aún no entra a bodega) */}
+      <Link href="/bodega/recibir"
+        className={`flex items-center justify-between gap-3 rounded-2xl px-4 py-3 shadow-sm active:opacity-90 ${pendItems > 0 ? "bg-gradient-to-br from-teal-500 to-teal-600 text-white" : "border border-slate-200 bg-white text-slate-700"}`}>
+        <span className="flex items-center gap-2">
+          <span className="text-2xl">📥</span>
+          <span className="min-w-0">
+            <span className="block text-sm font-extrabold">Recibir de producción</span>
+            <span className={`block text-[11px] font-semibold leading-tight ${pendItems > 0 ? "text-white/90" : "text-slate-400"}`}>
+              {pendItems > 0 ? `${pendItems} por recibir · ${pendU} u.` : "Nada pendiente por ahora"}
+            </span>
+          </span>
+        </span>
+        <span className="text-lg">›</span>
+      </Link>
 
       {/* Crear producto nuevo (foto + voz) */}
       <NuevoProductoBodega />

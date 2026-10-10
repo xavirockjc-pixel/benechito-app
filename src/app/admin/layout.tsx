@@ -66,6 +66,7 @@ function construirModulosSimple(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/produccion", label: L.produccion, icon: "🏭" },
         { href: "/admin/rentabilidad-productos", label: "Producción y rentabilidad", icon: "💹" },
+        { href: "/admin/comparar-stock", label: "Comparar stock (Prod↔Bodega)", icon: "⚖️" },
         { href: "/admin/inventario", label: "Inventario / Stock", icon: "📦" },
       ],
     },
@@ -132,6 +133,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/produccion", label: L.produccion, icon: "🏭" },
         { href: "/admin/produccion-analisis", label: "Análisis de producción", icon: "📊" },
         { href: "/admin/rentabilidad-productos", label: "Producción y rentabilidad", icon: "💹" },
+        { href: "/admin/comparar-stock", label: "Comparar stock (Prod↔Bodega)", icon: "⚖️" },
         { href: "/admin/produccion-pines", label: "Códigos por producto", icon: "🔒" },
         { href: "/admin/materias", label: L.materias, icon: "🧪" },
         { href: "/admin/sabores", label: L.sabores, icon: "🍫" },

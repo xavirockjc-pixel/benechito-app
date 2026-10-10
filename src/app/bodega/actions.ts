@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
+import { ubicacionBodegaId, ubicacionProduccionId } from "@/lib/dominio/ubicaciones";
 
 /** Cierra la sesión. */
 export async function logout() {
@@ -21,6 +22,61 @@ export async function empezarNuevoDia() {
   revalidatePath("/bodega");
   revalidatePath("/produccion");
   revalidatePath("/admin");
+}
+
+/**
+ * Recibir en bodega lo que fabricó Producción: mueve el stock de la ubicación
+ * de Producción → Bodega (baja en producción, sube en bodega) y lo deja en el
+ * registro de bodega como entrada. Así los dos stocks cuadran.
+ */
+export async function recibirDeProduccion(formData: FormData) {
+  type Item = { clase: "sab" | "prod"; refId: string; cantidad: number; nombre?: string };
+  let items: Item[] = [];
+  try { items = JSON.parse(String(formData.get("items") ?? "[]")); } catch { return; }
+  items = items.filter((i) => i && (i.clase === "sab" || i.clase === "prod") && i.refId && Number.isFinite(i.cantidad) && i.cantidad > 0);
+  if (items.length === 0) { revalidatePath("/bodega/recibir"); return; }
+
+  const prodUb = await ubicacionProduccionId();
+  const bodUb = await ubicacionBodegaId();
+  if (!prodUb || !bodUb) return;
+  const u = await usuarioActual();
+
+  for (const it of items) {
+    if (it.clase === "sab") {
+      const origen = await prisma.stockSabor.findUnique({ where: { saborId_ubicacionId: { saborId: it.refId, ubicacionId: prodUb } } });
+      const mover = Math.min(it.cantidad, origen?.cantidad ?? 0);
+      if (mover <= 0) continue;
+      await prisma.stockSabor.update({ where: { saborId_ubicacionId: { saborId: it.refId, ubicacionId: prodUb } }, data: { cantidad: { decrement: mover } } });
+      await prisma.stockSabor.upsert({
+        where: { saborId_ubicacionId: { saborId: it.refId, ubicacionId: bodUb } },
+        update: { cantidad: { increment: mover } },
+        create: { saborId: it.refId, ubicacionId: bodUb, cantidad: mover },
+      });
+      const s = await prisma.sabor.findUnique({ where: { id: it.refId }, select: { nombre: true } });
+      await prisma.movimientoBodega.create({
+        data: { zona: "bodega", ubicacionId: bodUb, tipo: "entrada", clase: "sabor", refId: it.refId, nombre: s?.nombre ?? it.nombre ?? "—", cantidad: mover, detalle: "Recibido de producción", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+      });
+    } else {
+      const origen = await prisma.stock.findUnique({ where: { productoId_ubicacionId: { productoId: it.refId, ubicacionId: prodUb } } });
+      const mover = Math.min(it.cantidad, origen?.cantidad ?? 0);
+      if (mover <= 0) continue;
+      await prisma.stock.update({ where: { productoId_ubicacionId: { productoId: it.refId, ubicacionId: prodUb } }, data: { cantidad: { decrement: mover } } });
+      await prisma.stock.upsert({
+        where: { productoId_ubicacionId: { productoId: it.refId, ubicacionId: bodUb } },
+        update: { cantidad: { increment: mover } },
+        create: { productoId: it.refId, ubicacionId: bodUb, cantidad: mover },
+      });
+      const p = await prisma.producto.findUnique({ where: { id: it.refId }, select: { nombre: true } });
+      await prisma.movimientoBodega.create({
+        data: { zona: "bodega", ubicacionId: bodUb, tipo: "entrada", clase: "producto", refId: it.refId, nombre: p?.nombre ?? it.nombre ?? "—", cantidad: mover, detalle: "Recibido de producción", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+      });
+    }
+  }
+
+  revalidatePath("/bodega");
+  revalidatePath("/bodega/recibir");
+  revalidatePath("/admin/comparar-stock");
+  redirect("/bodega/recibir?ok=1");
 }
 
 /** Ubicación de una zona operativa: "bodega" o "sala" (local). */

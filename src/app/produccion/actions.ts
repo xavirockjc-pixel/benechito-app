@@ -8,6 +8,7 @@ import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
 import { marcarAsistenciaAuto } from "@/lib/asistencia";
 import { rendimientoAprendido, resumenTurnoProduccion } from "@/lib/dominio/fabricacion";
 import { inicioDelDia } from "@/lib/dominio/empresa";
+import { ubicacionProduccionId } from "@/lib/dominio/ubicaciones";
 import { normalizaTexto, detectaTipoNota, detectaPrioridadNota, detectaAccionNota, detectaCantidad } from "@/lib/dominio/notas";
 
 /** Desbloquea UN tipo si su clave coincide (cookie con la lista de tipos abiertos, 8h). */
@@ -39,9 +40,10 @@ export async function logout() {
   redirect("/login");
 }
 
+// IMPORTANTE: lo que se fabrica cae en la ubicación de PRODUCCIÓN (no en bodega),
+// para que ambos stocks estén separados. El bodeguero luego lo "recibe en bodega".
 async function bodegaId(): Promise<string | null> {
-  const b = await prisma.ubicacion.findFirst({ where: { tipo: "bodega" } });
-  return b?.id ?? null;
+  return ubicacionProduccionId();
 }
 
 /**
