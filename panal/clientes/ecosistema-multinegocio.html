@@ -1,0 +1,354 @@
+<title>Ecosistema Multinegocio</title>
+<style>
+  /* Ecosistema a medida (4 negocios + panadería + heladería) — tema Panal, oscuro-miel, single-dark por marca.
+     Layout: cabecera fija + pestañas (Panel/Ecosistema/Apps/Plan); el Panel abre poblado con datos de ejemplo. */
+  :root{
+    color-scheme: dark;
+    --ground:#100b06; --surface:#19110a; --surface-2:#241a10; --line:#3c2d1a;
+    --honey:#f6a821; --bright:#ffce6a; --deep:#a8680f; --cream:#f4ecd8; --muted:#a99a7c;
+    --good:#5fd0a6; --warn:#ffb24d; --crit:#f0755c; --teal:#5fd0c0;
+    --glow: rgba(246,168,33,.4);
+    --mono: ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --maxw: 1060px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--cream); font-family:var(--sans); line-height:1.55;
+    background-image:radial-gradient(1100px 480px at 82% -12%, rgba(246,168,33,.10), transparent 60%)}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding-inline:18px}
+  h1,h2,h3{margin:0; text-wrap:balance}
+  .mono{font-family:var(--mono)} .tab{font-variant-numeric:tabular-nums}
+  .eyebrow{font-family:var(--mono); text-transform:uppercase; letter-spacing:.24em; font-size:.68rem; color:var(--honey); font-weight:700}
+  a{color:var(--bright)}
+
+  /* cabecera */
+  header.bar{position:sticky; top:env(safe-area-inset-top,0px); z-index:30; background:rgba(16,11,6,.82); backdrop-filter:blur(10px); border-bottom:1px solid var(--line)}
+  header .in{max-width:var(--maxw); margin:0 auto; padding:11px 18px; display:flex; align-items:center; justify-content:space-between; gap:12px}
+  .brand{display:flex; align-items:center; gap:10px; min-width:0}
+  .brand svg{width:26px; height:29px; filter:drop-shadow(0 0 8px var(--glow)); flex:none}
+  .brand b{font-weight:800; font-size:1.02rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .brand .sub{display:block; font-size:.68rem; color:var(--muted); font-weight:600}
+  .wa{flex:none; display:inline-flex; align-items:center; gap:7px; background:#25D366; color:#06270f; font-weight:800; font-size:.82rem; text-decoration:none; padding:8px 13px; border-radius:999px}
+
+  nav.tabs{position:sticky; top:calc(54px + env(safe-area-inset-top,0px)); z-index:25; background:var(--ground); border-bottom:1px solid var(--line)}
+  nav.tabs .in{max-width:var(--maxw); margin:0 auto; display:flex; gap:4px; padding:8px 14px; overflow-x:auto}
+  nav.tabs button{flex:0 0 auto; border:1px solid var(--line); background:var(--surface); color:var(--muted); border-radius:999px; padding:8px 15px; font-weight:800; font-size:.84rem; cursor:pointer; font-family:var(--sans)}
+  nav.tabs button.on{background:linear-gradient(180deg,var(--bright),var(--honey)); color:#2a1a05; border-color:transparent}
+
+  section.view{padding-block:22px}
+  .hd{margin-bottom:16px}
+  .hd h2{font-size:clamp(1.3rem,3.6vw,1.8rem); font-weight:800; margin-top:6px}
+  .hd p{color:var(--muted); margin:6px 0 0; max-width:62ch}
+
+  .note{display:flex; gap:10px; align-items:flex-start; background:color-mix(in srgb,var(--honey) 10%,var(--surface)); border:1px solid var(--line); border-radius:12px; padding:11px 14px; font-size:.86rem; color:var(--cream); margin-bottom:18px}
+  .note b{color:var(--bright)}
+
+  /* KPI tiles */
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:12px}
+  @media(max-width:720px){ .kpis{grid-template-columns:1fr 1fr} }
+  .kpi{background:linear-gradient(180deg,var(--surface),#140d07); border:1px solid var(--line); border-radius:16px; padding:15px}
+  .kpi .k{font-size:.72rem; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.06em}
+  .kpi .v{font-size:1.6rem; font-weight:800; margin-top:6px; letter-spacing:-.01em}
+  .kpi .d{font-size:.76rem; color:var(--muted); margin-top:2px}
+  .kpi.crit .v{color:var(--crit)} .kpi.warn .v{color:var(--warn)} .kpi.good .v{color:var(--good)} .kpi.honey .v{color:var(--bright)}
+
+  .grid2{display:grid; grid-template-columns:1.1fr .9fr; gap:16px; margin-top:16px; align-items:start}
+  @media(max-width:860px){ .grid2{grid-template-columns:1fr} }
+  .card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px}
+  .card > h3{font-size:.95rem; font-weight:800; display:flex; align-items:center; gap:8px; margin-bottom:12px}
+  .card .cnt{margin-left:auto; font-family:var(--mono); font-size:.72rem; color:var(--muted)}
+
+  /* avisos */
+  .avisos{display:flex; flex-direction:column; gap:9px}
+  .aviso{display:flex; gap:11px; align-items:flex-start; border:1px solid var(--line); border-left-width:4px; border-radius:12px; padding:11px 13px; background:#140d07}
+  .aviso .ico{font-size:1.2rem; line-height:1.4; flex:none}
+  .aviso .bd{flex:1; min-width:0}
+  .aviso .bd b{font-size:.92rem}
+  .aviso .bd p{margin:2px 0 0; font-size:.82rem; color:var(--muted)}
+  .aviso .ok{flex:none; align-self:center; border:1px solid var(--line); background:var(--surface-2); color:var(--cream); border-radius:999px; padding:7px 12px; font-weight:800; font-size:.76rem; cursor:pointer; font-family:var(--sans)}
+  .aviso .ok:hover{border-color:var(--honey); color:var(--bright)}
+  .aviso.crit{border-left-color:var(--crit)} .aviso.pay{border-left-color:var(--bright)}
+  .aviso.order{border-left-color:var(--warn)} .aviso.cash{border-left-color:var(--teal)} .aviso.prod{border-left-color:var(--good)}
+  .aviso.done{opacity:.45} .aviso.done .bd b{text-decoration:line-through}
+  .aviso.done .ok{background:transparent; color:var(--good); border-color:transparent; cursor:default}
+
+  .resumen{display:flex; gap:9px; flex-wrap:wrap; margin-top:12px}
+  .btn{border:0; border-radius:12px; font-weight:800; padding:11px 15px; font-size:.86rem; cursor:pointer; font-family:var(--sans); text-decoration:none; display:inline-flex; align-items:center; gap:7px}
+  .btn-h{background:linear-gradient(180deg,var(--bright),var(--honey)); color:#2a1a05}
+  .btn-g{background:var(--surface-2); color:var(--cream); border:1px solid var(--line)}
+  .msg{font-size:.78rem; color:var(--good); min-height:1.1em; margin-top:8px}
+
+  /* stock table */
+  .tablewrap{overflow-x:auto}
+  table{border-collapse:collapse; width:100%; font-size:.86rem; min-width:460px}
+  th,td{text-align:right; padding:9px 10px; border-bottom:1px solid var(--line); white-space:nowrap}
+  th:first-child,td:first-child{text-align:left}
+  thead th{font-size:.7rem; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); font-weight:800}
+  td .q{font-weight:700}
+  td.lo{color:var(--crit)} td.mid{color:var(--warn)}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:10px; font-size:.76rem; color:var(--muted)}
+  .dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle}
+  .dot.c{background:var(--crit)} .dot.w{background:var(--warn)} .dot.g{background:var(--good)}
+
+  /* ecosistema map */
+  .eco{display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-top:4px}
+  @media(max-width:860px){ .eco{grid-template-columns:1fr 1fr} }
+  @media(max-width:520px){ .eco{grid-template-columns:1fr} }
+  .col{background:linear-gradient(180deg,var(--surface),#140d07); border:1px solid var(--line); border-radius:16px; padding:14px}
+  .col > .lab{font-family:var(--mono); font-size:.66rem; text-transform:uppercase; letter-spacing:.14em; color:var(--honey); margin-bottom:10px; display:block}
+  .node{display:flex; gap:9px; align-items:flex-start; background:var(--surface-2); border:1px solid var(--line); border-radius:11px; padding:10px 11px; margin-bottom:8px}
+  .node:last-child{margin-bottom:0}
+  .node .e{font-size:1.15rem; flex:none}
+  .node .t{min-width:0}
+  .node .t b{font-size:.88rem} .node .t small{display:block; color:var(--muted); font-size:.75rem}
+
+  .flow{margin-top:18px; display:grid; gap:10px}
+  .fl{display:flex; gap:13px; padding:13px 15px; border:1px solid var(--line); border-radius:14px; background:var(--surface)}
+  .fl .n{flex:none; width:30px; height:33px; display:grid; place-items:center; font-family:var(--mono); font-weight:800; color:var(--honey); background:rgba(246,168,33,.14); clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+  .fl .ft{min-width:0} .fl .ft b{font-size:.94rem} .fl .ft p{margin:3px 0 0; color:var(--muted); font-size:.85rem}
+
+  /* apps cards */
+  .apps{display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  @media(max-width:820px){ .apps{grid-template-columns:1fr 1fr} }
+  @media(max-width:520px){ .apps{grid-template-columns:1fr} }
+  .app{background:linear-gradient(180deg,var(--surface),#140d07); border:1px solid var(--line); border-radius:16px; padding:17px; clip-path:polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 0 100%)}
+  .app .ic{font-size:1.5rem} .app h3{font-size:1.02rem; font-weight:800; margin-top:8px}
+  .app .who{font-family:var(--mono); font-size:.66rem; text-transform:uppercase; letter-spacing:.1em; color:var(--honey); margin-top:4px}
+  .app ul{margin:10px 0 0; padding-left:18px; color:var(--muted); font-size:.85rem; display:grid; gap:4px}
+
+  /* plan */
+  .plan{background:linear-gradient(180deg,var(--surface-2),#140d07); border:1px solid rgba(246,168,33,.4); border-radius:20px; padding:22px; max-width:560px}
+  .plan .price{display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; margin:6px 0 2px}
+  .plan .price .big{font-size:2.1rem; font-weight:800; color:var(--bright)}
+  .plan .price .per{color:var(--muted); font-size:.9rem}
+  .plan ul{margin:14px 0 0; padding-left:0; list-style:none; display:grid; gap:8px}
+  .plan li{display:flex; gap:9px; font-size:.9rem} .plan li::before{content:"⬢"; color:var(--honey); flex:none}
+  .plan .cta{margin-top:18px; display:flex; gap:10px; flex-wrap:wrap}
+
+  footer{border-top:1px solid var(--line); margin-top:26px; padding-block:22px; text-align:center; color:var(--muted); font-size:.8rem}
+  :focus-visible{outline:2px solid var(--bright); outline-offset:3px; border-radius:8px}
+  @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd778"/><stop offset="1" stop-color="#d98a12"/></linearGradient>
+  <symbol id="hex" viewBox="0 0 60 66">
+    <path d="M30 2 56 17V49L30 64 4 49V17Z" fill="none" stroke="url(#gH)" stroke-width="3"/>
+    <path d="M30 16 44 24V40L30 48 16 40V24Z" fill="url(#gH)" opacity=".9"/>
+    <circle cx="30" cy="32" r="4.5" fill="#160f07"/>
+  </symbol>
+</defs></svg>
+
+<header class="bar"><div class="in">
+  <span class="brand"><svg aria-hidden="true"><use href="#hex"/></svg><span><b>Ecosistema Multinegocio</b><span class="sub">Panal · a medida — 4 negocios</span></span></span>
+  <a class="wa" href="https://wa.me/56928005332?text=Hola!%20Quiero%20el%20ecosistema%20multinegocio%20de%20Panal%20%F0%9F%90%9D" target="_blank" rel="noopener">💬 Quiero esto</a>
+</div></header>
+
+<nav class="tabs"><div class="in">
+  <button data-view="panel" class="on">📊 Panel del dueño</button>
+  <button data-view="eco">🕸️ Cómo se conecta</button>
+  <button data-view="apps">📱 Las apps</button>
+  <button data-view="plan">💰 Plan y valor</button>
+</div></nav>
+
+<!-- ======================= PANEL DEL DUEÑO ======================= -->
+<section class="view wrap" id="panelView">
+  <div class="hd">
+    <span class="eyebrow">Tu vista de dueño</span>
+    <h2>Todo tu grupo en una pantalla.</h2>
+    <p>Ventas, stock de los cuatro negocios, producción y a quién le debes — con avisos de <b>qué pedir, cuándo pagar y qué cuadrar</b>. Entras en la mañana, ves las 5 cosas del día y listo.</p>
+  </div>
+
+  <div class="note">🧪 <div><b>Ejemplo con datos de muestra.</b> Los números, locales y productos de abajo son de prueba para que veas cómo funciona. Al montarlo van tus negocios, tus productos y tus proveedores reales.</div></div>
+
+  <div class="kpis">
+    <div class="kpi good"><div class="k">Ventas hoy · 4 locales</div><div class="v tab">$1.284.500</div><div class="d">Centro, Norte, Sur, Plaza</div></div>
+    <div class="kpi crit"><div class="k">Alertas de stock</div><div class="v tab" id="kAlerts">5</div><div class="d">productos bajo el mínimo</div></div>
+    <div class="kpi honey"><div class="k">Por pagar · 7 días</div><div class="v tab">$612.000</div><div class="d">2 proveedores</div></div>
+    <div class="kpi warn"><div class="k">Producción hoy</div><div class="v tab">320 <span style="font-size:1rem">panes</span> · 40 <span style="font-size:1rem">L helado</span></div><div class="d">panadería + heladería</div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>🔔 Tus avisos de hoy <span class="cnt" id="avCnt"></span></h3>
+      <div class="avisos" id="avisos"></div>
+      <div class="resumen">
+        <button class="btn btn-h" id="btnResumen">📋 Copiar resumen del día</button>
+        <button class="btn btn-g" id="btnReset">↺ Reiniciar avisos</button>
+      </div>
+      <p class="msg" id="msg"></p>
+    </div>
+
+    <div class="card">
+      <h3>📦 Stock por local</h3>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Producto</th><th>Centro</th><th>Norte</th><th>Sur</th><th>Plaza</th></tr></thead>
+          <tbody>
+            <tr><td>Arroz 1 kg</td><td class="q">38</td><td class="q">22</td><td class="q">15</td><td class="q mid">9</td></tr>
+            <tr><td>Aceite 1 L</td><td class="q">26</td><td class="q mid">11</td><td class="q">19</td><td class="q lo">4</td></tr>
+            <tr><td>Azúcar 1 kg</td><td class="q">31</td><td class="q">28</td><td class="q mid">10</td><td class="q">17</td></tr>
+            <tr><td>Bebida 1.5 L</td><td class="q">40</td><td class="q">33</td><td class="q">25</td><td class="q">21</td></tr>
+            <tr><td>Pan (marraqueta)</td><td class="q">—</td><td class="q">60</td><td class="q lo">8</td><td class="q">45</td></tr>
+            <tr><td>Helado pote 1 L</td><td class="q">12</td><td class="q">7</td><td class="q">5</td><td class="q mid">6</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="legend">
+        <span><span class="dot g"></span>Suficiente</span>
+        <span><span class="dot w"></span>Bajo — revisar</span>
+        <span><span class="dot c"></span>Crítico — reponer</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= CÓMO SE CONECTA ======================= -->
+<section class="view wrap" id="ecoView" hidden>
+  <div class="hd">
+    <span class="eyebrow">El ecosistema</span>
+    <h2>Compras una vez. El sistema reparte y cuadra.</h2>
+    <p>Un solo sistema para todo el grupo: compras al por mayor, dos producciones propias y cuatro locales que venden. Cada movimiento baja del stock solo y queda registrado.</p>
+  </div>
+
+  <div class="eco">
+    <div class="col">
+      <span class="lab">1 · Entra</span>
+      <div class="node"><span class="e">🏭</span><span class="t"><b>Proveedores</b><small>compra al por mayor (grande)</small></span></div>
+    </div>
+    <div class="col">
+      <span class="lab">2 · Se guarda / se fabrica</span>
+      <div class="node"><span class="e">🏬</span><span class="t"><b>Bodega central</b><small>guarda y reparte a los locales</small></span></div>
+      <div class="node"><span class="e">🥖</span><span class="t"><b>Panadería</b><small>fabrica y surte a 3 locales</small></span></div>
+      <div class="node"><span class="e">🍦</span><span class="t"><b>Fábrica de helados</b><small>fabrica por litros</small></span></div>
+    </div>
+    <div class="col">
+      <span class="lab">3 · Se vende</span>
+      <div class="node"><span class="e">🛒</span><span class="t"><b>Local Centro</b><small>+ panadería adentro</small></span></div>
+      <div class="node"><span class="e">🛒</span><span class="t"><b>Local Norte</b></span></div>
+      <div class="node"><span class="e">🛒</span><span class="t"><b>Minimarket Sur</b></span></div>
+      <div class="node"><span class="e">🛒</span><span class="t"><b>Local Plaza</b></span></div>
+    </div>
+    <div class="col">
+      <span class="lab">4 · Compran</span>
+      <div class="node"><span class="e">👥</span><span class="t"><b>Público</b><small>en cada local</small></span></div>
+      <div class="node"><span class="e">🤝</span><span class="t"><b>Clientes externos</b><small>helados por fuera (mayorista)</small></span></div>
+    </div>
+  </div>
+
+  <div class="flow">
+    <div class="fl"><span class="n">1</span><div class="ft"><b>Compra al por mayor → Bodega central</b><p>Registras la compra grande una vez. Entra al stock de bodega y queda la deuda con el proveedor (con su fecha de pago).</p></div></div>
+    <div class="fl"><span class="n">2</span><div class="ft"><b>Bodega → reparte a los 4 locales</b><p>Mandas producto a cada local (traspaso). Baja de bodega y sube en el local; cada uno confirma lo que recibió.</p></div></div>
+    <div class="fl"><span class="n">3</span><div class="ft"><b>Panadería fabrica → surte a 3 locales</b><p>Produce por lote, descuenta harina y demás insumos, y entrega el pan a Norte, Sur y Plaza (y vende en Centro).</p></div></div>
+    <div class="fl"><span class="n">4</span><div class="ft"><b>Heladería fabrica → su local + clientes de afuera</b><p>Produce por litros; una parte surte tu local y otra se despacha a clientes externos, con su propia cuenta.</p></div></div>
+    <div class="fl"><span class="n">5</span><div class="ft"><b>Cada local vende → baja el stock → te avisa</b><p>Cuando un producto baja del mínimo, salta el aviso de <b>reponer o pedir</b>. Al cierre, cada caja cuadra contra lo vendido.</p></div></div>
+  </div>
+</section>
+
+<!-- ======================= LAS APPS ======================= -->
+<section class="view wrap" id="appsView" hidden>
+  <div class="hd">
+    <span class="eyebrow">Una app por tarea</span>
+    <h2>Cada quien ve solo lo suyo. Tú ves todo.</h2>
+    <p>Apps simples en el celular, con acceso por rol. Nadie se pierde entre pantallas que no usa.</p>
+  </div>
+  <div class="apps">
+    <div class="app"><div class="ic">🏬</div><h3>Bodega & Compras</h3><div class="who">Dueño / encargado</div>
+      <ul><li>Registra la compra al por mayor</li><li>Stock de bodega central</li><li>Reparte a los locales (traspasos)</li><li>Avisa cuándo pedir y cuándo pagar</li></ul></div>
+    <div class="app"><div class="ic">🥖</div><h3>Producción Panadería</h3><div class="who">Panadero</div>
+      <ul><li>Produce por lote (marraqueta, hallulla…)</li><li>Descuenta harina e insumos solo</li><li>Entrega a Norte, Sur y Plaza</li><li>Avisa insumo bajo mínimo</li></ul></div>
+    <div class="app"><div class="ic">🍦</div><h3>Producción Heladería</h3><div class="who">Heladero</div>
+      <ul><li>Produce por litros</li><li>Surte tu local y despacha afuera</li><li>Descuenta insumos por receta</li><li>Rinde: real vs. estimado</li></ul></div>
+    <div class="app"><div class="ic">🛒</div><h3>Ventas del local ×4</h3><div class="who">Cada local</div>
+      <ul><li>Caja simple y rápida</li><li>Baja el stock al vender</li><li>Cierre de caja diario</li><li>Ve solo su local</li></ul></div>
+    <div class="app"><div class="ic">🚚</div><h3>Traspasos y reparto</h3><div class="who">Repartidor / local</div>
+      <ul><li>Mueve producto entre bodega, producción y locales</li><li>Cada local confirma lo recibido</li><li>Nada se pierde en el camino</li></ul></div>
+    <div class="app"><div class="ic">📊</div><h3>Panel del dueño</h3><div class="who">Solo tú</div>
+      <ul><li>Ventas y stock de todo el grupo</li><li>Qué pedir · a quién pagar · qué cuadrar</li><li>Resumen del día a tu WhatsApp</li><li>Costos y ganancias (privado)</li></ul></div>
+  </div>
+</section>
+
+<!-- ======================= PLAN Y VALOR ======================= -->
+<section class="view wrap" id="planView" hidden>
+  <div class="hd">
+    <span class="eyebrow">Plan a medida</span>
+    <h2>Un ecosistema completo, armado para tu grupo.</h2>
+    <p>Producción, distribución, cuatro locales y tu panel — todo conectado. Lo montamos nosotros; tú solo lo usas.</p>
+  </div>
+  <div class="plan">
+    <span class="eyebrow">Plan Completo · a medida</span>
+    <div class="price"><span class="big tab">$1.200.000</span><span class="per">instalación (una vez)</span></div>
+    <div class="price"><span class="big tab" style="font-size:1.5rem">$80.000</span><span class="per">al mes · soporte, hosting y mejoras</span></div>
+    <ul>
+      <li>Bodega central + compras al por mayor con avisos de pago</li>
+      <li>Producción de panadería y de heladería (por lote y por litros)</li>
+      <li>Traspasos y reparto a los 4 locales</li>
+      <li>Caja y stock por local (acceso por rol)</li>
+      <li>Panel del dueño con resumen diario a tu WhatsApp</li>
+      <li>Clientes externos de heladería con su cuenta</li>
+      <li>Montaje, capacitación y respaldo incluidos</li>
+    </ul>
+    <div class="cta">
+      <a class="btn btn-h" href="https://wa.me/56928005332?text=Hola!%20Me%20interesa%20el%20ecosistema%20multinegocio%20%F0%9F%90%9D" target="_blank" rel="noopener">💬 Hablemos por WhatsApp</a>
+    </div>
+  </div>
+  <p class="hd" style="margin-top:16px; color:var(--muted); font-size:.84rem">¿Son 3 locales en vez de 4, o faltan áreas? El plan se ajusta. Lo armamos con tus negocios reales.</p>
+</section>
+
+<footer>🍯 Panal · Ecosistema a medida — un cliente = un sistema, con control total de stock, ventas y números.</footer>
+
+<script>
+(function(){
+  "use strict";
+  var LS="panal-eco-avisos";
+  var AVISOS=[
+    {id:"a1", cls:"crit", ico:"🔴", t:"Aceite 1 L — Local Plaza en crítico", p:"Quedan 4 (mínimo 12). Reponer desde bodega central hoy."},
+    {id:"a2", cls:"pay", ico:"💵", t:"Pagar a Distribuidora San Juan", p:"Compra al por mayor de $480.000 vence en 2 días."},
+    {id:"a3", cls:"order", ico:"📦", t:"Pedir harina para Panadería", p:"Queda 1 saco de 25 kg (mínimo 3). Pedir hoy para no parar producción."},
+    {id:"a4", cls:"cash", ico:"🧮", t:"Cuadrar caja — Minimarket Sur", p:"El cierre de ayer quedó con un descuadre de $3.200. Revisar."},
+    {id:"a5", cls:"prod", ico:"🧊", t:"Programar producción de helados", p:"Pote 1 L bajo para el fin de semana. Programar 40 L mañana."}
+  ];
+  var done={};
+  try{ done=JSON.parse(localStorage.getItem(LS)||"{}")||{}; }catch(e){}
+  var $=function(id){return document.getElementById(id);};
+  function save(){ try{ localStorage.setItem(LS, JSON.stringify(done)); }catch(e){} }
+
+  function render(){
+    var c=$("avisos"); c.innerHTML="";
+    AVISOS.forEach(function(a){
+      var d=document.createElement("div"); d.className="aviso "+a.cls+(done[a.id]?" done":"");
+      d.innerHTML='<span class="ico">'+a.ico+'</span><div class="bd"><b>'+a.t+'</b><p>'+a.p+'</p></div>'
+        +'<button class="ok">'+(done[a.id]?"✓ Listo":"Marcar listo")+'</button>';
+      d.querySelector(".ok").onclick=function(){ done[a.id]=!done[a.id]; save(); render(); };
+      c.appendChild(d);
+    });
+    var pend=AVISOS.filter(function(a){return !done[a.id];}).length;
+    $("avCnt").textContent=pend+" por hacer";
+    $("kAlerts").textContent=AVISOS.filter(function(a){return !done[a.id] && (a.cls==="crit"||a.cls==="order");}).length + 3;
+  }
+  function flash(m){ $("msg").textContent=m; setTimeout(function(){$("msg").textContent="";},2600); }
+
+  $("btnResumen").onclick=function(){
+    var hoy=new Date().toLocaleDateString("es-CL",{day:"2-digit",month:"long",year:"numeric"});
+    var t="RESUMEN DEL DÍA — "+hoy+"\nVentas (4 locales): $1.284.500\nPor pagar (7 días): $612.000\n\nPendientes:\n";
+    AVISOS.forEach(function(a){ if(!done[a.id]) t+="• "+a.t+" — "+a.p+"\n"; });
+    var left=AVISOS.filter(function(a){return !done[a.id];}).length;
+    if(!left) t+="• Todo al día ✅\n";
+    if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(function(){flash("✅ Resumen copiado — pégalo en WhatsApp");},function(){sel(t);}); } else sel(t);
+  };
+  function sel(t){ var a=document.createElement("textarea"); a.value=t; document.body.appendChild(a); a.select(); try{document.execCommand("copy");flash("✅ Copiado");}catch(e){flash("Copia manual");} a.remove(); }
+  $("btnReset").onclick=function(){ done={}; save(); render(); flash("Avisos reiniciados"); };
+
+  // pestañas
+  var views=["panel","eco","apps","plan"];
+  document.querySelectorAll("nav.tabs button").forEach(function(b){
+    b.onclick=function(){
+      views.forEach(function(v){ var el=$(v+"View"); if(el) el.hidden = v!==b.dataset.view; });
+      document.querySelectorAll("nav.tabs button").forEach(function(x){ x.classList.toggle("on", x===b); });
+      window.scrollTo(0,0);
+    };
+  });
+
+  render();
+})();
+</script>
