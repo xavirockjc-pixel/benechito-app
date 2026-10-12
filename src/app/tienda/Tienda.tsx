@@ -9,7 +9,7 @@ import CarruselFotos from "@/app/_shared/CarruselFotos";
 
 type SaborInfo = { nombre: string; desc: string | null; foto: string | null };
 type Prod = { id: string; nombre: string; descripcion: string | null; formato: string | null; seccion: string; fotoUrl: string | null; fotos?: string[]; precios: Record<string, number>; sabores: SaborInfo[]; grupo: string; min: number; max: number };
-type Tarifa = { codigo: string; label: string; icono: string; cond: string };
+type Tarifa = { codigo: string; label: string; icono: string; cond: string; requisito?: string };
 
 const GRUPOS = [
   { codigo: "helados", label: "Helados artesanales", icono: "🍧" },
@@ -34,13 +34,19 @@ export default function Tienda({
   const byId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
   const [cart, setCart] = useState<Record<string, number>>({}); // key = id::sabor -> cantidad
   const [sel, setSel] = useState<Record<string, string>>({}); // sabor elegido por producto
-  const [tarifa, setTarifa] = useState(tarifaInicial ?? tarifas[0]?.codigo ?? "detalle");
+  // Al entrar, la persona elige UN tipo de precio y solo ve ese. Si viene con tarifa
+  // del portal (cliente conocido) o solo hay una, se usa directo sin preguntar.
+  const tarifaUnica = tarifas.length <= 1 ? (tarifas[0]?.codigo ?? "detalle") : null;
+  const [tarifa, setTarifa] = useState<string | null>(tarifaInicial ?? tarifaUnica);
+  const [elegirAbierto, setElegirAbierto] = useState(tarifa == null); // pantalla de elección al entrar
+  const [condAbierto, setCondAbierto] = useState(false); // modal "condiciones de cada precio"
+  const tarifaActual = tarifas.find((t) => t.codigo === tarifa);
   const [abierto, setAbierto] = useState(false);
   const [entrega, setEntrega] = useState("retiro");
   const [detalleSabor, setDetalleSabor] = useState<SaborInfo | null>(null); // modal "¿cómo es?"
   const [detalleProd, setDetalleProd] = useState<Prod | null>(null); // ficha del producto
 
-  const precioDe = (p: Prod) => p.precios[tarifa] ?? Object.values(p.precios)[0] ?? 0;
+  const precioDe = (p: Prod) => (tarifa ? p.precios[tarifa] : undefined) ?? Object.values(p.precios)[0] ?? 0;
   const minOf = (id: string) => Math.max(1, byId.get(id)?.min ?? 1);
   const maxOf = (id: string) => byId.get(id)?.max ?? 0;
 
@@ -63,7 +69,7 @@ export default function Tienda({
   const items = useMemo(() => Object.entries(cart).map(([k, cant]) => {
     const [id, sabor] = k.split("::");
     const p = byId.get(id);
-    const pr = p ? (p.precios[tarifa] ?? Object.values(p.precios)[0] ?? 0) : 0;
+    const pr = p ? ((tarifa ? p.precios[tarifa] : undefined) ?? Object.values(p.precios)[0] ?? 0) : 0;
     return p ? { k, id, sabor, p, cant, precio: pr, sub: pr * cant } : null;
   }).filter(Boolean) as { k: string; id: string; sabor: string; p: Prod; cant: number; precio: number; sub: number }[], [cart, byId, tarifa]);
 
@@ -180,21 +186,24 @@ export default function Tienda({
           </div>
         ) : (
           <>
-            {/* Selector de tarifa (tipo de cliente) — los precios cambian solos */}
-            {tarifas.length > 1 && (
-              <div className="mt-5 rounded-2xl border border-crema-2 bg-white p-3 shadow-sm">
-                <p className="mb-2 text-xs font-bold uppercase tracking-wide text-choco-2">Ver precios como:</p>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                  {tarifas.map((t) => {
-                    const activo = tarifa === t.codigo;
-                    return (
-                      <button key={t.codigo} onClick={() => setTarifa(t.codigo)}
-                        className={`rounded-xl border-2 px-3 py-2 text-left transition active:scale-95 ${activo ? "border-azul bg-azul/10" : "border-crema-2 bg-white hover:border-crema-2"}`}>
-                        <span className={`block text-sm font-extrabold ${activo ? "text-azul" : "text-tinta"}`}>{t.icono} {t.label}</span>
-                        <span className="block text-[11px] text-choco-2">{t.cond}</span>
-                      </button>
-                    );
-                  })}
+            {/* Precio elegido: se muestra SOLO el tipo seleccionado. Los demás quedan
+                ocultos; se cambian o se consultan sus condiciones desde aquí. */}
+            {tarifas.length > 1 && tarifaActual && (
+              <div className="mt-5 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-crema-2 bg-white p-3 shadow-sm">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-choco-2">Estás viendo precios</p>
+                  <p className="text-sm font-extrabold text-azul">{tarifaActual.icono} {tarifaActual.label}</p>
+                  <p className="text-[11px] text-choco-2">{tarifaActual.cond}</p>
+                </div>
+                <div className="flex shrink-0 gap-2">
+                  <button onClick={() => setElegirAbierto(true)}
+                    className="rounded-xl border-2 border-azul bg-azul/10 px-3 py-2 text-xs font-extrabold text-azul active:scale-95">
+                    Cambiar
+                  </button>
+                  <button onClick={() => setCondAbierto(true)}
+                    className="rounded-xl border border-crema-2 bg-white px-3 py-2 text-xs font-bold text-choco-2 active:scale-95">
+                    Ver otros precios
+                  </button>
                 </div>
               </div>
             )}
@@ -303,7 +312,7 @@ export default function Tienda({
 
             <form action={crearPedidoTienda} className="mt-4 space-y-2.5">
               <input type="hidden" name="carro" value={carroJSON} />
-              <input type="hidden" name="tarifa" value={tarifa} />
+              <input type="hidden" name="tarifa" value={tarifa ?? "detalle"} />
               <input name="nombre" required defaultValue={clientePrefill?.nombre ?? ""} placeholder="Tu nombre" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
               <input name="telefono" required inputMode="tel" defaultValue={clientePrefill?.telefono ?? ""} placeholder="Tu WhatsApp / teléfono" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
               <div className="grid grid-cols-2 gap-2">
@@ -377,6 +386,79 @@ export default function Tienda({
                 className="mt-4 w-full rounded-xl bg-azul py-3 text-sm font-extrabold text-white active:scale-95 hover:bg-azul-2">
                 Agregar al pedido{detalleProd.min > 1 ? ` (${detalleProd.min})` : ""} · {fmtCLP(precioDe(detalleProd))}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Elección de precio al entrar: la persona elige UNO y solo ve ese.
+          Si aún no eligió (tarifa == null) no se puede cerrar sin elegir. */}
+      {tarifas.length > 1 && elegirAbierto && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+          onClick={() => { if (tarifa != null) setElegirAbierto(false); }}>
+          <div className="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-gradient-to-br from-azul to-azul-2 px-5 py-4 text-white">
+              <p className="script text-lg">Hecho a lo Benechito ♥</p>
+              <h3 className="font-display text-xl font-extrabold">¿Con qué precio quieres ver el catálogo?</h3>
+              <p className="mt-0.5 text-xs text-white/85">Elige tu tipo de compra. Verás solo esos valores.</p>
+            </div>
+            <div className="max-h-[60vh] space-y-2 overflow-y-auto p-4">
+              {tarifas.map((t) => {
+                const activo = tarifa === t.codigo;
+                return (
+                  <button key={t.codigo} onClick={() => { setTarifa(t.codigo); setElegirAbierto(false); }}
+                    className={`flex w-full items-center gap-3 rounded-2xl border-2 px-4 py-3 text-left transition active:scale-95 ${activo ? "border-azul bg-azul/10" : "border-crema-2 bg-white hover:border-azul/40"}`}>
+                    <span className="text-2xl">{t.icono}</span>
+                    <span className="min-w-0">
+                      <span className="block text-sm font-extrabold text-tinta">{t.label}</span>
+                      <span className="block text-[11px] text-choco-2">{t.cond}</span>
+                    </span>
+                    {activo && <span className="ml-auto text-azul">✓</span>}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="border-t border-crema-2 p-4 text-center">
+              <button onClick={() => setCondAbierto(true)} className="text-sm font-bold text-azul underline underline-offset-2">
+                ¿No sabes cuál te corresponde? Ver condiciones
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Condiciones de cada precio: explica el requisito de cada tipo
+          (ej. mayorista por cantidad), SIN mostrar la escala completa de valores. */}
+      {condAbierto && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4" onClick={() => setCondAbierto(false)}>
+          <div className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:rounded-3xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-2 border-b border-crema-2 p-5">
+              <div>
+                <h3 className="font-display text-xl font-extrabold text-tinta">Condiciones de cada precio</h3>
+                <p className="mt-0.5 text-xs text-choco-2">Así se obtiene cada valor. Elige el que corresponde a tu compra.</p>
+              </div>
+              <button onClick={() => setCondAbierto(false)} className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-tinta/70 text-sm font-bold text-white">✕</button>
+            </div>
+            <ul className="divide-y divide-crema-2">
+              {tarifas.map((t) => (
+                <li key={t.codigo} className="flex items-start gap-3 p-4">
+                  <span className="text-2xl">{t.icono}</span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-extrabold text-tinta">{t.label}</p>
+                    <p className="mt-0.5 text-xs text-choco-2">{t.requisito || t.cond}</p>
+                  </div>
+                  <button onClick={() => { setTarifa(t.codigo); setCondAbierto(false); setElegirAbierto(false); }}
+                    className={`shrink-0 self-center rounded-lg px-3 py-1.5 text-xs font-bold active:scale-95 ${tarifa === t.codigo ? "bg-azul/10 text-azul" : "bg-azul text-white"}`}>
+                    {tarifa === t.codigo ? "Actual" : "Ver estos"}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="p-4">
+              <a href={waComercial} target="_blank" rel="noopener noreferrer"
+                className="block rounded-2xl bg-[#25d366] py-3 text-center text-sm font-extrabold text-white active:scale-95">
+                💬 Consultar mi precio por WhatsApp
+              </a>
             </div>
           </div>
         </div>

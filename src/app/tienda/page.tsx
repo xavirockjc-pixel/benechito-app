@@ -5,10 +5,10 @@ export const dynamic = "force-dynamic";
 
 // Tarifas que el cliente puede elegir en la tienda (cada una lee su lista de precios).
 export const TARIFAS_TIENDA = [
-  { codigo: "detalle", canal: "sala", label: "Consumidor / detalle", icono: "🧍", cond: "Precio por unidad" },
-  { codigo: "online", canal: "web", label: "Promocional online", icono: "💻", cond: "Ofertas de la tienda" },
-  { codigo: "comerciante", canal: "negocio", label: "Mayorista / comerciante", icono: "🏪", cond: "Para negocios y repartos" },
-  { codigo: "distribuidor", canal: "distribuidor", label: "Distribuidor", icono: "🚚", cond: "Compra por volumen" },
+  { codigo: "detalle", canal: "sala", label: "Consumidor / detalle", icono: "🧍", cond: "Precio por unidad", requisito: "Para cualquier persona. Precio por unidad, sin mínimo de compra." },
+  { codigo: "online", canal: "web", label: "Promocional online", icono: "💻", cond: "Ofertas de la tienda", requisito: "Ofertas y combos publicados en la tienda online, mientras dure la promoción." },
+  { codigo: "comerciante", canal: "negocio", label: "Mayorista / comerciante", icono: "🏪", cond: "Para negocios y repartos", requisito: "Para negocios que revenden. Aplica al comprar por cantidad (pedido mayorista por producto)." },
+  { codigo: "distribuidor", canal: "distribuidor", label: "Distribuidor", icono: "🚚", cond: "Compra por volumen", requisito: "Para distribuidores. Precio por volumen, con compra mínima y acuerdo comercial." },
 ] as const;
 
 // Foto por defecto (assets de la web) según el producto, si no subió una propia.
@@ -102,7 +102,7 @@ export default async function TiendaPage({ searchParams }: { searchParams: Promi
     }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
-  const tarifas = TARIFAS_TIENDA.map((t) => ({ codigo: t.codigo, label: t.label, icono: t.icono, cond: t.cond }));
+  const tarifas = TARIFAS_TIENDA.map((t) => ({ codigo: t.codigo, label: t.label, icono: t.icono, cond: t.cond, requisito: t.requisito }));
 
   return (
     <Tienda
