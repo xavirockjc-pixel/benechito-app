@@ -1394,6 +1394,22 @@ model SalidaBodega {
   @@index([fecha])
 }
 
+/**
+ * Trabajos varios del vendedor en su turno: fletes, arreglos, compras, búsqueda
+ * de cosas, mantención, etc. Diario de lo que hizo (con costo/cobro si aplica).
+ */
+model TrabajoVario {
+  id            String   @id @default(cuid())
+  tipo          String // flete | arreglo | compra | busqueda | mantencion | otro
+  descripcion   String
+  monto         Decimal? @db.Decimal(12, 2) // costo o cobro, si aplica
+  usuarioId     String?
+  nombreUsuario String?
+  fecha         DateTime @default(now())
+
+  @@index([fecha])
+}
+
 model TarifaTrato {
   id        String   @id @default(cuid())
   nombre    String // ej: Tuyoyo, Paleta, Postre, Canasta, Balde 5 L

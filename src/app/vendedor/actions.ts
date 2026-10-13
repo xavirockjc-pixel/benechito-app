@@ -9,6 +9,31 @@ import { estadoPagoDe, MEDIOS_PAGO, faltaParaFactura, documentoLegacy } from "@/
 import { crearDocumentoVenta } from "@/lib/facturacion";
 import { canalPorTipoCliente } from "@/lib/dominio/canales";
 
+const TIPOS_TRABAJO = ["flete", "arreglo", "compra", "busqueda", "mantencion", "otro"] as const;
+
+/** Registra un "trabajo vario" del vendedor (flete, arreglo, compra, mantención…). */
+export async function registrarTrabajoVario(formData: FormData) {
+  const descripcion = String(formData.get("descripcion") ?? "").trim();
+  if (!descripcion) return;
+  const tipoRaw = String(formData.get("tipo") ?? "otro").trim();
+  const tipo = (TIPOS_TRABAJO as readonly string[]).includes(tipoRaw) ? tipoRaw : "otro";
+  const monto = Number(String(formData.get("monto") ?? "").replace(/[^0-9]/g, "")) || 0;
+  const u = await usuarioActual();
+  await prisma.trabajoVario.create({
+    data: { tipo, descripcion, monto: monto > 0 ? monto : null, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+  });
+  revalidatePath("/vendedor/trabajos");
+  revalidatePath("/admin");
+}
+
+/** Borra un trabajo vario (si el vendedor se equivocó). */
+export async function borrarTrabajoVario(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  await prisma.trabajoVario.delete({ where: { id } }).catch(() => {});
+  revalidatePath("/vendedor/trabajos");
+}
+
 type LineaTerreno = { productoId: string; cantidad: number; precioUnit: number };
 
 /** Canal de la venta del vendedor: el elegido, o auto por tipo de cliente, o "ruta". */

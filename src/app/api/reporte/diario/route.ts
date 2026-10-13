@@ -167,6 +167,12 @@ export async function GET(req: NextRequest) {
   // Salidas de bodega con destino, sin confirmar (¿se vendió? ¿a quién?).
   const salidasPend = await safe(() => prisma.salidaBodega.count({ where: { estado: "pendiente" } }), 0);
 
+  // Trabajos varios del vendedor hoy (fletes, arreglos, compras, mantención…).
+  const trabajosHoy = await safe(
+    () => prisma.trabajoVario.findMany({ where: { fecha: { gte: inicio } }, orderBy: { fecha: "asc" }, take: 20, select: { tipo: true, descripcion: true, monto: true, nombreUsuario: true } }),
+    [] as { tipo: string; descripcion: string; monto: unknown; nombreUsuario: string | null }[],
+  );
+
   // Accesos de AYER: quién entró a qué ventana (Socio, Higiene, etc.) → al reporte.
   const accesosAyer = await safe(
     () => prisma.auditoria.findMany({
@@ -273,6 +279,15 @@ export async function GET(req: NextRequest) {
     L.push("");
     L.push(`📝 *Notas del equipo hoy (${notasEquipo.length}):*`);
     L.push(notasEquipo.map((n) => `   • ${ic[n.tipo] ?? "•"} ${n.texto}${n.autor ? ` — ${n.autor}` : ""}`).join("\n"));
+  }
+  if (trabajosHoy.length) {
+    const ic: Record<string, string> = { flete: "🚚", arreglo: "🔧", compra: "🛒", busqueda: "🔎", mantencion: "🧰", otro: "📌" };
+    L.push("");
+    L.push(`🧰 *Trabajos del equipo hoy (${trabajosHoy.length}):*`);
+    L.push(trabajosHoy.map((t) => {
+      const m = Number(t.monto ?? 0);
+      return `   • ${ic[t.tipo] ?? "•"} ${t.descripcion}${m > 0 ? ` (${fmtCLP(m)})` : ""}${t.nombreUsuario ? ` — ${t.nombreUsuario}` : ""}`;
+    }).join("\n"));
   }
   if (accesosPorPersona.size > 0) {
     L.push("");
