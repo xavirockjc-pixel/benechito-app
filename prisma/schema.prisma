@@ -1369,6 +1369,31 @@ model CostoLinea {
   updatedAt   DateTime @updatedAt
 }
 
+/**
+ * Salida de bodega con destino ("salieron 20 tú y yo para don X"). Queda
+ * PENDIENTE hasta que el dueño confirme a dónde fue: si se vendió, se crea una
+ * Venta (al cliente/canal) y así el cerebro analiza cuánto compra ese cliente.
+ */
+model SalidaBodega {
+  id            String    @id @default(cuid())
+  clase         String // sabor | producto
+  refId         String
+  nombre        String
+  cantidad      Int
+  destinoTexto  String? // texto libre: "don X", "ruta sur"…
+  negocioId     String? // cliente calzado/creado al confirmar
+  estado        String    @default("pendiente") // pendiente | vendida | interna | descartada
+  ventaId       String? // venta creada al confirmar (si se vendió)
+  total         Decimal?  @db.Decimal(12, 2)
+  usuarioId     String?
+  nombreUsuario String?
+  fecha         DateTime  @default(now())
+  resueltaEn    DateTime?
+
+  @@index([estado])
+  @@index([fecha])
+}
+
 model TarifaTrato {
   id        String   @id @default(cuid())
   nombre    String // ej: Tuyoyo, Paleta, Postre, Canasta, Balde 5 L

@@ -3,6 +3,7 @@ import { inicioDelDia } from "@/lib/dominio/empresa";
 import MovimientoBodegaVoz from "./MovimientoBodegaVoz";
 import CorregirStock from "./CorregirStock";
 import StockActualFix from "./StockActualFix";
+import SalidaDestino from "./SalidaDestino";
 import NuevoProductoBodega from "./NuevoProductoBodega";
 import RetirosDepto from "@/app/_shared/RetirosDepto";
 import EmpezarNuevoDia from "@/app/_shared/EmpezarNuevoDia";
@@ -48,6 +49,10 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
     ...productos.map((p) => ({ id: `prod:${p.id}`, nombre: p.nombre })),
     ...sabores.map((s) => ({ id: `sab:${s.id}`, nombre: s.nombre })),
   ];
+
+  // Clientes para sugerir en "salió para…".
+  const negocios = await prisma.negocio.findMany({ select: { nombreNegocio: true, nombreContacto: true }, take: 400 });
+  const clientes = [...new Set(negocios.map((n) => n.nombreNegocio || n.nombreContacto).filter((x): x is string => !!x))].sort();
 
   const enBodega = stockProd.filter((s) => s.cantidad !== 0).sort((a, b) => a.producto.nombre.localeCompare(b.producto.nombre));
   const saboresBodega = stockSab.filter((s) => s.cantidad !== 0).sort((a, b) => a.sabor.nombre.localeCompare(b.sabor.nombre));
@@ -124,6 +129,13 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
         <h2 className="mb-2 text-sm font-extrabold text-red-800">📤 Salió / merma</h2>
         <MovimientoBodegaVoz catalogo={catalogo} signo={-1} etiqueta="Quitar por voz"
           hint="Di por ejemplo: “cinco trufas” (lo que se dañó o salió)." colorBoton="bg-red-600" textoConfirmar="Descontar de bodega" />
+      </section>
+
+      {/* Salió para un cliente/destino → queda pendiente para confirmar como venta */}
+      <section className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm">
+        <h2 className="mb-1 text-sm font-extrabold text-[#b45309]">🚚 Salió para un cliente / destino</h2>
+        <p className="mb-2 text-[11px] text-amber-700">Ej: “salieron 20 tú y yo para don Juan”. Luego confirmas en la central si se vendió.</p>
+        <SalidaDestino catalogo={catalogo} clientes={clientes} />
       </section>
 
       {/* Corregir/poner el stock real directo (conteo), sin pasar por ventas/entradas */}

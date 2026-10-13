@@ -22,7 +22,7 @@ export async function pendientesCerebro(): Promise<PendienteCerebro[]> {
   const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
   const finHoy = new Date(inicioHoy.getTime() + 24 * 3600 * 1000);
 
-  const [sugeridas, recordatorios, cajasAbiertas, negativos, prodMin] = await Promise.all([
+  const [sugeridas, recordatorios, cajasAbiertas, negativos, prodMin, salidasPend] = await Promise.all([
     // 1) El equipo anotó algo que mueve stock y no se confirmó ("llegó leche", "salió…").
     prisma.nota.count({ where: { accionEstado: "sugerida" } }),
     // 2) Recordatorios/tareas con fecha para hoy o ya vencidas, sin cerrar.
@@ -33,6 +33,8 @@ export async function pendientesCerebro(): Promise<PendienteCerebro[]> {
     prisma.stock.count({ where: { cantidad: { lt: 0 } } }),
     // 5) Productos bajo su mínimo (para reponer).
     prisma.producto.findMany({ where: { activo: true, stockMinimo: { gt: 0 } }, select: { id: true, stockMinimo: true } }),
+    // 6) Salidas de bodega con destino, sin confirmar (¿se vendió? ¿a quién?).
+    prisma.salidaBodega.count({ where: { estado: "pendiente" } }).catch(() => 0),
   ]);
 
   // Stock bajo mínimo: suma el stock por producto y compara con su mínimo.
@@ -50,6 +52,13 @@ export async function pendientesCerebro(): Promise<PendienteCerebro[]> {
     titulo: `${sugeridas} cosa${sugeridas > 1 ? "s" : ""} anotada${sugeridas > 1 ? "s" : ""} sin confirmar`,
     detalle: "El equipo anotó que llegó o salió algo (ej. “llegó leche”). Confírmalo para que el stock quede actualizado.",
     href: "/admin/notas", cta: "Revisar y confirmar",
+  });
+
+  if (salidasPend > 0) items.push({
+    clave: "salidas", icono: "🚚", tono: "aviso",
+    titulo: `${salidasPend} salida${salidasPend > 1 ? "s" : ""} de bodega por confirmar`,
+    detalle: "Salió mercadería a un cliente/destino y falta decir si se vendió (y a quién) para que quede como venta.",
+    href: "/admin/salidas-pendientes", cta: "Confirmar salidas",
   });
 
   if (recordatorios > 0) items.push({

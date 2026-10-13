@@ -56,6 +56,7 @@ function construirModulosSimple(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/pos", label: "Vender", icon: "🛒" },
         { href: "/admin/ventas", label: "Ventas", icon: "💵" },
+        { href: "/admin/salidas-pendientes", label: "Salidas por confirmar", icon: "🚚" },
         { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
         { href: "/admin/cobranza", label: "Clientes que deben", icon: "💸" },
       ],
@@ -112,6 +113,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/pos", label: L.pos, icon: "🛒" },
         { href: "/admin/ventas", label: "Ventas", icon: "💵" },
+        { href: "/admin/salidas-pendientes", label: "Salidas por confirmar", icon: "🚚" },
         { href: "/admin/pedidos", label: "Pedidos", icon: "🧾" },
         { href: "/admin/repartos", label: "Vehículo y reparto", icon: "🚚" },
       ],

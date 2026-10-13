@@ -164,6 +164,8 @@ export async function GET(req: NextRequest) {
   );
   // Cosas anotadas que mueven stock y no se confirmaron ("llegó leche"…).
   const porConfirmar = await safe(() => prisma.nota.count({ where: { accionEstado: "sugerida" } }), 0);
+  // Salidas de bodega con destino, sin confirmar (¿se vendió? ¿a quién?).
+  const salidasPend = await safe(() => prisma.salidaBodega.count({ where: { estado: "pendiente" } }), 0);
 
   // Accesos de AYER: quién entró a qué ventana (Socio, Higiene, etc.) → al reporte.
   const accesosAyer = await safe(
@@ -219,6 +221,9 @@ export async function GET(req: NextRequest) {
   L.push(`   • Caja: ${cajaAbierta > 0 ? "⚠️ abierta sin cerrar" : "✅ cerrada"}`);
   if (pendRec.items > 0) {
     L.push(`   • 📥 Por recibir de producción: ${pendRec.u} u. (${pendRec.items} ítem${pendRec.items === 1 ? "" : "s"}) — revisa que no se haya vendido directo sin pasar por bodega.`);
+  }
+  if (salidasPend > 0) {
+    L.push(`   • 🚚 Salidas de bodega por confirmar: ${salidasPend} — di a quién se vendió para que quede como venta.`);
   }
   if (bajoStock.length) {
     L.push("");

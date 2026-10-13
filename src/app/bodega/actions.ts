@@ -126,6 +126,59 @@ export async function recibirDeProduccion(formData: FormData) {
   redirect("/bodega/recibir?ok=1");
 }
 
+/**
+ * Salida de bodega CON destino ("salieron 20 tú y yo para don X"). Descuenta el
+ * stock de bodega y deja un pendiente (SalidaBodega) para que el dueño confirme
+ * después a dónde fue / si se vendió. Así luego se refleja como venta.
+ */
+export async function registrarSalidaDestino(formData: FormData) {
+  const destino = String(formData.get("destino") ?? "").trim();
+  type It = { id: string; nombre?: string; cantidad: number };
+  let items: It[] = [];
+  try { items = JSON.parse(String(formData.get("items") ?? "[]")); } catch { return; }
+  items = items.filter((i) => typeof i.id === "string" && Number.isFinite(i.cantidad) && i.cantidad > 0);
+  if (items.length === 0) return;
+
+  const bodUb = await ubicacionBodegaId();
+  if (!bodUb) return;
+  const u = await usuarioActual();
+
+  // Si el destino calza con un cliente existente, lo guardamos (opcional).
+  let negocioId: string | null = null;
+  if (destino) {
+    const norm = destino.toLowerCase();
+    const negs = await prisma.negocio.findMany({ select: { id: true, nombreNegocio: true, nombreContacto: true }, take: 400 });
+    const m = negs.find((n) => n.nombreNegocio?.toLowerCase() === norm || n.nombreContacto?.toLowerCase() === norm);
+    negocioId = m?.id ?? null;
+  }
+
+  for (const it of items) {
+    const [tipo, refId] = it.id.split(":");
+    const clase = tipo === "sab" ? "sabor" : "producto";
+    let nombre = it.nombre ?? "";
+    if (clase === "sabor") {
+      const row = await prisma.stockSabor.findUnique({ where: { saborId_ubicacionId: { saborId: refId, ubicacionId: bodUb } } });
+      const baja = Math.min(it.cantidad, row?.cantidad ?? it.cantidad);
+      await prisma.stockSabor.upsert({ where: { saborId_ubicacionId: { saborId: refId, ubicacionId: bodUb } }, update: { cantidad: { decrement: baja } }, create: { saborId: refId, ubicacionId: bodUb, cantidad: -baja } });
+      if (!nombre) nombre = (await prisma.sabor.findUnique({ where: { id: refId }, select: { nombre: true } }))?.nombre ?? "—";
+      await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "salida", clase: "sabor", refId, nombre, cantidad: -baja, detalle: destino ? `Para: ${destino}` : "Salida", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+      await prisma.salidaBodega.create({ data: { clase: "sabor", refId, nombre, cantidad: baja, destinoTexto: destino || null, negocioId, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+    } else {
+      const row = await prisma.stock.findUnique({ where: { productoId_ubicacionId: { productoId: refId, ubicacionId: bodUb } } });
+      const baja = Math.min(it.cantidad, row?.cantidad ?? it.cantidad);
+      await prisma.stock.upsert({ where: { productoId_ubicacionId: { productoId: refId, ubicacionId: bodUb } }, update: { cantidad: { decrement: baja } }, create: { productoId: refId, ubicacionId: bodUb, cantidad: -baja } });
+      if (!nombre) nombre = (await prisma.producto.findUnique({ where: { id: refId }, select: { nombre: true } }))?.nombre ?? "—";
+      await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "salida", clase: "producto", refId, nombre, cantidad: -baja, detalle: destino ? `Para: ${destino}` : "Salida", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+      await prisma.salidaBodega.create({ data: { clase: "producto", refId, nombre, cantidad: baja, destinoTexto: destino || null, negocioId, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+    }
+  }
+
+  revalidatePath("/bodega");
+  revalidatePath("/admin/salidas-pendientes");
+  revalidatePath("/admin");
+  redirect("/bodega?ok=1");
+}
+
 /** Ubicación de una zona operativa: "bodega" o "sala" (local). */
 async function ubicacionDeZona(zona: string): Promise<string | null> {
   const tipo = zona === "sala" ? "sala" : "bodega";
