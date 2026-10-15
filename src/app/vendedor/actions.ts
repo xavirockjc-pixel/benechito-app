@@ -204,6 +204,24 @@ export async function registrarVentaDictada(formData: FormData) {
   redirect("/vendedor/pedidos?venta=1");
 }
 
+/** Agrega un cliente particular (para avisos por sector). */
+export async function crearClienteParticular(formData: FormData) {
+  const nombre = String(formData.get("nombre") ?? "").trim();
+  if (!nombre) return;
+  const telefono = String(formData.get("telefono") ?? "").replace(/\D/g, "") || null;
+  const sector = String(formData.get("sector") ?? "").trim() || null;
+  await prisma.clienteParticular.create({ data: { nombre, telefono, sector } });
+  revalidatePath("/vendedor/sector");
+}
+
+/** Borra un cliente particular. */
+export async function borrarClienteParticular(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  await prisma.clienteParticular.delete({ where: { id } }).catch(() => {});
+  revalidatePath("/vendedor/sector");
+}
+
 const TIPOS_TRABAJO = ["flete", "arreglo", "compra", "busqueda", "mantencion", "otro"] as const;
 
 /** Registra un "trabajo vario" del vendedor (flete, arreglo, compra, mantención…). */

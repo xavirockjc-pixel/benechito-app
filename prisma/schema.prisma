@@ -1427,6 +1427,22 @@ model PedidoReparto {
   @@index([estado])
 }
 
+/**
+ * Cliente particular (no negocio formal) con su sector, para avisarle cuando la
+ * ruta pasa por su zona y ofrecerle agendar (con el catálogo).
+ */
+model ClienteParticular {
+  id        String   @id @default(cuid())
+  nombre    String
+  telefono  String?
+  sector    String?
+  notas     String?
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([sector])
+}
+
 model TrabajoVario {
   id            String   @id @default(cuid())
   tipo          String // flete | arreglo | compra | busqueda | mantencion | otro

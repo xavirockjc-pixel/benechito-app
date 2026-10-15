@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { inicioDelDia } from "@/lib/dominio/empresa";
 import CapturaPedido from "./CapturaPedido";
@@ -30,6 +31,11 @@ export default async function PedidosReparto({ searchParams }: { searchParams: P
       </div>
 
       {venta && <p className="rounded-xl bg-green-100 px-4 py-2.5 text-center text-sm font-bold text-green-700">✓ Venta registrada</p>}
+
+      <Link href="/vendedor/sector" className="flex items-center justify-between gap-2 rounded-2xl bg-gradient-to-br from-sky-500 to-sky-600 px-4 py-3 text-white shadow-sm active:opacity-90">
+        <span className="flex items-center gap-2"><span className="text-xl">📣</span><span className="text-sm font-extrabold">Avisar a un sector (ofrecer la ruta)</span></span>
+        <span>›</span>
+      </Link>
 
       <CapturaPedido clientes={clientes} />
 
