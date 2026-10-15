@@ -25,13 +25,24 @@ export async function crearPedidoReparto(formData: FormData) {
   const lat = Number.isFinite(latN) ? latN : null;
   const lng = Number.isFinite(lngN) ? lngN : null;
   const monto = Number(String(formData.get("monto") ?? "").replace(/[^0-9]/g, "")) || 0;
+  // En la captura solo ENLAZAMOS si el cliente ya existe (no creamos negocios casuales).
+  let negocioId: string | null = String(formData.get("negocioId") ?? "").trim() || null;
+  if (!negocioId && cliente) {
+    const low = cliente.toLowerCase();
+    const negs = await prisma.negocio.findMany({ select: { id: true, nombreNegocio: true, nombreContacto: true }, take: 600 });
+    negocioId = negs.find((x) => x.nombreNegocio?.toLowerCase() === low || x.nombreContacto?.toLowerCase() === low)?.id ?? null;
+  }
+  const fechaStr = String(formData.get("fecha") ?? "").trim();
+  let fecha: Date | undefined;
+  if (fechaStr) { const d = new Date(fechaStr + "T08:00:00"); if (!isNaN(d.getTime())) fecha = d; }
   const u = await usuarioActual();
 
   const max = await prisma.pedidoReparto.aggregate({ _max: { orden: true }, where: { estado: { in: ["pendiente", "en_ruta"] } } });
   await prisma.pedidoReparto.create({
     data: {
-      cliente, telefono, pedido, direccion, mapsUrl, lat, lng,
+      cliente, telefono, pedido, direccion, mapsUrl, lat, lng, negocioId,
       monto: monto > 0 ? monto : null,
+      ...(fecha ? { fecha } : {}),
       orden: (max._max.orden ?? 0) + 1,
       usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
     },
@@ -73,12 +84,30 @@ export async function ordenarRutaCercania(formData: FormData) {
   revalidatePath("/vendedor/pedidos");
 }
 
-/** Marca un pedido como entregado (sale de la ruta). */
+/** Marca un pedido como entregado (sale de la ruta) y lo deja como venta (cerebro). */
 export async function entregarPedidoReparto(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
   if (!id) return;
-  await prisma.pedidoReparto.update({ where: { id }, data: { estado: "entregado", entregadoEn: new Date() } }).catch(() => {});
+  const p = await prisma.pedidoReparto.findUnique({ where: { id } });
+  if (!p) return;
+  let ventaId = p.ventaId ?? null;
+  // Si tiene monto y aún no es venta, créala para el análisis del cerebro.
+  if (!ventaId && Number(p.monto ?? 0) > 0) {
+    const negocioId = await resolverNegocio(p.cliente, p.negocioId);
+    if (negocioId) {
+      // Una línea con el texto del pedido (sin desglose) y el monto como total.
+      const bod = await bodegaId();
+      const ubic = bod ?? (await prisma.ubicacion.findFirst())?.id;
+      if (ubic) {
+        const venta = await prisma.venta.create({ data: { negocioId, ubicacionId: ubic, total: Number(p.monto), canal: "terreno", estadoPago: p.estadoPago === "pagado" ? "pagado" : "pendiente", etiqueta: `Reparto: ${p.pedido}`.slice(0, 180) } });
+        ventaId = venta.id;
+        await prisma.pedidoReparto.update({ where: { id }, data: { negocioId } }).catch(() => {});
+      }
+    }
+  }
+  await prisma.pedidoReparto.update({ where: { id }, data: { estado: "entregado", entregadoEn: new Date(), ventaId } }).catch(() => {});
   revalidatePath("/vendedor/pedidos");
+  revalidatePath("/admin");
 }
 
 /** Marca pagado / por cobrar. */
@@ -96,6 +125,83 @@ export async function borrarPedidoReparto(formData: FormData) {
   if (!id) return;
   await prisma.pedidoReparto.delete({ where: { id } }).catch(() => {});
   revalidatePath("/vendedor/pedidos");
+}
+
+/** Busca un cliente por id o nombre; si no existe y hay nombre, lo crea mínimo. */
+async function resolverNegocio(nombre: string | null, hintId?: string | null): Promise<string | null> {
+  if (hintId) {
+    const ex = await prisma.negocio.findUnique({ where: { id: hintId }, select: { id: true } });
+    if (ex) return ex.id;
+  }
+  const n = (nombre ?? "").trim();
+  if (!n) return null;
+  const low = n.toLowerCase();
+  const negs = await prisma.negocio.findMany({ select: { id: true, nombreNegocio: true, nombreContacto: true }, take: 600 });
+  const m = negs.find((x) => x.nombreNegocio?.toLowerCase() === low || x.nombreContacto?.toLowerCase() === low);
+  if (m) return m.id;
+  const creado = await prisma.negocio.create({ data: { nombreNegocio: n, nombreContacto: n, whatsapp: "", comuna: "", tipoCliente: "ruta", origen: "manual", estado: "activo" } });
+  return creado.id;
+}
+
+/** Normaliza para comparar nombres de producto. */
+function normProd(s: string) { return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim(); }
+
+/**
+ * Crea una venta de reparto desde líneas (producto, cantidad, precioUnit). Si el
+ * precio viene en 0 y el producto calza, usa el precio por sector/cantidad del
+ * cliente. Registra las unidades (MovimientoStock venta) para que el cerebro lo
+ * analice. Devuelve el id de la venta (o null si no se pudo).
+ */
+async function crearVentaReparto(negocioId: string, lineasIn: { producto: string; cantidad: number; precioUnit: number }[]): Promise<string | null> {
+  const { precioParaCliente } = await import("@/lib/dominio/precios");
+  const bod = await bodegaId();
+  const ubic = bod ?? (await prisma.ubicacion.findFirst())?.id;
+  if (!ubic) return null;
+
+  const productos = await prisma.producto.findMany({ where: { activo: true }, select: { id: true, nombre: true } });
+  const matchProd = (nombre: string) => {
+    const nn = normProd(nombre);
+    return productos.find((p) => normProd(p.nombre) === nn) ?? productos.find((p) => normProd(p.nombre).includes(nn) && nn.length > 2);
+  };
+
+  const lineas: { producto: string; cantidad: number; precioUnit: number; productoId: string | null }[] = [];
+  for (const l of lineasIn) {
+    if (!l.producto?.trim() || l.cantidad <= 0) continue;
+    const prod = matchProd(l.producto);
+    let precio = l.precioUnit;
+    if (precio <= 0 && prod) {
+      const p = await precioParaCliente(negocioId, prod.id, l.cantidad).catch(() => null);
+      if (p) precio = Number(p);
+    }
+    lineas.push({ producto: l.producto.trim(), cantidad: l.cantidad, precioUnit: precio, productoId: prod?.id ?? null });
+  }
+  if (lineas.length === 0) return null;
+  const total = lineas.reduce((s, l) => s + l.cantidad * l.precioUnit, 0);
+  const etiqueta = ("Reparto: " + lineas.map((l) => `${l.cantidad} ${l.producto}`).join(", ")).slice(0, 180);
+
+  const venta = await prisma.venta.create({ data: { negocioId, ubicacionId: ubic, total, canal: "terreno", estadoPago: "pendiente", etiqueta } });
+  for (const l of lineas) {
+    if (!l.productoId) continue;
+    await aplicarDelta(l.productoId, ubic, -l.cantidad);
+    await prisma.movimientoStock.create({ data: { productoId: l.productoId, tipo: "venta", ubicacionOrigenId: ubic, cantidad: l.cantidad, referencia: venta.id } });
+  }
+  return venta.id;
+}
+
+/** Venta especial por dictado → crea la venta (cliente/canal) y registra unidades. */
+export async function registrarVentaDictada(formData: FormData) {
+  let lineas: { producto: string; cantidad: number; precioUnit: number }[] = [];
+  try { lineas = JSON.parse(String(formData.get("lineas") ?? "[]")); } catch { return; }
+  lineas = lineas.filter((l) => l && l.producto?.trim() && Number.isFinite(l.cantidad) && l.cantidad > 0);
+  if (lineas.length === 0) return;
+  const cliente = String(formData.get("cliente") ?? "").trim() || null;
+  const negocioId = await resolverNegocio(cliente, String(formData.get("negocioId") ?? "") || null);
+  if (!negocioId) return;
+  await crearVentaReparto(negocioId, lineas);
+  revalidatePath("/vendedor/pedidos");
+  revalidatePath("/admin/ventas");
+  revalidatePath("/admin");
+  redirect("/vendedor/pedidos?venta=1");
 }
 
 const TIPOS_TRABAJO = ["flete", "arreglo", "compra", "busqueda", "mantencion", "otro"] as const;

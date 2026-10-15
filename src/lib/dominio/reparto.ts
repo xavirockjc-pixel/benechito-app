@@ -104,3 +104,48 @@ export function linkMaps(p: { lat?: number | null; lng?: number | null; mapsUrl?
 }
 
 export { rangoCL };
+
+// ===== Venta por dictado (ventas especiales, flexible) =====
+export type LineaVenta = { producto: string; cantidad: number; precioUnit: number };
+
+const aNumero = (s: string) => parseInt(s.replace(/[.\s]/g, ""), 10) || 0; // "13.500" -> 13500
+
+/**
+ * Parsea una venta dictada, flexible: "200 tú y yo a 270", "200 tuyo a 13.500 la
+ * bolsa de 50", "3 bolsas de trufa a 9000". Devuelve líneas editables (el precio
+ * por unidad se calcula; si no se puede, queda 0 para completar a mano).
+ */
+export function parsearVentaDictada(texto: string): { lineas: LineaVenta[]; total: number } {
+  const lineas: LineaVenta[] = [];
+  for (const parteRaw of texto.split(/\n|;|,| y /i)) {
+    const parte = parteRaw.trim();
+    if (!parte) continue;
+    // Separa "<cant+producto>  a  <precio...>"
+    const mA = parte.match(/^(.*?)\ba\s+\$?\s*([\d.\s]+)(.*)$/i);
+    const izq = (mA ? mA[1] : parte).trim();
+    const precioTxt = mA ? mA[2] : "";
+    const cola = mA ? mA[3] : "";
+
+    // cantidad = primer número de la izquierda; producto = el resto
+    const mCant = izq.match(/(\d[\d.]*)/);
+    const cantidad = mCant ? aNumero(mCant[1]) : 0;
+    const producto = izq.replace(mCant ? mCant[0] : "", "").replace(/\b(bolsas?|packs?|cajas?|sacos?|de)\b/gi, " ").replace(/\s+/g, " ").trim();
+    if (!producto || cantidad <= 0) continue;
+
+    let precioUnit = 0;
+    if (precioTxt) {
+      const precio = aNumero(precioTxt);
+      // ¿Es precio por bulto? "la bolsa de 50", "el pack de 12"…
+      const mBulto = cola.match(/\b(?:la\s+bolsa|el\s+pack|la\s+caja|el\s+saco)\b(?:\s+de\s+(\d+))?/i);
+      if (mBulto) {
+        const tam = mBulto[1] ? parseInt(mBulto[1], 10) : 0;
+        precioUnit = tam > 0 ? Math.round(precio / tam) : 0; // sin tamaño → queda 0 para completar
+      } else {
+        precioUnit = precio; // precio por unidad
+      }
+    }
+    lineas.push({ producto, cantidad, precioUnit });
+  }
+  const total = lineas.reduce((s, l) => s + l.cantidad * l.precioUnit, 0);
+  return { lineas, total };
+}

@@ -5,12 +5,13 @@ import { crearPedidoReparto } from "../actions";
 import { parsearPedidoWhatsapp } from "@/lib/dominio/reparto";
 
 /** Pega el mensaje de WhatsApp → extrae ubicación/teléfono → guarda el pedido. */
-export default function CapturaPedido() {
+export default function CapturaPedido({ clientes = [] }: { clientes?: string[] }) {
   const [raw, setRaw] = useState("");
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
   const [pedido, setPedido] = useState("");
   const [monto, setMonto] = useState("");
+  const [fecha, setFecha] = useState("");
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [mapsUrl, setMapsUrl] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export default function CapturaPedido() {
     fd.set("cliente", cliente);
     fd.set("telefono", telefono);
     fd.set("monto", String(Number(monto.replace(/[^0-9]/g, "")) || 0));
+    if (fecha) fd.set("fecha", fecha);
     if (lat != null) fd.set("lat", String(lat));
     if (lng != null) fd.set("lng", String(lng));
     if (mapsUrl) fd.set("mapsUrl", mapsUrl);
@@ -42,7 +44,7 @@ export default function CapturaPedido() {
       await crearPedidoReparto(fd);
       setOk(true);
       setRaw(""); setCliente(""); setTelefono(""); setPedido(""); setMonto("");
-      setLat(null); setLng(null); setMapsUrl(null); setAnalizado(false);
+      setLat(null); setLng(null); setMapsUrl(null); setAnalizado(false); setFecha("");
       setTimeout(() => setOk(false), 1600);
     } finally { setGuardando(false); }
   }
@@ -63,8 +65,12 @@ export default function CapturaPedido() {
           <div className={`rounded-lg px-3 py-2 text-xs font-bold ${lat != null ? "bg-green-100 text-green-700" : mapsUrl ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>
             {lat != null ? `📍 Ubicación detectada (${lat.toFixed(4)}, ${lng!.toFixed(4)})` : mapsUrl ? "🔗 Link de mapa detectado (sin coordenadas exactas)" : "⚠️ No se detectó ubicación en el mensaje"}
           </div>
-          <input value={cliente} onChange={(e) => setCliente(e.target.value)} placeholder="Cliente (nombre)"
+          <input value={cliente} onChange={(e) => setCliente(e.target.value)} list="clientes-captura" placeholder="Cliente (negocio o nombre)"
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+          <datalist id="clientes-captura">{clientes.map((c) => <option key={c} value={c} />)}</datalist>
+          <label className="flex items-center justify-between text-xs font-bold text-slate-600">📅 Agendar para (opcional, otro día)
+            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+          </label>
           <div className="flex gap-2">
             <input value={telefono} onChange={(e) => setTelefono(e.target.value)} inputMode="tel" placeholder="Teléfono (569…)"
               className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" />

@@ -1416,7 +1416,9 @@ model PedidoReparto {
   direccion   String? // texto de dirección/referencia
   estado      String    @default("pendiente") // pendiente | en_ruta | entregado | cancelado
   orden       Int       @default(0) // posición en la ruta del día
-  fecha       DateTime  @default(now())
+  negocioId   String? // cliente negocio (si quedó enlazado)
+  ventaId     String? // venta creada al entregar (para el cerebro)
+  fecha       DateTime  @default(now()) // día agendado (puede ser futuro)
   entregadoEn DateTime?
   usuarioId   String?
   nombreUsuario String?
