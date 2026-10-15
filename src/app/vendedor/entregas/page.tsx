@@ -1,82 +1,78 @@
 import { prisma } from "@/lib/prisma";
-import { estadoPedidoLabel, estadoPedidoColor } from "@/lib/dominio/pedidos";
-import { cambiarEstadoPedido } from "@/app/admin/pedidos/actions";
-import AutoRefrescar from "@/app/caja/pedidos/AutoRefrescar";
 
 export const dynamic = "force-dynamic";
 
+const fmtCLP = (n: number) => "$" + n.toLocaleString("es-CL");
+function diaKey(d: Date) { return new Date(d).toLocaleDateString("es-CL"); }
+function diaLabel(d: Date) {
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const x = new Date(d); x.setHours(0, 0, 0, 0);
+  const diff = Math.round((x.getTime() - hoy.getTime()) / 86400000);
+  if (diff === 0) return "Hoy";
+  if (diff === -1) return "Ayer";
+  return new Date(d).toLocaleDateString("es-CL", { weekday: "long", day: "2-digit", month: "short" });
+}
 const fmtHora = (d: Date) => new Date(d).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
 
-export default async function MisEntregas() {
-  const pedidos = await prisma.pedido.findMany({
-    where: { tipoEntrega: { in: ["delivery", "despacho", "reparto"] }, estado: { notIn: ["entregado", "finalizado"] } },
-    orderBy: [{ fechaAgenda: "asc" }, { createdAt: "asc" }],
-    include: {
-      negocio: { select: { nombreNegocio: true, whatsapp: true, latitud: true, longitud: true, direccion: true } },
-      items: { include: { producto: { select: { nombre: true } } } },
-    },
-  });
+type Fila = { key: string; cliente: string; detalle: string; monto: number; cobrado: boolean; cuando: Date };
+
+export default async function RegistroVentasReparto() {
+  const desde = new Date(); desde.setDate(desde.getDate() - 7); desde.setHours(0, 0, 0, 0);
+
+  const [reparto, web] = await Promise.all([
+    prisma.pedidoReparto.findMany({ where: { estado: "entregado", entregadoEn: { gte: desde } }, orderBy: { entregadoEn: "desc" }, take: 200 }),
+    prisma.pedido.findMany({
+      where: { tipoEntrega: { in: ["delivery", "despacho", "reparto"] }, estado: { in: ["entregado", "finalizado"] }, createdAt: { gte: desde } },
+      orderBy: { createdAt: "desc" }, take: 200,
+      include: { negocio: { select: { nombreNegocio: true } }, items: { include: { producto: { select: { nombre: true } } } } },
+    }),
+  ]);
+
+  const filas: Fila[] = [
+    ...reparto.map((p) => ({ key: `r-${p.id}`, cliente: p.cliente || "Cliente", detalle: p.pedido, monto: Number(p.monto ?? 0), cobrado: p.estadoPago === "pagado", cuando: p.entregadoEn ?? p.fecha })),
+    ...web.map((p) => ({ key: `w-${p.id}`, cliente: p.negocio?.nombreNegocio ?? "Cliente", detalle: p.items.map((it) => `${it.cantidad}x ${it.producto.nombre}`).join(", ") || "Pedido web", monto: p.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0), cobrado: p.pagado, cuando: p.createdAt })),
+  ].sort((a, b) => new Date(b.cuando).getTime() - new Date(a.cuando).getTime());
+
+  const totalVendido = filas.reduce((s, f) => s + f.monto, 0);
+  const porCobrar = filas.filter((f) => !f.cobrado).reduce((s, f) => s + f.monto, 0);
+
+  const grupos = new Map<string, Fila[]>();
+  for (const f of filas) { const k = diaKey(f.cuando); (grupos.get(k) ?? grupos.set(k, []).get(k)!).push(f); }
 
   return (
-    <div className="mx-auto max-w-lg">
-      <AutoRefrescar />
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-extrabold text-slate-900">🛵 Mis entregas</h1>
-          <p className="text-sm text-slate-500">Pedidos para despachar. Se actualiza solo.</p>
-        </div>
-        <span className="rounded-full bg-[#0f766e] px-3 py-1 text-sm font-extrabold text-white">{pedidos.length}</span>
+    <div className="mx-auto max-w-lg space-y-4">
+      <div>
+        <h1 className="text-xl font-extrabold text-slate-900">🧾 Registro de ventas (reparto)</h1>
+        <p className="text-xs text-slate-500">Lo que entregaste/vendiste en ruta (últimos 7 días).</p>
       </div>
 
-      {pedidos.length === 0 ? (
-        <p className="mt-6 rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">✅ No hay entregas pendientes.</p>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"><p className="text-[10px] font-bold uppercase text-slate-400">Vendido</p><p className="text-xl font-extrabold text-[#0f766e]">{fmtCLP(totalVendido)}</p></div>
+        <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm"><p className="text-[10px] font-bold uppercase text-slate-400">Por cobrar</p><p className="text-xl font-extrabold text-amber-600">{fmtCLP(porCobrar)}</p></div>
+      </div>
+
+      {filas.length === 0 ? (
+        <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">Aún no hay ventas de reparto registradas.</p>
       ) : (
-        <ul className="mt-4 space-y-3">
-          {pedidos.map((p) => {
-            const c = estadoPedidoColor[p.estado] ?? { color: "#334155", bg: "#e2e8f0" };
-            const totalPed = p.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0);
-            const mapa = p.negocio?.latitud != null && p.negocio?.longitud != null ? `https://www.google.com/maps?q=${p.negocio.latitud},${p.negocio.longitud}` : "";
-            const listo = p.estado === "listo";
-            return (
-              <li key={p.id} className={`rounded-2xl border bg-white p-4 shadow-sm ${listo ? "border-[#0f766e] ring-2 ring-teal-100" : "border-slate-200"}`}>
-                <div className="flex items-start justify-between gap-2">
+        [...grupos.entries()].map(([k, items]) => (
+          <section key={k}>
+            <h2 className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">{diaLabel(items[0].cuando)} · {fmtCLP(items.reduce((s, f) => s + f.monto, 0))}</h2>
+            <ul className="divide-y divide-slate-100 rounded-xl border border-slate-200 bg-white shadow-sm">
+              {items.map((f) => (
+                <li key={f.key} className="flex items-start justify-between gap-2 px-3 py-2">
                   <div className="min-w-0">
-                    <p className="font-bold text-slate-900">{p.negocio?.nombreNegocio ?? "Cliente"}</p>
-                    <p className="text-xs text-slate-500">{p.negocio?.direccion ?? "sin dirección"}{p.fechaAgenda ? ` · 📅 ${fmtHora(p.fechaAgenda)}` : ""}</p>
+                    <p className="text-sm font-semibold text-slate-800">{f.cliente}</p>
+                    <p className="text-[11px] text-slate-500">{f.detalle} · {fmtHora(f.cuando)}</p>
                   </div>
-                  <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="rounded-full px-2.5 py-1 text-xs font-bold" style={{ color: c.color, backgroundColor: c.bg }}>{estadoPedidoLabel[p.estado] ?? p.estado}</span>
-                    {p.pagado ? <span className="rounded-full bg-green-100 px-2.5 py-1 text-xs font-extrabold text-green-700">💰 Pagado</span>
-                      : <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-extrabold text-amber-800">⏳ Cobrar ${totalPed.toLocaleString("es-CL")}</span>}
+                  <div className="flex shrink-0 flex-col items-end gap-0.5">
+                    {f.monto > 0 && <span className="text-sm font-bold text-slate-800">{fmtCLP(f.monto)}</span>}
+                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${f.cobrado ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800"}`}>{f.cobrado ? "pagado" : "por cobrar"}</span>
                   </div>
-                </div>
-
-                <ul className="mt-2 rounded-lg bg-slate-50 p-2 text-sm">
-                  {p.items.map((it) => <li key={it.id} className="text-slate-700">{it.cantidad}x {it.producto.nombre}</li>)}
-                </ul>
-
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  {mapa ? (
-                    <a href={mapa} target="_blank" rel="noopener" className="rounded-lg bg-[#1479c4] py-2.5 text-center text-sm font-extrabold text-white active:scale-95">📍 Cómo llegar</a>
-                  ) : (
-                    <span className="rounded-lg bg-slate-100 py-2.5 text-center text-sm font-semibold text-slate-400">sin ubicación</span>
-                  )}
-                  {p.negocio?.whatsapp ? (
-                    <a href={`https://wa.me/${p.negocio.whatsapp.replace(/\D/g, "")}`} target="_blank" rel="noopener" className="rounded-lg bg-[#25D366] py-2.5 text-center text-sm font-extrabold text-white active:scale-95">💬 Cliente</a>
-                  ) : <span />}
-                </div>
-
-                {listo && (
-                  <form action={cambiarEstadoPedido} className="mt-2">
-                    <input type="hidden" name="pedidoId" value={p.id} />
-                    <input type="hidden" name="estado" value="entregado" />
-                    <button className="w-full rounded-lg bg-[#0f766e] py-3 text-sm font-extrabold text-white active:scale-95">✅ Marcar entregado</button>
-                  </form>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))
       )}
     </div>
   );

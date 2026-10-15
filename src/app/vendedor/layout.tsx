@@ -49,8 +49,9 @@ export default async function VendedorLayout({
         items={[
           { href: "/vendedor", label: "Inicio", icon: "🏠" },
           { href: "/vendedor/pedidos", label: "Pedidos", icon: "🛵" },
+          { href: "/vendedor/agendados", label: "Agendados", icon: "📋" },
+          { href: "/vendedor/entregas", label: "Ventas rep.", icon: "🧾" },
           { href: "/vendedor/ruta", label: "Ruta", icon: "🗺️" },
-          { href: "/vendedor/entregas", label: "Entregas", icon: "🛵" },
           { href: "/vendedor/camion", label: "Cargar", icon: "📦" },
           { href: "/vendedor/trabajos", label: "Trabajos", icon: "🧰" },
           { href: "/vendedor/vehiculo", label: "Vehículo", icon: "🚙" },
