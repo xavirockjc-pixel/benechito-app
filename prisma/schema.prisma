@@ -1432,13 +1432,18 @@ model PedidoReparto {
  * ruta pasa por su zona y ofrecerle agendar (con el catálogo).
  */
 model ClienteParticular {
-  id        String   @id @default(cuid())
-  nombre    String
-  telefono  String?
-  sector    String?
-  notas     String?
-  activo    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id           String    @id @default(cuid())
+  nombre       String
+  telefono     String?
+  sector       String?
+  direccion    String? // referencia de dirección
+  lat          Float? // ubicación (del mensaje)
+  lng          Float?
+  mapsUrl      String? // link de mapa si no hay coords
+  fechaEntrega DateTime? // próxima entrega sugerida
+  notas        String?
+  activo       Boolean   @default(true)
+  createdAt    DateTime  @default(now())
 
   @@index([sector])
 }

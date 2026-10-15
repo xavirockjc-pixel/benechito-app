@@ -210,7 +210,16 @@ export async function crearClienteParticular(formData: FormData) {
   if (!nombre) return;
   const telefono = String(formData.get("telefono") ?? "").replace(/\D/g, "") || null;
   const sector = String(formData.get("sector") ?? "").trim() || null;
-  await prisma.clienteParticular.create({ data: { nombre, telefono, sector } });
+  const direccion = String(formData.get("direccion") ?? "").trim() || null;
+  const mapsUrl = String(formData.get("mapsUrl") ?? "").trim() || null;
+  const latN = parseFloat(String(formData.get("lat") ?? ""));
+  const lngN = parseFloat(String(formData.get("lng") ?? ""));
+  const lat = Number.isFinite(latN) ? latN : null;
+  const lng = Number.isFinite(lngN) ? lngN : null;
+  const fechaStr = String(formData.get("fechaEntrega") ?? "").trim();
+  let fechaEntrega: Date | null = null;
+  if (fechaStr) { const d = new Date(fechaStr + "T08:00:00"); if (!isNaN(d.getTime())) fechaEntrega = d; }
+  await prisma.clienteParticular.create({ data: { nombre, telefono, sector, direccion, mapsUrl, lat, lng, fechaEntrega } });
   revalidatePath("/vendedor/sector");
 }
 
