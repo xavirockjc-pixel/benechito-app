@@ -222,6 +222,50 @@ export async function borrarClienteParticular(formData: FormData) {
   revalidatePath("/vendedor/sector");
 }
 
+/**
+ * Agenda EN MASA a todos los clientes de un sector para un día: crea un pedido
+ * de reparto (por confirmar) por cada negocio y particular del sector, listo
+ * para la ruta de ese día. No duplica si ya tiene uno agendado ese día.
+ */
+export async function agendarSector(formData: FormData) {
+  const sector = String(formData.get("sector") ?? "").trim();
+  const dia = String(formData.get("dia") ?? "").trim();
+  if (!sector) return;
+  const fecha = dia ? new Date(dia + "T08:00:00") : new Date();
+  if (isNaN(fecha.getTime())) return;
+  const d0 = new Date(fecha); d0.setHours(0, 0, 0, 0);
+  const d1 = new Date(d0.getTime() + 86400000);
+  const u = await usuarioActual();
+
+  const [negocios, particulares, yaAgendados] = await Promise.all([
+    prisma.negocio.findMany({ where: { OR: [{ sector }, { comuna: sector }] }, select: { id: true, nombreNegocio: true, nombreContacto: true, whatsapp: true, latitud: true, longitud: true } }),
+    prisma.clienteParticular.findMany({ where: { activo: true, sector }, select: { id: true, nombre: true, telefono: true } }),
+    prisma.pedidoReparto.findMany({ where: { fecha: { gte: d0, lt: d1 } }, select: { negocioId: true, telefono: true, cliente: true } }),
+  ]);
+  const negYa = new Set(yaAgendados.map((p) => p.negocioId).filter(Boolean));
+  const telYa = new Set(yaAgendados.map((p) => (p.telefono ?? "").replace(/\D/g, "")).filter(Boolean));
+
+  let max = (await prisma.pedidoReparto.aggregate({ _max: { orden: true } }))._max.orden ?? 0;
+  const nuevos: { cliente: string; telefono: string | null; negocioId: string | null; lat: number | null; lng: number | null }[] = [];
+  for (const n of negocios) {
+    if (negYa.has(n.id)) continue;
+    nuevos.push({ cliente: n.nombreNegocio || n.nombreContacto || "Cliente", telefono: (n.whatsapp || "").replace(/\D/g, "") || null, negocioId: n.id, lat: n.latitud ?? null, lng: n.longitud ?? null });
+  }
+  for (const p of particulares) {
+    const tel = (p.telefono ?? "").replace(/\D/g, "");
+    if (tel && telYa.has(tel)) continue;
+    nuevos.push({ cliente: p.nombre, telefono: tel || null, negocioId: null, lat: null, lng: null });
+  }
+  if (nuevos.length === 0) { revalidatePath("/vendedor/sector"); redirect(`/vendedor/sector?sector=${encodeURIComponent(sector)}&dia=${dia}&ag=0`); }
+
+  await prisma.$transaction(nuevos.map((x) => prisma.pedidoReparto.create({
+    data: { cliente: x.cliente, telefono: x.telefono, negocioId: x.negocioId, lat: x.lat, lng: x.lng, pedido: "(agendado — por confirmar)", fecha, orden: ++max, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+  })));
+  revalidatePath("/vendedor/sector");
+  revalidatePath("/vendedor/pedidos");
+  redirect(`/vendedor/sector?sector=${encodeURIComponent(sector)}&dia=${dia}&ag=${nuevos.length}`);
+}
+
 const TIPOS_TRABAJO = ["flete", "arreglo", "compra", "busqueda", "mantencion", "otro"] as const;
 
 /** Registra un "trabajo vario" del vendedor (flete, arreglo, compra, mantención…). */
@@ -612,7 +656,7 @@ export async function abonarCuenta(formData: FormData) {
   const medioRaw = String(formData.get("medio") ?? "efectivo").trim();
   const medio = (MEDIOS_PAGO as readonly string[]).includes(medioRaw) && medioRaw !== "credito" ? medioRaw : "efectivo";
   const volver = String(formData.get("volver") ?? "").trim();
-  let monto = Number(String(formData.get("monto") ?? "").trim().replace(/[^0-9.]/g, ""));
+  const monto = Number(String(formData.get("monto") ?? "").trim().replace(/[^0-9.]/g, ""));
   if (!negocioId || !Number.isFinite(monto) || monto <= 0) return;
 
   const ventas = await prisma.venta.findMany({

@@ -1,6 +1,7 @@
 import Link from "next/link";
+import { randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
-import { crearClienteParticular, borrarClienteParticular } from "../actions";
+import { crearClienteParticular, borrarClienteParticular, agendarSector } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -16,18 +17,18 @@ function diaTexto(iso: string): string {
   return d.toLocaleDateString("es-CL", { weekday: "long", day: "2-digit", month: "long" });
 }
 
-function waLink(tel: string | null, nombre: string, dia: string) {
+function waLink(tel: string | null, nombre: string, dia: string, catalogo: string) {
   const hola = nombre ? `Hola ${nombre}! ` : "Hola! ";
-  const msg = `${hola}👋 ${dia.charAt(0).toUpperCase() + dia.slice(1)} pasamos por tu sector con Benechito 🛵🍦.\n¿Quieres agendar tu pedido? Mira el catálogo aquí 👉 ${CATALOGO}\nRespóndeme con lo que llevas y te lo dejo. ¡Gracias! 🍦`;
+  const msg = `${hola}👋 ${dia.charAt(0).toUpperCase() + dia.slice(1)} pasamos por tu sector con Benechito 🛵🍦.\n¿Quieres agendar tu pedido? Mira el catálogo aquí 👉 ${catalogo}\nRespóndeme con lo que llevas y te lo dejo. ¡Gracias! 🍦`;
   const t = (tel ?? "").replace(/\D/g, "");
   return t ? `https://wa.me/${t}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
 }
 
-export default async function AvisarSector({ searchParams }: { searchParams: Promise<{ sector?: string; dia?: string }> }) {
-  const { sector = "", dia = "" } = await searchParams;
+export default async function AvisarSector({ searchParams }: { searchParams: Promise<{ sector?: string; dia?: string; ag?: string }> }) {
+  const { sector = "", dia = "", ag } = await searchParams;
 
   const [negocios, particulares] = await Promise.all([
-    prisma.negocio.findMany({ select: { id: true, nombreNegocio: true, nombreContacto: true, whatsapp: true, sector: true, comuna: true } }),
+    prisma.negocio.findMany({ select: { id: true, nombreNegocio: true, nombreContacto: true, whatsapp: true, sector: true, comuna: true, portalToken: true } }),
     prisma.clienteParticular.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
   ]);
 
@@ -45,6 +46,18 @@ export default async function AvisarSector({ searchParams }: { searchParams: Pro
     ? particulares.filter((p) => (p.sector ?? "").toLowerCase() === low)
     : [];
   const diaTxt = diaTexto(dia);
+
+  // Catálogo PERSONALIZADO por negocio (su portal → el pedido vuelve asociado).
+  // Genera el token a los del sector que no lo tengan (solo esos, acotado).
+  const catalogoDe = new Map<string, string>();
+  for (const n of negSector) {
+    let token = n.portalToken;
+    if (!token) {
+      token = randomBytes(12).toString("hex");
+      await prisma.negocio.update({ where: { id: n.id }, data: { portalToken: token } }).catch(() => { token = null; });
+    }
+    catalogoDe.set(n.id, token ? `${CATALOGO}?c=${token}` : CATALOGO);
+  }
 
   return (
     <div className="space-y-5">
@@ -68,9 +81,20 @@ export default async function AvisarSector({ searchParams }: { searchParams: Pro
         <button className="mt-2 w-full rounded-xl bg-[#1479c4] py-2.5 text-sm font-extrabold text-white">Ver clientes del sector</button>
       </form>
 
+      {ag != null && <p className="rounded-xl bg-green-100 px-4 py-2.5 text-center text-sm font-bold text-green-700">{Number(ag) > 0 ? `✓ ${ag} agendados en la ruta de ${diaTxt}` : "Ya estaban todos agendados ese día"}</p>}
+
       {sector && (
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="mb-1 text-sm font-bold text-slate-900">Clientes en “{sector}” ({negSector.length + partSector.length}) · {diaTxt}</h2>
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-bold text-slate-900">Clientes en “{sector}” ({negSector.length + partSector.length}) · {diaTxt}</h2>
+            {negSector.length + partSector.length > 0 && dia && (
+              <form action={agendarSector}>
+                <input type="hidden" name="sector" value={sector} />
+                <input type="hidden" name="dia" value={dia} />
+                <button className="shrink-0 rounded-lg bg-[#1479c4] px-3 py-1.5 text-xs font-bold text-white">📅 Agendar a todos</button>
+              </form>
+            )}
+          </div>
           {negSector.length + partSector.length === 0 ? (
             <p className="text-sm text-slate-500">No hay clientes en ese sector todavía.</p>
           ) : (
@@ -80,14 +104,14 @@ export default async function AvisarSector({ searchParams }: { searchParams: Pro
                 return (
                   <li key={`n-${n.id}`} className="flex items-center justify-between gap-2 py-2">
                     <span className="min-w-0"><span className="text-sm font-semibold text-slate-800">{nom}</span><span className="block text-[11px] text-slate-400">Negocio{n.whatsapp ? "" : " · sin WhatsApp"}</span></span>
-                    <a href={waLink(n.whatsapp, nom, diaTxt)} target="_blank" rel="noreferrer" className="shrink-0 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white">💬 Avisar</a>
+                    <a href={waLink(n.whatsapp, nom, diaTxt, catalogoDe.get(n.id) ?? CATALOGO)} target="_blank" rel="noreferrer" className="shrink-0 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white">💬 Avisar</a>
                   </li>
                 );
               })}
               {partSector.map((p) => (
                 <li key={`p-${p.id}`} className="flex items-center justify-between gap-2 py-2">
                   <span className="min-w-0"><span className="text-sm font-semibold text-slate-800">{p.nombre}</span><span className="block text-[11px] text-slate-400">Particular{p.telefono ? "" : " · sin WhatsApp"}</span></span>
-                  <a href={waLink(p.telefono, p.nombre, diaTxt)} target="_blank" rel="noreferrer" className="shrink-0 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white">💬 Avisar</a>
+                  <a href={waLink(p.telefono, p.nombre, diaTxt, CATALOGO)} target="_blank" rel="noreferrer" className="shrink-0 rounded-lg bg-green-600 px-3 py-1.5 text-xs font-bold text-white">💬 Avisar</a>
                 </li>
               ))}
             </ul>
