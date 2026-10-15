@@ -8,6 +8,95 @@ import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
 import { estadoPagoDe, MEDIOS_PAGO, faltaParaFactura, documentoLegacy } from "@/lib/dominio/ventas";
 import { crearDocumentoVenta } from "@/lib/facturacion";
 import { canalPorTipoCliente } from "@/lib/dominio/canales";
+import { ordenarPorCercania } from "@/lib/dominio/reparto";
+
+// ===== Pedidos de reparto (WhatsApp → agenda → ruta) =====
+
+/** Crea un pedido de reparto (ya parseado en el cliente). Entra al final de la ruta del día. */
+export async function crearPedidoReparto(formData: FormData) {
+  const pedido = String(formData.get("pedido") ?? "").trim();
+  if (!pedido) return;
+  const cliente = String(formData.get("cliente") ?? "").trim() || null;
+  const telefono = String(formData.get("telefono") ?? "").replace(/\D/g, "") || null;
+  const direccion = String(formData.get("direccion") ?? "").trim() || null;
+  const mapsUrl = String(formData.get("mapsUrl") ?? "").trim() || null;
+  const latN = parseFloat(String(formData.get("lat") ?? ""));
+  const lngN = parseFloat(String(formData.get("lng") ?? ""));
+  const lat = Number.isFinite(latN) ? latN : null;
+  const lng = Number.isFinite(lngN) ? lngN : null;
+  const monto = Number(String(formData.get("monto") ?? "").replace(/[^0-9]/g, "")) || 0;
+  const u = await usuarioActual();
+
+  const max = await prisma.pedidoReparto.aggregate({ _max: { orden: true }, where: { estado: { in: ["pendiente", "en_ruta"] } } });
+  await prisma.pedidoReparto.create({
+    data: {
+      cliente, telefono, pedido, direccion, mapsUrl, lat, lng,
+      monto: monto > 0 ? monto : null,
+      orden: (max._max.orden ?? 0) + 1,
+      usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+    },
+  });
+  revalidatePath("/vendedor/pedidos");
+  revalidatePath("/admin");
+}
+
+/** Sube o baja un pedido en la ruta (intercambia orden con el vecino). */
+export async function moverPedidoReparto(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  const dir = String(formData.get("dir") ?? "");
+  if (!id || (dir !== "up" && dir !== "down")) return;
+  const lista = await prisma.pedidoReparto.findMany({ where: { estado: { in: ["pendiente", "en_ruta"] } }, orderBy: { orden: "asc" } });
+  const i = lista.findIndex((p) => p.id === id);
+  if (i < 0) return;
+  const j = dir === "up" ? i - 1 : i + 1;
+  if (j < 0 || j >= lista.length) return;
+  await prisma.$transaction([
+    prisma.pedidoReparto.update({ where: { id: lista[i].id }, data: { orden: lista[j].orden } }),
+    prisma.pedidoReparto.update({ where: { id: lista[j].id }, data: { orden: lista[i].orden } }),
+  ]);
+  revalidatePath("/vendedor/pedidos");
+}
+
+/** Ordena la ruta por cercanía desde un origen (GPS del vendedor o primer punto). */
+export async function ordenarRutaCercania(formData: FormData) {
+  const olat = parseFloat(String(formData.get("olat") ?? ""));
+  const olng = parseFloat(String(formData.get("olng") ?? ""));
+  const lista = await prisma.pedidoReparto.findMany({ where: { estado: { in: ["pendiente", "en_ruta"] } }, orderBy: { orden: "asc" } });
+  if (lista.length === 0) return;
+  const primero = lista.find((p) => p.lat != null && p.lng != null);
+  const origen = Number.isFinite(olat) && Number.isFinite(olng)
+    ? { lat: olat, lng: olng }
+    : (primero ? { lat: primero.lat!, lng: primero.lng! } : null);
+  if (!origen) return;
+  const ordenados = ordenarPorCercania(lista, origen);
+  await prisma.$transaction(ordenados.map((p, idx) => prisma.pedidoReparto.update({ where: { id: p.id }, data: { orden: idx + 1 } })));
+  revalidatePath("/vendedor/pedidos");
+}
+
+/** Marca un pedido como entregado (sale de la ruta). */
+export async function entregarPedidoReparto(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  await prisma.pedidoReparto.update({ where: { id }, data: { estado: "entregado", entregadoEn: new Date() } }).catch(() => {});
+  revalidatePath("/vendedor/pedidos");
+}
+
+/** Marca pagado / por cobrar. */
+export async function pagoPedidoReparto(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  const estadoPago = String(formData.get("estadoPago") ?? "") === "pagado" ? "pagado" : "por_cobrar";
+  if (!id) return;
+  await prisma.pedidoReparto.update({ where: { id }, data: { estadoPago } }).catch(() => {});
+  revalidatePath("/vendedor/pedidos");
+}
+
+/** Borra un pedido de reparto. */
+export async function borrarPedidoReparto(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  await prisma.pedidoReparto.delete({ where: { id } }).catch(() => {});
+  revalidatePath("/vendedor/pedidos");
+}
 
 const TIPOS_TRABAJO = ["flete", "arreglo", "compra", "busqueda", "mantencion", "otro"] as const;
 

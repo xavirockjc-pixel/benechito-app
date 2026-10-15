@@ -1398,6 +1398,33 @@ model SalidaBodega {
  * Trabajos varios del vendedor en su turno: fletes, arreglos, compras, búsqueda
  * de cosas, mantención, etc. Diario de lo que hizo (con costo/cobro si aplica).
  */
+/**
+ * Pedido de reparto llegado por WhatsApp: se pega el mensaje, se extrae la
+ * ubicación (link de Maps/Waze o coordenadas), queda agendado y entra a la ruta
+ * del día (ordenable). Se avisa al cliente con su N° de parada y hora estimada.
+ */
+model PedidoReparto {
+  id          String    @id @default(cuid())
+  cliente     String? // nombre del cliente
+  telefono    String? // whatsapp del cliente (para avisar)
+  pedido      String // qué pidió (texto)
+  monto       Decimal?  @db.Decimal(12, 2)
+  estadoPago  String    @default("por_cobrar") // por_cobrar | pagado
+  lat         Float? // ubicación extraída del mensaje
+  lng         Float?
+  mapsUrl     String? // link original (Maps/Waze) si no se pudieron sacar coords
+  direccion   String? // texto de dirección/referencia
+  estado      String    @default("pendiente") // pendiente | en_ruta | entregado | cancelado
+  orden       Int       @default(0) // posición en la ruta del día
+  fecha       DateTime  @default(now())
+  entregadoEn DateTime?
+  usuarioId   String?
+  nombreUsuario String?
+
+  @@index([fecha])
+  @@index([estado])
+}
+
 model TrabajoVario {
   id            String   @id @default(cuid())
   tipo          String // flete | arreglo | compra | busqueda | mantencion | otro
