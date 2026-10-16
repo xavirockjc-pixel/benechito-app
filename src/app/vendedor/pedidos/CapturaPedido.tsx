@@ -1,39 +1,49 @@
 "use client";
 
 import { useState } from "react";
-import { crearPedidoReparto } from "../actions";
+import { crearPedidoReparto, crearClienteParticular } from "../actions";
 import { parsearPedidoWhatsapp } from "@/lib/dominio/reparto";
 
-/** Pega el mensaje de WhatsApp → extrae ubicación/teléfono → guarda el pedido. */
+/** Nuevo pedido simple. Campos siempre visibles; pegar WhatsApp es opcional. */
 export default function CapturaPedido({ clientes = [] }: { clientes?: string[] }) {
-  const [raw, setRaw] = useState("");
   const [cliente, setCliente] = useState("");
   const [telefono, setTelefono] = useState("");
   const [pedido, setPedido] = useState("");
   const [monto, setMonto] = useState("");
   const [fecha, setFecha] = useState("");
+  const [sector, setSector] = useState("");
+  const [guardarCliente, setGuardarCliente] = useState(false);
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [mapsUrl, setMapsUrl] = useState<string | null>(null);
-  const [analizado, setAnalizado] = useState(false);
+  const [raw, setRaw] = useState("");
+  const [pegar, setPegar] = useState(false);
   const [guardando, setGuardando] = useState(false);
   const [ok, setOk] = useState(false);
 
+  const hayUbicacion = lat != null || !!mapsUrl;
+
   function analizar() {
     const r = parsearPedidoWhatsapp(raw);
-    setPedido(r.pedido || raw);
+    if (r.pedido && !pedido.trim()) setPedido(r.pedido);
     if (r.telefono) setTelefono(r.telefono);
     setLat(r.lat); setLng(r.lng); setMapsUrl(r.mapsUrl);
-    setAnalizado(true);
+  }
+
+  function limpiar() {
+    setCliente(""); setTelefono(""); setPedido(""); setMonto(""); setFecha(""); setSector("");
+    setGuardarCliente(false); setLat(null); setLng(null); setMapsUrl(null); setRaw(""); setPegar(false);
   }
 
   async function guardar() {
-    const texto = (pedido || raw).trim();
-    if (!texto || guardando) return;
+    if (guardando) return;
+    const nom = cliente.trim();
+    const ped = pedido.trim() || (nom ? "(por confirmar)" : "");
+    if (!ped) return; // necesita al menos cliente o pedido
     setGuardando(true);
     const fd = new FormData();
-    fd.set("pedido", texto);
-    fd.set("cliente", cliente);
+    fd.set("pedido", ped);
+    fd.set("cliente", nom);
     fd.set("telefono", telefono);
     fd.set("monto", String(Number(monto.replace(/[^0-9]/g, "")) || 0));
     if (fecha) fd.set("fecha", fecha);
@@ -42,53 +52,81 @@ export default function CapturaPedido({ clientes = [] }: { clientes?: string[] }
     if (mapsUrl) fd.set("mapsUrl", mapsUrl);
     try {
       await crearPedidoReparto(fd);
+      // Guardar también en mis clientes (particular), si se pidió.
+      if (guardarCliente && nom) {
+        const cf = new FormData();
+        cf.set("nombre", nom);
+        cf.set("telefono", telefono);
+        cf.set("sector", sector);
+        if (lat != null) cf.set("lat", String(lat));
+        if (lng != null) cf.set("lng", String(lng));
+        if (mapsUrl) cf.set("mapsUrl", mapsUrl);
+        await crearClienteParticular(cf);
+      }
       setOk(true);
-      setRaw(""); setCliente(""); setTelefono(""); setPedido(""); setMonto("");
-      setLat(null); setLng(null); setMapsUrl(null); setAnalizado(false); setFecha("");
-      setTimeout(() => setOk(false), 1600);
+      limpiar();
+      setTimeout(() => setOk(false), 1800);
     } finally { setGuardando(false); }
   }
 
+  const listo = cliente.trim() || pedido.trim();
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-      <p className="text-sm font-extrabold text-slate-900">➕ Nuevo pedido de WhatsApp</p>
-      <p className="mt-0.5 text-[11px] text-slate-500">Pega el mensaje del cliente (con su ubicación de Maps/Waze) y toca Analizar.</p>
+      <p className="text-sm font-extrabold text-slate-900">➕ Nuevo pedido</p>
 
-      <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={3}
-        placeholder="Pega aquí el mensaje de WhatsApp (pedido + link de ubicación)…"
-        className="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm" />
-      <button type="button" onClick={analizar} disabled={!raw.trim()}
-        className="mt-2 w-full rounded-xl bg-slate-800 py-2.5 text-sm font-bold text-white disabled:opacity-40">🔎 Analizar</button>
+      <div className="mt-2 space-y-2">
+        <input value={cliente} onChange={(e) => setCliente(e.target.value)} list="clientes-captura" placeholder="Cliente (nombre o negocio)"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
+        <datalist id="clientes-captura">{clientes.map((c) => <option key={c} value={c} />)}</datalist>
 
-      {analizado && (
-        <div className="mt-3 space-y-2 rounded-xl bg-slate-50 p-3">
-          <div className={`rounded-lg px-3 py-2 text-xs font-bold ${lat != null ? "bg-green-100 text-green-700" : mapsUrl ? "bg-amber-100 text-amber-700" : "bg-rose-100 text-rose-700"}`}>
-            {lat != null ? `📍 Ubicación detectada (${lat.toFixed(4)}, ${lng!.toFixed(4)})` : mapsUrl ? "🔗 Link de mapa detectado (sin coordenadas exactas)" : "⚠️ No se detectó ubicación en el mensaje"}
-          </div>
-          <input value={cliente} onChange={(e) => setCliente(e.target.value)} list="clientes-captura" placeholder="Cliente (negocio o nombre)"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-          <datalist id="clientes-captura">{clientes.map((c) => <option key={c} value={c} />)}</datalist>
-          <label className="flex items-center justify-between text-xs font-bold text-slate-600">📅 Agendar para (opcional, otro día)
-            <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
-          </label>
-          <div className="flex gap-2">
-            <input value={telefono} onChange={(e) => setTelefono(e.target.value)} inputMode="tel" placeholder="Teléfono (569…)"
-              className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-            <span className="flex items-center rounded-lg border border-slate-300 bg-white px-2">
-              <span className="text-slate-400">$</span>
-              <input value={monto} onChange={(e) => setMonto(e.target.value)} inputMode="numeric" placeholder="Monto"
-                className="w-24 px-1 py-2 text-right text-sm font-semibold outline-none" />
-            </span>
-          </div>
-          <textarea value={pedido} onChange={(e) => setPedido(e.target.value)} rows={2} placeholder="Qué pidió"
-            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-          <button type="button" onClick={guardar} disabled={guardando}
-            className="w-full rounded-xl bg-[#1479c4] py-2.5 text-sm font-extrabold text-white disabled:opacity-40">
-            {ok ? "✓ Agendado" : guardando ? "Guardando…" : "Agendar pedido"}
-          </button>
+        <textarea value={pedido} onChange={(e) => setPedido(e.target.value)} rows={2} placeholder="¿Qué lleva? (ej: 2 cajas tú y yo, 1 postre)"
+          className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
+
+        <div className="flex gap-2">
+          <input value={telefono} onChange={(e) => setTelefono(e.target.value)} inputMode="tel" placeholder="Teléfono (569…)"
+            className="min-w-0 flex-1 rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />
+          <span className="flex items-center rounded-lg border border-slate-300 bg-white px-2">
+            <span className="text-slate-400">$</span>
+            <input value={monto} onChange={(e) => setMonto(e.target.value)} inputMode="numeric" placeholder="Monto"
+              className="w-24 px-1 py-2.5 text-right text-sm font-semibold outline-none" />
+          </span>
         </div>
-      )}
-      {ok && !analizado && <p className="mt-2 text-center text-xs font-bold text-green-600">✓ Pedido agendado</p>}
+
+        {/* Ubicación (opcional, pegando el WhatsApp) */}
+        {hayUbicacion ? (
+          <p className="rounded-lg bg-green-100 px-3 py-1.5 text-xs font-bold text-green-700">
+            📍 Ubicación lista {lat != null ? `(${lat.toFixed(4)}, ${lng!.toFixed(4)})` : "(link de mapa)"} · <button type="button" onClick={() => { setLat(null); setLng(null); setMapsUrl(null); }} className="underline">quitar</button>
+          </p>
+        ) : (
+          <button type="button" onClick={() => setPegar((v) => !v)} className="text-xs font-bold text-[#1479c4]">📋 {pegar ? "Ocultar" : "Pegar WhatsApp para sacar ubicación/teléfono"}</button>
+        )}
+        {pegar && !hayUbicacion && (
+          <div className="rounded-lg bg-slate-50 p-2">
+            <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={2} placeholder="Pega aquí el mensaje con la ubicación…"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+            <button type="button" onClick={analizar} disabled={!raw.trim()} className="mt-1 w-full rounded-lg bg-slate-800 py-2 text-xs font-bold text-white disabled:opacity-40">🔎 Sacar datos</button>
+          </div>
+        )}
+
+        {/* Opciones (agendar otro día + guardar cliente) */}
+        <label className="flex items-center justify-between text-xs font-bold text-slate-600">📅 Agendar para (opcional)
+          <input type="date" value={fecha} onChange={(e) => setFecha(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
+        </label>
+        <label className="flex items-center gap-2 text-xs font-bold text-slate-600">
+          <input type="checkbox" checked={guardarCliente} onChange={(e) => setGuardarCliente(e.target.checked)} className="h-4 w-4" />
+          Guardar también en mis clientes (particular)
+        </label>
+        {guardarCliente && (
+          <input value={sector} onChange={(e) => setSector(e.target.value)} placeholder="Sector del cliente (ej: Coronel centro)"
+            className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+        )}
+
+        <button type="button" onClick={guardar} disabled={!listo || guardando}
+          className="w-full rounded-xl bg-[#1479c4] py-3 text-base font-extrabold text-white disabled:opacity-40">
+          {ok ? "✓ Guardado" : guardando ? "Guardando…" : "Guardar pedido"}
+        </button>
+      </div>
     </div>
   );
 }
