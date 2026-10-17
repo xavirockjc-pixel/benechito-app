@@ -47,6 +47,9 @@ export async function crearPedidoTienda(formData: FormData) {
   // Tarifa elegida por el cliente → canal de la lista de precios.
   const TARIFA_CANAL: Record<string, string> = { detalle: "sala", online: "web", comerciante: "negocio", distribuidor: "distribuidor" };
   const tarifa = String(formData.get("tarifa") ?? "detalle").trim();
+  // Distribución es un mercado privado: sus precios se entregan por correo, no se
+  // pide por la tienda pública (así nadie ve esos precios ni ordena con ellos).
+  if (tarifa === "distribuidor") redirect("/tienda?error=distribucion");
   const canalTarifa = TARIFA_CANAL[tarifa] ?? "web";
   const lista =
     (await prisma.listaPrecio.findFirst({ where: { canal: canalTarifa, activo: true } })) ??

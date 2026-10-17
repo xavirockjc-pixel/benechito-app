@@ -316,10 +316,10 @@ export function ListaPrecios() {
           {/* Resumen por producto + CTA */}
           <div className="grid gap-3">
             {[
-              { emoji: "💙", nombre: "Tú y Yo", formato: "125 ml", desde: "$220", detalle: "desde $350 c/u · hasta $220 por mayor" },
-              { emoji: "🥛", nombre: "Paletas de Leche", formato: "80 ml", desde: "$150", detalle: "desde $250 c/u · hasta $150 por mayor" },
-              { emoji: "🍓", nombre: "Paletas de Agua", formato: "80 ml", desde: "$120", detalle: "desde $200 c/u · hasta $120 por mayor" },
-              { emoji: "🍨", nombre: "Postres", formato: "500 ml", desde: "$950", detalle: "desde $1.600 c/u · hasta $950 por mayor" },
+              { emoji: "💙", nombre: "Tú y Yo", formato: "125 ml", detalle: "desde $350 c/u · hasta $240 por mayor (500 u)" },
+              { emoji: "🥛", nombre: "Paletas de Leche", formato: "80 ml", detalle: "desde $250 c/u · hasta $160 por mayor (500 u)" },
+              { emoji: "🍓", nombre: "Paletas de Agua", formato: "80 ml", detalle: "desde $200 c/u · hasta $130 por mayor (300 u)" },
+              { emoji: "🍨", nombre: "Postres", formato: "500 ml", detalle: "desde $1.600 c/u · hasta $1.000 por mayor (500 u)" },
             ].map((p) => (
               <div key={p.nombre} className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-crema-2">
                 <span className="text-3xl">{p.emoji}</span>

@@ -1,7 +1,12 @@
 import { prisma } from "@/lib/prisma";
+import { site } from "@/lib/config";
 import Tienda from "./Tienda";
 
 export const dynamic = "force-dynamic";
+
+// Tarifas cuyo precio NO se muestra en la tienda: se entregan por correo (privacidad
+// para ese mercado). Distribución es privada: el cliente pide la lista por email.
+const TARIFAS_PRIVADAS = new Set(["distribuidor"]);
 
 // Tarifas que el cliente puede elegir en la tienda (cada una lee su lista de precios).
 export const TARIFAS_TIENDA = [
@@ -84,6 +89,8 @@ export default async function TiendaPage({ searchParams }: { searchParams: Promi
   for (const p of precios) {
     const tar = tarifaDeLista[p.listaId];
     if (!tar) continue;
+    // Privacidad: los precios de distribución nunca viajan al navegador.
+    if (TARIFAS_PRIVADAS.has(tar)) continue;
     if (!porProd.has(p.producto.id)) porProd.set(p.producto.id, { producto: p.producto, precios: {}, tramos: {} });
     const reg = porProd.get(p.producto.id)!;
     (reg.tramos[tar] ??= []).push({ desde: p.cantidadMinima, precio: Number(p.precio) });
@@ -115,7 +122,7 @@ export default async function TiendaPage({ searchParams }: { searchParams: Promi
     }))
     .sort((a, b) => a.nombre.localeCompare(b.nombre));
 
-  const tarifas = TARIFAS_TIENDA.map((t) => ({ codigo: t.codigo, label: t.label, icono: t.icono, cond: t.cond }));
+  const tarifas = TARIFAS_TIENDA.map((t) => ({ codigo: t.codigo, label: t.label, icono: t.icono, cond: t.cond, privado: TARIFAS_PRIVADAS.has(t.codigo) }));
 
   return (
     <Tienda
@@ -123,6 +130,7 @@ export default async function TiendaPage({ searchParams }: { searchParams: Promi
       logoUrl="/marca/logo.png"
       productos={productos}
       tarifas={tarifas}
+      email={site.email}
       sinConfig={listaIds.length === 0 || productos.length === 0}
       tarifaInicial={tarifaInicial}
       clientePrefill={clientePrefill ? { nombre: clientePrefill.nombreNegocio, telefono: clientePrefill.whatsapp } : null}

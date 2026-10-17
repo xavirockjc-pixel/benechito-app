@@ -11,7 +11,7 @@ import ComoPedir from "@/app/_shared/ComoPedir";
 type SaborInfo = { nombre: string; desc: string | null; foto: string | null };
 type Tramo = { desde: number; precio: number };
 type Prod = { id: string; nombre: string; descripcion: string | null; formato: string | null; seccion: string; fotoUrl: string | null; fotos?: string[]; precios: Record<string, number>; tramos?: Record<string, Tramo[]>; sabores: SaborInfo[]; grupo: string; min: number; max: number };
-type Tarifa = { codigo: string; label: string; icono: string; cond: string };
+type Tarifa = { codigo: string; label: string; icono: string; cond: string; privado?: boolean };
 
 const GRUPOS = [
   { codigo: "helados", label: "Helados artesanales", icono: "🍧" },
@@ -28,9 +28,9 @@ const GRAD: Record<string, string> = {
 const KEY = (id: string, sabor: string) => `${id}::${sabor}`;
 
 export default function Tienda({
-  negocio, logoUrl, productos, tarifas = [], sinConfig, tarifaInicial, clientePrefill,
+  negocio, logoUrl, productos, tarifas = [], email, sinConfig, tarifaInicial, clientePrefill,
 }: {
-  negocio: string; logoUrl?: string; productos: Prod[]; tarifas?: Tarifa[]; sinConfig: boolean;
+  negocio: string; logoUrl?: string; productos: Prod[]; tarifas?: Tarifa[]; email?: string; sinConfig: boolean;
   tarifaInicial?: string; clientePrefill?: { nombre: string; telefono: string } | null;
 }) {
   const byId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
@@ -52,6 +52,10 @@ export default function Tienda({
   const maxOf = (id: string) => byId.get(id)?.max ?? 0;
   // Tramos por cantidad de la tarifa actual (para mostrar el descuento por bolsa).
   const tramosDe = (p: Prod) => p.tramos?.[tarifa] ?? [];
+  // Tarifa privada (distribución): no se muestran precios; se piden por correo.
+  const tarifaActual = tarifas.find((t) => t.codigo === tarifa);
+  const privada = !!tarifaActual?.privado;
+  const mailtoDistrib = `mailto:${email ?? ""}?subject=${encodeURIComponent("Precios de distribución Benechito")}&body=${encodeURIComponent("Hola, quiero recibir la lista de precios de distribución.\n\nNegocio: \nComuna: \nQué productos me interesan: ")}`;
 
   const agregar = (id: string, sabor: string) => setCart((c) => {
     const k = KEY(id, sabor);
@@ -112,7 +116,7 @@ export default function Tienda({
               <span className="font-display text-4xl font-extrabold text-white/90">{p.nombre.charAt(0)}</span>
             </div>
           )}
-          <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2.5 py-1 text-sm font-extrabold text-tinta shadow">{fmtCLP(precioDe(p))}</span>
+          <span className="absolute bottom-2 left-2 rounded-full bg-white/95 px-2.5 py-1 text-sm font-extrabold text-tinta shadow">{privada ? "📧 por correo" : fmtCLP(precioDe(p))}</span>
           <span className="absolute right-2 top-2 grid h-6 w-6 place-items-center rounded-full bg-tinta/70 text-xs font-bold text-white shadow">ⓘ</span>
           {enCarro > 0 && <span className="absolute left-2 top-2 rounded-full bg-azul px-2 py-0.5 text-xs font-bold text-white shadow">🛒 {enCarro}</span>}
         </button>
@@ -120,7 +124,7 @@ export default function Tienda({
           <p className="font-bold leading-tight text-tinta">{p.nombre}</p>
           {(p.descripcion || p.formato) && <p className="mt-0.5 line-clamp-2 text-xs text-choco-2">{p.descripcion || p.formato}</p>}
           {p.sabores.length > 0 && <p className="mt-0.5 text-[11px] font-semibold text-naranja">{p.sabores.length} sabores</p>}
-          {tramosDe(p).length > 1 && <p className="mt-0.5 text-[11px] font-bold text-green-600">💰 Por mayor desde {fmtCLP(tramosDe(p)[tramosDe(p).length - 1].precio)} c/u</p>}
+          {!privada && tramosDe(p).length > 1 && <p className="mt-0.5 text-[11px] font-bold text-green-600">💰 Por mayor desde {fmtCLP(tramosDe(p)[tramosDe(p).length - 1].precio)} c/u</p>}
           {p.min > 1 && <p className="text-[11px] text-choco-2">Mínimo {p.min}{p.max > 0 ? ` · máx ${p.max}` : ""}</p>}
           <div className="mt-2 space-y-2">
             {p.sabores.length > 0 && (
@@ -132,9 +136,15 @@ export default function Tienda({
                   className="shrink-0 rounded-lg bg-azul/10 px-2 py-2 text-sm font-bold text-azul active:scale-90">ⓘ</button>
               </div>
             )}
-            <button onClick={() => agregar(p.id, saborSel)} className="w-full rounded-xl bg-azul py-2.5 text-sm font-extrabold text-white shadow-sm transition active:scale-95 hover:bg-azul-2">
-              Agregar{p.min > 1 ? ` ${p.min}` : ""}
-            </button>
+            {privada ? (
+              <a href={mailtoDistrib} className="block w-full rounded-xl bg-[#6b3f1d] py-2.5 text-center text-sm font-extrabold text-white shadow-sm transition active:scale-95">
+                📧 Pedir precios
+              </a>
+            ) : (
+              <button onClick={() => agregar(p.id, saborSel)} className="w-full rounded-xl bg-azul py-2.5 text-sm font-extrabold text-white shadow-sm transition active:scale-95 hover:bg-azul-2">
+                Agregar{p.min > 1 ? ` ${p.min}` : ""}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -228,6 +238,16 @@ export default function Tienda({
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* Distribución: precios privados, se entregan por correo */}
+            {privada && (
+              <div className="mt-4 rounded-2xl border-2 border-[#6b3f1d]/25 bg-[#6b3f1d]/5 p-4">
+                <p className="font-display text-base font-extrabold text-[#6b3f1d]">🔒 Precios de distribución privados</p>
+                <p className="mt-1 text-sm text-choco-2">Para cuidar este mercado, los precios de distribución los entregamos por <b>correo electrónico</b>. Escríbenos y te enviamos la lista completa.</p>
+                <a href={mailtoDistrib} className="mt-3 inline-block rounded-full bg-[#6b3f1d] px-5 py-2.5 text-sm font-extrabold text-white active:scale-95">📧 Pedir lista por correo</a>
+                {email && <p className="mt-2 text-xs font-semibold text-choco-2">{email}</p>}
               </div>
             )}
 
@@ -401,7 +421,7 @@ export default function Tienda({
             <div className="p-5">
               <div className="flex items-start justify-between gap-2">
                 <h3 className="font-display text-2xl font-extrabold text-tinta">{detalleProd.nombre}</h3>
-                <span className="shrink-0 rounded-full bg-azul px-3 py-1 text-sm font-extrabold text-white">{fmtCLP(precioDe(detalleProd))}</span>
+                <span className="shrink-0 rounded-full bg-azul px-3 py-1 text-sm font-extrabold text-white">{privada ? "📧 por correo" : fmtCLP(precioDe(detalleProd))}</span>
               </div>
               {detalleProd.formato && <p className="mt-0.5 text-sm font-semibold text-naranja">{detalleProd.formato}</p>}
               <p className="mt-2 text-sm text-choco-2">{detalleProd.descripcion || "Producto artesanal Benechito, hecho con ingredientes reales. 🍫"}</p>
@@ -434,11 +454,17 @@ export default function Tienda({
                   </div>
                 </div>
               )}
-              <button
-                onClick={() => { agregar(detalleProd.id, sel[detalleProd.id] ?? (detalleProd.sabores[0]?.nombre ?? "")); setDetalleProd(null); }}
-                className="mt-4 w-full rounded-xl bg-azul py-3 text-sm font-extrabold text-white active:scale-95 hover:bg-azul-2">
-                Agregar al pedido{detalleProd.min > 1 ? ` (${detalleProd.min})` : ""} · {fmtCLP(precioDe(detalleProd))}
-              </button>
+              {privada ? (
+                <a href={mailtoDistrib} className="mt-4 block w-full rounded-xl bg-[#6b3f1d] py-3 text-center text-sm font-extrabold text-white active:scale-95">
+                  📧 Pedir precios de distribución por correo
+                </a>
+              ) : (
+                <button
+                  onClick={() => { agregar(detalleProd.id, sel[detalleProd.id] ?? (detalleProd.sabores[0]?.nombre ?? "")); setDetalleProd(null); }}
+                  className="mt-4 w-full rounded-xl bg-azul py-3 text-sm font-extrabold text-white active:scale-95 hover:bg-azul-2">
+                  Agregar al pedido{detalleProd.min > 1 ? ` (${detalleProd.min})` : ""} · {fmtCLP(precioDe(detalleProd))}
+                </button>
+              )}
             </div>
           </div>
         </div>

@@ -15,6 +15,10 @@ export const site = {
   mapsUrl: "https://www.google.com/maps?q=-37.012556,-73.155944",
   web: "benechito.com",
   instagram: "@Benechito_oficial",
+  // Correo de contacto. Se usa para entregar los precios de DISTRIBUCIÓN en privado
+  // (ese mercado no ve precios en la tienda; los pide por correo).
+  // Cambiable sin tocar código con la variable de entorno NEXT_PUBLIC_EMAIL.
+  email: process.env.NEXT_PUBLIC_EMAIL ?? "benechito.oficial@gmail.com",
   zonaCarbon: "El helado de la Zona del Carbón",
   puntosActivos: 23,
 
