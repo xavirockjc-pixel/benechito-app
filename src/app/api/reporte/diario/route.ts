@@ -297,6 +297,8 @@ export async function GET(req: NextRequest) {
     ).join("\n"));
   }
   L.push("");
+  L.push(`🛵 *Prepara la ruta de mañana:* avisa a tus clientes por sector y marca quién viene → benechito.com/vendedor/sector`);
+  L.push("");
   L.push(`🐝 Tu socio Panal · benechito.com/admin`);
 
   const texto = L.join("\n");

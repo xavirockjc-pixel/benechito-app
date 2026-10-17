@@ -20,12 +20,24 @@ function diaTexto(iso: string): string {
 }
 
 export default async function AvisarSector({ searchParams }: { searchParams: Promise<{ sector?: string; dia?: string; ag?: string }> }) {
-  const { sector = "", dia = "", ag } = await searchParams;
+  const { sector = "", dia: diaParam = "", ag } = await searchParams;
+  // Día por defecto = mañana (preparar la ruta del día siguiente).
+  const manana = (() => { const d = new Date(); d.setDate(d.getDate() + 1); return d.toLocaleDateString("en-CA"); })();
+  const dia = diaParam || manana;
 
   const [negocios, particulares] = await Promise.all([
-    prisma.negocio.findMany({ select: { id: true, nombreNegocio: true, nombreContacto: true, whatsapp: true, sector: true, comuna: true, portalToken: true } }),
+    prisma.negocio.findMany({ select: { id: true, nombreNegocio: true, nombreContacto: true, whatsapp: true, sector: true, comuna: true, portalToken: true, latitud: true, longitud: true } }),
     prisma.clienteParticular.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
   ]);
+
+  // Quién ya está agendado para ese día (para marcar "en la ruta").
+  const d0 = new Date(dia + "T00:00:00"); const d1 = new Date(d0.getTime() + 86400000);
+  const yaRuta = await prisma.pedidoReparto.findMany({
+    where: { fecha: { gte: d0, lt: d1 }, estado: { in: ["pendiente", "en_ruta"] } },
+    select: { id: true, negocioId: true, telefono: true },
+  });
+  const rutaPorNeg = new Map(yaRuta.filter((r) => r.negocioId).map((r) => [r.negocioId!, r.id]));
+  const rutaPorTel = new Map(yaRuta.filter((r) => r.telefono).map((r) => [(r.telefono ?? "").replace(/\D/g, ""), r.id]));
 
   const sectores = [...new Set([
     ...negocios.flatMap((n) => [n.sector, n.comuna]),
@@ -38,17 +50,24 @@ export default async function AvisarSector({ searchParams }: { searchParams: Pro
   const diaTxt = diaTexto(dia);
 
   // Catálogo personalizado por negocio (genera token a los del sector si falta).
-  const clientes: { id: string; nombre: string; tel: string | null; catalogo: string; tipo: "Negocio" | "Particular" }[] = [];
+  type Cli = { id: string; nombre: string; tel: string | null; catalogo: string; tipo: "Negocio" | "Particular"; negocioId: string | null; lat: number | null; lng: number | null; enRuta: boolean; pedidoId: string | null };
+  const clientes: Cli[] = [];
   for (const n of negSector) {
     let token = n.portalToken;
     if (!token) {
       token = randomBytes(12).toString("hex");
       await prisma.negocio.update({ where: { id: n.id }, data: { portalToken: token } }).catch(() => { token = null; });
     }
-    clientes.push({ id: `n-${n.id}`, nombre: n.nombreNegocio || n.nombreContacto || "Cliente", tel: n.whatsapp, catalogo: token ? `${CATALOGO}?c=${token}` : CATALOGO, tipo: "Negocio" });
+    const pedidoId = rutaPorNeg.get(n.id) ?? null;
+    clientes.push({ id: `n-${n.id}`, nombre: n.nombreNegocio || n.nombreContacto || "Cliente", tel: n.whatsapp, catalogo: token ? `${CATALOGO}?c=${token}` : CATALOGO, tipo: "Negocio", negocioId: n.id, lat: n.latitud ?? null, lng: n.longitud ?? null, enRuta: !!pedidoId, pedidoId });
   }
-  for (const p of partSector) clientes.push({ id: `p-${p.id}`, nombre: p.nombre, tel: p.telefono, catalogo: CATALOGO, tipo: "Particular" });
+  for (const p of partSector) {
+    const tel = (p.telefono ?? "").replace(/\D/g, "");
+    const pedidoId = tel ? rutaPorTel.get(tel) ?? null : null;
+    clientes.push({ id: `p-${p.id}`, nombre: p.nombre, tel: p.telefono, catalogo: CATALOGO, tipo: "Particular", negocioId: null, lat: p.lat ?? null, lng: p.lng ?? null, enRuta: !!pedidoId, pedidoId });
+  }
 
+  const enRutaCount = clientes.filter((c) => c.enRuta).length;
   const totalClientes = negocios.length + particulares.length;
 
   return (
@@ -81,9 +100,9 @@ export default async function AvisarSector({ searchParams }: { searchParams: Pro
 
       {sector && (
         <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="text-sm font-bold text-slate-900">“{sector}” ({clientes.length})</h2>
-            {clientes.length > 0 && dia && (
+          <div className="mb-1 flex items-center justify-between gap-2">
+            <h2 className="text-sm font-bold text-slate-900">“{sector}” ({clientes.length}) · {diaTxt}</h2>
+            {clientes.length > 0 && (
               <form action={agendarSector}>
                 <input type="hidden" name="sector" value={sector} />
                 <input type="hidden" name="dia" value={dia} />
@@ -91,7 +110,11 @@ export default async function AvisarSector({ searchParams }: { searchParams: Pro
               </form>
             )}
           </div>
-          <AvisarSectorClientes clientes={clientes} dia={diaTxt} />
+          <p className="mb-2 flex items-center justify-between text-[11px] font-semibold text-slate-500">
+            <span>{enRutaCount} en la ruta de {diaTxt}</span>
+            <Link href="/vendedor/pedidos" className="font-bold text-[#1479c4]">Ver ruta →</Link>
+          </p>
+          <AvisarSectorClientes clientes={clientes} dia={diaTxt} diaIso={dia} />
         </section>
       )}
 

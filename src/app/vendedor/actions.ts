@@ -204,6 +204,48 @@ export async function registrarVentaDictada(formData: FormData) {
   redirect("/vendedor/pedidos?venta=1");
 }
 
+/**
+ * "Sí, viene": agenda UN cliente a la ruta de un día (crea un PedidoReparto).
+ * No duplica si ya está agendado ese día. Sirve para marcar las confirmaciones.
+ */
+export async function agendarCliente(formData: FormData) {
+  const dia = String(formData.get("dia") ?? "").trim();
+  const cliente = String(formData.get("cliente") ?? "").trim() || "Cliente";
+  const telefono = String(formData.get("telefono") ?? "").replace(/\D/g, "") || null;
+  const negocioId = String(formData.get("negocioId") ?? "").trim() || null;
+  const latN = parseFloat(String(formData.get("lat") ?? ""));
+  const lngN = parseFloat(String(formData.get("lng") ?? ""));
+  const lat = Number.isFinite(latN) ? latN : null;
+  const lng = Number.isFinite(lngN) ? lngN : null;
+
+  const fecha = dia ? new Date(dia + "T08:00:00") : new Date();
+  if (isNaN(fecha.getTime())) return;
+  const d0 = new Date(fecha); d0.setHours(0, 0, 0, 0);
+  const d1 = new Date(d0.getTime() + 86400000);
+
+  const existe = await prisma.pedidoReparto.findFirst({
+    where: { fecha: { gte: d0, lt: d1 }, estado: { in: ["pendiente", "en_ruta"] }, OR: [...(negocioId ? [{ negocioId }] : []), ...(telefono ? [{ telefono }] : [])] },
+    select: { id: true },
+  });
+  if (existe) { revalidatePath("/vendedor/sector"); return; }
+
+  const u = await usuarioActual();
+  const max = (await prisma.pedidoReparto.aggregate({ _max: { orden: true } }))._max.orden ?? 0;
+  await prisma.pedidoReparto.create({
+    data: { cliente, telefono, negocioId, lat, lng, pedido: "(agendado — por confirmar)", fecha, orden: max + 1, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+  });
+  revalidatePath("/vendedor/sector");
+  revalidatePath("/vendedor/pedidos");
+}
+
+/** Quita un cliente de la ruta del día (borra ese PedidoReparto). */
+export async function quitarAgendado(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  await prisma.pedidoReparto.delete({ where: { id } }).catch(() => {});
+  revalidatePath("/vendedor/sector");
+}
+
 /** Agrega un cliente particular (para avisos por sector). */
 export async function crearClienteParticular(formData: FormData) {
   const nombre = String(formData.get("nombre") ?? "").trim();
