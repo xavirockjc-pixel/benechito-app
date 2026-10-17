@@ -37,6 +37,11 @@ export default function Tienda({
   const [tarifa, setTarifa] = useState(tarifaInicial ?? tarifas[0]?.codigo ?? "detalle");
   const [abierto, setAbierto] = useState(false);
   const [entrega, setEntrega] = useState("retiro");
+  const [comuna, setComuna] = useState(""); // comuna del despacho (para la zona de delivery)
+  const [ubicOk, setUbicOk] = useState(false); // ¿el cliente compartió ubicación?
+  const ZONAS_DELIVERY = ["coronel", "lota"];
+  const esZonaDelivery = ZONAS_DELIVERY.includes(comuna.trim().toLowerCase());
+  const despachoListo = entrega !== "despacho" || (comuna.trim() !== "" && ubicOk);
   const [detalleSabor, setDetalleSabor] = useState<SaborInfo | null>(null); // modal "¿cómo es?"
   const [detalleProd, setDetalleProd] = useState<Prod | null>(null); // ficha del producto
 
@@ -311,10 +316,26 @@ export default function Tienda({
                 <button type="button" onClick={() => setEntrega("despacho")} className={`rounded-xl py-3 text-sm font-bold transition ${entrega === "despacho" ? "bg-azul text-white shadow" : "bg-crema text-choco-2 ring-1 ring-crema-2"}`}>🛵 Despacho</button>
               </div>
               <input type="hidden" name="entrega" value={entrega} />
+              {entrega === "retiro" && (
+                <p className="rounded-xl bg-green-50 px-3 py-2 text-xs font-semibold text-green-700">✅ Retiro en local: más rápido y sin costo de despacho. Elige el día de retiro abajo. 🏪</p>
+              )}
               {entrega === "despacho" && (
                 <>
+                  <select name="comuna" value={comuna} onChange={(e) => setComuna(e.target.value)} required
+                    className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja">
+                    <option value="">¿En qué comuna? *</option>
+                    <option value="Coronel">Coronel</option>
+                    <option value="Lota">Lota</option>
+                    <option value="Otra">Otra comuna</option>
+                  </select>
+                  {comuna && (esZonaDelivery ? (
+                    <p className="rounded-xl bg-green-50 px-3 py-2 text-xs font-semibold text-green-700">🛵 ¡Tenemos delivery en {comuna}! Comparte tu ubicación.</p>
+                  ) : (
+                    <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">⚠️ Aún no tenemos delivery en tu comuna. Pero si <b>agendas</b>, te lo dejamos aprovechando la ruta 🛵. Elige el día y comparte tu ubicación.</p>
+                  ))}
                   <input name="direccion" placeholder="Dirección de despacho" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
-                  <UbicacionCliente />
+                  <UbicacionCliente onUbic={setUbicOk} />
+                  {!ubicOk && <p className="text-[11px] font-semibold text-naranja">La ubicación es obligatoria para despacho 📍</p>}
                 </>
               )}
               {/* Agendar cuándo lo quiere */}
@@ -327,7 +348,7 @@ export default function Tienda({
                 <p className="mt-1 text-[10px] text-choco-2">Opcional. Si lo dejas en blanco, coordinamos contigo.</p>
               </div>
               <textarea name="notas" rows={2} placeholder="Notas del pedido (opcional)" className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja" />
-              <button className="w-full rounded-2xl bg-gradient-to-r from-naranja to-naranja-2 py-4 text-base font-extrabold text-white shadow-lg active:scale-95">
+              <button disabled={!despachoListo} className="w-full rounded-2xl bg-gradient-to-r from-naranja to-naranja-2 py-4 text-base font-extrabold text-white shadow-lg active:scale-95 disabled:opacity-50">
                 Enviar pedido · {fmtCLP(total)}
               </button>
               <p className="text-center text-[11px] text-choco-2">Tu pedido llega a {negocio} y te contactan para confirmar el pago y la entrega.</p>

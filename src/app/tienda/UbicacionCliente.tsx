@@ -8,18 +8,19 @@ import { resolverLinkMapa } from "@/app/admin/negocios/actions";
  * toque (GPS) o pegando el link de Google Maps. Envía lat/lng ocultos con el pedido
  * para que el local sepa a dónde llevar.
  */
-export default function UbicacionCliente({ titulo = "📍 Comparte tu ubicación para el despacho" }: { titulo?: string }) {
+export default function UbicacionCliente({ titulo = "📍 Comparte tu ubicación para el despacho", onUbic }: { titulo?: string; onUbic?: (ok: boolean) => void }) {
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [link, setLink] = useState("");
   const [estado, setEstado] = useState("");
   const [ocupado, setOcupado] = useState(false);
+  const marcar = (la: number, ln: number) => { setLat(la); setLng(ln); onUbic?.(true); };
 
   const gps = () => {
     if (!("geolocation" in navigator)) { setEstado("Tu teléfono no permite ubicación."); return; }
     setEstado("Obteniendo tu ubicación…");
     navigator.geolocation.getCurrentPosition(
-      (p) => { setLat(Number(p.coords.latitude.toFixed(6))); setLng(Number(p.coords.longitude.toFixed(6))); setEstado("✅ ¡Ubicación compartida!"); },
+      (p) => { marcar(Number(p.coords.latitude.toFixed(6)), Number(p.coords.longitude.toFixed(6))); setEstado("✅ ¡Ubicación compartida!"); },
       (err) => setEstado(err.code === 1 ? "Diste permiso denegado. Puedes pegar el link de Google Maps." : "No se pudo. Pega el link de Google Maps."),
       { enableHighAccuracy: true, timeout: 10000 },
     );
@@ -30,7 +31,7 @@ export default function UbicacionCliente({ titulo = "📍 Comparte tu ubicación
     setOcupado(true); setEstado("Leyendo el link…");
     const c = await resolverLinkMapa(t);
     setOcupado(false);
-    if (c) { setLat(c.lat); setLng(c.lng); setLink(""); setEstado("✅ ¡Ubicación tomada del link!"); }
+    if (c) { marcar(c.lat, c.lng); setLink(""); setEstado("✅ ¡Ubicación tomada del link!"); }
     else setEstado("No pude leer ese link. Usa el botón de ubicación.");
   };
 

@@ -22,6 +22,7 @@ export async function crearPedidoTienda(formData: FormData) {
   const nombre = String(formData.get("nombre") ?? "").trim();
   const telefono = String(formData.get("telefono") ?? "").trim();
   const entrega = String(formData.get("entrega") ?? "retiro").trim(); // retiro | despacho
+  const comuna = String(formData.get("comuna") ?? "").trim();
   const direccion = String(formData.get("direccion") ?? "").trim();
   const notasCliente = String(formData.get("notas") ?? "").trim();
   // Ubicación GPS que compartió el cliente (para el despacho).
@@ -35,6 +36,8 @@ export async function crearPedidoTienda(formData: FormData) {
   const raw = String(formData.get("carro") ?? "[]");
 
   if (!nombre || !telefono) redirect("/tienda?error=datos");
+  // Despacho: la ubicación es obligatoria (así siempre sabemos a dónde llevar).
+  if (entrega === "despacho" && !tieneUbic) redirect("/tienda?error=ubicacion");
 
   let carro: LineaCarro[] = [];
   try { carro = JSON.parse(raw); } catch { carro = []; }
@@ -82,7 +85,7 @@ export async function crearPedidoTienda(formData: FormData) {
   if (!negocioId) {
     const nuevo = await prisma.negocio.create({
       data: {
-        nombreContacto: nombre, nombreNegocio: nombre, whatsapp: telefono, comuna: "—",
+        nombreContacto: nombre, nombreNegocio: nombre, whatsapp: telefono, comuna: comuna || "—",
         tipoCliente: "consumidor", origen: "web", compra: null,
         estado: "nuevo",
         direccion: direccion || null,
@@ -94,16 +97,25 @@ export async function crearPedidoTienda(formData: FormData) {
     // Cliente conocido: actualiza su ubicación/dirección con lo del pedido.
     await prisma.negocio.update({
       where: { id: negocioId },
-      data: { ...(tieneUbic ? { latitud: lat, longitud: lng } : {}), ...(direccion ? { direccion } : {}) },
+      data: { ...(tieneUbic ? { latitud: lat, longitud: lng } : {}), ...(direccion ? { direccion } : {}), ...(comuna ? { comuna } : {}) },
     }).catch(() => {});
   }
 
-  const tipoEntrega = entrega === "despacho" ? "delivery" : "retiro";
+  // Clasificación: retiro → local; despacho en zona (Coronel/Lota) → delivery (moto);
+  // despacho en otra comuna → reparto (se agenda aprovechando la ruta).
+  const ZONAS_DELIVERY = ["coronel", "lota"];
+  const esZonaDelivery = ZONAS_DELIVERY.includes(comuna.toLowerCase());
+  const tipoEntrega = entrega !== "despacho" ? "retiro" : esZonaDelivery ? "delivery" : "reparto";
   const destino = entrega === "despacho" ? "reparto" : "local";
   const TARIFA_LABEL: Record<string, string> = { detalle: "Consumidor/detalle", online: "Promocional online", comerciante: "Mayorista/comerciante", distribuidor: "Distribuidor" };
+  const entregaTxt = entrega !== "despacho"
+    ? "Retira en local"
+    : esZonaDelivery
+      ? `Delivery ${comuna}${direccion ? ` · ${direccion}` : ""}`
+      : `Para ruta (sin delivery en ${comuna || "su comuna"})${direccion ? ` · ${direccion}` : ""}`;
   const notas = [
     `Tarifa: ${TARIFA_LABEL[tarifa] ?? tarifa}`,
-    entrega === "despacho" && direccion ? `Despacho a: ${direccion}` : "Retira en local",
+    entregaTxt,
     notasCliente ? `Nota: ${notasCliente}` : "",
   ].filter(Boolean).join(" · ");
 
