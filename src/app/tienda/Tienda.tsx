@@ -6,9 +6,11 @@ import { whatsappLink } from "@/lib/config";
 import { crearPedidoTienda } from "./actions";
 import UbicacionCliente from "./UbicacionCliente";
 import CarruselFotos from "@/app/_shared/CarruselFotos";
+import ComoPedir from "@/app/_shared/ComoPedir";
 
 type SaborInfo = { nombre: string; desc: string | null; foto: string | null };
-type Prod = { id: string; nombre: string; descripcion: string | null; formato: string | null; seccion: string; fotoUrl: string | null; fotos?: string[]; precios: Record<string, number>; sabores: SaborInfo[]; grupo: string; min: number; max: number };
+type Tramo = { desde: number; precio: number };
+type Prod = { id: string; nombre: string; descripcion: string | null; formato: string | null; seccion: string; fotoUrl: string | null; fotos?: string[]; precios: Record<string, number>; tramos?: Record<string, Tramo[]>; sabores: SaborInfo[]; grupo: string; min: number; max: number };
 type Tarifa = { codigo: string; label: string; icono: string; cond: string };
 
 const GRUPOS = [
@@ -48,6 +50,8 @@ export default function Tienda({
   const precioDe = (p: Prod) => p.precios[tarifa] ?? Object.values(p.precios)[0] ?? 0;
   const minOf = (id: string) => Math.max(1, byId.get(id)?.min ?? 1);
   const maxOf = (id: string) => byId.get(id)?.max ?? 0;
+  // Tramos por cantidad de la tarifa actual (para mostrar el descuento por bolsa).
+  const tramosDe = (p: Prod) => p.tramos?.[tarifa] ?? [];
 
   const agregar = (id: string, sabor: string) => setCart((c) => {
     const k = KEY(id, sabor);
@@ -65,12 +69,23 @@ export default function Tienda({
     return x;
   });
 
+  // Unidades totales por producto (sumando todos sus sabores) → define el tramo por cantidad.
+  const qtyPorProd = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const [k, cant] of Object.entries(cart)) { const id = k.split("::")[0]; m[id] = (m[id] ?? 0) + cant; }
+    return m;
+  }, [cart]);
+
   const items = useMemo(() => Object.entries(cart).map(([k, cant]) => {
     const [id, sabor] = k.split("::");
     const p = byId.get(id);
-    const pr = p ? (p.precios[tarifa] ?? Object.values(p.precios)[0] ?? 0) : 0;
-    return p ? { k, id, sabor, p, cant, precio: pr, sub: pr * cant } : null;
-  }).filter(Boolean) as { k: string; id: string; sabor: string; p: Prod; cant: number; precio: number; sub: number }[], [cart, byId, tarifa]);
+    if (!p) return null;
+    const tramos = p.tramos?.[tarifa] ?? [];
+    const qty = qtyPorProd[id] ?? cant;
+    let pr = p.precios[tarifa] ?? Object.values(p.precios)[0] ?? 0;
+    if (tramos.length > 0) { pr = tramos[0].precio; for (const t of tramos) if (qty >= t.desde) pr = t.precio; }
+    return { k, id, sabor, p, cant, precio: pr, sub: pr * cant };
+  }).filter(Boolean) as { k: string; id: string; sabor: string; p: Prod; cant: number; precio: number; sub: number }[], [cart, byId, tarifa, qtyPorProd]);
 
   const total = items.reduce((s, i) => s + i.sub, 0);
   const nUnid = items.reduce((s, i) => s + i.cant, 0);
@@ -105,6 +120,7 @@ export default function Tienda({
           <p className="font-bold leading-tight text-tinta">{p.nombre}</p>
           {(p.descripcion || p.formato) && <p className="mt-0.5 line-clamp-2 text-xs text-choco-2">{p.descripcion || p.formato}</p>}
           {p.sabores.length > 0 && <p className="mt-0.5 text-[11px] font-semibold text-naranja">{p.sabores.length} sabores</p>}
+          {tramosDe(p).length > 1 && <p className="mt-0.5 text-[11px] font-bold text-green-600">💰 Por mayor desde {fmtCLP(tramosDe(p)[tramosDe(p).length - 1].precio)} c/u</p>}
           {p.min > 1 && <p className="text-[11px] text-choco-2">Mínimo {p.min}{p.max > 0 ? ` · máx ${p.max}` : ""}</p>}
           <div className="mt-2 space-y-2">
             {p.sabores.length > 0 && (
@@ -185,6 +201,17 @@ export default function Tienda({
           </div>
         ) : (
           <>
+            {/* Cómo pedir, paso a paso (plegable para no estorbar) */}
+            <details className="group mt-5 overflow-hidden rounded-2xl border border-crema-2 bg-white shadow-sm">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-sm font-extrabold text-tinta">
+                <span>🛒 ¿Cómo pedir? Ver los pasos</span>
+                <span className="text-azul transition-transform group-open:rotate-180">⌄</span>
+              </summary>
+              <div className="border-t border-crema-2 p-4">
+                <ComoPedir compacto />
+              </div>
+            </details>
+
             {/* Selector de tarifa (tipo de cliente) — los precios cambian solos */}
             {tarifas.length > 1 && (
               <div className="mt-5 rounded-2xl border border-crema-2 bg-white p-3 shadow-sm">
@@ -379,6 +406,20 @@ export default function Tienda({
               {detalleProd.formato && <p className="mt-0.5 text-sm font-semibold text-naranja">{detalleProd.formato}</p>}
               <p className="mt-2 text-sm text-choco-2">{detalleProd.descripcion || "Producto artesanal Benechito, hecho con ingredientes reales. 🍫"}</p>
               {detalleProd.min > 1 && <p className="mt-2 text-xs font-bold text-choco-2">Pedido mínimo: {detalleProd.min}{detalleProd.max > 0 ? ` · máximo ${detalleProd.max}` : ""}</p>}
+              {tramosDe(detalleProd).length > 1 && (
+                <div className="mt-3 overflow-hidden rounded-xl border border-crema-2">
+                  <p className="bg-crema/60 px-3 py-1.5 text-xs font-bold text-tinta">💰 Precio por cantidad (c/u)</p>
+                  <div className="grid grid-cols-3 gap-px bg-crema-2 text-center text-xs sm:grid-cols-4">
+                    {tramosDe(detalleProd).map((t) => (
+                      <div key={t.desde} className="bg-white px-2 py-1.5">
+                        <span className="block font-semibold text-choco-2">{t.desde === 1 ? "1 u" : `${t.desde}+`}</span>
+                        <span className="block font-extrabold text-azul">{fmtCLP(t.precio)}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="bg-green-50 px-3 py-1.5 text-[11px] font-semibold text-green-700">Mientras más llevas, más barato. El carrito lo calcula solo. 🛒</p>
+                </div>
+              )}
               {detalleProd.sabores.length > 0 && (
                 <div className="mt-3">
                   <p className="text-xs font-bold uppercase tracking-wide text-choco-2">Sabores ({detalleProd.sabores.length})</p>

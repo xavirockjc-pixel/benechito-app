@@ -46,9 +46,11 @@ export default async function TiendaPage({ searchParams }: { searchParams: Promi
   }
   const listaIds = Object.keys(tarifaDeLista);
 
+  // Todos los tramos por cantidad (no solo el base) para que el carrito calcule
+  // el precio por bolsa según cuánto lleva el cliente.
   const precios = listaIds.length
     ? await prisma.precioProducto.findMany({
-        where: { listaId: { in: listaIds }, cantidadMinima: 1, producto: { publicarTienda: true, activo: true } },
+        where: { listaId: { in: listaIds }, producto: { publicarTienda: true, activo: true } },
         include: { producto: { include: { fotos: { orderBy: [{ orden: "asc" }, { createdAt: "asc" }], select: { url: true } } } } },
       })
     : [];
@@ -76,17 +78,27 @@ export default async function TiendaPage({ searchParams }: { searchParams: Promi
   const grupoDe = (linea: string, nombre: string) =>
     DULCES.has(linea) || /trufa|cuchufl|cocada|bombon/.test(norm(nombre)) ? "dulces" : "helados";
 
-  // Agrupa por producto y arma el precio de cada tarifa.
-  const porProd = new Map<string, { producto: (typeof precios)[number]["producto"]; precios: Record<string, number> }>();
+  // Agrupa por producto y arma el precio de cada tarifa (base + tramos por cantidad).
+  type Tramo = { desde: number; precio: number };
+  const porProd = new Map<string, { producto: (typeof precios)[number]["producto"]; precios: Record<string, number>; tramos: Record<string, Tramo[]> }>();
   for (const p of precios) {
     const tar = tarifaDeLista[p.listaId];
     if (!tar) continue;
-    if (!porProd.has(p.producto.id)) porProd.set(p.producto.id, { producto: p.producto, precios: {} });
-    porProd.get(p.producto.id)!.precios[tar] = Number(p.precio);
+    if (!porProd.has(p.producto.id)) porProd.set(p.producto.id, { producto: p.producto, precios: {}, tramos: {} });
+    const reg = porProd.get(p.producto.id)!;
+    (reg.tramos[tar] ??= []).push({ desde: p.cantidadMinima, precio: Number(p.precio) });
+    if (p.cantidadMinima === 1) reg.precios[tar] = Number(p.precio);
+  }
+  // Ordena los tramos por cantidad ascendente y, si no hay base (cm=1), usa el tramo más chico.
+  for (const reg of porProd.values()) {
+    for (const [tar, tramos] of Object.entries(reg.tramos)) {
+      tramos.sort((a, b) => a.desde - b.desde);
+      if (reg.precios[tar] == null && tramos[0]) reg.precios[tar] = tramos[0].precio;
+    }
   }
 
   const productos = [...porProd.values()]
-    .map(({ producto, precios }) => ({
+    .map(({ producto, precios, tramos }) => ({
       id: producto.id,
       nombre: producto.nombre,
       descripcion: producto.descripcion,
@@ -94,7 +106,8 @@ export default async function TiendaPage({ searchParams }: { searchParams: Promi
       seccion: producto.seccion ?? "propio",
       fotoUrl: producto.fotoUrl || imagenDefault(producto.nombre),
       fotos: (producto.fotos.length > 0 ? producto.fotos.map((f) => f.url) : [producto.fotoUrl || imagenDefault(producto.nombre)]).filter((u): u is string => !!u),
-      precios, // { detalle, online, comerciante, distribuidor }
+      precios, // { detalle, online, comerciante, distribuidor } — precio base (1 unidad)
+      tramos, // { tarifa: [{desde, precio}] } — descuento por cantidad
       sabores: saboresDe(producto),
       grupo: grupoDe(producto.linea, producto.nombre),
       min: producto.minTienda ?? 1,

@@ -55,24 +55,48 @@ export async function crearPedidoTienda(formData: FormData) {
     (await prisma.listaPrecio.findFirst({ where: { activo: true } }));
   if (!lista) redirect("/tienda?error=config");
 
-  // Precios reales desde la lista (solo productos publicados y activos).
+  // Precios reales desde la lista: TODOS los tramos (no solo el base), para aplicar
+  // el precio por bolsa según la cantidad total de cada producto.
   const ids = carro.map((l) => l.productoId);
   const precios = await prisma.precioProducto.findMany({
-    where: { listaId: lista.id, cantidadMinima: 1, productoId: { in: ids }, producto: { publicarTienda: true, activo: true } },
-    select: { productoId: true, precio: true },
+    where: { listaId: lista.id, productoId: { in: ids }, producto: { publicarTienda: true, activo: true } },
+    select: { productoId: true, precio: true, cantidadMinima: true },
   });
-  const precioDe = new Map(precios.map((p) => [p.productoId, Number(p.precio)]));
+  // Tramos por producto, ordenados por cantidad ascendente.
+  const tramosDe = new Map<string, { desde: number; precio: number }[]>();
+  for (const p of precios) {
+    const arr = tramosDe.get(p.productoId) ?? [];
+    arr.push({ desde: p.cantidadMinima, precio: Number(p.precio) });
+    tramosDe.set(p.productoId, arr);
+  }
+  for (const arr of tramosDe.values()) arr.sort((a, b) => a.desde - b.desde);
   // Reglas de cantidad (mín/máx) por producto — se validan en el servidor.
   const prods = await prisma.producto.findMany({ where: { id: { in: ids } }, select: { id: true, minTienda: true, maxTienda: true } });
   const reglaDe = new Map(prods.map((p) => [p.id, { min: Math.max(1, p.minTienda ?? 1), max: p.maxTienda ?? 0 }]));
-  const items = carro
-    .filter((l) => precioDe.has(l.productoId))
+  // Cantidad final por línea (respeta mín/máx) y total por producto para elegir el tramo.
+  const lineas = carro
+    .filter((l) => tramosDe.has(l.productoId))
     .map((l) => {
       const r = reglaDe.get(l.productoId) ?? { min: 1, max: 0 };
       let cant = Math.max(r.min, Math.floor(l.cantidad));
       if (r.max > 0) cant = Math.min(cant, r.max);
-      return { productoId: l.productoId, cantidad: cant, precioUnit: precioDe.get(l.productoId)!, sabor: (l.sabor ?? "").trim() || null };
+      return { productoId: l.productoId, cantidad: cant, sabor: (l.sabor ?? "").trim() || null };
     });
+  const totalPorProd = new Map<string, number>();
+  for (const l of lineas) totalPorProd.set(l.productoId, (totalPorProd.get(l.productoId) ?? 0) + l.cantidad);
+  const unitPorCantidad = (productoId: string, qty: number) => {
+    const tramos = tramosDe.get(productoId) ?? [];
+    if (tramos.length === 0) return 0;
+    let precio = tramos[0].precio;
+    for (const t of tramos) if (qty >= t.desde) precio = t.precio;
+    return precio;
+  };
+  const items = lineas.map((l) => ({
+    productoId: l.productoId,
+    cantidad: l.cantidad,
+    precioUnit: unitPorCantidad(l.productoId, totalPorProd.get(l.productoId) ?? l.cantidad),
+    sabor: l.sabor,
+  }));
   if (items.length === 0) redirect("/tienda?error=carro");
 
   // Cliente: calza por teléfono o se crea uno nuevo (consumidor web).

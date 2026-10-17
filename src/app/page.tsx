@@ -6,6 +6,8 @@ import Footer from "@/components/Footer";
 import {
   ConoceBenechito,
   Helados,
+  ListaPrecios,
+  ComoPedirSeccion,
   PuntosBenechito,
   Promociones,
   Innovacion,
@@ -23,6 +25,10 @@ export default function Home() {
         <ConoceBenechito />
         {/* Nuestros helados */}
         <Helados />
+        {/* Lista de precios oficial (helados artesanales) */}
+        <ListaPrecios />
+        {/* Cómo pedir por el carrito (paso a paso) */}
+        <ComoPedirSeccion />
         {/* Dulces Benechito (trufas, cuchuflís, cocadas) */}
         <Coleccion />
         {/* Puntos Benechito (propuesta para comercios) */}

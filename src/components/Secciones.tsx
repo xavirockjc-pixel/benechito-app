@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { site, whatsappLink } from "@/lib/config";
+import ComoPedir from "@/app/_shared/ComoPedir";
 import {
   lineasHelados,
   saboresHelados,
@@ -278,6 +279,86 @@ export function Innovacion() {
               <p className="mt-1 text-sm text-tinta/70">{it.texto}</p>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Lista de precios oficial (helados artesanales) ---------- */
+export function ListaPrecios() {
+  return (
+    <section id="precios" className="bg-crema-2/40 py-16 md:py-24">
+      <div className="mx-auto max-w-5xl px-4">
+        <div className="text-center">
+          <span className="script text-2xl text-naranja">Precios para todos</span>
+          <h2 className="mt-1 text-3xl font-extrabold text-tinta sm:text-4xl">
+            Lista de precios 🍦
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-tinta/75">
+            Helados artesanales al detalle y por mayor. <strong className="text-azul">Mientras
+            más llevas, más barato</strong> — el carrito calcula el precio por bolsa solo.
+          </p>
+        </div>
+
+        <div className="mt-8 grid items-center gap-8 md:grid-cols-2">
+          {/* Lámina del listado de precios */}
+          <div className="overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-crema-2">
+            <Image
+              src="/catalogo/lista-precios.jpg"
+              alt="Lista de precios Benechito: Tú y Yo, Paletas de Leche, Paletas de Agua y Postres"
+              width={1024}
+              height={1536}
+              className="w-full"
+            />
+          </div>
+
+          {/* Resumen por producto + CTA */}
+          <div className="grid gap-3">
+            {[
+              { emoji: "💙", nombre: "Tú y Yo", formato: "125 ml", desde: "$220", detalle: "desde $350 c/u · hasta $220 por mayor" },
+              { emoji: "🥛", nombre: "Paletas de Leche", formato: "80 ml", desde: "$150", detalle: "desde $250 c/u · hasta $150 por mayor" },
+              { emoji: "🍓", nombre: "Paletas de Agua", formato: "80 ml", desde: "$120", detalle: "desde $200 c/u · hasta $120 por mayor" },
+              { emoji: "🍨", nombre: "Postres", formato: "500 ml", desde: "$950", detalle: "desde $1.600 c/u · hasta $950 por mayor" },
+            ].map((p) => (
+              <div key={p.nombre} className="flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm ring-1 ring-crema-2">
+                <span className="text-3xl">{p.emoji}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-display text-lg font-bold text-tinta">{p.nombre} <span className="text-sm font-semibold text-naranja">{p.formato}</span></p>
+                  <p className="text-xs text-tinta/70">{p.detalle}</p>
+                </div>
+              </div>
+            ))}
+            <a
+              href="/tienda"
+              className="mt-1 inline-flex items-center justify-center gap-2 rounded-full bg-azul px-6 py-3.5 text-base font-bold text-white shadow-lg transition hover:-translate-y-0.5"
+            >
+              🛒 Pedir en la tienda
+            </a>
+            <p className="text-center text-xs text-tinta/60">Precios referenciales. Pueden variar según temporada y disponibilidad.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ---------- Cómo pedir por el carrito (paso a paso) ---------- */
+export function ComoPedirSeccion() {
+  return (
+    <section id="como-pedir" className="py-16 md:py-24">
+      <div className="mx-auto max-w-4xl px-4">
+        <div className="text-center">
+          <span className="script text-2xl text-azul">Pedir es fácil</span>
+          <h2 className="mt-1 text-3xl font-extrabold text-tinta sm:text-4xl">
+            ¿Cómo pedir por el carrito?
+          </h2>
+          <p className="mx-auto mt-3 max-w-xl text-tinta/75">
+            En 6 pasos simples tienes tu pedido listo. Retira en el local o pide despacho.
+          </p>
+        </div>
+        <div className="mt-8">
+          <ComoPedir ctaHref="/tienda" ctaLabel="🍦 Ir a la tienda y pedir" />
         </div>
       </div>
     </section>
