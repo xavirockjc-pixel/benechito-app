@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { estadoPedidoLabel } from "@/lib/dominio/pedidos";
-import { entregarPedidoReparto } from "../actions";
+import { entregarPedidoReparto, borrarPedidoReparto, resolverPedidoWeb } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +18,7 @@ function diaLabel(d: Date) {
 
 type Fila = {
   key: string; cliente: string; detalle: string; monto: number; cobrado: boolean;
-  dia: Date; estado: string; tel: string | null; maps: string | null; repartoId?: string;
+  dia: Date; estado: string; tel: string | null; maps: string | null; repartoId?: string; webId?: string;
 };
 
 export default async function Agendados() {
@@ -43,6 +43,7 @@ export default async function Agendados() {
       monto: p.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0), cobrado: p.pagado,
       dia: p.fechaAgenda ?? p.createdAt, estado: estadoPedidoLabel[p.estado] ?? p.estado,
       tel: p.negocio?.whatsapp ?? null, maps: p.negocio?.latitud != null && p.negocio?.longitud != null ? `https://www.google.com/maps?q=${p.negocio.latitud},${p.negocio.longitud}` : null,
+      webId: p.id,
     })),
   ];
 
@@ -87,10 +88,30 @@ export default async function Agendados() {
                     {f.maps && <a href={f.maps} target="_blank" rel="noreferrer" className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700">📍 Ir</a>}
                     {f.tel && <a href={`https://wa.me/${f.tel.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">💬</a>}
                     {f.repartoId && (
-                      <form action={entregarPedidoReparto} className="ml-auto">
-                        <input type="hidden" name="id" value={f.repartoId} />
-                        <button className="rounded-full bg-[#0f766e] px-2.5 py-0.5 text-[10px] font-bold text-white">✅ Entregado</button>
-                      </form>
+                      <span className="ml-auto flex items-center gap-1.5">
+                        <form action={entregarPedidoReparto}>
+                          <input type="hidden" name="id" value={f.repartoId} />
+                          <button className="rounded-full bg-[#0f766e] px-2.5 py-0.5 text-[10px] font-bold text-white">✅ Entregado</button>
+                        </form>
+                        <form action={borrarPedidoReparto}>
+                          <input type="hidden" name="id" value={f.repartoId} />
+                          <button className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-rose-500">✕ Quitar</button>
+                        </form>
+                      </span>
+                    )}
+                    {f.webId && (
+                      <span className="ml-auto flex items-center gap-1.5">
+                        <form action={resolverPedidoWeb}>
+                          <input type="hidden" name="id" value={f.webId} />
+                          <input type="hidden" name="accion" value="entregado" />
+                          <button className="rounded-full bg-[#0f766e] px-2.5 py-0.5 text-[10px] font-bold text-white">✅ Entregado</button>
+                        </form>
+                        <form action={resolverPedidoWeb}>
+                          <input type="hidden" name="id" value={f.webId} />
+                          <input type="hidden" name="accion" value="quitar" />
+                          <button className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-rose-500">✕ Quitar</button>
+                        </form>
+                      </span>
                     )}
                   </div>
                 </li>

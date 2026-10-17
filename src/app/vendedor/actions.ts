@@ -239,6 +239,21 @@ export async function agendarCliente(formData: FormData) {
   revalidatePath("/vendedor/pedidos");
 }
 
+/**
+ * Resuelve un pedido WEB (de la tienda) desde Agendados: "entregado" lo marca
+ * entregado; "quitar" lo saca de la lista (finalizado). Sin crear ventas.
+ */
+export async function resolverPedidoWeb(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  const accion = String(formData.get("accion") ?? "");
+  if (!id) return;
+  const estado = accion === "entregado" ? "entregado" : "finalizado";
+  await prisma.pedido.update({ where: { id }, data: { estado } }).catch(() => {});
+  revalidatePath("/vendedor/agendados");
+  revalidatePath("/vendedor/entregas");
+  revalidatePath("/admin/pedidos");
+}
+
 /** Quita un cliente de la ruta del día (borra ese PedidoReparto). */
 export async function quitarAgendado(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
