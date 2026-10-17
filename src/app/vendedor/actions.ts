@@ -37,10 +37,11 @@ export async function crearPedidoReparto(formData: FormData) {
   if (fechaStr) { const d = new Date(fechaStr + "T08:00:00"); if (!isNaN(d.getTime())) fecha = d; }
   const u = await usuarioActual();
 
+  const estadoPago = String(formData.get("estadoPago") ?? "") === "pagado" ? "pagado" : "por_cobrar";
   const max = await prisma.pedidoReparto.aggregate({ _max: { orden: true }, where: { estado: { in: ["pendiente", "en_ruta"] } } });
   await prisma.pedidoReparto.create({
     data: {
-      cliente, telefono, pedido, direccion, mapsUrl, lat, lng, negocioId,
+      cliente, telefono, pedido, direccion, mapsUrl, lat, lng, negocioId, estadoPago,
       monto: monto > 0 ? monto : null,
       ...(fecha ? { fecha } : {}),
       orden: (max._max.orden ?? 0) + 1,

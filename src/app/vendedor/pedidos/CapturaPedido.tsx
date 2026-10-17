@@ -11,6 +11,7 @@ export default function CapturaPedido({ clientes = [] }: { clientes?: string[] }
   const [pedido, setPedido] = useState("");
   const [monto, setMonto] = useState("");
   const [fecha, setFecha] = useState("");
+  const [pago, setPago] = useState<"por_cobrar" | "pagado">("por_cobrar");
   const [sector, setSector] = useState("");
   const [guardarCliente, setGuardarCliente] = useState(false);
   const [lat, setLat] = useState<number | null>(null);
@@ -32,7 +33,7 @@ export default function CapturaPedido({ clientes = [] }: { clientes?: string[] }
 
   function limpiar() {
     setCliente(""); setTelefono(""); setPedido(""); setMonto(""); setFecha(""); setSector("");
-    setGuardarCliente(false); setLat(null); setLng(null); setMapsUrl(null); setRaw(""); setPegar(false);
+    setGuardarCliente(false); setLat(null); setLng(null); setMapsUrl(null); setRaw(""); setPegar(false); setPago("por_cobrar");
   }
 
   async function guardar() {
@@ -46,6 +47,7 @@ export default function CapturaPedido({ clientes = [] }: { clientes?: string[] }
     fd.set("cliente", nom);
     fd.set("telefono", telefono);
     fd.set("monto", String(Number(monto.replace(/[^0-9]/g, "")) || 0));
+    fd.set("estadoPago", pago);
     if (fecha) fd.set("fecha", fecha);
     if (lat != null) fd.set("lat", String(lat));
     if (lng != null) fd.set("lng", String(lng));
@@ -91,6 +93,14 @@ export default function CapturaPedido({ clientes = [] }: { clientes?: string[] }
             <input value={monto} onChange={(e) => setMonto(e.target.value)} inputMode="numeric" placeholder="Monto"
               className="w-24 px-1 py-2.5 text-right text-sm font-semibold outline-none" />
           </span>
+        </div>
+
+        {/* Pagado o fiado (por cobrar) */}
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setPago("pagado")}
+            className={`flex-1 rounded-lg border-2 py-2 text-sm font-bold ${pago === "pagado" ? "border-green-500 bg-green-50 text-green-700" : "border-slate-200 text-slate-500"}`}>💵 Pagado</button>
+          <button type="button" onClick={() => setPago("por_cobrar")}
+            className={`flex-1 rounded-lg border-2 py-2 text-sm font-bold ${pago === "por_cobrar" ? "border-amber-500 bg-amber-50 text-amber-700" : "border-slate-200 text-slate-500"}`}>📝 Fiado</button>
         </div>
 
         {/* Ubicación (opcional, pegando el WhatsApp) */}
