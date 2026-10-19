@@ -25,7 +25,7 @@ El sistema modular por celdas, que cada negocio arma a su medida.
 - ✅ Landing page con su marca
 - ✅ Tienda web / catálogo con pago online
 - ✅ Pedidos por WhatsApp
-- ⭐ Menú digital con QR (restaurantes, cafeterías, food) — pide desde la mesa
+- ✅ Menú digital con QR (restaurantes, cafeterías, food) — pide desde la mesa por WhatsApp + genera el QR
 - ⭐ Perfil de Google (Google Business) + gestión de reseñas
 - ⭐ Reserva de mesa / pedido para retirar
 
