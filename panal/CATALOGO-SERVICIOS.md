@@ -47,7 +47,7 @@ El sistema modular por celdas, que cada negocio arma a su medida.
 
 ## P6 · Agenda & cobros — *alta demanda en servicios* (nuevos)
 Para peluquerías, consultas, talleres, profesionales.
-- ⭐ Agendamiento de citas / reservas (con recordatorio por WhatsApp)
+- ✅ Agendamiento de citas / reservas (reserva por WhatsApp + agenda del negocio + QR)
 - ⭐ Links de pago y **cobro recurrente** (membresías / suscripciones)
 - ⭐ Firma de documentos y contratos digital
 
