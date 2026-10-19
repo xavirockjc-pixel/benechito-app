@@ -165,6 +165,26 @@ export async function entregarPedidoReparto(formData: FormData) {
   revalidatePath("/admin");
 }
 
+/** Elige el reparto del pedido anotado: lo entrega el vendedor o se deriva a moto externa (Uber/PedidosYa). */
+export async function derivarRepartoAnotado(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  const repartoPor = String(formData.get("repartoPor") ?? "").trim();
+  if (!id || !["local", "externo"].includes(repartoPor)) return;
+  const courier = String(formData.get("courier") ?? "").trim() || null;
+  const costo = Number(String(formData.get("costoReparto") ?? "").replace(/[^0-9]/g, "")) || null;
+  await prisma.pedidoReparto.update({
+    where: { id },
+    data: {
+      repartoPor,
+      courier: repartoPor === "externo" ? courier : null,
+      costoReparto: repartoPor === "externo" ? costo : null,
+    },
+  }).catch(() => {});
+  revalidatePath("/vendedor/pendientes");
+  revalidatePath("/vendedor/pedidos");
+  revalidatePath("/vendedor/agendados");
+}
+
 /** Marca pagado / por cobrar. */
 export async function pagoPedidoReparto(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();

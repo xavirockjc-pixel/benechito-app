@@ -2,8 +2,10 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { ESTADOS_PEDIDO, estadoPedidoLabel, estadoPedidoColor, fmtCLP } from "@/lib/dominio/pedidos";
 import { bucketPedido, BUCKETS_ONLINE, type BucketOnline } from "@/lib/dominio/pedidosOnline";
-import { cambiarEstadoPedido } from "@/app/admin/pedidos/actions";
+import { cambiarEstadoPedido, derivarRepartoPedido } from "@/app/admin/pedidos/actions";
 import AvisoNuevosPedidos from "@/app/_shared/AvisoNuevosPedidos";
+import DerivarReparto from "@/app/_shared/DerivarReparto";
+import { site } from "@/lib/config";
 
 export const dynamic = "force-dynamic";
 
@@ -86,6 +88,14 @@ export default async function PedidosOnline() {
                     `📦 ${p.items.map((it) => `${it.cantidad}x ${it.producto.nombre}`).join(", ")}\n` +
                     `${p.pagado ? "💰 Pagado" : `⏳ Cobrar $${total.toLocaleString("es-CL")}`}`;
                   const waMoto = `https://wa.me/?text=${encodeURIComponent(msgMoto)}`;
+                  // Datos del envío listos para pedir una moto externa (Uber Direct / PedidosYa).
+                  const envio = [
+                    `RETIRO (local): ${site.direccion}`,
+                    `ENTREGAR A: ${p.negocio?.nombreNegocio ?? "Cliente"}${p.negocio?.whatsapp ? ` · ${p.negocio.whatsapp}` : ""}`,
+                    p.negocio?.direccion || p.negocio?.comuna ? `Dirección: ${[p.negocio?.direccion, p.negocio?.comuna].filter(Boolean).join(", ")}` : "",
+                    mapa ? `Ubicación: ${mapa}` : "",
+                    `Pedido: ${p.items.map((it) => `${it.cantidad}x ${it.producto.nombre}`).join(", ")}`,
+                  ].filter(Boolean).join("\n");
                   return (
                     <li key={p.id} className={`rounded-2xl border bg-white p-3 shadow-sm ${esNuevo ? "border-amber-400 ring-2 ring-amber-200" : "border-slate-200"}`}>
                       <div className="flex items-start justify-between gap-2">
@@ -126,6 +136,12 @@ export default async function PedidosOnline() {
                         {tel && <a href={`https://wa.me/${tel}`} target="_blank" rel="noopener" className="shrink-0 rounded-lg bg-[#25D366] px-3 py-2 text-xs font-bold text-white">💬</a>}
                         {p.negocio && <Link href={`/admin/negocios/${p.negocio.id}`} className="shrink-0 rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600" title="Ver ficha del cliente">🗂️ Ficha</Link>}
                       </div>
+
+                      {(b.id === "delivery_moto" || b.id === "otra_zona") && (
+                        <DerivarReparto id={p.id} repartoPor={p.repartoPor} courier={p.courier}
+                          costoReparto={p.costoReparto != null ? Number(p.costoReparto) : null}
+                          envio={envio} mapsUrl={mapa || undefined} accion={derivarRepartoPedido} />
+                      )}
                     </li>
                   );
                 })}

@@ -333,6 +333,11 @@ model Pedido {
   // Pago online (tienda): si se pagó y la referencia del pago (ej. Mercado Pago).
   pagado            Boolean    @default(false)
   pagoRef           String?
+  // Reparto del delivery: local (lo entrega el negocio) | externo (moto Uber Direct /
+  // PedidosYa que viene a buscarlo al local). costoReparto = lo que cobra ese servicio.
+  repartoPor        String? // local | externo
+  courier           String? // uber | pedidosya | otro
+  costoReparto      Decimal?   @db.Decimal(12, 2)
 
   items PedidoItem[]
   venta Venta?
@@ -1415,6 +1420,10 @@ model PedidoReparto {
   mapsUrl     String? // link original (Maps/Waze) si no se pudieron sacar coords
   direccion   String? // texto de dirección/referencia
   sector      String? // zona/sector (Lota, Coronel…) para no saltarse pedidos por zona
+  // Reparto: local (lo entrega el negocio) | externo (moto Uber Direct / PedidosYa).
+  repartoPor  String? // local | externo
+  courier     String? // uber | pedidosya | otro
+  costoReparto Decimal? @db.Decimal(12, 2)
   estado      String    @default("pendiente") // pendiente | en_ruta | entregado | cancelado
   orden       Int       @default(0) // posición en la ruta del día
   negocioId   String? // cliente negocio (si quedó enlazado)

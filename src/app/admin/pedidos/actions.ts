@@ -121,6 +121,26 @@ export async function eliminarPedido(formData: FormData) {
   redirect("/admin/pedidos");
 }
 
+/** Elige el reparto del delivery: lo entrega el local o se deriva a moto externa (Uber/PedidosYa). */
+export async function derivarRepartoPedido(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  const repartoPor = String(formData.get("repartoPor") ?? "").trim();
+  if (!id || !["local", "externo"].includes(repartoPor)) return;
+  const courier = String(formData.get("courier") ?? "").trim() || null;
+  const costo = Number(String(formData.get("costoReparto") ?? "").replace(/[^0-9]/g, "")) || null;
+  await prisma.pedido.update({
+    where: { id },
+    data: {
+      repartoPor,
+      courier: repartoPor === "externo" ? courier : null,
+      costoReparto: repartoPor === "externo" ? costo : null,
+    },
+  }).catch(() => {});
+  revalidatePath("/admin/pedidos-online");
+  revalidatePath("/caja/pedidos");
+  revalidatePath("/admin/pedidos");
+}
+
 /** Cambia el estado del pedido (independiente del pago). */
 export async function cambiarEstadoPedido(formData: FormData) {
   const pedidoId = String(formData.get("pedidoId") ?? "").trim();

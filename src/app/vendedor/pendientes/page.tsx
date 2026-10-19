@@ -1,14 +1,17 @@
 import { prisma } from "@/lib/prisma";
-import { entregarPedidoReparto, borrarPedidoReparto } from "../actions";
+import { entregarPedidoReparto, borrarPedidoReparto, derivarRepartoAnotado } from "../actions";
 import { linkMaps } from "@/lib/dominio/reparto";
+import { site } from "@/lib/config";
 import CapturaRapida from "./CapturaRapida";
 import RecordatorioAlarma from "./RecordatorioAlarma";
+import DerivarReparto from "@/app/_shared/DerivarReparto";
 
 export const dynamic = "force-dynamic";
 
 type Fila = {
   id: string; pedido: string; cliente: string | null; telefono: string | null;
   sector: string | null; fecha: Date; lat: number | null; lng: number | null; mapsUrl: string | null;
+  direccion: string | null; repartoPor: string | null; courier: string | null; costoReparto: unknown;
 };
 
 const SECTORES_BASE = ["Coronel", "Lota"];
@@ -28,7 +31,7 @@ export default async function Pendientes({ searchParams }: { searchParams: Promi
   const filas = (await prisma.pedidoReparto.findMany({
     where: { estado: { in: ["pendiente", "en_ruta"] } },
     orderBy: [{ fecha: "asc" }, { orden: "asc" }],
-    select: { id: true, pedido: true, cliente: true, telefono: true, sector: true, fecha: true, lat: true, lng: true, mapsUrl: true },
+    select: { id: true, pedido: true, cliente: true, telefono: true, sector: true, fecha: true, lat: true, lng: true, mapsUrl: true, direccion: true, repartoPor: true, courier: true, costoReparto: true },
     take: 300,
   })) as Fila[];
 
@@ -78,6 +81,19 @@ export default async function Pendientes({ searchParams }: { searchParams: Promi
           </form>
         </div>
       </div>
+      <DerivarReparto
+        id={f.id} repartoPor={f.repartoPor} courier={f.courier}
+        costoReparto={f.costoReparto != null ? Number(f.costoReparto) : null}
+        mapsUrl={linkMaps(f) || undefined}
+        envio={[
+          `RETIRO (local): ${site.direccion}`,
+          `ENTREGAR A: ${f.cliente ?? "Cliente"}${f.telefono ? ` · ${f.telefono}` : ""}`,
+          [f.direccion, f.sector].filter(Boolean).length ? `Dirección: ${[f.direccion, f.sector].filter(Boolean).join(", ")}` : "",
+          linkMaps(f) ? `Ubicación: ${linkMaps(f)}` : "",
+          `Pedido: ${f.pedido}`,
+        ].filter(Boolean).join("\n")}
+        accion={derivarRepartoAnotado}
+      />
     </li>
   );
 
