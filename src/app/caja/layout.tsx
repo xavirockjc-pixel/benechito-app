@@ -10,6 +10,7 @@ import AvisoPedidos from "./AvisoPedidos";
 import AvisoAperturas from "./AvisoAperturas";
 import NotaRapida from "@/components/NotaRapida";
 import NavLink from "@/app/_shared/NavLink";
+import AutoActualizar from "@/app/_shared/AutoActualizar";
 import MicDictado from "@/components/MicDictado";
 
 export const metadata: Metadata = {
@@ -74,6 +75,7 @@ export default async function CajaLayout({ children }: { children: React.ReactNo
         <NavLink href="/caja/checklist">🌡️ Higiene</NavLink>
       </nav>
       <AvisoAperturas />
+      <AutoActualizar />
       <main className="flex-1 p-4">{children}</main>
     </div>
   );

@@ -6,6 +6,7 @@ import { rubroActivo } from "@/lib/dominio/empresa";
 import type { Etiquetas } from "@/lib/dominio/rubros";
 import { logout } from "./actions";
 import RegistrarSW from "./RegistrarSW";
+import AutoActualizar from "@/app/_shared/AutoActualizar";
 import MenuMovil from "./MenuMovil";
 import SidebarNav from "./SidebarNav";
 import NotaRapida from "@/components/NotaRapida";
@@ -240,6 +241,7 @@ export default async function AdminLayout({
   return (
     <div className="flex min-h-screen bg-slate-100 text-slate-800">
       <RegistrarSW />
+      <AutoActualizar />
       <NotaRapida area="general" autor={usuario?.nombre ?? rol} />
       {/* Sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col justify-between bg-slate-900 p-5 text-slate-300 md:flex">

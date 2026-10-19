@@ -1,14 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { registrarSW } from "@/app/_shared/registrarSW";
 
-/** Registra el service worker de la app Vendedor (habilita instalación como PWA). */
+/** Registra el service worker de la app Vendedor (PWA) con auto-actualización. */
 export default function RegistrarSW() {
-  useEffect(() => {
-    // Solo en producción: en desarrollo el SW interfiere con la carga de módulos.
-    if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw-vendedor.js", { scope: "/vendedor" }).catch(() => {});
-    }
-  }, []);
+  useEffect(() => { registrarSW("/sw-vendedor.js", "/vendedor"); }, []);
   return null;
 }

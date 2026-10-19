@@ -6,6 +6,7 @@ import { logout } from "./actions";
 import RegistrarSW from "./RegistrarSW";
 import NotaRapida from "@/components/NotaRapida";
 import BottomNav from "@/app/_shared/BottomNav";
+import AutoActualizar from "@/app/_shared/AutoActualizar";
 
 export const metadata: Metadata = {
   title: "Benechito Vendedor",
@@ -26,6 +27,7 @@ export default async function VendedorLayout({
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-50">
       <RegistrarSW />
+      <AutoActualizar />
       <NotaRapida area="ventas" autor={usuario?.nombre ?? ""} />
 
       {/* Barra superior */}

@@ -1,13 +1,10 @@
 "use client";
 
 import { useEffect } from "react";
+import { registrarSW } from "@/app/_shared/registrarSW";
 
-/** Registra el service worker del Panel (habilita instalarlo como app en el celular). */
+/** Registra el service worker del Panel (PWA) con auto-actualización. */
 export default function RegistrarSW() {
-  useEffect(() => {
-    if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw-panel.js", { scope: "/admin" }).catch(() => {});
-    }
-  }, []);
+  useEffect(() => { registrarSW("/sw-panel.js", "/admin"); }, []);
   return null;
 }

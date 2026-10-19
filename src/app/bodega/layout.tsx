@@ -5,6 +5,7 @@ import { rubroActivo } from "@/lib/dominio/empresa";
 import { logout } from "./actions";
 import NotaRapida from "@/components/NotaRapida";
 import BottomNav from "@/app/_shared/BottomNav";
+import AutoActualizar from "@/app/_shared/AutoActualizar";
 
 export const metadata: Metadata = {
   title: "Benechito Bodega",
@@ -19,6 +20,7 @@ export default async function BodegaLayout({ children }: { children: React.React
 
   return (
     <div className="mx-auto flex min-h-screen max-w-md flex-col bg-slate-50">
+      <AutoActualizar />
       <NotaRapida area="inventario" autor={usuario?.nombre ?? ""} />
       <header className="sticky top-0 z-10 flex items-center justify-between bg-[#b45309] px-4 py-3 text-white shadow">
         <Link href="/bodega" className="flex items-center gap-2">
