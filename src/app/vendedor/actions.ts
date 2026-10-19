@@ -65,6 +65,12 @@ export async function crearPendienteRapido(formData: FormData) {
   const sector = String(formData.get("sector") ?? "").trim() || null;
   const cliente = String(formData.get("cliente") ?? "").trim() || null;
   const telefono = String(formData.get("telefono") ?? "").replace(/\D/g, "") || null;
+  const direccion = String(formData.get("direccion") ?? "").trim() || null;
+  const mapsUrl = String(formData.get("mapsUrl") ?? "").trim() || null;
+  const latN = parseFloat(String(formData.get("lat") ?? ""));
+  const lngN = parseFloat(String(formData.get("lng") ?? ""));
+  const lat = Number.isFinite(latN) ? latN : null;
+  const lng = Number.isFinite(lngN) ? lngN : null;
   const fechaStr = String(formData.get("fecha") ?? "").trim();
   let fecha = new Date(); // hoy por defecto
   if (fechaStr) { const d = new Date(fechaStr + "T08:00:00"); if (!isNaN(d.getTime())) fecha = d; }
@@ -72,7 +78,7 @@ export async function crearPendienteRapido(formData: FormData) {
   const max = await prisma.pedidoReparto.aggregate({ _max: { orden: true }, where: { estado: { in: ["pendiente", "en_ruta"] } } });
   await prisma.pedidoReparto.create({
     data: {
-      pedido, sector, cliente, telefono,
+      pedido, sector, cliente, telefono, direccion, mapsUrl, lat, lng,
       estado: "pendiente", fecha,
       orden: (max._max.orden ?? 0) + 1,
       usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,

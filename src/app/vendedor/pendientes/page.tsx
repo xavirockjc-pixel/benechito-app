@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma";
-import MicDictado from "@/components/MicDictado";
-import { crearPendienteRapido, entregarPedidoReparto, borrarPedidoReparto } from "../actions";
+import { entregarPedidoReparto, borrarPedidoReparto } from "../actions";
+import { linkMaps } from "@/lib/dominio/reparto";
+import CapturaRapida from "./CapturaRapida";
 
 export const dynamic = "force-dynamic";
 
 type Fila = {
   id: string; pedido: string; cliente: string | null; telefono: string | null;
-  sector: string | null; fecha: Date; monto: unknown;
+  sector: string | null; fecha: Date; lat: number | null; lng: number | null; mapsUrl: string | null;
 };
 
 const SECTORES_BASE = ["Coronel", "Lota"];
@@ -22,7 +23,7 @@ export default async function Pendientes() {
   const filas = (await prisma.pedidoReparto.findMany({
     where: { estado: { in: ["pendiente", "en_ruta"] } },
     orderBy: [{ fecha: "asc" }, { orden: "asc" }],
-    select: { id: true, pedido: true, cliente: true, telefono: true, sector: true, fecha: true, monto: true },
+    select: { id: true, pedido: true, cliente: true, telefono: true, sector: true, fecha: true, lat: true, lng: true, mapsUrl: true },
     take: 300,
   })) as Fila[];
 
@@ -56,6 +57,9 @@ export default async function Pendientes() {
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
+          {linkMaps(f) && (
+            <a href={linkMaps(f)!} target="_blank" rel="noreferrer" className="rounded-lg bg-sky-100 px-2 py-1.5 text-xs font-bold text-sky-700" title="Ubicación">📍</a>
+          )}
           {f.telefono && (
             <a href={`https://wa.me/${f.telefono.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="rounded-lg bg-green-100 px-2 py-1.5 text-xs font-bold text-green-700">💬</a>
           )}
@@ -90,30 +94,8 @@ export default async function Pendientes() {
         <p className="text-xs text-slate-500">Anota rápido (por voz), por sector, y tiquéalo al entregar. Para que no se te pase ninguno.</p>
       </div>
 
-      {/* Captura rápida */}
-      <form action={crearPendienteRapido} className="space-y-2.5 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-extrabold text-slate-800">➕ Nuevo pedido</p>
-          <MicDictado etiqueta="🎤 Dictar" />
-        </div>
-        <textarea name="pedido" required rows={2} placeholder="Qué pidió (ej: 50 tú y yo + 20 paletas de agua)…"
-          className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#1479c4]" />
-        <div className="grid grid-cols-2 gap-2">
-          <input name="sector" list="sectores" placeholder="Sector (Lota, Coronel…)"
-            className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#1479c4]" />
-          <input type="date" name="fecha" defaultValue={new Date().toLocaleDateString("en-CA")} min={new Date().toLocaleDateString("en-CA")}
-            className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#1479c4]" />
-          <datalist id="sectores">{sugerencias.map((s) => <option key={s} value={s} />)}</datalist>
-        </div>
-        <div className="grid grid-cols-2 gap-2">
-          <input name="cliente" placeholder="Cliente (opcional)"
-            className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#1479c4]" />
-          <input name="telefono" inputMode="tel" placeholder="WhatsApp (opcional)"
-            className="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-[#1479c4]" />
-        </div>
-        <p className="text-[11px] text-slate-400">Déjalo con la fecha de HOY y te avisa al tiro. Si es para otro día, elige la fecha y te lo recuerda ese día. 🎤 Toca «Dictar» y habla.</p>
-        <button className="w-full rounded-xl bg-[#1479c4] py-2.5 text-sm font-extrabold text-white active:scale-95">➕ Anotar pedido</button>
-      </form>
+      {/* Captura rápida: pega el WhatsApp y se completa solo */}
+      <CapturaRapida sugerencias={sugerencias} />
 
       {/* Atrasados (no se entregaron) */}
       {atrasados.length > 0 && (
