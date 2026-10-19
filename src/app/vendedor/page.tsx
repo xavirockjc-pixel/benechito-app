@@ -79,6 +79,16 @@ export default async function VendedorHome({
     const vistos = new Set<string>();
     const pedidos = pedidosPend.filter((p) => (vistos.has(p.negocioId) ? false : (vistos.add(p.negocioId), true)));
 
+    // Pedidos anotados (reparto) sin entregar: para HOY y atrasados → aviso para no saltárselos.
+    const finHoy = new Date(hoy); finHoy.setDate(finHoy.getDate() + 1);
+    const [repHoy, repAtras] = await Promise.all([
+      prisma.pedidoReparto.count({ where: { estado: { in: ["pendiente", "en_ruta"] }, fecha: { gte: hoy, lt: finHoy } } }),
+      prisma.pedidoReparto.count({ where: { estado: { in: ["pendiente", "en_ruta"] }, fecha: { lt: hoy } } }),
+    ]);
+    const avisoPend = repAtras > 0 || repHoy > 0
+      ? `🔔 ${[repAtras > 0 ? `${repAtras} atrasado${repAtras > 1 ? "s" : ""}` : "", repHoy > 0 ? `${repHoy} para hoy` : ""].filter(Boolean).join(" y ")} sin entregar — revísalos`
+      : null;
+
     // Clientes de la ruta de hoy: la ruta asignada, o los que toca reponer.
     const paradas = ruta?.paradas ?? [];
     const paradasPend = paradas.filter((p) => p.estado === "pendiente");
@@ -93,6 +103,11 @@ export default async function VendedorHome({
 
         <MiUbicacion />
         {sp.vendido && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Venta registrada</p>}
+        {avisoPend && (
+          <Link href="/vendedor/pendientes" className="block rounded-xl bg-rose-600 px-4 py-3 text-center text-sm font-extrabold text-white shadow active:scale-95">
+            {avisoPend} →
+          </Link>
+        )}
         {Tabs}
 
         {/* Vehículo: km del día + chequeo */}

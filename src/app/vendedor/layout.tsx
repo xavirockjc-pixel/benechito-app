@@ -48,6 +48,7 @@ export default async function VendedorLayout({
         acento="#1479c4"
         items={[
           { href: "/vendedor", label: "Inicio", icon: "🏠" },
+          { href: "/vendedor/pendientes", label: "Anotar", icon: "🔔" },
           { href: "/vendedor/pedidos", label: "Pedidos", icon: "🛵" },
           { href: "/vendedor/agendados", label: "Agendados", icon: "📋" },
           { href: "/vendedor/entregas", label: "Ventas rep.", icon: "🧾" },

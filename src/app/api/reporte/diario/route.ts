@@ -60,6 +60,16 @@ export async function GET(req: NextRequest) {
     0,
   );
 
+  // Pedidos anotados (reparto) sin entregar: para HOY (por sector), atrasados y próximos.
+  const repPend = await safe(
+    () => prisma.pedidoReparto.findMany({
+      where: { estado: { in: ["pendiente", "en_ruta"] } },
+      orderBy: [{ fecha: "asc" }],
+      select: { sector: true, fecha: true },
+    }),
+    [] as { sector: string | null; fecha: Date }[],
+  );
+
   // Preventa sin cerrar.
   const preventaAbierta = await safe(
     () => prisma.preventa.count({ where: { estado: { in: ["enviada", "sin_respuesta"] } } }),
@@ -230,6 +240,26 @@ export async function GET(req: NextRequest) {
   }
   if (salidasPend > 0) {
     L.push(`   • 🚚 Salidas de bodega por confirmar: ${salidasPend} — di a quién se vendió para que quede como venta.`);
+  }
+  // Pedidos anotados por entregar (reparto): atrasados + para hoy por sector + próximos.
+  {
+    const finHoyRep = new Date(inicio); finHoyRep.setDate(finHoyRep.getDate() + 1);
+    const repAtras = repPend.filter((p) => new Date(p.fecha) < inicio);
+    const repHoy = repPend.filter((p) => { const f = new Date(p.fecha); return f >= inicio && f < finHoyRep; });
+    const repFut = repPend.filter((p) => new Date(p.fecha) >= finHoyRep);
+    if (repAtras.length || repHoy.length) {
+      L.push("");
+      L.push(`🛵 *Pedidos anotados por entregar:*`);
+      if (repAtras.length) L.push(`   • ⚠️ Atrasados: ${repAtras.length} — ¡revísalos!`);
+      if (repHoy.length) {
+        L.push(`   • 🔴 Para HOY: ${repHoy.length}`);
+        const bySec = new Map<string, number>();
+        for (const p of repHoy) { const s = (p.sector ?? "").trim() || "Sin sector"; bySec.set(s, (bySec.get(s) ?? 0) + 1); }
+        L.push([...bySec.entries()].map(([s, n]) => `       – 📍 ${s}: ${n}`).join("\n"));
+      }
+      if (repFut.length) L.push(`   • 📅 Próximos días: ${repFut.length}`);
+      L.push(`   → tiquéalos en benechito.com/vendedor/pendientes`);
+    }
   }
   if (bajoStock.length) {
     L.push("");

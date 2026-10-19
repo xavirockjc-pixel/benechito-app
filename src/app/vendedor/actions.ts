@@ -9,6 +9,7 @@ import { estadoPagoDe, MEDIOS_PAGO, faltaParaFactura, documentoLegacy } from "@/
 import { crearDocumentoVenta } from "@/lib/facturacion";
 import { canalPorTipoCliente } from "@/lib/dominio/canales";
 import { ordenarPorCercania } from "@/lib/dominio/reparto";
+import { notificarTelegram } from "@/lib/telegram";
 
 // ===== Pedidos de reparto (WhatsApp → agenda → ruta) =====
 
@@ -19,6 +20,7 @@ export async function crearPedidoReparto(formData: FormData) {
   const cliente = String(formData.get("cliente") ?? "").trim() || null;
   const telefono = String(formData.get("telefono") ?? "").replace(/\D/g, "") || null;
   const direccion = String(formData.get("direccion") ?? "").trim() || null;
+  const sector = String(formData.get("sector") ?? "").trim() || null;
   const mapsUrl = String(formData.get("mapsUrl") ?? "").trim() || null;
   const latN = parseFloat(String(formData.get("lat") ?? ""));
   const lngN = parseFloat(String(formData.get("lng") ?? ""));
@@ -41,7 +43,7 @@ export async function crearPedidoReparto(formData: FormData) {
   const max = await prisma.pedidoReparto.aggregate({ _max: { orden: true }, where: { estado: { in: ["pendiente", "en_ruta"] } } });
   await prisma.pedidoReparto.create({
     data: {
-      cliente, telefono, pedido, direccion, mapsUrl, lat, lng, negocioId, estadoPago,
+      cliente, telefono, pedido, direccion, sector, mapsUrl, lat, lng, negocioId, estadoPago,
       monto: monto > 0 ? monto : null,
       ...(fecha ? { fecha } : {}),
       orden: (max._max.orden ?? 0) + 1,
@@ -50,6 +52,43 @@ export async function crearPedidoReparto(formData: FormData) {
   });
   revalidatePath("/vendedor/pedidos");
   revalidatePath("/admin");
+}
+
+/**
+ * Anota un pedido RÁPIDO (de WhatsApp) para no saltárselo: por sector, con fecha
+ * (hoy por defecto) y queda como pendiente para tiquear al entregar. Si es para HOY,
+ * avisa al tiro por Telegram.
+ */
+export async function crearPendienteRapido(formData: FormData) {
+  const pedido = String(formData.get("pedido") ?? "").trim();
+  if (!pedido) return;
+  const sector = String(formData.get("sector") ?? "").trim() || null;
+  const cliente = String(formData.get("cliente") ?? "").trim() || null;
+  const telefono = String(formData.get("telefono") ?? "").replace(/\D/g, "") || null;
+  const fechaStr = String(formData.get("fecha") ?? "").trim();
+  let fecha = new Date(); // hoy por defecto
+  if (fechaStr) { const d = new Date(fechaStr + "T08:00:00"); if (!isNaN(d.getTime())) fecha = d; }
+  const u = await usuarioActual();
+  const max = await prisma.pedidoReparto.aggregate({ _max: { orden: true }, where: { estado: { in: ["pendiente", "en_ruta"] } } });
+  await prisma.pedidoReparto.create({
+    data: {
+      pedido, sector, cliente, telefono,
+      estado: "pendiente", fecha,
+      orden: (max._max.orden ?? 0) + 1,
+      usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+    },
+  });
+  // Aviso instantáneo si el pedido es para HOY (para no pasarlo por alto).
+  const hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  const finHoy = new Date(hoy); finHoy.setDate(finHoy.getDate() + 1);
+  if (fecha >= hoy && fecha < finHoy) {
+    await notificarTelegram(
+      `🛵 *Pedido para HOY anotado*${sector ? ` · ${sector}` : ""}\n📦 ${pedido}${cliente ? `\n👤 ${cliente}` : ""}${telefono ? ` · ${telefono}` : ""}\n\n✅ Tiquéalo al entregar → benechito.com/vendedor/pendientes`,
+    ).catch(() => {});
+  }
+  revalidatePath("/vendedor/pendientes");
+  revalidatePath("/vendedor/pedidos");
+  revalidatePath("/vendedor");
 }
 
 /** Sube o baja un pedido en la ruta (intercambia orden con el vecino). */
@@ -108,6 +147,8 @@ export async function entregarPedidoReparto(formData: FormData) {
   }
   await prisma.pedidoReparto.update({ where: { id }, data: { estado: "entregado", entregadoEn: new Date(), ventaId } }).catch(() => {});
   revalidatePath("/vendedor/pedidos");
+  revalidatePath("/vendedor/pendientes");
+  revalidatePath("/vendedor");
   revalidatePath("/admin");
 }
 
@@ -126,6 +167,8 @@ export async function borrarPedidoReparto(formData: FormData) {
   if (!id) return;
   await prisma.pedidoReparto.delete({ where: { id } }).catch(() => {});
   revalidatePath("/vendedor/pedidos");
+  revalidatePath("/vendedor/pendientes");
+  revalidatePath("/vendedor");
 }
 
 /** Busca un cliente por id o nombre; si no existe y hay nombre, lo crea mínimo. */

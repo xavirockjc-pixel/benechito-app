@@ -1414,6 +1414,7 @@ model PedidoReparto {
   lng         Float?
   mapsUrl     String? // link original (Maps/Waze) si no se pudieron sacar coords
   direccion   String? // texto de dirección/referencia
+  sector      String? // zona/sector (Lota, Coronel…) para no saltarse pedidos por zona
   estado      String    @default("pendiente") // pendiente | en_ruta | entregado | cancelado
   orden       Int       @default(0) // posición en la ruta del día
   negocioId   String? // cliente negocio (si quedó enlazado)
