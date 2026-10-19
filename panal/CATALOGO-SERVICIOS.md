@@ -84,6 +84,21 @@ Para peluquerías, consultas, talleres, profesionales.
 
 ---
 
+## 💰 Precios de referencia (valor intermedio)
+
+| Producto | Instalación | Mensual (online) | Guía |
+|---|---|---|---|
+| Landing page | $99.000 | — | — |
+| Tienda web / catálogo | $120.000 | — | — |
+| **Menú digital con QR** | **$90.000** | **$15.000/mes** | `VENDER-MENU-AGENDA.md` |
+| **Agenda de citas** | **$120.000** | **$20.000/mes** | `VENDER-MENU-AGENDA.md` |
+| Cotizador de Servicios | $120.000 | $20.000/mes | `VENDER-COTIZADOR.md` |
+| Sistema de gestión (Completo) | $1.200.000 | $80.000/mes | — |
+| Ecosistema a medida | desde $1.200.000 | desde $80.000/mes | `clientes/ecosistema-multinegocio-RUNBOOK.md` |
+
+> La **mensualidad online** es opcional en las entradas rápidas: si no la quiere, igual
+> se lleva su archivo funcionando. Pack Menú + Agenda: **$180.000** + **$30.000/mes**.
+
 ### Cómo usamos este catálogo
 - **Tú (vender):** es tu menú. Entras con una venta chica (landing, tienda, cotizador,
   menú QR o agenda) y subes al sistema completo.
