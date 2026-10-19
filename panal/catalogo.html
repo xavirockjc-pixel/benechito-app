@@ -1,0 +1,239 @@
+<!doctype html><meta charset="utf8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Catálogo Panal</title>
+<style>
+  img{max-width:100%} [hidden]{display:none!important}
+  /* Catálogo de servicios Panal — menú para vender + roadmap. Tema Panal (oscuro-miel, single-dark por marca).
+     Layout: hero corto + filtro por estado + grilla de 8 proyectos + bloque "sumar primero" + roadmap. */
+  :root{
+    color-scheme: dark;
+    --ground:#100b06; --surface:#19110a; --surface-2:#241a10; --line:#3c2d1a;
+    --honey:#f6a821; --bright:#ffce6a; --deep:#a8680f; --cream:#f4ecd8; --muted:#a99a7c;
+    --good:#5fd0a6; --teal:#5fd0c0; --new:#ffce6a;
+    --glow: rgba(246,168,33,.4);
+    --mono: ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --sans: system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --maxw: 1040px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--ground); color:var(--cream); font-family:var(--sans); line-height:1.55;
+    background-image:radial-gradient(1100px 460px at 82% -12%, rgba(246,168,33,.10), transparent 60%)}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding-inline:18px}
+  h1,h2,h3{margin:0; text-wrap:balance}
+  .mono{font-family:var(--mono)}
+  .eyebrow{font-family:var(--mono); text-transform:uppercase; letter-spacing:.24em; font-size:.68rem; color:var(--honey); font-weight:700}
+
+  header.hero{padding:44px 0 22px; border-bottom:1px solid var(--line)}
+  .hero .in{display:flex; align-items:center; gap:14px}
+  .hero svg{width:40px; height:44px; filter:drop-shadow(0 0 12px var(--glow)); flex:none}
+  .hero h1{font-size:clamp(1.7rem,5vw,2.6rem); font-weight:800; letter-spacing:-.02em; margin-top:8px}
+  .hero p{color:var(--muted); margin:10px 0 0; max-width:60ch}
+
+  .bar{position:sticky; top:env(safe-area-inset-top,0px); z-index:10; background:rgba(16,11,6,.9); backdrop-filter:blur(8px); border-bottom:1px solid var(--line); padding-block:10px}
+  .bar .in{display:flex; gap:14px; align-items:center; flex-wrap:wrap}
+  .legend{display:flex; gap:14px; flex-wrap:wrap; font-size:.76rem; color:var(--muted)}
+  .dot{display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle}
+  .dot.l{background:var(--good)} .dot.p{background:var(--honey)} .dot.n{background:var(--new); box-shadow:0 0 7px var(--glow)}
+  .filters{display:flex; gap:6px; margin-left:auto; flex-wrap:wrap}
+  .filters button{border:1px solid var(--line); background:var(--surface); color:var(--muted); border-radius:999px; padding:7px 13px; font-weight:800; font-size:.78rem; cursor:pointer; font-family:var(--sans)}
+  .filters button.on{background:linear-gradient(180deg,var(--bright),var(--honey)); color:#2a1a05; border-color:transparent}
+
+  section{padding-block:26px}
+  .sec-h .eyebrow{display:block}
+  .sec-h h2{font-size:clamp(1.3rem,3.4vw,1.75rem); font-weight:800; margin-top:6px}
+  .sec-h p{color:var(--muted); margin:6px 0 0}
+
+  .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-top:18px}
+  @media(max-width:760px){ .grid{grid-template-columns:1fr} }
+  .proj{background:linear-gradient(180deg,var(--surface),#140d07); border:1px solid var(--line); border-radius:16px; padding:18px;
+    clip-path:polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%)}
+  .proj .tag{font-family:var(--mono); font-size:.66rem; letter-spacing:.14em; text-transform:uppercase; color:var(--honey)}
+  .proj h3{font-size:1.1rem; font-weight:800; margin-top:4px; display:flex; align-items:center; gap:8px}
+  .proj .lead{color:var(--muted); font-size:.86rem; margin:4px 0 12px}
+  .proj ul{list-style:none; margin:0; padding:0; display:grid; gap:7px}
+  .proj li{display:flex; gap:9px; align-items:flex-start; font-size:.9rem}
+  .proj li .st{flex:none; width:10px; height:10px; border-radius:50%; margin-top:6px}
+  .proj li.listo .st{background:var(--good)} .proj li.parcial .st{background:var(--honey)} .proj li.nuevo .st{background:var(--new); box-shadow:0 0 7px var(--glow)}
+  .proj li.nuevo b{color:var(--bright)}
+  body.f-listo li:not(.listo), body.f-nuevo li:not(.nuevo){display:none}
+  body.f-listo .proj:not(:has(li.listo)), body.f-nuevo .proj:not(:has(li.nuevo)){display:none}
+
+  .highlight{background:linear-gradient(180deg,var(--surface-2),#140d07); border:1px solid rgba(246,168,33,.4); border-radius:18px; padding:20px; margin-top:18px}
+  .highlight h3{font-size:1.1rem; font-weight:800}
+  .hl-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:12px}
+  @media(max-width:640px){ .hl-grid{grid-template-columns:1fr} }
+  .hl{display:flex; gap:10px; align-items:flex-start; background:#140d07; border:1px solid var(--line); border-radius:12px; padding:11px 13px; font-size:.88rem}
+  .hl .e{font-size:1.2rem; flex:none}
+  .hl b{color:var(--bright)}
+
+  .road{display:grid; gap:10px; margin-top:18px}
+  .rstep{display:flex; gap:13px; padding:13px 15px; border:1px solid var(--line); border-radius:14px; background:var(--surface)}
+  .rstep .n{flex:none; width:30px; height:33px; display:grid; place-items:center; font-family:var(--mono); font-weight:800; color:var(--honey); background:rgba(246,168,33,.14); clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)}
+  .rstep b{font-size:.94rem} .rstep p{margin:3px 0 0; color:var(--muted); font-size:.85rem}
+
+  footer{border-top:1px solid var(--line); padding-block:24px; text-align:center; color:var(--muted); font-size:.8rem}
+  :focus-visible{outline:2px solid var(--bright); outline-offset:3px; border-radius:8px}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="gH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd778"/><stop offset="1" stop-color="#d98a12"/></linearGradient>
+  <symbol id="hex" viewBox="0 0 60 66">
+    <path d="M30 2 56 17V49L30 64 4 49V17Z" fill="none" stroke="url(#gH)" stroke-width="3"/>
+    <path d="M30 16 44 24V40L30 48 16 40V24Z" fill="url(#gH)" opacity=".9"/>
+    <circle cx="30" cy="32" r="4.5" fill="#160f07"/>
+  </symbol>
+</defs></svg>
+
+<header class="hero"><div class="wrap">
+  <div class="in"><svg aria-hidden="true"><use href="#hex"/></svg><div><span class="eyebrow">Panal · empresa de servicios</span></div></div>
+  <h1>Lo que le puedes ofrecer a una empresa o comercio.</h1>
+  <p>Todo lo que vende Panal, en un menú. Entras con una venta chica y subes al sistema completo. <b style="color:var(--bright)">Tú vendes; yo lo construyo y lo monto.</b></p>
+</div></header>
+
+<div class="bar"><div class="wrap in">
+  <div class="legend">
+    <span><span class="dot l"></span>Listo para vender</span>
+    <span><span class="dot p"></span>Parcial / ofrecido</span>
+    <span><span class="dot n"></span>Nuevo a construir</span>
+  </div>
+  <div class="filters">
+    <button data-f="all" class="on">Todo</button>
+    <button data-f="listo">Listos</button>
+    <button data-f="nuevo">Nuevos ⭐</button>
+  </div>
+</div></div>
+
+<section class="wrap">
+  <div class="grid">
+
+    <article class="proj">
+      <span class="tag">P1 · venta ancla</span>
+      <h3>🏭 Gestión &amp; operación</h3>
+      <p class="lead">El sistema modular por celdas — el core de Panal.</p>
+      <ul>
+        <li class="listo"><span class="st"></span><span>Sistema de gestión modular (producción, inventario, ventas, reparto, clientes, panel, facturación, recetas, tienda)</span></li>
+        <li class="listo"><span class="st"></span><span>Ecosistema a medida multinegocio (bodega + locales + producción + distribución)</span></li>
+        <li class="listo"><span class="st"></span><span>Cerebro: cuentas por pagar, cheques y pagos con aviso de fondos, lo que más se vende</span></li>
+        <li class="listo"><span class="st"></span><span>Conteo por local (tiqueo) que cuadra el stock solo</span></li>
+        <li class="nuevo"><span class="st"></span><span><b>Asistencia y turnos del personal</b></span></li>
+        <li class="parcial"><span class="st"></span><span>Facturación electrónica SII (boletas/facturas reales)</span></li>
+      </ul>
+    </article>
+
+    <article class="proj">
+      <span class="tag">P2 · entrada rápida</span>
+      <h3>🛒 Vitrina &amp; venta online</h3>
+      <p class="lead">Lo que atrae y vende: la cara del negocio.</p>
+      <ul>
+        <li class="listo"><span class="st"></span><span>Landing page con su marca</span></li>
+        <li class="listo"><span class="st"></span><span>Tienda web / catálogo con pago online</span></li>
+        <li class="listo"><span class="st"></span><span>Pedidos por WhatsApp</span></li>
+        <li class="nuevo"><span class="st"></span><span><b>Menú digital con QR</b> (pide desde la mesa)</span></li>
+        <li class="nuevo"><span class="st"></span><span><b>Perfil de Google + reseñas</b></span></li>
+      </ul>
+    </article>
+
+    <article class="proj">
+      <span class="tag">P3 · entrada rápida</span>
+      <h3>🧮 Cotización &amp; presupuestos</h3>
+      <p class="lead">Para quienes venden servicios o trabajos.</p>
+      <ul>
+        <li class="listo"><span class="st"></span><span>Cotizador de Servicios marca blanca (con foto, pasos y reporte al cliente)</span></li>
+        <li class="listo"><span class="st"></span><span>Cotizadores a medida (materiales + mano de obra)</span></li>
+      </ul>
+    </article>
+
+    <article class="proj">
+      <span class="tag">P4 · lo que más crece</span>
+      <h3>🤖 Automatización &amp; IA</h3>
+      <p class="lead">Que las tareas repetitivas ocurran solas.</p>
+      <ul>
+        <li class="parcial"><span class="st"></span><span>Chatbot con IA (atiende y toma pedidos 24/7)</span></li>
+        <li class="parcial"><span class="st"></span><span>Agentes / Empleado IA (ventas, atención, marketing, admin)</span></li>
+        <li class="listo"><span class="st"></span><span>Automatizaciones (pedidos, recordatorios, cobros)</span></li>
+        <li class="listo"><span class="st"></span><span>Reporte diario a WhatsApp (el “socio”)</span></li>
+      </ul>
+    </article>
+
+    <article class="proj">
+      <span class="tag">P5 · fidelizar</span>
+      <h3>🧾 Clientes &amp; fidelización</h3>
+      <p class="lead">Que vuelvan a comprar.</p>
+      <ul>
+        <li class="listo"><span class="st"></span><span>Ficha de cliente, historial, deudas y portal “Mi Cuenta”</span></li>
+        <li class="listo"><span class="st"></span><span>Novedades y promos a todos los clientes</span></li>
+        <li class="nuevo"><span class="st"></span><span><b>Programa de puntos / fidelización</b></span></li>
+        <li class="nuevo"><span class="st"></span><span><b>Encuestas y pedido automático de reseña</b></span></li>
+      </ul>
+    </article>
+
+    <article class="proj">
+      <span class="tag">P6 · alta demanda</span>
+      <h3>📅 Agenda &amp; cobros</h3>
+      <p class="lead">Peluquerías, consultas, talleres, profesionales.</p>
+      <ul>
+        <li class="nuevo"><span class="st"></span><span><b>Agendamiento de citas / reservas</b> (con recordatorio por WhatsApp)</span></li>
+        <li class="nuevo"><span class="st"></span><span><b>Links de pago y cobro recurrente</b> (membresías / suscripciones)</span></li>
+        <li class="nuevo"><span class="st"></span><span><b>Firma de documentos y contratos digital</b></span></li>
+      </ul>
+    </article>
+
+    <article class="proj">
+      <span class="tag">P7 · a futuro</span>
+      <h3>🔎 Directorio &amp; marketplace</h3>
+      <p class="lead">Varios negocios en un solo lugar.</p>
+      <ul>
+        <li class="parcial"><span class="st"></span><span>Directorio de profesionales (buscador por ciudad/rubro)</span></li>
+        <li class="nuevo"><span class="st"></span><span><b>Marketplace local</b> (evolución del directorio)</span></li>
+      </ul>
+    </article>
+
+    <article class="proj">
+      <span class="tag">P8 · recurrente</span>
+      <h3>📣 Marketing &amp; contenido</h3>
+      <p class="lead">Servicios aparte, con mensualidad.</p>
+      <ul>
+        <li class="listo"><span class="st"></span><span>Gestión de redes (posts FB/IG)</span></li>
+        <li class="listo"><span class="st"></span><span>Creación de fanpage</span></li>
+        <li class="listo"><span class="st"></span><span>Flyers, piezas gráficas y reels</span></li>
+        <li class="nuevo"><span class="st"></span><span><b>Campañas de publicidad pagada (Meta Ads)</b></span></li>
+      </ul>
+    </article>
+
+  </div>
+
+  <div class="highlight">
+    <span class="eyebrow">Del research</span>
+    <h3>Lo nuevo que más conviene sumar primero</h3>
+    <div class="hl-grid">
+      <div class="hl"><span class="e">📱</span><span><b>Menú digital QR + reserva:</b> barato, rápido, todo local de comida lo quiere.</span></div>
+      <div class="hl"><span class="e">📅</span><span><b>Agendamiento de citas:</b> peluquerías y servicios lo buscan y casi no lo tienen.</span></div>
+      <div class="hl"><span class="e">💳</span><span><b>Cobro recurrente / membresías:</b> ingreso mensual para el cliente y para ti.</span></div>
+      <div class="hl"><span class="e">🧾</span><span><b>Facturación SII:</b> muchas pymes la necesitan por obligación — gancho fuerte.</span></div>
+      <div class="hl"><span class="e">⭐</span><span><b>Perfil de Google + reseñas:</b> lo más fácil de venderle a un negocio local.</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="wrap">
+  <div class="sec-h"><span class="eyebrow">Cómo avanzamos</span><h2>Roadmap de proyectos</h2></div>
+  <div class="road">
+    <div class="rstep"><span class="n">1</span><div><b>Consolidar el core</b><p>Sistema + ecosistema multinegocio + cerebro. Ya muy avanzado.</p></div></div>
+    <div class="rstep"><span class="n">2</span><div><b>Afinar las entradas rápidas</b><p>Landing, tienda, menú QR, cotizadores — ventas chicas que abren la puerta.</p></div></div>
+    <div class="rstep"><span class="n">3</span><div><b>Automatización &amp; IA</b><p>Chatbot, agentes y reportes — alto valor, alta demanda.</p></div></div>
+    <div class="rstep"><span class="n">4</span><div><b>Nuevos de alta demanda</b><p>Agenda + cobros recurrentes, fidelización y facturación SII.</p></div></div>
+    <div class="rstep"><span class="n">5</span><div><b>Directorio / marketplace</b><p>A futuro, cuando haya varios clientes montados.</p></div></div>
+  </div>
+</section>
+
+<footer>🍯 Panal · Catálogo de servicios — tú vendes, yo construyo y monto. Cada ⭐ es un proyecto listo cuando lo necesites.</footer>
+
+<script>
+(function(){
+  var btns=document.querySelectorAll(".filters button");
+  btns.forEach(function(b){ b.onclick=function(){
+    document.body.classList.remove("f-listo","f-nuevo");
+    if(b.dataset.f!=="all") document.body.classList.add("f-"+b.dataset.f);
+    btns.forEach(function(x){ x.classList.toggle("on", x===b); });
+  }; });
+})();
+</script>
