@@ -59,6 +59,8 @@ function construirModulosSimple(L: Etiquetas): Modulo[] {
         { href: "/admin/salidas-pendientes", label: "Salidas por confirmar", icon: "🚚" },
         { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
         { href: "/admin/cobranza", label: "Clientes que deben", icon: "💸" },
+        { href: "/admin/productos", label: "Catálogo", icon: "🍫" },
+        { href: "/admin/precios", label: "Precios", icon: "🏷️" },
       ],
     },
     {
