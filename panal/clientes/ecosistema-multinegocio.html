@@ -125,6 +125,29 @@
   .plan li{display:flex; gap:9px; font-size:.9rem} .plan li::before{content:"⬢"; color:var(--honey); flex:none}
   .plan .cta{margin-top:18px; display:flex; gap:10px; flex-wrap:wrap}
 
+  /* cerebro & pagos */
+  .bars{display:flex; flex-direction:column; gap:10px}
+  .bar{display:grid; grid-template-columns:118px 1fr auto; gap:10px; align-items:center; font-size:.85rem}
+  @media(max-width:420px){ .bar{grid-template-columns:96px 1fr auto} }
+  .bar .lab{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .bar .track{height:14px; background:var(--surface-2); border-radius:7px; overflow:hidden}
+  .bar .fill{height:100%; background:linear-gradient(90deg,var(--deep),var(--honey)); border-radius:7px}
+  .bar .val{font-family:var(--mono); font-size:.8rem; color:var(--bright)}
+  .insight{margin-top:14px; font-size:.84rem; color:var(--cream); background:color-mix(in srgb,var(--teal) 12%,var(--surface)); border:1px solid var(--line); border-radius:12px; padding:11px 13px}
+  .insight b{color:var(--teal)}
+  .pay{display:flex; flex-direction:column; gap:8px}
+  .payrow{display:flex; gap:11px; align-items:center; border:1px solid var(--line); border-radius:12px; padding:10px 12px; background:#140d07}
+  .payrow .ico{font-size:1.1rem; flex:none}
+  .payrow .bd{flex:1; min-width:0} .payrow .bd b{font-size:.9rem} .payrow .bd small{display:block; color:var(--muted); font-size:.77rem}
+  .payrow .amt{font-weight:800; color:var(--bright); white-space:nowrap; font-family:var(--mono); font-size:.86rem}
+  .fund{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px; padding:12px 14px; border:1px solid rgba(246,168,33,.45); border-radius:12px; background:color-mix(in srgb,var(--honey) 10%,var(--surface)); font-size:.86rem}
+  .fund b{color:var(--bright); font-size:1.25rem; font-family:var(--mono)}
+  .conteo-t{width:100%; border-collapse:collapse; font-size:.84rem; min-width:520px}
+  .conteo-t th,.conteo-t td{padding:8px 9px; border-bottom:1px solid var(--line); text-align:right; white-space:nowrap}
+  .conteo-t th:first-child,.conteo-t td:first-child{text-align:left}
+  .conteo-t thead th{font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); font-weight:800}
+  .conteo-t input{width:62px; text-align:right; padding:6px 8px; border:1px solid var(--line); border-radius:8px; background:var(--ground); color:var(--cream); font-family:var(--mono)}
+  .dif.ok{color:var(--good)} .dif.bad{color:var(--crit); font-weight:800}
   footer{border-top:1px solid var(--line); margin-top:26px; padding-block:22px; text-align:center; color:var(--muted); font-size:.8rem}
   :focus-visible{outline:2px solid var(--bright); outline-offset:3px; border-radius:8px}
   @media (prefers-reduced-motion:reduce){ *{scroll-behavior:auto} }
@@ -148,6 +171,7 @@
   <button data-view="panel" class="on">📊 Panel del dueño</button>
   <button data-view="eco">🕸️ Cómo se conecta</button>
   <button data-view="apps">📱 Las apps</button>
+  <button data-view="cerebro">🧠 Cerebro &amp; pagos</button>
   <button data-view="plan">💰 Plan y valor</button>
 </div></nav>
 
@@ -263,8 +287,55 @@
       <ul><li>Caja simple y rápida</li><li>Baja el stock al vender</li><li>Cierre de caja diario</li><li>Ve solo su local</li></ul></div>
     <div class="app"><div class="ic">🚚</div><h3>Traspasos y reparto</h3><div class="who">Repartidor / local</div>
       <ul><li>Mueve producto entre bodega, producción y locales</li><li>Cada local confirma lo recibido</li><li>Nada se pierde en el camino</li></ul></div>
-    <div class="app"><div class="ic">📊</div><h3>Panel del dueño</h3><div class="who">Solo tú</div>
-      <ul><li>Ventas y stock de todo el grupo</li><li>Qué pedir · a quién pagar · qué cuadrar</li><li>Resumen del día a tu WhatsApp</li><li>Costos y ganancias (privado)</li></ul></div>
+    <div class="app"><div class="ic">📋</div><h3>Conteo & bodegaje</h3><div class="who">Encargado de local</div>
+      <ul><li>Tiquea lo que queda al cierre</li><li>Se resta solo contra lo que llegó</li><li>Detecta merma y descuadre</li><li>Pide reposición a bodega</li></ul></div>
+    <div class="app"><div class="ic">📊</div><h3>Panel del dueño + Cerebro</h3><div class="who">Solo tú</div>
+      <ul><li>Ventas y stock de todo el grupo</li><li>Qué pedir · a quién pagar · qué cuadrar</li><li>Cheques y pagos con aviso de fondos</li><li>Lo que más se vende · costos y ganancias (privado)</li><li>Resumen del día a tu WhatsApp</li></ul></div>
+  </div>
+</section>
+
+<!-- ======================= CEREBRO & PAGOS ======================= -->
+<section class="view wrap" id="cerebroView" hidden>
+  <div class="hd">
+    <span class="eyebrow">El cerebro administrativo</span>
+    <h2>Te dice qué pagar, cuánto tener y qué se vende.</h2>
+    <p>La parte de administración de un sistema de gestión, pero simple: cuentas por pagar con <b>cheques y pagos programados</b>, aviso para tener el <b>fondo listo</b>, analítica de <b>lo que más se vende</b> y <b>conteo por local</b> que cuadra el stock solo.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>🏆 Lo que más se vende <span class="cnt">esta semana</span></h3>
+      <div class="bars">
+        <div class="bar"><span class="lab">Pan marraqueta</span><span class="track"><span class="fill" style="width:100%"></span></span><span class="val tab">1.240</span></div>
+        <div class="bar"><span class="lab">Bebida 1.5 L</span><span class="track"><span class="fill" style="width:72%"></span></span><span class="val tab">890</span></div>
+        <div class="bar"><span class="lab">Helado pote 1 L</span><span class="track"><span class="fill" style="width:44%"></span></span><span class="val tab">540</span></div>
+        <div class="bar"><span class="lab">Arroz 1 kg</span><span class="track"><span class="fill" style="width:38%"></span></span><span class="val tab">470</span></div>
+        <div class="bar"><span class="lab">Aceite 1 L</span><span class="track"><span class="fill" style="width:26%"></span></span><span class="val tab">320</span></div>
+      </div>
+      <div class="insight">🧠 <b>El pan es tu motor:</b> 1 de cada 4 ventas del grupo. Donde más sale es en Sur — ahí nunca lo dejes quebrar.</div>
+    </div>
+
+    <div class="card">
+      <h3>💳 Pagos programados y cheques</h3>
+      <div class="pay">
+        <div class="payrow"><span class="ico">🧾</span><div class="bd"><b>Cheque N° 1024 — Distribuidora San Juan</b><small>Vence 24 oct · compra al por mayor</small></div><span class="amt">$480.000</span></div>
+        <div class="payrow"><span class="ico">📅</span><div class="bd"><b>Arriendo — Local Plaza</b><small>Pago programado · 30 oct</small></div><span class="amt">$350.000</span></div>
+        <div class="payrow"><span class="ico">🧾</span><div class="bd"><b>Cheque N° 1025 — Molino (harina)</b><small>Vence 2 nov</small></div><span class="amt">$210.000</span></div>
+      </div>
+      <div class="fund"><span>🔔 Ten en el fondo para los próximos 7 días</span><b class="tab">$830.000</b></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <h3>📋 Conteo del local (tiqueo) <span class="cnt">cuadra solo</span></h3>
+    <p style="color:var(--muted); font-size:.85rem; margin:-4px 0 12px">El encargado marca lo que queda al cierre. El sistema ya sabe lo que <b>llegó</b> y lo que se <b>vendió</b>, y calcula solo la diferencia (merma o descuadre). Escribe en “Contaste” para probar.</p>
+    <div class="tablewrap">
+      <table class="conteo-t">
+        <thead><tr><th>Producto</th><th>Llegó</th><th>Vendido</th><th>Debería</th><th>Contaste</th><th>Diferencia</th></tr></thead>
+        <tbody id="conteoBody"></tbody>
+      </table>
+    </div>
+    <p class="msg" id="msg2" style="text-align:left"></p>
   </div>
 </section>
 
@@ -284,6 +355,9 @@
       <li>Producción de panadería y de heladería (por lote y por litros)</li>
       <li>Traspasos y reparto a los 4 locales</li>
       <li>Caja y stock por local (acceso por rol)</li>
+      <li>Conteo por local (tiqueo) que cuadra el stock solo</li>
+      <li>Cuentas por pagar: cheques y pagos programados con aviso de fondos</li>
+      <li>Cerebro analítico: lo que más se vende y alertas del día</li>
       <li>Panel del dueño con resumen diario a tu WhatsApp</li>
       <li>Clientes externos de heladería con su cuenta</li>
       <li>Montaje, capacitación y respaldo incluidos</li>
@@ -306,7 +380,8 @@
     {id:"a2", cls:"pay", ico:"💵", t:"Pagar a Distribuidora San Juan", p:"Compra al por mayor de $480.000 vence en 2 días."},
     {id:"a3", cls:"order", ico:"📦", t:"Pedir harina para Panadería", p:"Queda 1 saco de 25 kg (mínimo 3). Pedir hoy para no parar producción."},
     {id:"a4", cls:"cash", ico:"🧮", t:"Cuadrar caja — Minimarket Sur", p:"El cierre de ayer quedó con un descuadre de $3.200. Revisar."},
-    {id:"a5", cls:"prod", ico:"🧊", t:"Programar producción de helados", p:"Pote 1 L bajo para el fin de semana. Programar 40 L mañana."}
+    {id:"a5", cls:"prod", ico:"🧊", t:"Programar producción de helados", p:"Pote 1 L bajo para el fin de semana. Programar 40 L mañana."},
+    {id:"a6", cls:"pay", ico:"🧾", t:"Cheque N° 1024 vence el 24", p:"Ten $480.000 en el fondo para Distribuidora San Juan."}
   ];
   var done={};
   try{ done=JSON.parse(localStorage.getItem(LS)||"{}")||{}; }catch(e){}
@@ -340,7 +415,7 @@
   $("btnReset").onclick=function(){ done={}; save(); render(); flash("Avisos reiniciados"); };
 
   // pestañas
-  var views=["panel","eco","apps","plan"];
+  var views=["panel","eco","apps","cerebro","plan"];
   document.querySelectorAll("nav.tabs button").forEach(function(b){
     b.onclick=function(){
       views.forEach(function(v){ var el=$(v+"View"); if(el) el.hidden = v!==b.dataset.view; });
@@ -349,6 +424,38 @@
     };
   });
 
+  // conteo del local (tiqueo): Debería = Llegó − Vendido; Diferencia = Contaste − Debería
+  var CONTEO=[
+    {p:"Arroz 1 kg", lleg:60, vend:46, cont:14},
+    {p:"Aceite 1 L", lleg:40, vend:33, cont:5},
+    {p:"Bebida 1.5 L", lleg:80, vend:52, cont:28},
+    {p:"Pan marraqueta", lleg:120, vend:112, cont:8}
+  ];
+  function difTxt(dif){ return dif===null?"—":(dif>0?"+"+dif:(dif<0?dif+" merma":"0 ✓")); }
+  function difCls(dif){ return dif===null?"":(dif<0?"bad":"ok"); }
+  function renderConteo(){
+    var b=$("conteoBody"); if(!b) return; b.innerHTML="";
+    CONTEO.forEach(function(r){
+      var deb=r.lleg-r.vend;
+      var tr=document.createElement("tr");
+      tr.innerHTML='<td>'+r.p+'</td><td class="tab">'+r.lleg+'</td><td class="tab">'+r.vend+'</td><td class="tab">'+deb+'</td>'
+        +'<td><input class="tab" inputmode="numeric" value="'+(r.cont==null?"":r.cont)+'"></td>'
+        +'<td class="dif tab"></td>';
+      var inp=tr.querySelector("input"), cell=tr.querySelector(".dif");
+      function upd(){ var dif=(r.cont===""||r.cont==null)?null:(r.cont-deb); cell.className="dif tab "+difCls(dif); cell.textContent=difTxt(dif); recap(); }
+      inp.oninput=function(){ var v=this.value.trim(); r.cont=(v===""?"":parseInt(v,10)); if(typeof r.cont==="number"&&isNaN(r.cont)) r.cont=""; upd(); };
+      b.appendChild(tr); upd();
+    });
+  }
+  function recap(){
+    var m=$("msg2"); if(!m) return;
+    var mermas=CONTEO.filter(function(r){ return typeof r.cont==="number" && (r.cont-(r.lleg-r.vend))<0; });
+    if(mermas.length){ var tot=mermas.reduce(function(a,r){return a+((r.lleg-r.vend)-r.cont);},0);
+      m.style.color="var(--crit)"; m.textContent="⚠️ "+mermas.length+" producto(s) con merma — faltan "+tot+" unidades. Revisar antes de cerrar caja."; }
+    else { m.style.color="var(--good)"; m.textContent="✅ Todo cuadra con lo vendido."; }
+  }
+
   render();
+  renderConteo();
 })();
 </script>
