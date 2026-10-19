@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { entregarPedidoReparto, borrarPedidoReparto } from "../actions";
 import { linkMaps } from "@/lib/dominio/reparto";
 import CapturaRapida from "./CapturaRapida";
+import RecordatorioAlarma from "./RecordatorioAlarma";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +17,11 @@ function diaCero(d: Date) { const x = new Date(d); x.setHours(0, 0, 0, 0); retur
 function mismoDia(a: Date, b: Date) { return diaCero(a).getTime() === diaCero(b).getTime(); }
 const fmtFecha = (d: Date) => new Date(d).toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" });
 
-export default async function Pendientes() {
+export default async function Pendientes({ searchParams }: { searchParams: Promise<{ text?: string; url?: string; title?: string }> }) {
+  // Si llega "compartido" desde WhatsApp/Maps (Share Target del PWA), precarga el texto.
+  const sp = await searchParams;
+  const compartido = [sp.title, sp.text, sp.url].filter(Boolean).join(" ").replace(/\s+/g, " ").trim();
+
   const hoy = diaCero(new Date());
   const manana = new Date(hoy); manana.setDate(manana.getDate() + 1);
 
@@ -91,11 +96,14 @@ export default async function Pendientes() {
     <div className="mx-auto max-w-lg space-y-5 pb-24">
       <div>
         <h1 className="text-xl font-extrabold text-slate-900">🔔 Anotar pedidos</h1>
-        <p className="text-xs text-slate-500">Anota rápido (por voz), por sector, y tiquéalo al entregar. Para que no se te pase ninguno.</p>
+        <p className="text-xs text-slate-500">Anota rápido (por voz o compartiendo), por sector, y tiquéalo al entregar. Para que no se te pase ninguno.</p>
       </div>
 
-      {/* Captura rápida: pega el WhatsApp y se completa solo */}
-      <CapturaRapida sugerencias={sugerencias} />
+      {/* Alarma: recuerda cada cierto rato los pedidos de HOY sin entregar */}
+      <RecordatorioAlarma urgentes={atrasados.length + deHoy.length} />
+
+      {/* Captura rápida: pega o comparte el WhatsApp y se completa solo */}
+      <CapturaRapida sugerencias={sugerencias} initial={compartido} />
 
       {/* Atrasados (no se entregaron) */}
       {atrasados.length > 0 && (

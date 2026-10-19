@@ -10,8 +10,8 @@ import MicDictado from "@/components/MicDictado";
  * el pedido, el teléfono y la ubicación (link de Maps / coordenadas). Solo eliges
  * el sector y la fecha. Pensado para no andar saltando de WhatsApp al app.
  */
-export default function CapturaRapida({ sugerencias }: { sugerencias: string[] }) {
-  const [texto, setTexto] = useState("");
+export default function CapturaRapida({ sugerencias, initial = "" }: { sugerencias: string[]; initial?: string }) {
+  const [texto, setTexto] = useState(initial);
   const [telOverride, setTelOverride] = useState<string | null>(null);
   const [pendiente, startTransition] = useTransition();
   const [ok, setOk] = useState(false);

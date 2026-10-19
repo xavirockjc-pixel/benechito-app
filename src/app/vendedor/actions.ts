@@ -10,6 +10,7 @@ import { crearDocumentoVenta } from "@/lib/facturacion";
 import { canalPorTipoCliente } from "@/lib/dominio/canales";
 import { ordenarPorCercania } from "@/lib/dominio/reparto";
 import { notificarTelegram } from "@/lib/telegram";
+import { resolverLinkMapa } from "@/app/admin/negocios/actions";
 
 // ===== Pedidos de reparto (WhatsApp → agenda → ruta) =====
 
@@ -69,8 +70,14 @@ export async function crearPendienteRapido(formData: FormData) {
   const mapsUrl = String(formData.get("mapsUrl") ?? "").trim() || null;
   const latN = parseFloat(String(formData.get("lat") ?? ""));
   const lngN = parseFloat(String(formData.get("lng") ?? ""));
-  const lat = Number.isFinite(latN) ? latN : null;
-  const lng = Number.isFinite(lngN) ? lngN : null;
+  let lat = Number.isFinite(latN) ? latN : null;
+  let lng = Number.isFinite(lngN) ? lngN : null;
+  // Si llegó un link de Maps (p.ej. ubicación compartida de WhatsApp) sin coords,
+  // lo resolvemos siguiendo el enlace para dejar el pin exacto (y ordenar la ruta).
+  if ((lat == null || lng == null) && mapsUrl) {
+    const c = await resolverLinkMapa(mapsUrl).catch(() => null);
+    if (c) { lat = c.lat; lng = c.lng; }
+  }
   const fechaStr = String(formData.get("fecha") ?? "").trim();
   let fecha = new Date(); // hoy por defecto
   if (fechaStr) { const d = new Date(fechaStr + "T08:00:00"); if (!isNaN(d.getTime())) fecha = d; }
