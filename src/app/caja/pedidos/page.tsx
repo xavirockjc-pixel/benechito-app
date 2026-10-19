@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { ESTADOS_PEDIDO, estadoPedidoLabel, estadoPedidoColor } from "@/lib/dominio/pedidos";
 import { cambiarEstadoPedido } from "@/app/admin/pedidos/actions";
-import AutoRefrescar from "./AutoRefrescar";
+import AvisoNuevosPedidos from "@/app/_shared/AvisoNuevosPedidos";
 
 export const dynamic = "force-dynamic";
 
@@ -26,8 +26,8 @@ export default async function PedidosLocal() {
   });
 
   return (
-    <div className="mx-auto max-w-2xl">
-      <AutoRefrescar />
+    <div className="mx-auto max-w-2xl space-y-3">
+      <AvisoNuevosPedidos count={pedidos.length} etiqueta="pedido" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-extrabold text-slate-900">📋 Pedidos por preparar</h1>

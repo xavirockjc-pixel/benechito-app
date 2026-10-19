@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { ESTADOS_PEDIDO, estadoPedidoLabel, estadoPedidoColor, fmtCLP } from "@/lib/dominio/pedidos";
 import { bucketPedido, BUCKETS_ONLINE, type BucketOnline } from "@/lib/dominio/pedidosOnline";
 import { cambiarEstadoPedido } from "@/app/admin/pedidos/actions";
+import AvisoNuevosPedidos from "@/app/_shared/AvisoNuevosPedidos";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,8 @@ export default async function PedidosOnline() {
           {nuevos > 0 && <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-extrabold text-amber-800">🔔 {nuevos} nuevo{nuevos > 1 ? "s" : ""}</span>}
         </div>
       </div>
+
+      <AvisoNuevosPedidos count={pedidos.length} etiqueta="pedido online" />
 
       {pedidos.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">✅ No hay pedidos online pendientes.</p>
