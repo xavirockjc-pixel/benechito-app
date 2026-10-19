@@ -1,0 +1,368 @@
+<!doctype html><meta charset="utf8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Reseñas Google</title>
+<style>
+  /* Perfil de Google + reseñas, marca blanca para negocios locales.
+     Single-dark, acento dorado (estrellas). Layout: cabecera + pestañas (Pedir reseña / Optimiza tu perfil / Responder). */
+  :root{
+    color-scheme: dark;
+    --bg:#14110b; --bg2:#0e0b06; --card:#201a11; --card2:#2a2316; --ink:#f4efe3; --muted:#a99c82; --line:#36301f;
+    --accent:#f5b301; --accentDark:#c88f00; --bright:#ffd45e; --good:#5fd0a6; --warn:#ffb24d; --red:#f0755c;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"Cascadia Code","SF Mono",Menlo,Consolas,monospace;
+    --shadow:0 18px 40px -26px rgba(0,0,0,.8);
+    --gut-l: max(16px, env(safe-area-inset-left,0px));
+    --gut-r: max(16px, env(safe-area-inset-right,0px));
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg); color:var(--ink); font-family:var(--sans); line-height:1.5; padding-bottom:24px}
+  img{max-width:100%} [hidden]{display:none!important}
+  .wrap{max-width:720px; margin:0 auto; padding-left:var(--gut-l); padding-right:var(--gut-r)}
+  h1,h2,h3{margin:0}
+  button,input,select,textarea{font-family:inherit}
+
+  .banner{background:color-mix(in srgb,var(--accent) 16%,#000); color:var(--bright); text-align:center; font-size:.8rem; padding:8px 14px; border-bottom:1px solid var(--line)}
+  .banner b{color:var(--ink)}
+
+  header.bar{position:sticky; top:env(safe-area-inset-top,0px); z-index:20; background:linear-gradient(180deg,var(--accent),var(--accentDark)); color:#2a1d00; box-shadow:0 6px 20px -12px rgba(0,0,0,.7)}
+  header .in{max-width:720px; margin:0 auto; padding:11px var(--gut-r) 11px var(--gut-l); display:flex; align-items:center; justify-content:space-between; gap:10px}
+  .brand{display:flex; align-items:center; gap:10px; min-width:0}
+  .brand img{height:38px; width:38px; object-fit:cover; border-radius:10px; flex:none; background:#fff3}
+  .brand .nm{font-weight:900; font-size:1.1rem; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .brand .rb{font-size:.7rem; font-weight:700; opacity:.85}
+  .tools{display:flex; gap:6px; flex-wrap:wrap}
+  .tgl{border:1.5px solid rgba(0,0,0,.22); background:rgba(0,0,0,.12); color:#2a1d00; border-radius:999px; padding:7px 11px; font-weight:800; font-size:.78rem; cursor:pointer}
+
+  nav.tabs{position:sticky; top:calc(54px + env(safe-area-inset-top,0px)); z-index:15; background:var(--bg2); border-bottom:1px solid var(--line)}
+  nav.tabs .in{max-width:720px; margin:0 auto; display:flex; gap:4px; padding:8px var(--gut-l); overflow-x:auto}
+  nav.tabs button{flex:0 0 auto; border:1px solid var(--line); background:var(--card); color:var(--muted); border-radius:999px; padding:8px 14px; font-weight:800; font-size:.83rem; cursor:pointer}
+  nav.tabs button.on{background:linear-gradient(180deg,var(--bright),var(--accent)); color:#2a1d00; border-color:transparent}
+
+  section.view{padding-block:18px}
+
+  /* pedir reseña */
+  .ask{background:linear-gradient(180deg,var(--card),#150f08); border:1px solid var(--line); border-radius:20px; padding:26px 20px; text-align:center; box-shadow:var(--shadow)}
+  .ask .logo{width:66px; height:66px; border-radius:16px; object-fit:cover; margin:0 auto 12px; display:block; background:var(--card2)}
+  .ask h2{font-size:1.4rem; margin-bottom:4px; text-wrap:balance}
+  .ask p{color:var(--muted); margin:0 auto; max-width:40ch}
+  .stars{display:flex; justify-content:center; gap:6px; margin:20px 0 4px}
+  .star{font-size:2.3rem; line-height:1; cursor:pointer; filter:grayscale(1) opacity(.45); background:none; border:0; padding:2px; transition:filter .12s, transform .1s}
+  .star.lit{filter:none} .star:active{transform:scale(.9)}
+  .ask .hint{font-size:.8rem; color:var(--muted); margin-top:4px}
+
+  .result{margin-top:16px; border-top:1px solid var(--line); padding-top:18px}
+  .result h3{font-size:1.15rem; margin-bottom:6px}
+  .result p{color:var(--muted); margin:0 0 14px}
+  .btn{border:0; border-radius:12px; font-weight:800; padding:14px; font-size:.98rem; cursor:pointer; text-align:center; text-decoration:none; display:block; width:100%}
+  .btn-g5{background:#fff; color:#1a1a1a; display:flex; align-items:center; justify-content:center; gap:9px}
+  .btn-g5 .g{font-weight:800; font-size:1.05rem}
+  .btn-a{background:linear-gradient(180deg,var(--accent),var(--accentDark)); color:#2a1d00}
+  .btn-wa{background:#25D366; color:#06270f}
+  .btn-sec{background:var(--card2); color:var(--ink); border:1px solid var(--line)}
+  .cta{display:flex; flex-direction:column; gap:9px; margin-top:12px}
+  textarea{width:100%; min-height:88px; padding:12px; border:1px solid var(--line); border-radius:12px; background:var(--card); color:var(--ink); font-size:.95rem; resize:vertical}
+  textarea:focus,input:focus{outline:none; border-color:var(--accent)}
+  .msg{font-size:.82rem; color:var(--good); text-align:center; min-height:1.1em; margin-top:8px}
+
+  .sharecard{margin-top:16px; border:1px dashed var(--line); border-radius:16px; padding:16px; text-align:center}
+  .sharecard b{font-size:.95rem} .sharecard p{color:var(--muted); font-size:.84rem; margin:4px 0 10px}
+
+  /* checklist perfil */
+  .lead{color:var(--muted); margin:0 0 14px; max-width:60ch}
+  .prog{height:10px; background:var(--card2); border-radius:999px; overflow:hidden; margin:4px 0 2px}
+  .prog span{display:block; height:100%; background:linear-gradient(90deg,var(--accentDark),var(--bright)); border-radius:999px; transition:width .25s}
+  .progtxt{font-size:.8rem; color:var(--muted); margin-bottom:14px}
+  .task{display:flex; gap:12px; align-items:flex-start; border:1px solid var(--line); border-radius:13px; padding:13px 14px; background:var(--card); margin-bottom:8px; cursor:pointer}
+  .task .ck{flex:none; width:24px; height:24px; border-radius:7px; border:2px solid var(--line); display:grid; place-items:center; font-weight:900; color:transparent; margin-top:1px}
+  .task.done .ck{background:var(--accent); border-color:var(--accent); color:#2a1d00}
+  .task .tx b{font-size:.95rem} .task .tx p{margin:2px 0 0; color:var(--muted); font-size:.83rem}
+  .task.done .tx b{text-decoration:line-through; color:var(--muted)}
+
+  /* responder */
+  .tpl{border:1px solid var(--line); border-radius:13px; padding:14px; background:var(--card); margin-bottom:10px}
+  .tpl .h{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:8px}
+  .tpl .h b{font-size:.92rem} .tpl .stars-sm{color:var(--accent); font-size:.9rem}
+  .tpl p{margin:0; color:var(--ink); font-size:.9rem; line-height:1.5}
+  .copy{border:1px solid var(--line); background:var(--card2); color:var(--ink); border-radius:999px; padding:7px 12px; font-weight:800; font-size:.76rem; cursor:pointer}
+
+  /* modales */
+  .modal{position:fixed; inset:0; z-index:40; display:none; align-items:flex-end; justify-content:center; background:rgba(4,3,1,.72)}
+  .modal.open{display:flex}
+  @media(min-width:620px){ .modal{align-items:center; padding:20px} }
+  .sheet{width:100%; max-width:540px; max-height:90vh; overflow-y:auto; background:var(--bg); border:1px solid var(--line); border-radius:20px 20px 0 0; padding:18px var(--gut-r) calc(18px + env(safe-area-inset-bottom,0px)) var(--gut-l)}
+  @media(min-width:620px){ .sheet{border-radius:20px; padding-inline:18px} }
+  .sheet h2{font-size:1.05rem; display:flex; align-items:center; justify-content:space-between; margin-bottom:14px}
+  .x{border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:50%; width:34px; height:34px; cursor:pointer; font-size:15px}
+  label.f{display:flex; flex-direction:column; gap:4px; font-size:.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); margin-bottom:10px}
+  label.f input{font-size:.95rem; padding:11px; border:1px solid var(--line); border-radius:10px; background:var(--card); color:var(--ink); font-weight:500; text-transform:none; letter-spacing:0}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px}@media(max-width:460px){.grid2{grid-template-columns:1fr}}
+  .colorrow{display:flex; gap:8px; align-items:center} .colorrow input[type=color]{width:46px; height:40px; padding:2px; border-radius:8px; flex:none}
+  .fprev{width:60px; height:60px; border-radius:12px; border:2px dashed var(--line); display:grid; place-items:center; font-size:1.5rem; overflow:hidden; background:var(--card)} .fprev img{width:100%;height:100%;object-fit:cover}
+  .mini{border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:999px; padding:9px 13px; font-weight:800; font-size:.78rem; cursor:pointer}
+  input[type=file]{display:none}
+  .hint{font-size:.78rem; color:var(--muted); margin-top:8px}
+  #qrBox{display:grid; place-items:center; background:#fff; border-radius:14px; padding:16px; margin:12px 0; min-height:60px} #qrBox img,#qrBox canvas{display:block}
+  a.link{color:var(--bright)}
+  :focus-visible{outline:2px solid var(--bright); outline-offset:2px}
+</style>
+
+<div class="banner" id="banner">🐝 <b>Plantilla Panal</b> · toca <b>⚙️ Negocio</b> y pega tu <b>link de reseña de Google</b>, y <b>📱 QR</b> para imprimirlo.</div>
+
+<header class="bar"><div class="in">
+  <span class="brand"><img id="bLogo" alt="" hidden><span><span class="nm" id="bMarca"></span><span class="rb" id="bRubro" style="display:block"></span></span></span>
+  <div class="tools">
+    <button class="tgl" id="tNeg">⚙️ Negocio</button>
+    <button class="tgl" id="tShare">📱 QR</button>
+  </div>
+</div></header>
+
+<nav class="tabs"><div class="in">
+  <button data-view="pedir" class="on">⭐ Pedir reseña</button>
+  <button data-view="perfil">🔧 Optimiza tu perfil</button>
+  <button data-view="responder">💬 Responder</button>
+</div></nav>
+
+<!-- ============ PEDIR RESEÑA (cliente) ============ -->
+<section class="view wrap" id="pedirView">
+  <div class="ask">
+    <img class="logo" id="aLogo" alt="" hidden>
+    <h2 id="aTitle">¿Cómo lo pasaste?</h2>
+    <p id="aSub">Tu opinión nos ayuda un montón. Toca las estrellas 👇</p>
+    <div class="stars" id="stars" role="radiogroup" aria-label="Calificación"></div>
+    <div class="hint" id="aHint">1 = malo · 5 = excelente</div>
+
+    <div class="result" id="good" hidden>
+      <h3>¡Gracias! 🙌</h3>
+      <p>¿Nos ayudas con una reseña en Google? Toma 20 segundos y nos ayuda muchísimo.</p>
+      <div class="cta">
+        <a class="btn btn-g5" id="gLink" target="_blank" rel="noopener"><span class="g">G</span> Escribir reseña en Google →</a>
+        <button class="btn btn-sec" id="gCopy">📋 Copiar una idea para tu reseña</button>
+      </div>
+      <p class="msg" id="gMsg"></p>
+    </div>
+
+    <div class="result" id="bad" hidden>
+      <h3>Lamentamos eso 🙏</h3>
+      <p>Cuéntanos qué pasó y lo arreglamos. Nos llega directo, en privado.</p>
+      <textarea id="fbText" placeholder="¿Qué podemos mejorar?"></textarea>
+      <div class="cta" style="margin-top:10px">
+        <a class="btn btn-wa" id="fbWa" target="_blank" rel="noopener">💬 Enviar por WhatsApp</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="sharecard" id="shareCard">
+    <b>📣 Para el negocio</b>
+    <p>Imprime este código o compártelo: llévalo a la mesa, el mesón, la boleta o tu Instagram.</p>
+    <button class="mini" id="openShare">📱 Ver código QR y link</button>
+  </div>
+</section>
+
+<!-- ============ OPTIMIZA TU PERFIL ============ -->
+<section class="view wrap" id="perfilView" hidden>
+  <h2 style="font-size:1.1rem; margin-bottom:6px">🔧 Deja tu ficha de Google al 100%</h2>
+  <p class="lead">Una ficha completa aparece más arriba y con más reseñas vendes más. Marca lo que ya hiciste.</p>
+  <div class="prog"><span id="progBar"></span></div>
+  <div class="progtxt" id="progTxt"></div>
+  <div id="taskList"></div>
+</section>
+
+<!-- ============ RESPONDER ============ -->
+<section class="view wrap" id="responderView" hidden>
+  <h2 style="font-size:1.1rem; margin-bottom:6px">💬 Responde todas las reseñas</h2>
+  <p class="lead">Responder (buenas y malas) sube tu posición y da confianza. Copia una plantilla y cámbiale el nombre.</p>
+  <div id="tplList"></div>
+</section>
+
+<!-- editor negocio -->
+<div class="modal" id="negModal"><div class="sheet">
+  <h2>⚙️ Datos del negocio <button class="x" id="negX">✕</button></h2>
+  <div class="grid2">
+    <label class="f">Nombre del negocio<input id="nMarca"></label>
+    <label class="f">Rubro<input id="nRubro" placeholder="Ej: Cafetería"></label>
+    <label class="f">WhatsApp (para quejas privadas)<input id="nWa" placeholder="56912345678"></label>
+    <label class="f">Color<div class="colorrow"><input type="color" id="nAccent"><input id="nAccentHex"></div></label>
+  </div>
+  <label class="f">Link para escribir reseña en Google<input id="nGoogle" placeholder="https://g.page/r/... o search.google.com/local/writereview?placeid=..."></label>
+  <p class="hint" style="margin-top:-4px">¿No lo tienes? En tu <b>Perfil de Empresa de Google</b> → “Pedir reseñas” copia el enlace corto (g.page/r/…). O busca tu <b>Place ID</b> y usa <span class="mono">search.google.com/local/writereview?placeid=TU_ID</span>. <a class="link" href="https://developers.google.com/maps/documentation/places/web-service/place-id" target="_blank" rel="noopener">Buscar Place ID →</a></p>
+  <div style="display:flex; gap:10px; align-items:center; margin-top:2px">
+    <div class="fprev" id="logoPrev">⭐</div>
+    <button class="mini" id="logoBtn">🖼️ Logo</button>
+    <button class="mini" id="logoDel" style="display:none">✕ Quitar</button>
+    <input id="logoFile" type="file" accept="image/*">
+  </div>
+  <div style="display:flex; gap:8px; flex-wrap:wrap; margin-top:14px">
+    <button class="btn btn-a" style="flex:1; min-width:140px" id="negSave">Guardar</button>
+    <button class="btn btn-sec" style="flex:1; min-width:140px" id="negDl">⬇️ Descargar listo</button>
+    <button class="mini" id="cfgExp">💾 Config</button>
+    <button class="mini" id="cfgImpBtn">📥 Importar</button>
+    <input id="cfgFile" type="file" accept="application/json">
+  </div>
+</div></div>
+
+<!-- compartir / QR -->
+<div class="modal" id="shareModal"><div class="sheet">
+  <h2>📱 Tu código de reseñas <button class="x" id="shareX">✕</button></h2>
+  <p class="hint" style="margin-top:0">Pega el link donde publicaste esta página (o usa el de aquí) y genera el QR. Imprímelo para la mesa, el mesón o la boleta.</p>
+  <label class="f">Link de esta página<input id="qrUrl" placeholder="https://..."></label>
+  <div style="display:flex; gap:8px; flex-wrap:wrap">
+    <button class="btn btn-a" style="flex:1; min-width:130px" id="qrGen">Generar QR</button>
+    <button class="mini" id="qrHere">Usar el link de esta página</button>
+  </div>
+  <div id="qrBox"><span style="color:#999; font-size:.85rem">El QR aparece aquí</span></div>
+  <p class="hint">Texto sugerido para imprimir: <b>“¿Te gustó? Déjanos tu reseña 👉”</b> + el QR.</p>
+</div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/*NEGOCIO_START*/
+const NEGOCIO = {
+  marca:"Mi Negocio",
+  rubro:"Reseñas",
+  logo:"",
+  color:{ bg:"#14110b", accent:"#f5b301", accentDark:"#c88f00" },
+  whatsapp:"56900000000",
+  googleUrl:"",
+  resenaUrl:"",
+  nota:""
+};
+/*NEGOCIO_END*/
+
+(function(){
+  "use strict";
+  var LS_CFG="panal-resenas-cfg", LS_TASKS="panal-resenas-tasks";
+  var cfg=JSON.parse(JSON.stringify(NEGOCIO));
+  try{ var s=localStorage.getItem(LS_CFG); if(s) cfg=Object.assign(cfg,JSON.parse(s)); }catch(e){}
+  if(!cfg.color) cfg.color={bg:"#14110b",accent:"#f5b301",accentDark:"#c88f00"};
+  var done={}; try{ done=JSON.parse(localStorage.getItem(LS_TASKS)||"{}")||{}; }catch(e){}
+  var rating=0;
+
+  var TASKS=[
+    {id:"t1", t:"Reclama o crea tu ficha", d:"Busca tu negocio en Google y “Reclama este perfil”. Es gratis (Perfil de Empresa)."},
+    {id:"t2", t:"Nombre, dirección y teléfono exactos", d:"Escríbelos igual en Google, Instagram, web y boletas."},
+    {id:"t3", t:"Categoría correcta", d:"Elige la principal exacta (ej: “Cafetería”) y agrega secundarias."},
+    {id:"t4", t:"Horario de atención", d:"Incluye feriados y días especiales para que no lleguen con cerrado."},
+    {id:"t5", t:"Fotos de verdad", d:"Logo, fachada, interior, productos y equipo. Sube 1 nueva por semana."},
+    {id:"t6", t:"Descripción con tus palabras", d:"Qué haces, para quién y qué te hace distinto. Natural, sin relleno."},
+    {id:"t7", t:"Productos / servicios con precio", d:"Carga tu carta o servicios. La gente compara antes de ir."},
+    {id:"t8", t:"Atributos", d:"Wifi, estacionamiento, delivery, accesible, paga con tarjeta…"},
+    {id:"t9", t:"Enlace de pedido o reserva", d:"Conecta tu tienda, menú QR o agenda de citas."},
+    {id:"t10", t:"Publica novedades", d:"Una oferta o aviso por semana en “Novedades”. Google lo premia."},
+    {id:"t11", t:"Responde TODAS las reseñas", d:"Buenas y malas, con educación. Usa la pestaña 💬 Responder."},
+    {id:"t12", t:"Pide reseñas a clientes felices", d:"Con tu QR/link de la pestaña ⭐. Apunta a sumar varias por semana."}
+  ];
+  var TPLS=[
+    {st:"★★★★★", h:"5 estrellas — gracias", t:"¡Gracias [nombre] por tu reseña! 🙌 Nos alegra un montón que lo hayas pasado bien. Te esperamos muy pronto."},
+    {st:"★★★★☆", h:"4 estrellas — gracias + mejora", t:"¡Gracias [nombre]! Nos encanta tu visita. Cuéntanos qué podemos mejorar para dejarte un 5 la próxima. 🙏"},
+    {st:"★★★☆☆", h:"3 estrellas — recuperar", t:"Gracias por tu honestidad, [nombre]. Queremos mejorar: escríbenos y lo solucionamos. Te esperamos para revertir la experiencia."},
+    {st:"★☆☆☆☆", h:"1–2 estrellas — queja", t:"Hola [nombre], lamentamos mucho tu experiencia, no es lo que buscamos. Escríbenos por WhatsApp y lo arreglamos. Gracias por avisarnos."},
+    {st:"☆", h:"Sin comentario", t:"¡Gracias por tu calificación! Si quieres contarnos algo más, te leemos con gusto. 🙂"}
+  ];
+
+  var $=function(id){return document.getElementById(id);};
+  var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
+  function darken(hex){ try{var c=hex.replace('#','');if(c.length===3)c=c.split('').map(function(x){return x+x;}).join('');var r=Math.max(0,parseInt(c.slice(0,2),16)-30),g=Math.max(0,parseInt(c.slice(2,4),16)-30),b=Math.max(0,parseInt(c.slice(4,6),16)-30);return '#'+[r,g,b].map(function(x){return x.toString(16).padStart(2,'0');}).join('');}catch(e){return hex;} }
+  function waLink(msg){ return "https://wa.me/"+(cfg.whatsapp||'').replace(/\D/g,'')+"?text="+encodeURIComponent(msg); }
+  function saveCfg(){ try{localStorage.setItem(LS_CFG,JSON.stringify(cfg));}catch(e){} }
+  function saveTasks(){ try{localStorage.setItem(LS_TASKS,JSON.stringify(done));}catch(e){} }
+  function flash(el,m){ if(el){el.textContent=m;setTimeout(function(){el.textContent="";},2200);} }
+  function comprimir(file,max,qy){ return new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){ var im=new Image(); im.onload=function(){ var w=im.width,h=im.height; if(w>h&&w>max){h=Math.round(h*max/w);w=max;} else if(h>max){w=Math.round(w*max/h);h=max;} var cv=document.createElement("canvas"); cv.width=w;cv.height=h; cv.getContext("2d").drawImage(im,0,0,w,h); res(cv.toDataURL("image/jpeg",qy||0.85)); }; im.onerror=rej; im.src=r.result; }; r.onerror=rej; r.readAsDataURL(file); }); }
+  function copyText(t,el){ if(navigator.clipboard&&navigator.clipboard.writeText){ navigator.clipboard.writeText(t).then(function(){flash(el,"✅ Copiado");},function(){sel(t,el);}); } else sel(t,el); }
+  function sel(t,el){ var a=document.createElement("textarea"); a.value=t; document.body.appendChild(a); a.select(); try{document.execCommand("copy");flash(el,"✅ Copiado");}catch(e){flash(el,"Copia manual");} a.remove(); }
+
+  function applyBrand(){
+    var r=document.documentElement.style;
+    r.setProperty('--accent', cfg.color.accent||'#f5b301');
+    r.setProperty('--accentDark', cfg.color.accentDark||darken(cfg.color.accent||'#f5b301'));
+    if(cfg.color.bg) r.setProperty('--bg', cfg.color.bg);
+    document.title=(cfg.marca||"Reseñas")+" · Reseñas";
+    $("bMarca").textContent=cfg.marca||"Mi Negocio"; $("bRubro").textContent=cfg.rubro||"";
+    var lg=$("bLogo"); if(cfg.logo){ lg.src=cfg.logo; lg.hidden=false; } else lg.hidden=true;
+    var al=$("aLogo"); if(cfg.logo){ al.src=cfg.logo; al.hidden=false; } else al.hidden=true;
+    $("aTitle").textContent="¿Cómo lo pasaste en "+(cfg.marca||"nuestro local")+"?";
+  }
+
+  // ---- estrellas ----
+  function renderStars(){
+    var c=$("stars"); c.innerHTML="";
+    for(var i=1;i<=5;i++){ (function(n){
+      var b=document.createElement("button"); b.className="star"+(n<=rating?" lit":""); b.textContent="★"; b.setAttribute("aria-label",n+" estrellas");
+      b.onclick=function(){ rating=n; renderStars(); onRate(); };
+      c.appendChild(b);
+    })(i); }
+  }
+  function onRate(){
+    var good=$("good"), bad=$("bad");
+    if(rating>=4){ good.hidden=false; bad.hidden=true; $("aHint").textContent="¡Gracias por el "+rating+"★!";
+      if(cfg.googleUrl){ $("gLink").href=cfg.googleUrl; $("gLink").style.opacity=""; } else { $("gLink").removeAttribute("href"); $("gLink").style.opacity=".6"; }
+    } else { bad.hidden=false; good.hidden=true; $("aHint").textContent="Gracias, lo tomamos en serio.";
+      $("fbWa").href=waLink("Hola! Te dejo mi comentario para "+(cfg.marca||"")+" ("+rating+"★): ");
+    }
+  }
+  $("gCopy").onclick=function(){ var ideas=["Excelente atención y muy buena calidad. ¡Volveré!","Muy buena experiencia, rápido y amable. Recomendado.","Todo excelente, el lugar y la atención. 100% recomendable."]; copyText(ideas[Math.floor(Math.random()*ideas.length)],$("gMsg")); };
+  $("fbText").addEventListener("input",function(){ var dc=$("fbText").value.trim(); $("fbWa").href=waLink("Hola! Comentario para "+(cfg.marca||"")+" ("+rating+"★): "+dc); });
+
+  // ---- checklist ----
+  function renderTasks(){
+    var c=$("taskList"); c.innerHTML="";
+    TASKS.forEach(function(t){
+      var d=document.createElement("div"); d.className="task"+(done[t.id]?" done":"");
+      d.innerHTML='<div class="ck">✓</div><div class="tx"><b>'+esc(t.t)+'</b><p>'+esc(t.d)+'</p></div>';
+      d.onclick=function(){ done[t.id]=!done[t.id]; saveTasks(); renderTasks(); };
+      c.appendChild(d);
+    });
+    var n=TASKS.filter(function(t){return done[t.id];}).length, pct=Math.round(n/TASKS.length*100);
+    $("progBar").style.width=pct+"%"; $("progTxt").textContent=n+" de "+TASKS.length+" listas · "+pct+"%";
+  }
+
+  // ---- templates ----
+  function renderTpls(){
+    var c=$("tplList"); c.innerHTML="";
+    TPLS.forEach(function(tp){
+      var d=document.createElement("div"); d.className="tpl";
+      d.innerHTML='<div class="h"><b>'+esc(tp.h)+'</b><span class="stars-sm">'+tp.st+'</span></div><p>'+esc(tp.t)+'</p>'
+        +'<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:10px;align-items:center"><span class="msg" style="margin:0;text-align:right"></span><button class="copy">📋 Copiar</button></div>';
+      d.querySelector(".copy").onclick=function(){ copyText(tp.t, d.querySelector(".msg")); };
+      c.appendChild(d);
+    });
+  }
+
+  // ---- pestañas ----
+  document.querySelectorAll("nav.tabs button").forEach(function(b){ b.onclick=function(){
+    ["pedir","perfil","responder"].forEach(function(v){ $(v+"View").hidden=v!==b.dataset.view; });
+    document.querySelectorAll("nav.tabs button").forEach(function(x){ x.classList.toggle("on",x===b); });
+    if(b.dataset.view==="perfil") renderTasks(); if(b.dataset.view==="responder") renderTpls();
+    window.scrollTo(0,0);
+  }; });
+
+  // ---- modales ----
+  function openM(id){ $(id).classList.add("open"); } function closeM(id){ $(id).classList.remove("open"); }
+  [["negModal","negX"],["shareModal","shareX"]].forEach(function(p){ $(p[1]).onclick=function(){ closeM(p[0]); }; var m=$(p[0]); m.addEventListener("click",function(e){ if(e.target===m) closeM(p[0]); }); });
+  addEventListener("keydown",function(e){ if(e.key==="Escape") document.querySelectorAll(".modal.open").forEach(function(m){m.classList.remove("open");}); });
+  $("openShare").onclick=function(){ $("qrUrl").value=cfg.resenaUrl||""; openM("shareModal"); };
+
+  // negocio
+  $("tNeg").onclick=function(){ fillNeg(); openM("negModal"); };
+  function fillNeg(){ $("nMarca").value=cfg.marca||""; $("nRubro").value=cfg.rubro||""; $("nWa").value=cfg.whatsapp||""; $("nGoogle").value=cfg.googleUrl||""; $("nAccent").value=/^#([0-9a-f]{6})$/i.test(cfg.color.accent||'')?cfg.color.accent:'#f5b301'; $("nAccentHex").value=cfg.color.accent||''; logoPrev(); }
+  $("nAccent").oninput=function(){ $("nAccentHex").value=this.value; }; $("nAccentHex").oninput=function(){ if(/^#([0-9a-f]{6})$/i.test(this.value)) $("nAccent").value=this.value; };
+  function logoPrev(){ var p=$("logoPrev"); if(cfg.logo){ p.innerHTML='<img alt="" src="'+cfg.logo+'">'; $("logoDel").style.display=''; } else { p.textContent='⭐'; $("logoDel").style.display='none'; } }
+  $("logoBtn").onclick=function(){ $("logoFile").click(); }; $("logoFile").onchange=function(){ var f=this.files&&this.files[0]; if(!f)return; comprimir(f,300,0.85).then(function(d){ cfg.logo=d; logoPrev(); }); this.value=""; }; $("logoDel").onclick=function(){ cfg.logo=""; logoPrev(); };
+  $("negSave").onclick=function(){ cfg.marca=$("nMarca").value.trim()||"Mi Negocio"; cfg.rubro=$("nRubro").value.trim(); cfg.whatsapp=$("nWa").value.replace(/\D/g,''); cfg.googleUrl=$("nGoogle").value.trim(); cfg.color.accent=$("nAccentHex").value.trim()||"#f5b301"; cfg.color.accentDark=darken(cfg.color.accent); saveCfg(); applyBrand(); if(rating) onRate(); closeM("negModal"); };
+
+  // compartir / QR
+  $("tShare").onclick=function(){ $("qrUrl").value=cfg.resenaUrl||""; openM("shareModal"); };
+  $("qrHere").onclick=function(){ $("qrUrl").value=location.href.split("#")[0]; };
+  $("qrGen").onclick=function(){ var url=$("qrUrl").value.trim(); var box=$("qrBox"); box.innerHTML=""; if(!url){ box.innerHTML='<span style="color:#b00;font-size:.85rem">Pega primero el link.</span>'; return; } cfg.resenaUrl=url; saveCfg(); if(typeof QRCode==="undefined"){ box.innerHTML='<span style="color:#b00;font-size:.85rem">No se pudo cargar el generador. Revisa tu conexión.</span>'; return; } try{ new QRCode(box,{text:url,width:220,height:220,colorDark:"#14110b",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M}); }catch(e){ box.innerHTML='<span style="color:#b00;font-size:.85rem">No se pudo generar.</span>'; } };
+
+  // respaldo / descarga
+  function dl(text,name,type){ try{ var b=new Blob([text],{type:type}); var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000); }catch(e){} }
+  $("cfgExp").onclick=function(){ dl(JSON.stringify(cfg,null,2),(cfg.marca||"negocio").replace(/\W+/g,"-").toLowerCase()+"-resenas.json","application/json"); };
+  $("cfgImpBtn").onclick=function(){ $("cfgFile").click(); };
+  $("cfgFile").onchange=function(){ var f=this.files&&this.files[0]; if(!f)return; var r=new FileReader(); r.onload=function(){ try{ var j=JSON.parse(r.result); cfg=Object.assign(cfg,j); saveCfg(); applyBrand(); }catch(e){} }; r.readAsText(f); this.value=""; };
+  $("negDl").onclick=function(){ var clean=JSON.parse(JSON.stringify(cfg)); var html=document.documentElement.outerHTML; var conf="/*NEGOCIO_START*/\nconst NEGOCIO = "+JSON.stringify(clean,null,2)+";\n/*NEGOCIO_END*/"; html=html.replace(/\/\*NEGOCIO_START\*\/[\s\S]*?\/\*NEGOCIO_END\*\//, conf.replace(/\$/g,"$$$$")); dl("<!doctype html>\n<html>\n"+html+"\n</html>","resenas-"+(cfg.marca||"negocio").replace(/\W+/g,"-").toLowerCase()+".html","text/html"); };
+
+  if(cfg.marca && cfg.marca!=="Mi Negocio"){ var bn=$("banner"); if(bn) bn.remove(); }
+  applyBrand(); renderStars(); renderTasks();
+})();
+</script>

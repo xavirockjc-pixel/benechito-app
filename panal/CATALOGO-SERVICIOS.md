@@ -26,7 +26,7 @@ El sistema modular por celdas, que cada negocio arma a su medida.
 - ✅ Tienda web / catálogo con pago online
 - ✅ Pedidos por WhatsApp
 - ✅ Menú digital con QR (restaurantes, cafeterías, food) — pide desde la mesa por WhatsApp + genera el QR
-- ⭐ Perfil de Google (Google Business) + gestión de reseñas
+- ✅ Perfil de Google + reseñas (pide reseñas con filtro + checklist de la ficha + plantillas)
 - ⭐ Reserva de mesa / pedido para retirar
 
 ## P3 · Cotización & presupuestos (entrada rápida)
@@ -92,6 +92,7 @@ Para peluquerías, consultas, talleres, profesionales.
 | Tienda web / catálogo | $120.000 | — | — |
 | **Menú digital con QR** | **$90.000** | **$15.000/mes** | `VENDER-MENU-AGENDA.md` |
 | **Agenda de citas** | **$120.000** | **$20.000/mes** | `VENDER-MENU-AGENDA.md` |
+| **Perfil de Google + reseñas** | **$70.000** | **$15.000/mes** (gestión: responder + novedades) | — |
 | Cotizador de Servicios | $120.000 | $20.000/mes | `VENDER-COTIZADOR.md` |
 | Sistema de gestión (Completo) | $1.200.000 | $80.000/mes | — |
 | Ecosistema a medida | desde $1.200.000 | desde $80.000/mes | `clientes/ecosistema-multinegocio-RUNBOOK.md` |
