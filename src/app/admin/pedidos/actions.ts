@@ -128,8 +128,25 @@ export async function cambiarEstadoPedido(formData: FormData) {
   if (!pedidoId || !esEstadoPedido(estado)) return;
 
   await prisma.pedido.update({ where: { id: pedidoId }, data: { estado } });
+
+  // Al entregar, deja registro en la ficha del cliente (historial para promociones/CRM).
+  if (estado === "entregado") {
+    const ped = await prisma.pedido.findUnique({
+      where: { id: pedidoId },
+      include: { items: { include: { producto: { select: { nombre: true } } } } },
+    });
+    if (ped?.negocioId) {
+      const total = ped.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0);
+      const detalle = ped.items.map((it) => `${it.cantidad}x ${it.producto.nombre}`).join(", ");
+      await prisma.actividad.create({
+        data: { negocioId: ped.negocioId, tipo: "pedido", descripcion: `Pedido entregado (${ped.tipoEntrega ?? "—"}): ${detalle} · $${total.toLocaleString("es-CL")}` },
+      }).catch(() => {});
+    }
+  }
+
   revalidatePath(`/admin/pedidos/${pedidoId}`);
   revalidatePath("/admin/pedidos");
+  revalidatePath("/admin/pedidos-online");
   revalidatePath("/caja/pedidos");
   revalidatePath("/vendedor/entregas");
 }
