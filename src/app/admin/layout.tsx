@@ -61,6 +61,7 @@ function construirModulosSimple(L: Etiquetas): Modulo[] {
         { href: "/admin/pedidos-online", label: "Pedidos online", icon: "🛍️" },
         { href: "/admin/negocios", label: "Clientes", icon: "🏪" },
         { href: "/admin/cobranza", label: "Clientes que deben", icon: "💸" },
+        { href: "/admin/repartidores", label: "Repartidores (mapa)", icon: "📍" },
         { href: "/admin/productos", label: "Catálogo", icon: "🍫" },
         { href: "/admin/precios", label: "Precios", icon: "🏷️" },
       ],
