@@ -45,6 +45,7 @@ function construirModulosSimple(L: Etiquetas): Modulo[] {
       activo: true,
       items: [
         { href: "/admin/esencial", label: "Lo esencial", icon: "⭐" },
+        { href: "/admin/resumen", label: "Resumen de hoy", icon: "📋" },
         { href: "/admin", label: "Panel", icon: "📊" },
         { href: "/admin/agenda", label: "Agenda", icon: "📅" },
         { href: "/admin/notas", label: "Notas y acciones", icon: "📝" },
@@ -103,6 +104,7 @@ function construirModulos(L: Etiquetas): Modulo[] {
       activo: true,
       items: [
         { href: "/admin/esencial", label: "Lo esencial", icon: "⭐" },
+        { href: "/admin/resumen", label: "Resumen de hoy", icon: "📋" },
         { href: "/admin/primeros-pasos", label: "Primeros pasos", icon: "🚀" },
         { href: "/admin", label: "Panel", icon: "📊" },
         { href: "/admin/pendientes", label: "Pendientes del cerebro", icon: "🐝" },
