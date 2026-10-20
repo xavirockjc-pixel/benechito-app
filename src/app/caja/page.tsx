@@ -79,8 +79,20 @@ export default async function CajaPage() {
   const totalVendido = ventas.reduce((s, v) => s + Number(v.total), 0);
   const nVentas = ventas.length;
 
+  // ¿La caja quedó abierta de un día anterior? (para no arrastrar el día pasado)
+  const hoy0 = new Date(); hoy0.setHours(0, 0, 0, 0);
+  const abiertaDiaAnterior = new Date(sesion.fechaApertura) < hoy0;
+  const diaApertura = new Date(sesion.fechaApertura).toLocaleDateString("es-CL", { weekday: "long", day: "2-digit", month: "long" });
+
   return (
     <div>
+      {abiertaDiaAnterior && (
+        <div className="mb-4 flex flex-col gap-2 rounded-xl border border-amber-300 bg-amber-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-sm font-bold text-amber-800">⚠️ Esta caja quedó abierta desde el <span className="capitalize">{diaApertura}</span>. Ciérrala para empezar el día de hoy.</p>
+          <Link href="/caja/cierre" className="shrink-0 rounded-lg bg-amber-600 px-4 py-2.5 text-center text-sm font-extrabold text-white active:brightness-110">🧾 Cerrar esa caja</Link>
+        </div>
+      )}
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex gap-2">
           <Stat label="Vendido" valor={fmtCLP(totalVendido)} />

@@ -1077,6 +1077,8 @@ model SesionCaja {
   estado       String   @default("abierta") // abierta | cerrada
   fondoInicial    Decimal  @db.Decimal(12, 2)
   efectivoContado Decimal? @db.Decimal(12, 2)
+  // Efectivo guardado APARTE del cajón (no es parte de lo que debe quedar en caja).
+  efectivoApartado Decimal? @db.Decimal(12, 2)
   desgloseApertura String? // JSON: conteo de billetes/monedas al abrir
   desgloseCierre   String? // JSON: conteo de billetes/monedas al cerrar
   fechaApertura DateTime @default(now())

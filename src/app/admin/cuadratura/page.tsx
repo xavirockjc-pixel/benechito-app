@@ -36,9 +36,11 @@ export default async function CuadraturaPage({ searchParams }: { searchParams: P
     const egresos = s.movimientos.filter((m) => m.tipo === "egreso").reduce((a, m) => a + num(m.monto), 0);
     const esperado = fondo + efectivoVentas + ingresos - egresos;
     const contado = s.efectivoContado != null ? num(s.efectivoContado) : null;
-    const dif = contado != null ? contado - esperado : null;
+    const apartado = s.efectivoApartado != null ? num(s.efectivoApartado) : 0;
+    // El dinero apartado es del día: cuadra sumándolo a lo contado en caja.
+    const dif = contado != null ? contado + apartado - esperado : null;
     const totalVentas = s.ventas.reduce((a, v) => a + num(v.total), 0);
-    return { id: s.id, usuario: s.usuario?.nombre ?? "—", estado: s.estado, fondo, efectivoVentas, ingresos, egresos, esperado, contado, dif, totalVentas, nVentas: s.ventas.length, apertura: s.fechaApertura, cierre: s.fechaCierre };
+    return { id: s.id, usuario: s.usuario?.nombre ?? "—", estado: s.estado, fondo, efectivoVentas, ingresos, egresos, esperado, contado, apartado, dif, totalVentas, nVentas: s.ventas.length, apertura: s.fechaApertura, cierre: s.fechaCierre };
   });
 
   // ---- Caja Vecina ----
@@ -93,6 +95,7 @@ export default async function CuadraturaPage({ searchParams }: { searchParams: P
                 {s.egresos > 0 && <Dato label="Egresos caja" valor={`- ${CLP(s.egresos)}`} />}
                 <Dato label="Efectivo esperado" valor={CLP(s.esperado)} />
                 <Dato label="Efectivo contado" valor={s.contado != null ? CLP(s.contado) : "—"} />
+                {s.apartado > 0 && <Dato label="Apartado" valor={CLP(s.apartado)} />}
               </div>
               {s.dif != null && <Diferencia dif={s.dif} />}
             </div>

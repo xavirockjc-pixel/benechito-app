@@ -158,12 +158,16 @@ export async function cerrarCaja(formData: FormData) {
   if (!sesion) return;
   const contado = Number(String(formData.get("efectivoContado") ?? "").trim().replace(",", "."));
   if (!Number.isFinite(contado) || contado < 0) return;
+  // Dinero guardado APARTE del cajón (no es parte de lo que debe quedar en caja).
+  const apartadoRaw = Number(String(formData.get("efectivoApartado") ?? "").trim().replace(/[^\d.-]/g, ""));
+  const apartado = Number.isFinite(apartadoRaw) && apartadoRaw > 0 ? apartadoRaw : null;
 
   await prisma.sesionCaja.update({
     where: { id: sesion.id },
     data: {
       estado: "cerrada",
       efectivoContado: contado,
+      efectivoApartado: apartado,
       desgloseCierre: String(formData.get("efectivoContado_desglose") ?? "").trim() || null,
       fechaCierre: new Date(),
       notas: String(formData.get("notas") ?? "").trim() || null,

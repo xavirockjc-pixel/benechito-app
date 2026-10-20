@@ -23,6 +23,7 @@ export default function MovCajaVecinaForm() {
   useEffect(() => {
     const w = window as unknown as { SpeechRecognition?: new () => SpeechRec; webkitSpeechRecognition?: new () => SpeechRec };
     const Ctor = w.SpeechRecognition ?? w.webkitSpeechRecognition;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!Ctor) { setSoportado(false); return; }
     const rec = new Ctor();
     rec.lang = "es-CL"; rec.interimResults = false; rec.continuous = false; rec.maxAlternatives = 1;
@@ -74,7 +75,17 @@ export default function MovCajaVecinaForm() {
           </button>
         )}
       </div>
-      <p className="mb-2 text-[11px] text-slate-400">Di algo como: <i>“giro de 20 mil”</i> o <i>“depósito 15 mil”</i>. Revisa y guarda.</p>
+      <p className="mb-2 text-[11px] text-slate-400">Toca el tipo, escribe el monto y guarda. O di <i>“giro de 20 mil”</i> con 🎤.</p>
+
+      {/* Tipos rápidos (los más usados) */}
+      <div className="mb-2 grid grid-cols-3 gap-1.5">
+        {([["giro", "📤 Giro"], ["deposito", "📥 Depósito"], ["pago", "💵 Pago"]] as const).map(([t, etiqueta]) => (
+          <button key={t} type="button" onClick={() => setTipo(t)}
+            className={`rounded-lg px-2 py-2 text-xs font-extrabold transition active:scale-95 ${tipo === t ? "bg-[#0f7a44] text-white" : "bg-slate-100 text-slate-600"}`}>
+            {etiqueta}
+          </button>
+        ))}
+      </div>
 
       <div className="grid grid-cols-2 gap-2">
         <label className="col-span-2 flex flex-col gap-0.5"><span className="text-[10px] font-bold uppercase text-slate-400">Tipo</span>
