@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { asignarVehiculo, cargarVehiculo, devolverTodoABodega, cargarSabor } from "../actions";
+import { packInfo, palabraPack } from "@/lib/dominio/empaque";
 import CargarCamionVoz from "./CargarCamionVoz";
 
 export const dynamic = "force-dynamic";
@@ -46,7 +47,7 @@ export default async function CamionPage() {
   // Con vehículo → stock actual + cargar + devolver
   const [productos, stockCamion, stockBodega, sabores, saborCamion] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true, soloLocal: false }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
-    prisma.stock.findMany({ where: { ubicacionId: vehiculo.id }, include: { producto: { select: { nombre: true } } } }),
+    prisma.stock.findMany({ where: { ubicacionId: vehiculo.id }, include: { producto: { select: { nombre: true, unidadesPack: true } } } }),
     bodega ? prisma.stock.findMany({ where: { ubicacionId: bodega.id } }) : Promise.resolve([]),
     prisma.sabor.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.stockSabor.findMany({ where: { ubicacionId: vehiculo.id }, include: { sabor: { select: { nombre: true } } } }),
@@ -82,12 +83,24 @@ export default async function CamionPage() {
           <p className="text-sm text-slate-500">El camión está vacío. Carga productos abajo.</p>
         ) : (
           <ul className="divide-y divide-slate-100 text-sm">
-            {enCamion.map((s) => (
-              <li key={s.id} className="flex justify-between py-1.5">
-                <span className="text-slate-800">{s.producto.nombre}</span>
-                <span className="font-bold text-slate-900">{s.cantidad}</span>
-              </li>
-            ))}
+            {enCamion.map((s) => {
+              const info = packInfo(s.cantidad, s.producto.unidadesPack);
+              const w = info.porPack ? palabraPack(info.porPack) : "";
+              return (
+                <li key={s.id} className="flex items-center justify-between gap-2 py-1.5">
+                  <span className="min-w-0 truncate text-slate-800">{s.producto.nombre}</span>
+                  {info.porPack ? (
+                    <span className="shrink-0 text-right">
+                      <span className="font-bold text-slate-900">{info.packs} {w}{info.packs !== 1 ? "s" : ""} de {info.porPack}</span>
+                      {info.resto > 0 && <span className="font-semibold text-slate-500"> + {info.resto}</span>}
+                      <span className="ml-1 text-xs font-semibold text-slate-400">= {s.cantidad} u</span>
+                    </span>
+                  ) : (
+                    <span className="shrink-0 font-bold text-slate-900">{s.cantidad}</span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         )}
       </section>

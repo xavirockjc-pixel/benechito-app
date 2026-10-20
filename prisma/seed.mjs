@@ -14,11 +14,12 @@ const productos = [
   { linea: "trufa",    nombre: "Trufas",            formato: "pack 3",           sku: "TRF-pack3" },
   { linea: "cuchufli", nombre: "Cuchuflí bañado",   formato: "pack 5",           sku: "CCH-banado-p5" },
   { linea: "cuchufli", nombre: "Cuchuflí relleno",  formato: "pack 9",           sku: "CCH-relleno-p9" },
-  { linea: "helado",   nombre: "Tú y Yo",           formato: "unidad (pack 50)", categoria: "Helados", sku: "HEL-tu-y-yo" },
-  { linea: "helado",   nombre: "Paleta de Leche",   formato: "unidad (pack 50)", categoria: "Helados", sku: "HEL-paleta-de-leche" },
-  { linea: "helado",   nombre: "Paleta de Agua",    formato: "unidad (pack 50)", categoria: "Helados", sku: "HEL-paleta-de-agua" },
+  { linea: "helado",   nombre: "Tú y Yo Tradicional", formato: "unidad (pack 50)", categoria: "Helados", sku: "HEL-tu-y-yo", unidadesPack: 50 },
+  { linea: "helado",   nombre: "Tú y Yo Surtido",   formato: "unidad (pack 50)", categoria: "Helados", sku: "HEL-tu-y-yo-surtido", unidadesPack: 50 },
+  { linea: "helado",   nombre: "Paleta de Leche",   formato: "unidad (pack 50)", categoria: "Helados", sku: "HEL-paleta-de-leche", unidadesPack: 50 },
+  { linea: "helado",   nombre: "Paleta de Agua",    formato: "unidad (pack 50)", categoria: "Helados", sku: "HEL-paleta-de-agua", unidadesPack: 50 },
   { linea: "helado",   nombre: "Paleta Premium",    formato: "unidad",           categoria: "Helados", sku: "HEL-paleta-premium" },
-  { linea: "helado",   nombre: "Postre 500 ml",     formato: "500 ml (pack 16)", categoria: "Helados", sku: "HEL-postre-500-ml" },
+  { linea: "helado",   nombre: "Postre 500 ml",     formato: "500 ml (pack 16)", categoria: "Helados", sku: "HEL-postre-500-ml", unidadesPack: 16 },
 ];
 
 // --- Sabores (apartado propio: producción y reposición por sabor, SIN precio) ---
@@ -55,7 +56,7 @@ async function main() {
   for (const p of productos) {
     await prisma.producto.upsert({
       where: { sku: p.sku },
-      update: { nombre: p.nombre, linea: p.linea, formato: p.formato, categoria: p.categoria ?? null, activo: true },
+      update: { nombre: p.nombre, linea: p.linea, formato: p.formato, categoria: p.categoria ?? null, activo: true, unidadesPack: p.unidadesPack ?? null },
       create: p,
     });
   }

@@ -117,6 +117,9 @@ model Producto {
   minTienda      Int     @default(1) // cantidad mínima por pedido (para preparar/entregar)
   stockMinimo    Int     @default(0) // alerta de stock bajo (0 = sin alerta)
   maxTienda      Int     @default(0) // cantidad máxima (0 = sin tope)
+  // Unidades por pack/bolsa (postres 16, paletas/tú y yo 50). Para mostrar el stock
+  // por bolsas y el total de unidades en la app del vendedor. null/0 = se cuenta por unidad.
+  unidadesPack   Int?
   // Foto / presentación del producto (URL) — para el botón "Ver".
   fotoUrl      String?
 
