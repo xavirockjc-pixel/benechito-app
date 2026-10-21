@@ -91,12 +91,13 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
     ...sabores.map((s) => ({ id: `sab:${s.id}`, nombre: s.nombre, actual: stockSabMap.get(s.id) ?? 0, grupo: "Sabores" as const })),
   ];
 
-  // Texto del stock para enviar por WhatsApp (al dueño).
+  // Texto del stock para enviar por WhatsApp (al dueño): SOLO lo que cuenta en
+  // bodega (los packs/bolsas de arriba). Lo de "por sabor / por unidad" es aparte.
   const fechaTxt = new Date().toLocaleDateString("es-CL", { weekday: "long", day: "2-digit", month: "long" });
+  const packConStock = itemsPack.filter((i) => i.cantidad > 0);
   const lineasStock = [`📦 *Stock Bodega* · ${fechaTxt}`, ""];
-  if (enBodega.length) lineasStock.push(...enBodega.map((s) => `• ${s.producto.nombre}: ${s.cantidad}`));
-  if (saboresBodega.length) { lineasStock.push("", "*Sabores:*", ...saboresBodega.map((s) => `• ${s.sabor.nombre}: ${s.cantidad}`)); }
-  if (enBodega.length === 0 && saboresBodega.length === 0) lineasStock.push("Bodega vacía.");
+  if (packConStock.length) lineasStock.push(...packConStock.map((i) => `• ${i.nombre}: ${i.cantidad}`));
+  else lineasStock.push("Sin packs en bodega.");
   const textoStock = lineasStock.join("\n");
 
   // Pendiente por recibir de Producción (stock que fabricó Producción y aún no entra a bodega).
@@ -161,37 +162,17 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
       {/* Corregir/poner el stock real directo (conteo), sin pasar por ventas/entradas */}
       <CorregirStock items={itemsConteo} />
 
-      {/* Sector 1 — Stock por PACK / BOLSA (postres ×16, paletas y tú y yo ×50) */}
+      {/* Sector 1 — Stock de BODEGA por PACK / BOLSA (lo que cuenta) */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-900">📦 Stock por pack / bolsa</h2>
-        <p className="mb-2 text-[11px] text-slate-400">El número es cuántas <b>bolsas/packs</b> hay (postres ×16, paletas y tú y yo ×50). Tócalo para corregir.</p>
+        <h2 className="text-sm font-bold text-slate-900">📦 Stock de bodega (packs / bolsas)</h2>
+        <p className="mb-2 text-[11px] text-slate-400">Lo que hay <b>disponible en bodega</b>, por bolsas/packs (postres ×16, paletas y tú y yo ×50). Tócalo para corregir.</p>
         {itemsPack.length === 0 ? (
           <p className="text-sm text-slate-500">No hay productos por pack configurados.</p>
         ) : (
           <StockActualFix items={itemsPack} />
         )}
-      </section>
 
-      {/* Sector 2 — Productos por SABOR / por UNIDAD (manual o por voz) */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-900">🍧 Productos por sabor (por unidad)</h2>
-        <p className="mb-2 text-[11px] text-slate-400">Aquí llevas el detalle <b>por unidad</b>. Agrégalos arriba por voz o escribe el número.</p>
-
-        {/* Postres por sabor: siempre visibles para cargarlos a mano */}
-        {itemsPostreSabor.length > 0 && (
-          <div className="mb-3 rounded-xl border border-[#b45309]/20 bg-amber-50/40 p-3">
-            <p className="mb-1 text-xs font-extrabold text-[#b45309]">🍨 Postres por sabor (unidades)</p>
-            <StockActualFix items={itemsPostreSabor} />
-          </div>
-        )}
-
-        {itemsUnidad.length === 0 ? (
-          <p className="text-sm text-slate-500">Nada más por unidad todavía.</p>
-        ) : (
-          <StockActualFix items={itemsUnidad} />
-        )}
-
-        {/* Enviar el stock por WhatsApp al dueño */}
+        {/* Enviar el stock (de bodega) por WhatsApp al dueño */}
         <details className="mt-3 border-t border-slate-100 pt-3">
           <summary className="cursor-pointer text-sm font-bold text-[#1faa55]">📲 Enviar el stock por WhatsApp</summary>
           <div className="mt-2">
@@ -199,6 +180,31 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
           </div>
         </details>
       </section>
+
+      {/* Sector 2 — Por UNIDAD / por SABOR (OCULTO, aparte: NO suma con los packs) */}
+      <details className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <summary className="cursor-pointer text-sm font-bold text-slate-900">📝 Por unidad / por sabor (aparte)</summary>
+        <p className="mt-1 text-[11px] text-slate-400">
+          Registro <b>aparte</b> para ir cargando por unidad y por sabor (postres, tú y yo, paletas, premium…).
+          Es lo que viene de fabricación y <b>aún no cuenta</b> con los packs de arriba.
+        </p>
+
+        {/* Postres por sabor: siempre visibles para cargarlos a mano */}
+        {itemsPostreSabor.length > 0 && (
+          <div className="mt-3 rounded-xl border border-[#b45309]/20 bg-amber-50/40 p-3">
+            <p className="mb-1 text-xs font-extrabold text-[#b45309]">🍨 Postres por sabor (unidades)</p>
+            <StockActualFix items={itemsPostreSabor} />
+          </div>
+        )}
+
+        <div className="mt-3">
+          {itemsUnidad.length === 0 ? (
+            <p className="text-sm text-slate-500">Nada más por unidad todavía.</p>
+          ) : (
+            <StockActualFix items={itemsUnidad} />
+          )}
+        </div>
+      </details>
 
       {/* Registro del día */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
