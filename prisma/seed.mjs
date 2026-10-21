@@ -25,9 +25,11 @@ const productos = [
 // --- Sabores (apartado propio: producción y reposición por sabor, SIN precio) ---
 const saboresTrufa = ["Frutilla", "Pistacho", "Manjar Nueces", "Banana Chips", "Coco Chips", "Tradicional", "Café Latte", "Avellana", "Almendra"];
 const saboresCuchufli = ["Chocolate", "Manjar", "Blanco", "Manjar Nuez", "Manjar Almendra"];
+const saboresPostre = ["Menta y Chocolate", "Choco Brownie", "Crema Coco y Chips", "Vainilla Oreo", "Crema de Maracuyá"];
 const sabores = [
   ...saboresTrufa.map((nombre) => ({ nombre, linea: "trufa" })),
   ...saboresCuchufli.map((nombre) => ({ nombre, linea: "cuchufli" })),
+  ...saboresPostre.map((nombre) => ({ nombre, linea: "postres_500", seccion: "helado" })),
 ];
 
 // SKUs viejos (cuando las trufas/cuchuflís eran productos por sabor): se limpian.

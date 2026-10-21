@@ -38,17 +38,20 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
   // Asegura que existan los 2 ítems de postres de bodega (sueltos + pack x16).
   await productosPostre();
 
-  const [productos, sabores, stockProd, stockSab, registroHoy] = await Promise.all([
+  const [productos, sabores, postresSabores, stockProd, stockSab, registroHoy] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true, soloLocal: false }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.sabor.findMany({ where: { activo: true, linea: { notIn: POSTRE_LINEAS } }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
+    prisma.sabor.findMany({ where: { activo: true, linea: { in: POSTRE_LINEAS } }, orderBy: { nombre: "asc" } }),
     prisma.stock.findMany({ where: { ubicacionId: bodega.id }, include: { producto: { select: { nombre: true } } } }),
-    prisma.stockSabor.findMany({ where: { ubicacionId: bodega.id, sabor: { linea: { notIn: POSTRE_LINEAS } } }, include: { sabor: { select: { nombre: true } } } }),
+    prisma.stockSabor.findMany({ where: { ubicacionId: bodega.id }, include: { sabor: { select: { nombre: true } } } }),
     prisma.movimientoBodega.findMany({ where: { fecha: { gte: hoy }, zona: "bodega" }, orderBy: { fecha: "desc" }, take: 100 }),
   ]);
 
+  const postreIds = new Set(postresSabores.map((s) => s.id));
   const catalogo = [
     ...productos.map((p) => ({ id: `prod:${p.id}`, nombre: p.nombre })),
     ...sabores.map((s) => ({ id: `sab:${s.id}`, nombre: s.nombre })),
+    ...postresSabores.map((s) => ({ id: `sab:${s.id}`, nombre: s.nombre })),
   ];
 
   // Clientes para sugerir en "salió para…".
@@ -56,7 +59,8 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
   const clientes = [...new Set(negocios.map((n) => n.nombreNegocio || n.nombreContacto).filter((x): x is string => !!x))].sort();
 
   const enBodega = stockProd.filter((s) => s.cantidad !== 0).sort((a, b) => a.producto.nombre.localeCompare(b.producto.nombre));
-  const saboresBodega = stockSab.filter((s) => s.cantidad !== 0).sort((a, b) => a.sabor.nombre.localeCompare(b.sabor.nombre));
+  // Sabores con stock, SIN los de postres (esos van en su propio bloque "Postres por sabor").
+  const saboresBodega = stockSab.filter((s) => s.cantidad !== 0 && !postreIds.has(s.saborId)).sort((a, b) => a.sabor.nombre.localeCompare(b.sabor.nombre));
 
   // --- Dos sectores del stock actual ---
   // 1) Por PACK/BOLSA: los productos que se cuentan en bolsas/packs (postres 16,
@@ -75,6 +79,9 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
     ...enBodega.filter((s) => !packIds.has(s.productoId)).map((s) => ({ id: `prod:${s.productoId}`, nombre: s.producto.nombre, cantidad: s.cantidad, grupo: "Productos" as const })),
     ...saboresBodega.map((s) => ({ id: `sab:${s.saborId}`, nombre: s.sabor.nombre, cantidad: s.cantidad, grupo: "Sabores" as const })),
   ];
+  // Postres por sabor: SIEMPRE visibles (aunque estén en 0) para cargarlos a mano.
+  const stockSabMapTodos = new Map(stockSab.map((s) => [s.saborId, s.cantidad]));
+  const itemsPostreSabor = postresSabores.map((s) => ({ id: `sab:${s.id}`, nombre: s.nombre, cantidad: stockSabMapTodos.get(s.id) ?? 0, grupo: "Sabores" as const }));
 
   // Conteo/corrección: TODOS los productos y sabores con su stock actual (0 si no hay).
   const stockProdMap = new Map(stockProd.map((s) => [s.productoId, s.cantidad]));
@@ -168,9 +175,18 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
       {/* Sector 2 — Productos por SABOR / por UNIDAD (manual o por voz) */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="text-sm font-bold text-slate-900">🍧 Productos por sabor (por unidad)</h2>
-        <p className="mb-2 text-[11px] text-slate-400">Aquí llevas el detalle <b>por unidad</b>: postres, premium y tú y yo por sabor, etc. Agrégalos arriba por voz o escribe el número.</p>
+        <p className="mb-2 text-[11px] text-slate-400">Aquí llevas el detalle <b>por unidad</b>. Agrégalos arriba por voz o escribe el número.</p>
+
+        {/* Postres por sabor: siempre visibles para cargarlos a mano */}
+        {itemsPostreSabor.length > 0 && (
+          <div className="mb-3 rounded-xl border border-[#b45309]/20 bg-amber-50/40 p-3">
+            <p className="mb-1 text-xs font-extrabold text-[#b45309]">🍨 Postres por sabor (unidades)</p>
+            <StockActualFix items={itemsPostreSabor} />
+          </div>
+        )}
+
         {itemsUnidad.length === 0 ? (
-          <p className="text-sm text-slate-500">Nada por unidad todavía.</p>
+          <p className="text-sm text-slate-500">Nada más por unidad todavía.</p>
         ) : (
           <StockActualFix items={itemsUnidad} />
         )}
