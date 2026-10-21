@@ -12,6 +12,7 @@ import { site } from "@/lib/config";
 import Link from "next/link";
 import { ubicacionProduccionId } from "@/lib/dominio/ubicaciones";
 import { POSTRE_LINEAS } from "@/lib/dominio/produccion";
+import { palabraPack } from "@/lib/dominio/empaque";
 import { empezarNuevoDia, productosPostre } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -57,9 +58,21 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
   const enBodega = stockProd.filter((s) => s.cantidad !== 0).sort((a, b) => a.producto.nombre.localeCompare(b.producto.nombre));
   const saboresBodega = stockSab.filter((s) => s.cantidad !== 0).sort((a, b) => a.sabor.nombre.localeCompare(b.sabor.nombre));
 
-  // Lo que hay ahora, editable directo (para corregir o dejar en 0 de un toque).
-  const itemsActual = [
-    ...enBodega.map((s) => ({ id: `prod:${s.productoId}`, nombre: s.producto.nombre, cantidad: s.cantidad, grupo: "Productos" as const })),
+  // --- Dos sectores del stock actual ---
+  // 1) Por PACK/BOLSA: los productos que se cuentan en bolsas/packs (postres 16,
+  //    paletas y tú y yo 50). Siempre se muestran, aunque estén en 0.
+  const packProds = productos.filter((p) => (p.unidadesPack ?? 0) > 0);
+  const packIds = new Set(packProds.map((p) => p.id));
+  const itemsPack = packProds.map((p) => ({
+    id: `prod:${p.id}`,
+    nombre: `${p.nombre} · ${palabraPack(p.unidadesPack!)} ×${p.unidadesPack}`,
+    cantidad: stockProd.find((s) => s.productoId === p.id)?.cantidad ?? 0,
+    grupo: "Productos" as const,
+  }));
+  // 2) POR UNIDAD / POR SABOR: productos sin pack (con stock) + sabores (con stock).
+  //    Lo que el bodeguero lleva por unidad y por sabor (manual o por voz).
+  const itemsUnidad = [
+    ...enBodega.filter((s) => !packIds.has(s.productoId)).map((s) => ({ id: `prod:${s.productoId}`, nombre: s.producto.nombre, cantidad: s.cantidad, grupo: "Productos" as const })),
     ...saboresBodega.map((s) => ({ id: `sab:${s.saborId}`, nombre: s.sabor.nombre, cantidad: s.cantidad, grupo: "Sabores" as const })),
   ];
 
@@ -141,14 +154,25 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
       {/* Corregir/poner el stock real directo (conteo), sin pasar por ventas/entradas */}
       <CorregirStock items={itemsConteo} />
 
-      {/* Stock actual EDITABLE (el bodeguero ve lo que hay y lo corrige ahí mismo) */}
+      {/* Sector 1 — Stock por PACK / BOLSA (postres ×16, paletas y tú y yo ×50) */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-bold text-slate-900">📊 Stock actual en bodega</h2>
-        <p className="mb-2 text-[11px] text-slate-400">¿Un número está mal? Tócalo y corrígelo, o pon <b>0</b> para dejarlo en cero. Luego “Guardar”.</p>
-        {itemsActual.length === 0 ? (
-          <p className="text-sm text-slate-500">Bodega vacía.</p>
+        <h2 className="text-sm font-bold text-slate-900">📦 Stock por pack / bolsa</h2>
+        <p className="mb-2 text-[11px] text-slate-400">El número es cuántas <b>bolsas/packs</b> hay (postres ×16, paletas y tú y yo ×50). Tócalo para corregir.</p>
+        {itemsPack.length === 0 ? (
+          <p className="text-sm text-slate-500">No hay productos por pack configurados.</p>
         ) : (
-          <StockActualFix items={itemsActual} />
+          <StockActualFix items={itemsPack} />
+        )}
+      </section>
+
+      {/* Sector 2 — Productos por SABOR / por UNIDAD (manual o por voz) */}
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 className="text-sm font-bold text-slate-900">🍧 Productos por sabor (por unidad)</h2>
+        <p className="mb-2 text-[11px] text-slate-400">Aquí llevas el detalle <b>por unidad</b>: postres, premium y tú y yo por sabor, etc. Agrégalos arriba por voz o escribe el número.</p>
+        {itemsUnidad.length === 0 ? (
+          <p className="text-sm text-slate-500">Nada por unidad todavía.</p>
+        ) : (
+          <StockActualFix items={itemsUnidad} />
         )}
 
         {/* Enviar el stock por WhatsApp al dueño */}

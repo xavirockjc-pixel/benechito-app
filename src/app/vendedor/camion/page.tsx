@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { asignarVehiculo, cargarVehiculo, devolverTodoABodega, cargarSabor } from "../actions";
-import { packInfo, palabraPack } from "@/lib/dominio/empaque";
+import { palabraPack } from "@/lib/dominio/empaque";
 import CargarCamionVoz from "./CargarCamionVoz";
 
 export const dynamic = "force-dynamic";
@@ -55,6 +55,8 @@ export default async function CamionPage() {
 
   const enCamion = stockCamion.filter((s) => s.cantidad !== 0).sort((a, b) => a.producto.nombre.localeCompare(b.producto.nombre));
   const totalCamion = enCamion.reduce((s, x) => s + x.cantidad, 0);
+  // Total en unidades (los que van por bolsa/pack multiplican por su tamaño).
+  const totalCamionU = enCamion.reduce((s, x) => s + x.cantidad * ((x.producto.unidadesPack ?? 0) > 0 ? x.producto.unidadesPack! : 1), 0);
   const bodegaDe = new Map(stockBodega.map((s) => [s.productoId, s.cantidad]));
 
   const cajaSabores = saborCamion.filter((s) => s.cantidad !== 0).sort((a, b) => a.sabor.nombre.localeCompare(b.sabor.nombre));
@@ -78,22 +80,21 @@ export default async function CamionPage() {
 
       {/* Stock actual del camión */}
       <section className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="mb-2 text-sm font-bold text-slate-900">Lo que llevas ({totalCamion} u.)</h2>
+        <h2 className="mb-2 text-sm font-bold text-slate-900">Lo que llevas ({totalCamionU} u.)</h2>
         {enCamion.length === 0 ? (
           <p className="text-sm text-slate-500">El camión está vacío. Carga productos abajo.</p>
         ) : (
           <ul className="divide-y divide-slate-100 text-sm">
             {enCamion.map((s) => {
-              const info = packInfo(s.cantidad, s.producto.unidadesPack);
-              const w = info.porPack ? palabraPack(info.porPack) : "";
+              const pack = s.producto.unidadesPack ?? 0; // cada unidad de stock = 1 bolsa/pack
+              const w = pack > 0 ? palabraPack(pack) : "";
               return (
                 <li key={s.id} className="flex items-center justify-between gap-2 py-1.5">
                   <span className="min-w-0 truncate text-slate-800">{s.producto.nombre}</span>
-                  {info.porPack ? (
+                  {pack > 0 ? (
                     <span className="shrink-0 text-right">
-                      <span className="font-bold text-slate-900">{info.packs} {w}{info.packs !== 1 ? "s" : ""} de {info.porPack}</span>
-                      {info.resto > 0 && <span className="font-semibold text-slate-500"> + {info.resto}</span>}
-                      <span className="ml-1 text-xs font-semibold text-slate-400">= {s.cantidad} u</span>
+                      <span className="font-bold text-slate-900">{s.cantidad} {w}{s.cantidad !== 1 ? "s" : ""} de {pack}</span>
+                      <span className="ml-1 text-xs font-semibold text-slate-400">= {s.cantidad * pack} u</span>
                     </span>
                   ) : (
                     <span className="shrink-0 font-bold text-slate-900">{s.cantidad}</span>
