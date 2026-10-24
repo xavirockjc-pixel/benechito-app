@@ -206,30 +206,36 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
         </div>
       </details>
 
-      {/* Registro del día */}
+      {/* Registro del día (plegado) + enlace al calendario por día */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="mb-2 text-sm font-bold text-slate-900">🧾 Registro de hoy</h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-slate-900">🧾 Registro de hoy <span className="text-xs font-normal text-slate-400">({registroHoy.length})</span></h2>
+          <Link href="/bodega/historial" className="shrink-0 rounded-lg bg-[#b45309]/10 px-3 py-1.5 text-xs font-bold text-[#b45309]">📅 Ver por día</Link>
+        </div>
         {registroHoy.length === 0 ? (
-          <p className="text-sm text-slate-500">Aún no registras movimientos hoy.</p>
+          <p className="mt-2 text-sm text-slate-500">Aún no registras movimientos hoy.</p>
         ) : (
-          <ul className="divide-y divide-slate-100 text-sm">
-            {registroHoy.map((m) => (
-              <li key={m.id} className="flex items-center justify-between py-1.5">
-                <span className="min-w-0">
-                  <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : m.tipo === "mixto" ? "text-[#b45309]" : m.tipo === "ajuste" ? "text-blue-600" : "text-red-600"}`}>
-                    {m.tipo === "entrada" ? "📥 +" : m.tipo === "mixto" ? "🍬 " : m.tipo === "ajuste" ? "✏️ " : "📤 −"}{m.cantidad}
-                  </span>{" "}
-                  <span className="text-slate-800">{m.nombre}</span>
-                </span>
-                <span className="shrink-0 text-xs text-slate-400">
-                  {m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <details className="mt-2">
+            <summary className="cursor-pointer text-sm font-semibold text-slate-600">Ver los {registroHoy.length} movimiento{registroHoy.length === 1 ? "" : "s"} de hoy</summary>
+            <ul className="mt-1 divide-y divide-slate-100 text-sm">
+              {registroHoy.map((m) => (
+                <li key={m.id} className="flex items-center justify-between py-1.5">
+                  <span className="min-w-0">
+                    <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : m.tipo === "mixto" ? "text-[#b45309]" : m.tipo === "ajuste" ? "text-blue-600" : "text-red-600"}`}>
+                      {m.tipo === "entrada" ? "📥 +" : m.tipo === "mixto" ? "🍬 " : m.tipo === "ajuste" ? "✏️ " : "📤 −"}{m.cantidad}
+                    </span>{" "}
+                    <span className="text-slate-800">{m.nombre}</span>
+                  </span>
+                  <span className="shrink-0 text-xs text-slate-400">
+                    {m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
         <p className="mt-2 text-[11px] leading-tight text-slate-400">
-          Solo ves lo del día. Los totales y las ventas del mes se ven únicamente en el panel.
+          El historial por día (movimientos, ventas y devoluciones) está en <b>📅 Registro por día</b>.
         </p>
         <EmpezarNuevoDia action={empezarNuevoDia} />
       </section>

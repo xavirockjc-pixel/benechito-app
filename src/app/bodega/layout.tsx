@@ -41,6 +41,7 @@ export default async function BodegaLayout({ children }: { children: React.React
         acento="#b45309"
         items={[
           { href: "/bodega", label: rubro.labels.bodega, icon: "📦" },
+          { href: "/bodega/historial", label: "Registro", icon: "📅" },
           { href: "/bodega/surtidos", label: rubro.labels.surtidos, icon: "🍬" },
           { href: "/bodega/cierre", label: "Cierre", icon: "🧾" },
           { href: "/bodega/insumos", label: "Insumos", icon: "🧪" },
