@@ -5,10 +5,11 @@ import { fmtCLP } from "@/lib/dominio/pedidos";
 import { TIPOS_DOCUMENTO, tipoDocumentoLabel } from "@/lib/dominio/ventas";
 import { venderTerreno } from "../../../actions";
 import ControlVoz from "../../../ControlVoz";
+import { palabraPack } from "@/lib/dominio/empaque";
 import type { CambioVoz } from "@/lib/dominio/voz";
 
 type Tramo = { desde: number; precio: number };
-type Prod = { id: string; nombre: string; formato: string | null; precio: number; tramos?: Tramo[] };
+type Prod = { id: string; nombre: string; formato: string | null; unidadesPack?: number | null; precio: number; tramos?: Tramo[] };
 
 /** Precio unitario según la cantidad: aplica el tramo de mayor volumen que alcance. */
 function precioUnitDe(p: Prod, cantidad: number): number {
@@ -51,7 +52,11 @@ export default function VenderTerreno({
     setCart((c) => {
       const next = { ...c };
       for (const { productoId, delta } of cambios) {
-        const n = (next[productoId] ?? 0) + delta;
+        // En productos por bolsa/pack, la voz dice unidades → se convierten a bolsas.
+        const pack = productos.find((p) => p.id === productoId)?.unidadesPack ?? 0;
+        const d = pack > 0 ? Math.round(delta / pack) : delta;
+        if (d === 0) continue;
+        const n = (next[productoId] ?? 0) + d;
         if (n <= 0) delete next[productoId];
         else next[productoId] = n;
       }
@@ -63,12 +68,22 @@ export default function VenderTerreno({
   const [abono, setAbono] = useState("");
 
   const porId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
-  const lineas = Object.entries(cart).map(([id, cantidad]) => {
+  // Los helados se venden por BOLSA/PACK (tú y yo y paletas ×50, postres ×16): la
+  // cantidad del carrito son bolsas; el precio se calcula por unidad según el total.
+  const lineas = Object.entries(cart).map(([id, q]) => {
     const p = porId.get(id)!;
-    const precioUnit = precioUnitDe(p, cantidad); // aplica tramo por volumen
-    return { productoId: id, nombre: p.nombre, cantidad, precioUnit, precioBase: p.precio };
+    const pack = p.unidadesPack ?? 0;
+    if (pack > 0) {
+      const unidades = q * pack;
+      const unit = precioUnitDe(p, unidades); // tramo por volumen, según unidades
+      const porPack = unit * pack;
+      return { productoId: id, nombre: p.nombre, pack, packs: q, unidades, unit, precioUnit: porPack, cantidad: q, sub: porPack * q, precioBase: p.precio };
+    }
+    const unit = precioUnitDe(p, q);
+    return { productoId: id, nombre: p.nombre, pack: 0, packs: 0, unidades: q, unit, precioUnit: unit, cantidad: q, sub: unit * q, precioBase: p.precio };
   });
-  const total = lineas.reduce((s, l) => s + l.precioUnit * l.cantidad, 0);
+  const total = lineas.reduce((s, l) => s + l.sub, 0);
+  const totalUnidades = lineas.reduce((s, l) => s + l.unidades, 0);
   const abonoNum = Math.min(Math.max(Number(abono.replace(/[^0-9]/g, "")) || 0, 0), total);
   const restante = total - abonoNum;
 
@@ -94,7 +109,7 @@ export default function VenderTerreno({
               className={`rounded-xl border p-3 text-left shadow-sm active:brightness-95 ${n > 0 ? "border-[#1479c4] bg-blue-50" : "border-slate-200 bg-white"}`}
             >
               <span className="block truncate font-semibold text-slate-900">{p.nombre}</span>
-              <span className="block text-xs text-slate-400">{p.formato ?? ""}</span>
+              <span className="block text-xs text-slate-400">{p.unidadesPack && p.unidadesPack > 0 ? `${palabraPack(p.unidadesPack)} ×${p.unidadesPack}` : (p.formato ?? "")}</span>
               <span className="mt-1 flex items-center justify-between">
                 <span className="font-bold text-[#1479c4]">{fmtCLP(p.precio)}{p.tramos && p.tramos.length > 0 && <span className="ml-1 text-[10px] font-bold text-green-600">📉 x mayor</span>}</span>
                 {n > 0 && <span className="rounded-full bg-[#1479c4] px-2 text-xs font-bold text-white">{n}</span>}
@@ -117,8 +132,10 @@ export default function VenderTerreno({
                 <span className="min-w-0">
                   <span className="block truncate font-semibold text-slate-800">{l.nombre}</span>
                   <span className="text-[11px] text-slate-400">
-                    {fmtCLP(l.precioUnit)} c/u
-                    {l.precioUnit < l.precioBase && <span className="ml-1 font-bold text-green-600">📉 mayoreo</span>}
+                    {l.pack > 0
+                      ? <>{l.packs} {palabraPack(l.pack)}{l.packs !== 1 ? "s" : ""} de {l.pack} = {l.unidades} u · {fmtCLP(l.unit)}/u</>
+                      : <>{fmtCLP(l.unit)} c/u</>}
+                    {l.unit < l.precioBase && <span className="ml-1 font-bold text-green-600">📉 mayoreo</span>}
                   </span>
                 </span>
                 <span className="flex items-center gap-2">
@@ -133,7 +150,7 @@ export default function VenderTerreno({
             ))}
           </ul>
           <div className="mt-2 flex items-center justify-between border-t border-slate-200 pt-2">
-            <span className="font-bold text-slate-700">Total</span>
+            <span className="font-bold text-slate-700">Total <span className="text-xs font-semibold text-slate-400">· {totalUnidades} helados</span></span>
             <span className="text-xl font-extrabold text-slate-900">{fmtCLP(total)}</span>
           </div>
         </div>

@@ -27,7 +27,7 @@ export default async function VenderPage({
     ? await Promise.all([
         prisma.precioProducto.findMany({
           where: { listaId, cantidadMinima: 1 },
-          include: { producto: { select: { id: true, nombre: true, formato: true, activo: true, soloLocal: true } } },
+          include: { producto: { select: { id: true, nombre: true, formato: true, activo: true, soloLocal: true, unidadesPack: true } } },
         }),
         prisma.precioProducto.findMany({
           where: { listaId, cantidadMinima: { gt: 1 } },
@@ -49,6 +49,7 @@ export default async function VenderPage({
       id: p.producto.id,
       nombre: p.producto.nombre,
       formato: p.producto.formato,
+      unidadesPack: p.producto.unidadesPack,
       precio: Number(p.precio),
       tramos: (tramosDe.get(p.producto.id) ?? []).sort((a, b) => a.desde - b.desde),
     }))
