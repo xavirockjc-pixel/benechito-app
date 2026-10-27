@@ -592,10 +592,10 @@ export async function venderTerreno(formData: FormData) {
     data: { negocioId, tipo: "venta", descripcion },
   });
 
-  await crearDocumentoVenta({ ventaId: venta.id, negocioId, tipo: tipoDoc, total });
+  await crearDocumentoVenta({ ventaId: venta.id, negocioId, tipo: tipoDoc, total, items });
 
   revalidatePath(`/vendedor/cliente/${negocioId}`);
-  redirect(`/vendedor/cliente/${negocioId}`);
+  redirect(`/vendedor/comprobante/${venta.id}?volver=${encodeURIComponent(`/vendedor/cliente/${negocioId}`)}`);
 }
 
 /** Cliente genérico de mostrador (walk-in) para ventas sin cliente. Compartido con la caja. */
@@ -725,10 +725,10 @@ export async function ventaRapida(formData: FormData) {
     });
   }
 
-  await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: tipoDoc, total });
+  await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: tipoDoc, total, items });
 
   revalidatePath("/vendedor/venta-rapida");
-  redirect("/vendedor?vendido=1");
+  redirect(`/vendedor/comprobante/${venta.id}?volver=${encodeURIComponent("/vendedor")}`);
 }
 
 /**

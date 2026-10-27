@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
-import { MEDIOS_PAGO, medioPagoLabel } from "@/lib/dominio/ventas";
+import { MEDIOS_PAGO, medioPagoLabel, TIPOS_DOCUMENTO, tipoDocumentoLabel } from "@/lib/dominio/ventas";
 import ControlVoz from "../vendedor/ControlVoz";
 import type { CambioVoz } from "@/lib/dominio/voz";
 import { venderCaja } from "./actions";
@@ -11,6 +11,7 @@ type Escalon = { desde: number; precio: number; label: string };
 type Prod = { id: string; nombre: string; formato: string | null; escalera: Escalon[]; stock: number };
 /** En el carrito solo guardamos cantidad y (opcional) un precio forzado a mano. */
 type Item = { cantidad: number; precioManual?: number };
+type Cliente = { id: string; nombreNegocio: string; comuna: string; rut: string | null };
 
 const norm = (s: string) => s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 
@@ -22,10 +23,25 @@ function escalonActivo(esc: Escalon[], cantidad: number): Escalon | null {
 }
 const precioAuto = (p: Prod, cantidad: number) => escalonActivo(p.escalera, cantidad)?.precio ?? 0;
 
-export default function CajaPOS({ productos }: { productos: Prod[] }) {
+export default function CajaPOS({ productos, clientes = [], errorFactura = false }: {
+  productos: Prod[]; clientes?: Cliente[]; errorFactura?: boolean;
+}) {
   const [query, setQuery] = useState("");
   const [cart, setCart] = useState<Record<string, Item>>({});
   const [descuento, setDescuento] = useState("");
+  // Cliente y documento tributario de la venta.
+  const [cliente, setCliente] = useState<Cliente | null>(null);
+  const [qCliente, setQCliente] = useState("");
+  const [nuevoCliente, setNuevoCliente] = useState(false);
+  const [tipoDoc, setTipoDoc] = useState("boleta");
+
+  const clientesFiltrados = useMemo(() => {
+    const t = qCliente.trim().toLowerCase();
+    if (!t) return [];
+    return clientes
+      .filter((c) => c.nombreNegocio.toLowerCase().includes(t) || (c.comuna ?? "").toLowerCase().includes(t) || (c.rut ?? "").toLowerCase().includes(t))
+      .slice(0, 6);
+  }, [qCliente, clientes]);
 
   const porId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
 
@@ -185,10 +201,75 @@ export default function CajaPOS({ productos }: { productos: Prod[] }) {
         <form action={venderCaja} className="mt-4 space-y-2">
           <input type="hidden" name="items" value={JSON.stringify(itemsVenta)} />
           <input type="hidden" name="descuento" value={String(desc)} />
+          <input type="hidden" name="negocioId" value={cliente?.id ?? ""} />
+
+          {errorFactura && (
+            <p className="rounded-lg border border-red-200 bg-red-50 p-2.5 text-xs font-semibold text-red-700">
+              ⚠️ Para FACTURA el cliente necesita RUT, razón social y giro. Elige o crea el cliente con esos datos.
+            </p>
+          )}
+
+          {/* Documento tributario */}
+          <select name="tipoDocumento" value={tipoDoc} onChange={(e) => setTipoDoc(e.target.value)}
+            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#0f7a44]">
+            {TIPOS_DOCUMENTO.map((t) => <option key={t} value={t}>📄 {tipoDocumentoLabel[t]}</option>)}
+          </select>
+
+          {/* Cliente (obligatorio para factura, opcional para boleta) */}
+          {cliente ? (
+            <div className="flex items-center justify-between rounded-lg bg-slate-50 p-2.5">
+              <span className="min-w-0 truncate text-sm font-bold text-slate-800">
+                🏪 {cliente.nombreNegocio}{cliente.rut ? <span className="ml-1 font-normal text-slate-400">{cliente.rut}</span> : null}
+              </span>
+              <button type="button" onClick={() => setCliente(null)} className="shrink-0 text-xs font-semibold text-slate-500">quitar</button>
+            </div>
+          ) : nuevoCliente ? (
+            <div className="space-y-1.5 rounded-lg border border-emerald-200 bg-emerald-50 p-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold text-emerald-700">＋ Cliente nuevo</span>
+                <button type="button" onClick={() => setNuevoCliente(false)} className="text-xs font-semibold text-slate-500">cancelar</button>
+              </div>
+              <input name="nuevoNombre" required placeholder="Nombre del cliente o negocio *" defaultValue={qCliente.trim()}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+              <input name="nuevoWhatsapp" inputMode="tel" placeholder="WhatsApp (para enviarle el comprobante)"
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+              {tipoDoc === "factura" && (
+                <>
+                  <input name="nuevoRut" required placeholder="RUT (ej: 76.123.456-7) *" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+                  <input name="nuevaRazonSocial" required placeholder="Razón social *" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+                  <input name="nuevoGiro" required placeholder="Giro *" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+                </>
+              )}
+            </div>
+          ) : (
+            <>
+              <input value={qCliente} onChange={(e) => setQCliente(e.target.value)}
+                placeholder={tipoDoc === "factura" ? "Cliente con RUT (obligatorio para factura)…" : "Cliente (opcional)…"}
+                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-[#0f7a44]" />
+              {clientesFiltrados.length > 0 && (
+                <div className="space-y-1">
+                  {clientesFiltrados.map((c) => (
+                    <button key={c.id} type="button" onClick={() => { setCliente(c); setQCliente(""); }}
+                      className="flex w-full items-center justify-between rounded-lg border border-slate-200 px-3 py-1.5 text-left text-sm active:bg-slate-50">
+                      <span className="truncate font-semibold text-slate-800">{c.nombreNegocio}</span>
+                      <span className="ml-2 shrink-0 text-xs text-slate-400">{c.rut ?? c.comuna}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              {(qCliente.trim().length >= 2 || tipoDoc === "factura") && (
+                <button type="button" onClick={() => setNuevoCliente(true)}
+                  className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-emerald-400 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700 active:brightness-95">
+                  ＋ Crear cliente{qCliente.trim() ? ` «${qCliente.trim()}»` : " nuevo"}
+                </button>
+              )}
+            </>
+          )}
+
           <select name="medio" defaultValue="efectivo" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#0f7a44]">
             {MEDIOS_PAGO.filter((m) => m !== "credito").map((m) => <option key={m} value={m}>{medioPagoLabel[m]}</option>)}
           </select>
-          <button disabled={lineas.length === 0}
+          <button disabled={lineas.length === 0 || (tipoDoc === "factura" && !cliente && !nuevoCliente)}
             className="w-full rounded-lg bg-[#0f7a44] px-4 py-3.5 text-lg font-extrabold text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40">
             Cobrar {total > 0 ? fmtCLP(total) : ""}
           </button>

@@ -22,7 +22,7 @@
     },
     {
       "parameters": {
-        "functionCode": "// Mapea el payload de la app -> cuerpo 'emitir' de LibreDTE.\n// Boleta = TipoDTE 39 (no exige receptor). Factura = 33 (receptor obligatorio).\n// Con normalizar=1 LibreDTE calcula IVA/total a partir del precio neto.\nconst b = $json.body || $json;\nconst esFactura = b.tipoDTE === 33;\nconst enc = { IdDoc: { TipoDTE: b.tipoDTE } , Emisor: { RUTEmisor: $env.LIBREDTE_RUT_EMISOR } };\nif (esFactura) {\n  enc.Receptor = {\n    RUTRecep: b.receptor?.rut || '',\n    RznSocRecep: b.receptor?.razonSocial || '',\n    GiroRecep: b.receptor?.giro || '',\n    DirRecep: b.receptor?.direccion || '',\n    CmnaRecep: b.receptor?.comuna || ''\n  };\n}\nconst neto = Number(b.montoNeto || b.montoTotal || 0);\nconst dte = {\n  Encabezado: enc,\n  Detalle: [ { NmbItem: 'Venta Benechito', QtyItem: 1, PrcItem: neto } ]\n};\nreturn [{ json: { documentoId: b.documentoId, tipoDTE: b.tipoDTE, dte } }];"
+        "functionCode": "// Mapea el payload de la app -> cuerpo 'emitir' de LibreDTE.\n// Boleta = TipoDTE 39 (no exige receptor). Factura = 33 (receptor obligatorio).\n// Con normalizar=1 LibreDTE calcula IVA/total.\nconst b = $json.body || $json;\nconst esFactura = b.tipoDTE === 33;\nconst enc = { IdDoc: { TipoDTE: b.tipoDTE } , Emisor: { RUTEmisor: $env.LIBREDTE_RUT_EMISOR } };\nif (esFactura) {\n  enc.Receptor = {\n    RUTRecep: b.receptor?.rut || '',\n    RznSocRecep: b.receptor?.razonSocial || '',\n    GiroRecep: b.receptor?.giro || '',\n    DirRecep: b.receptor?.direccion || '',\n    CmnaRecep: b.receptor?.comuna || ''\n  };\n}\n// Detalle real de la venta (precios IVA incluido -> MntBruto 1). Si no viene, una línea genérica con el neto.\nlet detalle;\nif (Array.isArray(b.detalle) && b.detalle.length > 0) {\n  enc.IdDoc.MntBruto = 1;\n  detalle = b.detalle.map(l => ({ NmbItem: String(l.nombre || 'Producto').slice(0, 80), QtyItem: Number(l.cantidad) || 1, PrcItem: Number(l.precioUnit) || 0 }));\n} else {\n  detalle = [ { NmbItem: 'Venta Benechito', QtyItem: 1, PrcItem: Number(b.montoNeto || b.montoTotal || 0) } ];\n}\nconst dte = {\n  Encabezado: enc,\n  Detalle: detalle\n};\nreturn [{ json: { documentoId: b.documentoId, tipoDTE: b.tipoDTE, dte } }];"
       },
       "id": "map-dte",
       "name": "Mapear a DTE",
@@ -74,7 +74,7 @@
         "headerParameters": { "parameters": [ { "name": "x-webhook-token", "value": "={{$env.SII_WEBHOOK_TOKEN}}" } ] },
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "={{ JSON.stringify({ documentoId: $node[\"Mapear a DTE\"].json.documentoId, estado: 'emitido', folio: String($json.folio || ''), urlPdf: ($env.LIBREDTE_API_URL + '/dte/dte_emitidos/pdf/' + $json.dte + '/' + $json.folio + '/' + $json.emisor), canalEnvio: 'email' }) }}",
+        "jsonBody": "={{ JSON.stringify({ documentoId: $node[\"Mapear a DTE\"].json.documentoId, estado: 'emitido', folio: String($json.folio || ''), trackId: String($json.track_id || ''), urlPdf: ($env.LIBREDTE_API_URL + '/dte/dte_emitidos/pdf/' + $json.dte + '/' + $json.folio + '/' + $json.emisor), canalEnvio: 'email' }) }}",
         "options": {}
       },
       "id": "callback",

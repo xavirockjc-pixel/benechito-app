@@ -42,6 +42,9 @@ export async function POST(req: Request) {
     const estado = ESTADOS.includes(estadoRaw) ? estadoRaw : "emitido";
     const folio = body.folio != null ? String(body.folio).trim() : null;
     const urlPdf = body.urlPdf != null ? String(body.urlPdf).trim() : null;
+    const urlXml = body.urlXml != null ? String(body.urlXml).trim() : null;
+    const trackId = body.trackId != null ? String(body.trackId).trim() : null;
+    const mensajeError = body.mensajeError != null ? String(body.mensajeError).trim() : null;
     const canalEnvio = body.canalEnvio === "whatsapp" || body.canalEnvio === "email" ? String(body.canalEnvio) : null;
 
     const doc = await prisma.documentoVenta.findUnique({ where: { id: documentoId } });
@@ -55,6 +58,10 @@ export async function POST(req: Request) {
         estado,
         ...(folio ? { folio } : {}),
         ...(urlPdf ? { urlPdf } : {}),
+        ...(urlXml ? { urlXml } : {}),
+        ...(trackId ? { trackId } : {}),
+        // Si se emitió bien, limpia cualquier error anterior.
+        mensajeError: estado === "rechazado" ? mensajeError : null,
         ...(canalEnvio ? { canalEnvio } : {}),
         ...(estado === "emitido" || estado === "enviado" ? { fechaEmision: doc.fechaEmision ?? new Date() } : {}),
         ...(canalEnvio ? { fechaEnvio: new Date() } : {}),

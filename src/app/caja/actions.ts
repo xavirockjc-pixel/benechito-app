@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { crearDocumentoVenta } from "@/lib/facturacion";
 import { borrarCookieSesion, usuarioActual } from "@/lib/auth";
-import { MEDIOS_PAGO } from "@/lib/dominio/ventas";
+import { MEDIOS_PAGO, faltaParaFactura, documentoLegacy } from "@/lib/dominio/ventas";
 
 type LineaPOS = { productoId: string; cantidad: number; precioUnit: number };
 
@@ -81,6 +81,10 @@ export async function venderCaja(formData: FormData) {
   const sesion = await sesionAbierta();
   if (!sesion) return; // no se vende sin caja abierta
 
+  // A dónde volver después (la caja normal o el POS TUU).
+  const volverRaw = String(formData.get("volver") ?? "").trim();
+  const volver = volverRaw.startsWith("/") ? volverRaw : "/caja";
+
   let items: LineaPOS[] = [];
   try {
     items = JSON.parse(String(formData.get("items") ?? "[]"));
@@ -93,7 +97,40 @@ export async function venderCaja(formData: FormData) {
   const subtotal = items.reduce((s, i) => s + i.precioUnit * i.cantidad, 0);
   const descuento = Math.max(0, Math.min(Number(String(formData.get("descuento") ?? "0")) || 0, subtotal));
   const total = subtotal - descuento;
-  const cliente = await clienteMostrador();
+
+  // Cliente: el elegido en la caja, uno nuevo creado al vuelo, o mostrador.
+  const negocioIdSel = String(formData.get("negocioId") ?? "").trim();
+  const nuevoNombre = String(formData.get("nuevoNombre") ?? "").trim();
+  let cliente;
+  if (negocioIdSel) {
+    cliente = (await prisma.negocio.findUnique({ where: { id: negocioIdSel } })) ?? (await clienteMostrador());
+  } else if (nuevoNombre) {
+    // No duplicar: si ya existe uno con ese nombre, se usa.
+    cliente =
+      (await prisma.negocio.findFirst({ where: { nombreNegocio: { equals: nuevoNombre, mode: "insensitive" } } })) ??
+      (await prisma.negocio.create({
+        data: {
+          nombreNegocio: nuevoNombre,
+          nombreContacto: String(formData.get("nuevoContacto") ?? "").trim() || nuevoNombre,
+          whatsapp: String(formData.get("nuevoWhatsapp") ?? "").trim(),
+          comuna: String(formData.get("nuevaComuna") ?? "").trim(),
+          rut: String(formData.get("nuevoRut") ?? "").trim() || null,
+          razonSocial: String(formData.get("nuevaRazonSocial") ?? "").trim() || null,
+          giro: String(formData.get("nuevoGiro") ?? "").trim() || null,
+          tipoCliente: "consumidor",
+          estado: "nuevo",
+          origen: "pos",
+        },
+      }));
+  } else {
+    cliente = await clienteMostrador();
+  }
+
+  // Documento tributario elegido (boleta por defecto, como siempre).
+  const tipoDoc = String(formData.get("tipoDocumento") ?? "").trim() || "boleta";
+  if (tipoDoc === "factura" && faltaParaFactura(cliente).length > 0) {
+    redirect(`${volver}?error=factura`);
+  }
 
   const venta = await prisma.venta.create({
     data: {
@@ -102,7 +139,7 @@ export async function venderCaja(formData: FormData) {
       sesionCajaId: sesion.id,
       total,
       estadoPago: "pagado",
-      documento: "boleta",
+      documento: documentoLegacy(tipoDoc),
       canal: "local",
       pagos: { create: { medio, monto: total } },
     },
@@ -119,9 +156,10 @@ export async function venderCaja(formData: FormData) {
     });
   }
 
-  await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: "boleta", total });
+  await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: tipoDoc, total, items });
 
   revalidatePath("/caja");
+  redirect(`/caja/comprobante/${venta.id}?volver=${encodeURIComponent(volver)}`);
 }
 
 /**

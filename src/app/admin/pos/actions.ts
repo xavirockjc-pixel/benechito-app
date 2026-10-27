@@ -128,7 +128,7 @@ export async function venderVoz(formData: FormData) {
     });
   }
 
-  await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: "boleta", total });
+  await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: "boleta", total, items });
 
   revalidatePath("/admin/ventas");
   revalidatePath("/admin/inventario");
@@ -221,7 +221,7 @@ export async function venderPOS(formData: FormData) {
     });
   }
 
-  await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: "boleta", total });
+  await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: "boleta", total, items });
 
   revalidatePath("/admin/ventas");
   revalidatePath("/admin/inventario");

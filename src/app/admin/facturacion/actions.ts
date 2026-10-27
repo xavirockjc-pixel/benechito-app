@@ -2,6 +2,28 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
+import { reemitirDocumento } from "@/lib/facturacion";
+
+/** Reintenta la emisión electrónica de UN documento pendiente o rechazado. */
+export async function reintentarEmision(formData: FormData) {
+  const documentoId = String(formData.get("documentoId") ?? "").trim();
+  if (!documentoId) return;
+  await reemitirDocumento(documentoId);
+  revalidatePath("/admin/facturacion");
+}
+
+/** Reintenta TODOS los documentos pendientes/rechazados (hasta 50 por tanda). */
+export async function reintentarPendientes() {
+  if (!process.env.SII_N8N_WEBHOOK_URL) return;
+  const docs = await prisma.documentoVenta.findMany({
+    where: { estado: { in: ["pendiente", "rechazado"] }, tipo: { in: ["boleta", "factura"] } },
+    orderBy: { createdAt: "asc" },
+    take: 50,
+    select: { id: true },
+  });
+  for (const d of docs) await reemitirDocumento(d.id);
+  revalidatePath("/admin/facturacion");
+}
 
 /** Marca una venta como facturada (folio + pantallazo opcional del comprobante). */
 export async function marcarFacturada(formData: FormData) {

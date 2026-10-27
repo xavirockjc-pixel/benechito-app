@@ -10,7 +10,8 @@ import RetirosDepto from "@/app/_shared/RetirosDepto";
 
 export const dynamic = "force-dynamic";
 
-export default async function CajaPage() {
+export default async function CajaPage({ searchParams }: { searchParams?: Promise<{ error?: string }> }) {
+  const sp = (await searchParams) ?? {};
   const sesion = await sesionAbierta();
 
   // Sin caja abierta → pedir fondo.
@@ -35,11 +36,16 @@ export default async function CajaPage() {
   // Caja abierta → resumen + POS.
   const salaUbic = (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } })) ?? (await prisma.ubicacion.findFirst());
 
-  const [prods, precios, stockSala, ventas] = await Promise.all([
+  const [prods, precios, stockSala, ventas, clientes] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
     prisma.precioProducto.findMany({ include: { lista: { select: { canal: true } } } }),
     salaUbic ? prisma.stock.findMany({ where: { ubicacionId: salaUbic.id } }) : Promise.resolve([]),
     prisma.venta.findMany({ where: { sesionCajaId: sesion.id }, include: { pagos: true } }),
+    prisma.negocio.findMany({
+      where: { nombreNegocio: { not: "Consumidor Final" } },
+      select: { id: true, nombreNegocio: true, comuna: true, rut: true },
+      orderBy: { nombreNegocio: "asc" },
+    }),
   ]);
 
   // Precio neto por producto → canal → { base (cantMin 1) y tramos por volumen }.
@@ -109,7 +115,7 @@ export default async function CajaPage() {
         </div>
       </div>
 
-      <CajaPOS productos={productos} />
+      <CajaPOS productos={productos} clientes={clientes} errorFactura={sp.error === "factura"} />
 
       <div className="mt-4"><MovCajaLocalForm /></div>
 

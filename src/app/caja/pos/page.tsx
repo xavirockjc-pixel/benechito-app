@@ -216,6 +216,7 @@ export default async function CajaPOSPage() {
           <form action={venderCajaPOS} id="posxForm">
             <input type="hidden" name="items" id="posxItems" defaultValue="[]" />
             <input type="hidden" name="descuento" id="posxDescuentoHidden" defaultValue="0" />
+            <input type="hidden" name="volver" defaultValue="/caja/pos" />
             <label className="posx-lbl" htmlFor="posxMedio">Medio de pago</label>
             <select name="medio" id="posxMedio" className="posx-select posx-select-full" defaultValue="efectivo">
               {MEDIOS_PAGO.filter((m) => m !== "credito").map((m) => (

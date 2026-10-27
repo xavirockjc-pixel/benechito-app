@@ -61,7 +61,13 @@ export async function generarVenta(formData: FormData) {
     },
   });
 
-  await crearDocumentoVenta({ ventaId: venta.id, negocioId: pedido.negocioId, tipo: "boleta", total });
+  await crearDocumentoVenta({
+    ventaId: venta.id,
+    negocioId: pedido.negocioId,
+    tipo: "boleta",
+    total,
+    items: pedido.items.map((it) => ({ productoId: it.productoId, cantidad: it.cantidad, precioUnit: Number(it.precioUnit) })),
+  });
 
   revalidatePath("/admin/ventas");
   revalidatePath(`/admin/pedidos/${pedidoId}`);
