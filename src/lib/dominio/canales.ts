@@ -10,18 +10,24 @@ export const CANALES_DEFAULT: { codigo: string; nombre: string; color: string; o
   { codigo: "distribuidor", nombre: "Distribuidor", color: "#0891b2", orden: 5 },
   { codigo: "supermercado", nombre: "Supermercado", color: "#ca8a04", orden: 6 },
   { codigo: "directa_fabrica", nombre: "Directa de fábrica", color: "#b45309", orden: 7 },
+  { codigo: "bodega", nombre: "Bodega", color: "#92400e", orden: 8 },
   // Compatibilidad con datos antiguos:
-  { codigo: "terreno", nombre: "Vendedor / Terreno", color: "#2563eb", orden: 8 },
-  { codigo: "directa", nombre: "Venta directa", color: "#a16207", orden: 9 },
+  { codigo: "terreno", nombre: "Vendedor / Terreno", color: "#2563eb", orden: 9 },
+  { codigo: "directa", nombre: "Venta directa", color: "#a16207", orden: 10 },
 ];
+
+/** Canales que registran las ventas del VENDEDOR en ruta (para KPIs y filtros). */
+export const CANALES_RUTA = ["ruta", "distribuidor", "terreno", "delivery"] as const;
 
 export type Canal = { id: string; codigo: string; nombre: string; color: string; activo: boolean; orden: number };
 
 /** Devuelve los canales (sembrando los default la primera vez). */
 export async function getCanales(soloActivos = false): Promise<Canal[]> {
   let canales = await prisma.canalVenta.findMany({ orderBy: { orden: "asc" } });
-  if (canales.length === 0) {
-    await prisma.canalVenta.createMany({ data: CANALES_DEFAULT.map((c) => ({ ...c })) });
+  // Siembra los default que falten (ej: "bodega" en instalaciones antiguas).
+  const faltan = CANALES_DEFAULT.filter((d) => !canales.some((c) => c.codigo === d.codigo));
+  if (faltan.length > 0) {
+    await prisma.canalVenta.createMany({ data: faltan.map((c) => ({ ...c })), skipDuplicates: true });
     canales = await prisma.canalVenta.findMany({ orderBy: { orden: "asc" } });
   }
   const lista = canales.map((c) => ({ id: c.id, codigo: c.codigo, nombre: c.nombre, color: c.color, activo: c.activo, orden: c.orden }));

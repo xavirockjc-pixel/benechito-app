@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { lineaLabel, PERFIL_LINEA, ORDEN_LINEAS } from "@/lib/dominio/produccion";
+import { CANALES_RUTA } from "@/lib/dominio/canales";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function Esencial() {
     prisma.controlCalidad.groupBy({ by: ["refId"], _sum: { cantidad: true }, where: { clase: "linea", fecha: { gte: inicio7 } } }),
     prisma.stock.groupBy({ by: ["productoId"], _sum: { cantidad: true }, where: { cantidad: { gt: 0 } } }),
     prisma.venta.aggregate({ _sum: { total: true }, _count: true, where: { canal: "local", fecha: { gte: inicioHoy } } }),
-    prisma.venta.aggregate({ _sum: { total: true }, _count: true, where: { canal: "terreno", fecha: { gte: inicioHoy } } }),
+    prisma.venta.aggregate({ _sum: { total: true }, _count: true, where: { canal: { in: [...CANALES_RUTA] }, fecha: { gte: inicioHoy } } }),
     prisma.venta.groupBy({ by: ["negocioId"], _sum: { total: true }, where: { estadoPago: { in: ["pendiente", "parcial", "vencido"] } } }),
     prisma.agenda.findMany({
       where: { estado: { in: ["pendiente", "en_proceso"] }, fecha: { gte: inicioHoy, lt: fin7 } },

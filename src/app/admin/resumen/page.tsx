@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { lineaLabel } from "@/lib/dominio/produccion";
 import { rolLabel } from "@/lib/dominio/usuarios";
+import { CANALES_RUTA } from "@/lib/dominio/canales";
 import AutoRefresh from "../repartidores/AutoRefresh";
 
 export const dynamic = "force-dynamic";
@@ -37,7 +38,7 @@ export default async function ResumenPorApp() {
     prisma.venta.aggregate({ _sum: { total: true }, _count: true, where: { canal: "local", fecha: { gte: inicioHoy } } }),
     prisma.sesionCaja.findFirst({ where: { estado: "abierta" }, select: { fechaApertura: true } }),
     // Repartidor: ventas de ruta hoy + pedidos por entregar.
-    prisma.venta.aggregate({ _sum: { total: true }, _count: true, where: { canal: "terreno", fecha: { gte: inicioHoy } } }),
+    prisma.venta.aggregate({ _sum: { total: true }, _count: true, where: { canal: { in: [...CANALES_RUTA] }, fecha: { gte: inicioHoy } } }),
     prisma.pedidoReparto.count({ where: { estado: { in: ["pendiente", "en_ruta"] } } }),
     prisma.pedido.count({ where: { canal: "online", estado: { notIn: ["entregado", "finalizado"] } } }),
     prisma.usuario.findMany({

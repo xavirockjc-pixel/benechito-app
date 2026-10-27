@@ -70,7 +70,8 @@ export default async function CajaPOSPage() {
 
   const [listas, prods, precios, stockSala, ventas] = await Promise.all([
     prisma.listaPrecio.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
-    prisma.producto.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
+    // Catálogo del LOCAL: sin productos de la sección ruta (del vendedor).
+    prisma.producto.findMany({ where: { activo: true, seccion: { not: "ruta" } }, orderBy: { nombre: "asc" } }),
     prisma.precioProducto.findMany({ where: { cantidadMinima: 1 } }),
     salaUbic ? prisma.stock.findMany({ where: { ubicacionId: salaUbic.id } }) : Promise.resolve([]),
     prisma.venta.findMany({ where: { sesionCajaId: sesion.id }, include: { pagos: true } }),

@@ -27,12 +27,14 @@ export default async function CierrePage() {
   const hoy = new Date();
   hoy.setHours(0, 0, 0, 0);
 
+  // MIS ventas del día (por vendedor, no por camión: si dos vendedores comparten
+  // vehículo cada uno cuadra lo suyo; incluye también sus ventas de reparto).
   const [ventasHoy, pagosHoy, stockCamion, movsHoy] = await Promise.all([
     prisma.venta.findMany({
-      where: { ubicacionId: vehId, fecha: { gte: hoy } },
+      where: { vendedorId: u?.sub ?? "", fecha: { gte: hoy } },
       include: { pagos: { select: { monto: true } } },
     }),
-    prisma.pago.findMany({ where: { fecha: { gte: hoy }, venta: { ubicacionId: vehId } } }),
+    prisma.pago.findMany({ where: { fecha: { gte: hoy }, venta: { vendedorId: u?.sub ?? "" } } }),
     prisma.stock.findMany({ where: { ubicacionId: vehId, cantidad: { gt: 0 } }, include: { producto: { select: { nombre: true } } } }),
     prisma.movimientoStock.findMany({
       where: { fecha: { gte: hoy }, OR: [{ ubicacionOrigenId: vehId }, { ubicacionDestinoId: vehId }] },

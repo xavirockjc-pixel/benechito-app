@@ -80,7 +80,8 @@ export async function agregarProductoPOS(formData: FormData) {
     data: {
       nombre, linea, formato, tipo,
       seccion: tipo === "reventa" ? "distribucion" : "propio",
-      soloLocal: tipo === "reventa",
+      // Lo que se crea desde el POS es del LOCAL: no aparece en bodega ni en el camión.
+      soloLocal: true,
       fotoUrl, activo: true, stockMinimo,
     },
   });

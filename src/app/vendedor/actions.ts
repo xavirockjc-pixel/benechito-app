@@ -152,7 +152,8 @@ export async function entregarPedidoReparto(formData: FormData) {
       const bod = await bodegaId();
       const ubic = bod ?? (await prisma.ubicacion.findFirst())?.id;
       if (ubic) {
-        const venta = await prisma.venta.create({ data: { negocioId, ubicacionId: ubic, total: Number(p.monto), canal: "terreno", estadoPago: p.estadoPago === "pagado" ? "pagado" : "pendiente", etiqueta: `Reparto: ${p.pedido}`.slice(0, 180) } });
+        const u = await usuarioActual();
+        const venta = await prisma.venta.create({ data: { negocioId, ubicacionId: ubic, vendedorId: u?.sub ?? null, total: Number(p.monto), canal: "ruta", estadoPago: p.estadoPago === "pagado" ? "pagado" : "pendiente", etiqueta: `Reparto: ${p.pedido}`.slice(0, 180) } });
         ventaId = venta.id;
         await prisma.pedidoReparto.update({ where: { id }, data: { negocioId } }).catch(() => {});
       }
@@ -256,7 +257,12 @@ async function crearVentaReparto(negocioId: string, lineasIn: { producto: string
   const total = lineas.reduce((s, l) => s + l.cantidad * l.precioUnit, 0);
   const etiqueta = ("Reparto: " + lineas.map((l) => `${l.cantidad} ${l.producto}`).join(", ")).slice(0, 180);
 
-  const venta = await prisma.venta.create({ data: { negocioId, ubicacionId: ubic, total, canal: "terreno", estadoPago: "pendiente", etiqueta } });
+  const u = await usuarioActual();
+  const venta = await prisma.venta.create({ data: { negocioId, ubicacionId: ubic, vendedorId: u?.sub ?? null, total, canal: "ruta", estadoPago: "pendiente", etiqueta } });
+  // Detalle de líneas (sirve para el comprobante y la facturación).
+  await prisma.ventaItem.createMany({
+    data: lineas.map((l) => ({ ventaId: venta.id, productoId: l.productoId, nombre: l.producto, cantidad: l.cantidad, precioUnit: l.precioUnit })),
+  });
   for (const l of lineas) {
     if (!l.productoId) continue;
     await aplicarDelta(l.productoId, ubic, -l.cantidad);
@@ -439,7 +445,8 @@ type LineaTerreno = { productoId: string; cantidad: number; precioUnit: number }
 /** Canal de la venta del vendedor: el elegido, o auto por tipo de cliente, o "ruta". */
 async function canalVendedor(formData: FormData, negocioId: string): Promise<string> {
   const elegido = String(formData.get("canal") ?? "").trim();
-  if (elegido) return elegido;
+  // El vendedor NUNCA registra en los canales de otros sectores (local/bodega/central).
+  if (elegido && !["local", "bodega", "directa", "directa_fabrica"].includes(elegido)) return elegido;
   const neg = await prisma.negocio.findUnique({ where: { id: negocioId }, select: { tipoCliente: true } });
   return canalPorTipoCliente(neg?.tipoCliente) ?? "ruta";
 }
@@ -758,6 +765,7 @@ export async function registrarDeuda(formData: FormData) {
       total: monto,
       estadoPago: "pendiente",
       documento: "deuda",
+      canal: "ruta",
     },
   });
   await marcarAsistenciaAuto(u?.sub, "Venta en terreno"); // asistencia automática
@@ -887,6 +895,7 @@ export async function registrarVentaSimple(formData: FormData) {
       total,
       estadoPago,
       documento: "boleta",
+      canal: "ruta",
       etiqueta: concepto,
       ...(pagos ? { pagos } : {}),
     },

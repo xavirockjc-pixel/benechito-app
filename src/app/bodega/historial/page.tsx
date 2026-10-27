@@ -23,8 +23,10 @@ export default async function HistorialBodega() {
 
   const [movs, ventas, devos] = await Promise.all([
     prisma.movimientoBodega.findMany({ where: { zona: "bodega", fecha: { gte: desde } }, orderBy: { fecha: "desc" }, take: 1500 }),
+    // Solo las ventas del SECTOR BODEGA (salidas confirmadas como venta). Las del
+    // local y las del vendedor en ruta viven en sus propios registros.
     prisma.venta.findMany({
-      where: { fecha: { gte: desde }, canal: { in: ["local", "terreno", "directa"] } },
+      where: { fecha: { gte: desde }, canal: "bodega" },
       orderBy: { fecha: "desc" }, take: 1500,
       include: { vendedor: { select: { nombre: true } }, negocio: { select: { nombreNegocio: true } } },
     }),

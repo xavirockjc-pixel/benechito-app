@@ -4,7 +4,7 @@ export const dynamic = "force-dynamic";
 
 const CLP = (n: number) => "$" + Math.round(n).toLocaleString("es-CL");
 const num = (v: unknown) => Number(v ?? 0);
-const canalLabel: Record<string, string> = { local: "🧾 Local (sala)", directa: "🛒 Directa", terreno: "🚚 Terreno", ruta: "🚚 Ruta", online: "🌐 Online", negocio: "🏪 Mayorista" };
+const canalLabel: Record<string, string> = { local: "🧾 Local (sala)", directa: "🛒 Directa", terreno: "🚚 Terreno", ruta: "🚚 Ruta", distribuidor: "📦 Distribuidor", bodega: "🏬 Bodega", delivery: "🛵 Delivery", directa_fabrica: "🏭 Directa de fábrica", online: "🌐 Online", negocio: "🏪 Mayorista" };
 const MAYOR = new Set(["mayorista", "distribuidor", "revendedor", "negocio_retiro"]);
 const DIAS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
@@ -56,8 +56,8 @@ export default async function VentasLocalPage() {
   return (
     <div className="mx-auto max-w-4xl">
       <div>
-        <h1 className="font-display text-2xl font-extrabold text-slate-900">🏪 Ventas Local</h1>
-        <p className="text-sm text-slate-500">Análisis: qué días y meses se vende más, por canal, mayor/detalle y tipo de producto (últimos 12 meses).</p>
+        <h1 className="font-display text-2xl font-extrabold text-slate-900">📊 Análisis de ventas — todos los sectores</h1>
+        <p className="text-sm text-slate-500">Qué días y meses se vende más, por sector/canal (local, ruta, bodega…), mayor/detalle y tipo de producto (últimos 12 meses). Para ver un sector por separado usa Ventas → filtro por canal.</p>
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">

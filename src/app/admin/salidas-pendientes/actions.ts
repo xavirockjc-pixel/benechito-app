@@ -36,7 +36,9 @@ export async function confirmarSalidaVenta(formData: FormData) {
   if (!sal || sal.estado !== "pendiente") return;
 
   const clienteTxt = String(formData.get("cliente") ?? "").trim() || sal.destinoTexto || "Cliente";
-  const canal = ["local", "terreno", "directa"].includes(String(formData.get("canal") ?? "")) ? String(formData.get("canal")) : "terreno";
+  // Venta originada por una salida de BODEGA: canal "bodega" por defecto, para que
+  // no se mezcle con las ventas del local ni del vendedor en ruta.
+  const canal = ["bodega", "local", "ruta", "distribuidor", "directa"].includes(String(formData.get("canal") ?? "")) ? String(formData.get("canal")) : "bodega";
   const total = Number(String(formData.get("total") ?? "").replace(/[^0-9]/g, "")) || 0;
 
   const negocioId = sal.negocioId ?? (await clienteDe(clienteTxt));

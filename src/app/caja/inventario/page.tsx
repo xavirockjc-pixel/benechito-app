@@ -17,7 +17,7 @@ export default async function InventarioLocal({ searchParams }: { searchParams: 
   const salaLista = (await prisma.listaPrecio.findFirst({ where: { canal: "sala" } })) ?? (await prisma.listaPrecio.findFirst({ where: { activo: true } }));
 
   const [productos, stockSala, precios] = await Promise.all([
-    prisma.producto.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }], select: { id: true, nombre: true, formato: true, linea: true, stockMinimo: true } }),
+    prisma.producto.findMany({ where: { activo: true, seccion: { not: "ruta" } }, orderBy: [{ linea: "asc" }, { nombre: "asc" }], select: { id: true, nombre: true, formato: true, linea: true, stockMinimo: true } }),
     salaUbic ? prisma.stock.findMany({ where: { ubicacionId: salaUbic.id } }) : Promise.resolve([]),
     salaLista ? prisma.precioProducto.findMany({ where: { listaId: salaLista.id, cantidadMinima: 1 } }) : Promise.resolve([]),
   ]);

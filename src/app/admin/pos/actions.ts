@@ -105,6 +105,17 @@ export async function venderVoz(formData: FormData) {
   const fiado = modo === "fiado" && clienteReal;
   const medio = ["efectivo", "transferencia"].includes(modo) ? modo : "efectivo";
 
+  // Si la venta dictada es del LOCAL, se liga a la caja abierta para que entre al
+  // cierre (dinero y stock cuadrados). Sin caja abierta, queda como venta directa
+  // de la central — así no descuadra el arqueo del local.
+  let canalVenta: string = canal.ventaCanal;
+  let sesionCajaId: string | null = null;
+  if (canalVenta === "local") {
+    const sesion = await prisma.sesionCaja.findFirst({ where: { ubicacionId: ubicacion.id, estado: "abierta" } });
+    if (sesion) sesionCajaId = sesion.id;
+    else canalVenta = "directa";
+  }
+
   const venta = await prisma.venta.create({
     data: {
       negocioId: cliente.id,
@@ -112,7 +123,8 @@ export async function venderVoz(formData: FormData) {
       total,
       estadoPago: fiado ? "pendiente" : "pagado",
       documento: "boleta",
-      canal: canal.ventaCanal,
+      canal: canalVenta,
+      ...(sesionCajaId ? { sesionCajaId } : {}),
       ...(fiado ? {} : { pagos: { create: { medio, monto: total } } }),
     },
   });

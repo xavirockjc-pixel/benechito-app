@@ -37,7 +37,8 @@ export default async function CajaPage({ searchParams }: { searchParams?: Promis
   const salaUbic = (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } })) ?? (await prisma.ubicacion.findFirst());
 
   const [prods, precios, stockSala, ventas, clientes] = await Promise.all([
-    prisma.producto.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
+    // Catálogo del LOCAL: todo lo activo salvo los productos de la sección ruta (del vendedor).
+    prisma.producto.findMany({ where: { activo: true, seccion: { not: "ruta" } }, orderBy: { nombre: "asc" } }),
     prisma.precioProducto.findMany({ include: { lista: { select: { canal: true } } } }),
     salaUbic ? prisma.stock.findMany({ where: { ubicacionId: salaUbic.id } }) : Promise.resolve([]),
     prisma.venta.findMany({ where: { sesionCajaId: sesion.id }, include: { pagos: true } }),
