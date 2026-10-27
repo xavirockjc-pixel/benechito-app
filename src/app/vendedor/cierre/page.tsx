@@ -4,6 +4,7 @@ import { usuarioActual } from "@/lib/auth";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { devolverTodoABodega } from "../actions";
 import CuadreCaja from "./CuadreCaja";
+import PlanillaReparto from "./PlanillaReparto";
 
 export const dynamic = "force-dynamic";
 
@@ -40,11 +41,11 @@ export default async function CierrePage() {
   ]);
 
   // ---- Cuadre de mercadería: lo que se llevó (cargó) vs vendió vs volvió vs queda ----
-  type FilaCuadre = { nombre: string; cargo: number; vendio: number; volvio: number; queda: number };
+  type FilaCuadre = { id: string; nombre: string; cargo: number; vendio: number; volvio: number; queda: number };
   const cuadre = new Map<string, FilaCuadre>();
   const filaDe = (id: string, nombre: string) => {
     let f = cuadre.get(id);
-    if (!f) { f = { nombre, cargo: 0, vendio: 0, volvio: 0, queda: 0 }; cuadre.set(id, f); }
+    if (!f) { f = { id, nombre, cargo: 0, vendio: 0, volvio: 0, queda: 0 }; cuadre.set(id, f); }
     return f;
   };
   for (const m of movsHoy) {
@@ -64,8 +65,32 @@ export default async function CierrePage() {
   const totQueda = filasCuadre.reduce((s, f) => s + f.queda, 0);
   const totFalta = totCargo - totVendio - totVolvio - totQueda;
 
+  // ---- Valor de reparto: diferencia entre lo vendido y el costo a precio de distribución ----
+  const prodIds = [...cuadre.keys()];
+  const [distLista, prodsInfo] = await Promise.all([
+    prisma.listaPrecio.findFirst({ where: { canal: "distribuidor", activo: true } }),
+    prodIds.length ? prisma.producto.findMany({ where: { id: { in: prodIds } }, select: { id: true, unidadesPack: true } }) : Promise.resolve([]),
+  ]);
+  const distPrecios = distLista && prodIds.length
+    ? await prisma.precioProducto.findMany({ where: { listaId: distLista.id, cantidadMinima: 1, productoId: { in: prodIds } }, select: { productoId: true, precio: true } })
+    : [];
+  const distDe = new Map(distPrecios.map((p) => [p.productoId, Number(p.precio)]));
+  const packDe = new Map(prodsInfo.map((p) => [p.id, p.unidadesPack ?? 0]));
+
+  const filasReparto = filasCuadre
+    .filter((f) => f.vendio > 0)
+    .map((f) => {
+      const pack = packDe.get(f.id) ?? 0;
+      const unidades = f.vendio * (pack > 0 ? pack : 1);
+      const distUnit = distDe.get(f.id) ?? 0;
+      return { nombre: f.nombre, vendio: f.vendio, unidades, distUnit, distCost: unidades * distUnit };
+    });
+  const costoDistrib = filasReparto.reduce((s, f) => s + f.distCost, 0);
+
   // Dinero
   const vendido = ventasHoy.reduce((s, v) => s + Number(v.total), 0);
+  const hayDist = distDe.size > 0;
+  const valorReparto = vendido - costoDistrib; // margen de reparto para la central
   const efectivo = pagosHoy.filter((p) => p.medio === "efectivo").reduce((s, p) => s + Number(p.monto), 0);
   const transferencia = pagosHoy.filter((p) => p.medio === "transferencia").reduce((s, p) => s + Number(p.monto), 0);
   const otros = pagosHoy
@@ -161,6 +186,24 @@ export default async function CierrePage() {
         )}
       </section>
 
+      {/* Valor de reparto (margen distribución vs venta) para la central */}
+      <section className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <h2 className="text-sm font-bold text-slate-900">💵 Valor de reparto (para la central)</h2>
+        <p className="mb-2 text-xs text-slate-500">Diferencia entre lo vendido y el costo a precio de distribución.</p>
+        {!hayDist ? (
+          <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-700">⚠️ Falta cargar la lista de precios <b>Distribuidor</b> en el panel para calcular el reparto.</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-1.5 text-center">
+              <TotMoney label="Vendido" valor={vendido} color="#16a34a" />
+              <TotMoney label="Costo distrib." valor={costoDistrib} color="#64748b" />
+              <TotMoney label="Reparto" valor={valorReparto} color="#b45309" />
+            </div>
+            <PlanillaReparto filas={filasReparto} vendido={vendido} costoDistrib={costoDistrib} valorReparto={valorReparto} />
+          </>
+        )}
+      </section>
+
       {/* Mercadería */}
       <section className="mt-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
         <h2 className="mb-2 text-sm font-bold text-slate-900">Mercadería en el camión ({quedan} u.)</h2>
@@ -205,6 +248,15 @@ function TotCol({ label, valor, color }: { label: string; valor: number; color: 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-2">
       <p className="text-xl font-extrabold" style={{ color }}>{valor}</p>
+      <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
+    </div>
+  );
+}
+
+function TotMoney({ label, valor, color }: { label: string; valor: number; color: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-2">
+      <p className="text-base font-extrabold tabular-nums" style={{ color }}>{fmtCLP(valor)}</p>
       <p className="text-[10px] font-bold uppercase tracking-wide text-slate-400">{label}</p>
     </div>
   );

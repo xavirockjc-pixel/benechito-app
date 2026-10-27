@@ -504,7 +504,11 @@ export async function venderTerreno(formData: FormData) {
   items = items.filter((i) => i.productoId && i.cantidad > 0 && i.precioUnit >= 0);
   if (items.length === 0) return;
 
-  const total = items.reduce((s, i) => s + i.precioUnit * i.cantidad, 0);
+  const subtotal = items.reduce((s, i) => s + i.precioUnit * i.cantidad, 0);
+  // Ajustes manuales del vendedor: aumento (flete/sector) y descuento (volumen).
+  const aumento = Math.max(0, Number(String(formData.get("aumento") ?? "").replace(/[^0-9]/g, "")) || 0);
+  const descuento = Math.min(Math.max(0, Number(String(formData.get("descuento") ?? "").replace(/[^0-9]/g, "")) || 0), subtotal + aumento);
+  const total = subtotal + aumento - descuento;
 
   // Ubicación de la venta = camión del vendedor (o el primer vehículo / sala como respaldo).
   const ubicacionId =

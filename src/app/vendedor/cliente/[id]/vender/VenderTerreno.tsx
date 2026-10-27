@@ -66,6 +66,8 @@ export default function VenderTerreno({
   const [modo, setModo] = useState("efectivo");
   const [tipoDoc, setTipoDoc] = useState(docDefault || "boleta");
   const [abono, setAbono] = useState("");
+  const [aumento, setAumento] = useState(""); // flete / sector (suma)
+  const [descuento, setDescuento] = useState(""); // por cantidad / volumen (resta)
 
   const porId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
   // Los helados se venden por BOLSA/PACK (tú y yo y paletas ×50, postres ×16): la
@@ -82,8 +84,11 @@ export default function VenderTerreno({
     const unit = precioUnitDe(p, q);
     return { productoId: id, nombre: p.nombre, pack: 0, packs: 0, unidades: q, unit, precioUnit: unit, cantidad: q, sub: unit * q, precioBase: p.precio };
   });
-  const total = lineas.reduce((s, l) => s + l.sub, 0);
+  const subtotal = lineas.reduce((s, l) => s + l.sub, 0);
   const totalUnidades = lineas.reduce((s, l) => s + l.unidades, 0);
+  const aumentoN = Math.max(0, Number(aumento.replace(/[^0-9]/g, "")) || 0);
+  const descuentoN = Math.min(Math.max(0, Number(descuento.replace(/[^0-9]/g, "")) || 0), subtotal + aumentoN);
+  const total = subtotal + aumentoN - descuentoN; // total final (con aumento y descuento)
   const abonoNum = Math.min(Math.max(Number(abono.replace(/[^0-9]/g, "")) || 0, 0), total);
   const restante = total - abonoNum;
 
@@ -149,9 +154,27 @@ export default function VenderTerreno({
               </li>
             ))}
           </ul>
-          <div className="mt-2 flex items-center justify-between border-t border-slate-200 pt-2">
-            <span className="font-bold text-slate-700">Total <span className="text-xs font-semibold text-slate-400">· {totalUnidades} helados</span></span>
-            <span className="text-xl font-extrabold text-slate-900">{fmtCLP(total)}</span>
+          <div className="mt-2 space-y-1.5 border-t border-slate-200 pt-2">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-500">Subtotal <span className="text-xs text-slate-400">· {totalUnidades} helados</span></span>
+              <span className="font-semibold text-slate-800">{fmtCLP(subtotal)}</span>
+            </div>
+            {/* Aumento (flete / sector) — arriba */}
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-bold text-green-700">➕ Aumento (flete / sector)</label>
+              <input value={aumento} onChange={(e) => setAumento(e.target.value)} inputMode="numeric" placeholder="0"
+                className="w-24 rounded-lg border border-slate-300 px-2 py-1.5 text-right text-sm font-bold text-slate-900 outline-none focus:border-green-500" />
+            </div>
+            {/* Descuento (cantidad / volumen) — abajo */}
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-bold text-[#b45309]">➖ Descuento (volumen)</label>
+              <input value={descuento} onChange={(e) => setDescuento(e.target.value)} inputMode="numeric" placeholder="0"
+                className="w-24 rounded-lg border border-slate-300 px-2 py-1.5 text-right text-sm font-bold text-slate-900 outline-none focus:border-[#b45309]" />
+            </div>
+            <div className="flex items-center justify-between border-t border-slate-200 pt-1.5">
+              <span className="font-bold text-slate-700">Total</span>
+              <span className="text-xl font-extrabold text-slate-900">{fmtCLP(total)}</span>
+            </div>
           </div>
         </div>
       )}
@@ -160,6 +183,8 @@ export default function VenderTerreno({
       <form action={venderTerreno} className="sticky bottom-20 space-y-2 rounded-xl border border-slate-200 bg-white p-3 shadow-lg">
         <input type="hidden" name="negocioId" value={negocioId} />
         <input type="hidden" name="items" value={JSON.stringify(lineas)} />
+        <input type="hidden" name="aumento" value={aumentoN} />
+        <input type="hidden" name="descuento" value={descuentoN} />
         {canales.length > 0 && (
           <select name="canal" defaultValue="" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800">
             <option value="">📍 Canal automático</option>
