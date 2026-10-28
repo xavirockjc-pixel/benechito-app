@@ -48,12 +48,19 @@ Convención de nombres: proyecto `facturacion` dentro del proyecto del cliente, 
 - Volumen persistente en `/var/lib/mysql`.
 
 ### 2. Aplicación (servicio `libredte`)
-- **+ Servicio → App** → imagen Docker `nosagadu/libredte-web-docker:latest`
-  (referencia del compose: `libredte/docker-compose.yml` de este repo).
-- Variables: `DB_HOST=<proyecto>_libredte-db`, `DB_NAME=libredte`, `DB_USER=libredte`,
-  `DB_PASS=<la misma de arriba>`.
-- Volumen persistente en `/var/www/libredte/data` (ahí quedan certificado, CAF y config).
-- Puerto interno: 80.
+⚠️ PROBADO 2026-10-28: la imagen pública `nosagadu/libredte-web-docker` NO existe en
+Docker Hub, y la base de datos debe ser **PostgreSQL** (no MariaDB). El método real:
+- **+ Servicio → App** con nombre `libredte` → Fuente → pestaña **Dockerfile** → pegar
+  el contenido de **`libredte/Dockerfile`** de este repo (construye PHP 7.4 + LibreDTE
+  Comunidad rama legacy, con carga automática del esquema al primer arranque).
+- Variables (Entorno): `APP_URL=https://<dominio>`, `APP_KEY=base64:<aleatorio>`,
+  `DB_HOST=<proyecto>_libredte-pg`, `DB_USERNAME=libredte`, `DB_PASSWORD=<la del paso 1>`,
+  `DB_DATABASE=libredte`.
+- Volumen persistente en `/var/www/libredte-community/data`.
+- El paso 1 debe ser un servicio **Postgres** (imagen `postgres:16`, db/usuario `libredte`).
+- Primer ingreso: usuario `admin` clave `admin` → **cambiarla de inmediato**.
+- EasyPanel asigna un dominio `*.easypanel.host` automático con SSL; el dominio propio
+  (`facturas.<cliente>`) se agrega después en Dominios.
 
 ### 3. Dominio + SSL
 - Servicio `libredte` → Dominios → agregar `facturas.<dominiodelcliente>` (o
