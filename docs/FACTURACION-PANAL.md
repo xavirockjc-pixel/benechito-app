@@ -55,7 +55,9 @@ Docker Hub, y la base de datos debe ser **PostgreSQL** (no MariaDB). El método 
   Comunidad rama legacy, con carga automática del esquema al primer arranque).
 - Variables (Entorno): `APP_URL=https://<dominio>`, `APP_KEY=base64:<aleatorio>`,
   `DB_HOST=<proyecto>_libredte-pg`, `DB_USERNAME=libredte`, `DB_PASSWORD=<la del paso 1>`,
-  `DB_DATABASE=libredte`.
+  `DB_DATABASE=libredte` **y además** (la app legacy lee estas):
+  `LIBREDTE_APP_DATABASE_DEFAULT_HOST/PORT/USER/PASS/NAME` con los mismos valores
+  (port 5432). Sin estas últimas la app intenta conectarse a localhost y falla el login.
 - Volumen persistente en `/var/www/libredte-community/data`.
 - El paso 1 debe ser un servicio **Postgres** (imagen `postgres:16`, db/usuario `libredte`).
 - Primer ingreso: usuario `admin` clave `admin` → **cambiarla de inmediato**.

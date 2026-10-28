@@ -12,6 +12,13 @@
 #   APP_URL=https://facturas.<dominio>
 #   APP_KEY=base64:<32 bytes aleatorios en base64>
 #   DB_HOST=<proyecto>_<servicio-postgres>   DB_USERNAME / DB_PASSWORD / DB_DATABASE
+#     (las DB_* las usa el script de arranque para cargar el esquema con psql)
+#   ⚠️ La APP (rama legacy) lee la conexión desde OTRAS variables — van las DOS familias:
+#   LIBREDTE_APP_DATABASE_DEFAULT_HOST=<proyecto>_<servicio-postgres>
+#   LIBREDTE_APP_DATABASE_DEFAULT_PORT=5432
+#   LIBREDTE_APP_DATABASE_DEFAULT_USER=libredte
+#   LIBREDTE_APP_DATABASE_DEFAULT_PASS=<la misma del postgres>
+#   LIBREDTE_APP_DATABASE_DEFAULT_NAME=libredte
 # Volumen persistente: /var/www/libredte-community/data  (opcional pero recomendado)
 
 FROM php:7.4-apache
