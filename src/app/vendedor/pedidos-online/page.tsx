@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { inicioDelDia } from "@/lib/dominio/empresa";
 import { estadoPedidoLabel } from "@/lib/dominio/pedidos";
-import { entregarPedidoReparto, borrarPedidoReparto, resolverPedidoWeb, pagoPedidoReparto } from "../actions";
+import { entregarPedidoReparto, borrarPedidoReparto, resolverPedidoWeb, pagoPedidoReparto, editarPedidoReparto } from "../actions";
 import CapturaPedido from "../pedidos/CapturaPedido";
 import VentaDictada from "../pedidos/VentaDictada";
 
@@ -145,18 +145,46 @@ export default async function PedidosOnline({ searchParams }: { searchParams: Pr
                         {f.maps && <a href={f.maps} target="_blank" rel="noreferrer" className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-700">📍 Ir</a>}
                         {f.tel && <a href={`https://wa.me/${f.tel.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-bold text-green-700">💬 Avisar</a>}
                         {f.repartoId && (
-                          <span className="ml-auto flex items-center gap-1.5">
-                            <form action={entregarPedidoReparto}><input type="hidden" name="id" value={f.repartoId} /><button className="rounded-full bg-[#0f766e] px-2.5 py-0.5 text-[10px] font-bold text-white">✅ Entregado</button></form>
-                            <form action={borrarPedidoReparto}><input type="hidden" name="id" value={f.repartoId} /><button className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-rose-500">✕</button></form>
-                          </span>
+                          <form action={entregarPedidoReparto} className="ml-auto"><input type="hidden" name="id" value={f.repartoId} /><button className="rounded-full bg-[#0f766e] px-3 py-0.5 text-[10px] font-bold text-white">✅ Entregado</button></form>
                         )}
                         {f.webId && (
-                          <span className="ml-auto flex items-center gap-1.5">
-                            <form action={resolverPedidoWeb}><input type="hidden" name="id" value={f.webId} /><input type="hidden" name="accion" value="entregado" /><button className="rounded-full bg-[#0f766e] px-2.5 py-0.5 text-[10px] font-bold text-white">✅ Entregado</button></form>
-                            <form action={resolverPedidoWeb}><input type="hidden" name="id" value={f.webId} /><input type="hidden" name="accion" value="quitar" /><button className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-rose-500">✕</button></form>
-                          </span>
+                          <form action={resolverPedidoWeb} className="ml-auto"><input type="hidden" name="id" value={f.webId} /><input type="hidden" name="accion" value="entregado" /><button className="rounded-full bg-[#0f766e] px-3 py-0.5 text-[10px] font-bold text-white">✅ Entregado</button></form>
                         )}
                       </div>
+
+                      {/* Editar / quitar el pedido */}
+                      {f.repartoId && (
+                        <details className="mt-1.5 border-t border-slate-100 pt-1.5">
+                          <summary className="cursor-pointer list-none text-[11px] font-bold text-slate-500">✏️ Editar / quitar</summary>
+                          <form action={editarPedidoReparto} className="mt-2 space-y-1.5">
+                            <input type="hidden" name="id" value={f.repartoId} />
+                            <input name="cliente" defaultValue={f.cliente} placeholder="Cliente" className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm" />
+                            <input name="pedido" defaultValue={f.detalle} placeholder="Detalle del pedido" className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm" />
+                            <div className="flex gap-1.5">
+                              <input name="monto" inputMode="numeric" defaultValue={f.monto || ""} placeholder="Monto" className="w-24 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm" />
+                              <input type="date" name="fecha" defaultValue={new Date(f.dia).toISOString().slice(0, 10)} className="flex-1 rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm" />
+                            </div>
+                            <select name="estadoPago" defaultValue={f.cobrado ? "pagado" : "por_cobrar"} className="w-full rounded-lg border border-slate-300 px-2.5 py-1.5 text-sm">
+                              <option value="por_cobrar">Por cobrar (queda debiendo)</option>
+                              <option value="pagado">Pagado</option>
+                            </select>
+                            <button className="w-full rounded-lg bg-[#1479c4] py-2 text-xs font-extrabold text-white">💾 Guardar cambios</button>
+                          </form>
+                          <form action={borrarPedidoReparto} className="mt-1.5">
+                            <input type="hidden" name="id" value={f.repartoId} />
+                            <button className="w-full rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-extrabold text-rose-600">🗑️ Quitar pedido de la lista</button>
+                          </form>
+                        </details>
+                      )}
+                      {f.webId && (
+                        <details className="mt-1.5 border-t border-slate-100 pt-1.5">
+                          <summary className="cursor-pointer list-none text-[11px] font-bold text-slate-500">Quitar</summary>
+                          <form action={resolverPedidoWeb} className="mt-1.5">
+                            <input type="hidden" name="id" value={f.webId} /><input type="hidden" name="accion" value="quitar" />
+                            <button className="w-full rounded-lg border border-rose-200 bg-rose-50 py-2 text-xs font-extrabold text-rose-600">🗑️ Quitar pedido de la lista</button>
+                          </form>
+                        </details>
+                      )}
                     </li>
                   ))}
                 </ul>

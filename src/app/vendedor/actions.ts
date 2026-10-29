@@ -186,6 +186,26 @@ export async function derivarRepartoAnotado(formData: FormData) {
   revalidatePath("/vendedor/agendados");
 }
 
+/** Edita un pedido de reparto anotado: cliente, detalle, monto, día y estado de pago. */
+export async function editarPedidoReparto(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  const cliente = String(formData.get("cliente") ?? "").trim() || null;
+  const pedido = String(formData.get("pedido") ?? "").trim();
+  const telefono = String(formData.get("telefono") ?? "").replace(/\D/g, "") || null;
+  const montoRaw = String(formData.get("monto") ?? "").replace(/[^0-9]/g, "");
+  const monto = montoRaw ? Number(montoRaw) : null;
+  const estadoPago = String(formData.get("estadoPago") ?? "") === "pagado" ? "pagado" : "por_cobrar";
+  const fechaStr = String(formData.get("fecha") ?? "").trim();
+
+  const data: Record<string, unknown> = { cliente, telefono, monto, estadoPago };
+  if (pedido) data.pedido = pedido;
+  if (fechaStr) { const d = new Date(fechaStr + "T08:00:00"); if (!isNaN(d.getTime())) data.fecha = d; }
+  await prisma.pedidoReparto.update({ where: { id }, data }).catch(() => {});
+  revalidatePath("/vendedor/pedidos-online");
+  revalidatePath("/vendedor");
+}
+
 /** Marca pagado / por cobrar. */
 export async function pagoPedidoReparto(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
