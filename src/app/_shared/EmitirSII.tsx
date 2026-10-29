@@ -1,14 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { abrirEfactura } from "@/lib/sii-app";
 
 type Dato = { label: string; value: string; copiable?: boolean };
-
-// App oficial SII e-Factura (Android). Intent: abre la app si está instalada,
-// o cae a Play Store si no. En iOS/escritorio usamos la web del SII.
-const APP_PKG = "cl.sii.FacturaElectronica";
-const PLAY_URL = `https://play.google.com/store/apps/details?id=${APP_PKG}`;
-const APP_INTENT = `intent://#Intent;package=${APP_PKG};S.browser_fallback_url=${encodeURIComponent(PLAY_URL)};end`;
 
 /**
  * Atajo para EMITIR la factura (modo manual) en la app SII e-Factura: copia los
@@ -31,12 +26,8 @@ export default function EmitirSII({ url, datos, detalle }: { url: string; datos:
   const todo = [...datos.filter((d) => d.copiable !== false).map((d) => `${d.label}: ${d.value}`), "", detalle].join("\n");
 
   const abrirApp = () => {
-    const ua = navigator.userAgent || "";
-    const esAndroid = /Android/i.test(ua);
-    // Copiamos todo primero para que al pegar en la app ya esté listo.
-    copiar(todo, "__todo");
-    if (esAndroid) window.location.href = APP_INTENT; // abre app e-Factura (o Play Store)
-    else window.open(url, "_blank", "noopener,noreferrer"); // iOS/PC: web del SII
+    copiar(todo, "__todo"); // copia todo primero, para pegar de una en la app
+    abrirEfactura(url); // Android: app e-Factura · iOS/PC: web del SII
   };
 
   return (
