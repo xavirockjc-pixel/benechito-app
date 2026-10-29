@@ -53,7 +53,7 @@ export default function FacturaPendiente({ ventaId, total, fecha, cliente }: { v
         </div>
         <div className="flex gap-2">
           <button type="button" onClick={copiar} className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-bold text-white">{copiado ? "✓ Copiado" : "📋 Copiar datos"}</button>
-          <a href="https://www.sii.cl" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-600">Abrir SII ↗</a>
+          <a href="https://www.sii.cl/servicios_online/1039-.html" target="_blank" rel="noopener noreferrer" className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-bold text-slate-600">Abrir SII ↗</a>
         </div>
       </div>
 

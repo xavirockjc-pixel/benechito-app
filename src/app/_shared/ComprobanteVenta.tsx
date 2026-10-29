@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { tipoDocumentoLabel, estadoDocumentoLabel, medioPagoLabel } from "@/lib/dominio/ventas";
 import EnviarWhatsApp from "@/components/EnviarWhatsApp";
+import EmitirSII from "./EmitirSII";
+
+// Facturador gratuito del SII (sección Factura electrónica). Se puede sobrescribir
+// con la variable SII_EMITIR_URL si usas un enlace directo distinto.
+const SII_URL = process.env.SII_EMITIR_URL || "https://www.sii.cl/servicios_online/1039-.html";
 
 /**
  * Comprobante de una venta recién hecha (caja local y vendedor ruta):
@@ -17,7 +22,7 @@ export default async function ComprobanteVenta({ ventaId, volver, volverLabel }:
   const venta = await prisma.venta.findUnique({
     where: { id: ventaId },
     include: {
-      negocio: { select: { nombreNegocio: true, razonSocial: true, rut: true, whatsapp: true } },
+      negocio: { select: { nombreNegocio: true, razonSocial: true, rut: true, giro: true, whatsapp: true } },
       items: true,
       pagos: true,
       documentos: { orderBy: { createdAt: "desc" }, take: 1 },
@@ -42,6 +47,25 @@ export default async function ComprobanteVenta({ ventaId, volver, volverLabel }:
   const esMostrador = venta.negocio.nombreNegocio === "Consumidor Final";
   const fecha = new Date(venta.fecha).toLocaleString("es-CL", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
   const pdfPublico = doc?.urlPdf && doc.urlPdf.startsWith("http") ? doc.urlPdf : null;
+
+  // Datos para emitir en el SII (modo manual): solo tiene sentido en FACTURA y
+  // mientras no esté ya emitida (sin folio). Neto/IVA desde el documento o calculados.
+  const esFactura = doc?.tipo === "factura";
+  const yaEmitida = !!doc?.folio;
+  const neto = doc?.montoNeto != null ? Math.round(Number(doc.montoNeto)) : Math.round(total / 1.19);
+  const iva = doc?.iva != null ? Math.round(Number(doc.iva)) : total - neto;
+  const mostrarSII = esFactura && !yaEmitida;
+  const detalleSII = venta.items.length > 0
+    ? venta.items.map((i) => `${i.cantidad} x ${i.nombre} — ${fmtCLP(Number(i.precioUnit))} c/u`).join("\n")
+    : `Venta — Neto ${fmtCLP(neto)}`;
+  const datosSII = [
+    { label: "RUT comprador", value: venta.negocio.rut || "— (ingrésalo en el SII)" },
+    { label: "Razón social", value: nombreCliente },
+    ...(venta.negocio.giro ? [{ label: "Giro", value: venta.negocio.giro }] : []),
+    { label: "Neto", value: fmtCLP(neto) },
+    { label: "IVA (19%)", value: fmtCLP(iva) },
+    { label: "Total", value: fmtCLP(total) },
+  ];
 
   // Mensaje de WhatsApp listo para enviar (editable en pantalla).
   const lineasTxt = venta.items.map((i) => `• ${i.cantidad}× ${i.nombre} — ${fmtCLP(Number(i.precioUnit) * i.cantidad)}`);
@@ -119,6 +143,9 @@ export default async function ComprobanteVenta({ ventaId, volver, volverLabel }:
           {deuda > 0 && <p className="text-right text-xs font-bold text-red-600">Queda debiendo {fmtCLP(deuda)}</p>}
         </div>
       )}
+
+      {/* Emitir en el SII (modo manual): link directo + datos para copiar */}
+      {mostrarSII && <EmitirSII url={SII_URL} datos={datosSII} detalle={detalleSII} />}
 
       <EnviarWhatsApp texto={msg} telefono={venta.negocio.whatsapp || undefined} />
 
