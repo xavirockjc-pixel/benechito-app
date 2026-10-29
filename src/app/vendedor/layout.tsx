@@ -45,17 +45,12 @@ export default async function VendedorLayout({
 
       <main className="flex-1 p-4 pb-24">{children}</main>
 
-      {/* Barra inferior (navegación) */}
+      {/* Barra inferior (navegación) — limpia: lo de pedidos va unificado en "Pedidos online". */}
       <BottomNav
         acento="#1479c4"
         items={[
           { href: "/vendedor", label: "Inicio", icon: "🏠" },
-          { href: "/vendedor/pendientes", label: "Anotar", icon: "🔔" },
-          { href: "/vendedor/pedidos", label: "Pedidos", icon: "🛵" },
-          { href: "/vendedor/agendados", label: "Agendados", icon: "📋" },
-          { href: "/vendedor/entregas", label: "Ventas rep.", icon: "🧾" },
-          { href: "/vendedor/ruta", label: "Ruta", icon: "🗺️" },
-          { href: "/vendedor/camion", label: "Cargar", icon: "📦" },
+          { href: "/vendedor/pedidos-online", label: "Pedidos online", icon: "🛍️" },
           { href: "/vendedor/trabajos", label: "Trabajos", icon: "🧰" },
           { href: "/vendedor/vehiculo", label: "Vehículo", icon: "🚙" },
         ]}

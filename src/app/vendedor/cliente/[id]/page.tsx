@@ -114,6 +114,16 @@ export default async function ClienteRuta({
         </Link>
       </div>
 
+      {/* Facturar a este cliente (abre la venta con FACTURA preseleccionada).
+          Sirve tanto para facturar antes de entregar como para facturar algo
+          que ya se vendió. Requiere que el cliente tenga RUT/razón social/giro. */}
+      <Link
+        href={`/vendedor/cliente/${cliente.id}/vender?doc=factura`}
+        className="mt-3 flex items-center justify-center gap-2 rounded-2xl bg-[#0891b2] py-4 text-base font-extrabold text-white shadow active:brightness-95"
+      >
+        🧾 Facturar a este cliente
+      </Link>
+
       {/* Registro de visita por voz (compra/abono/factura/agenda, todo centralizado) */}
       <div className="mt-4">
         <ResultadoVozForm negocioId={cliente.id} />

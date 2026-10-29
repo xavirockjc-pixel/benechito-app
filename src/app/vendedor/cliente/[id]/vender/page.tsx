@@ -13,10 +13,10 @@ export default async function VenderPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; doc?: string }>;
 }) {
   const { id } = await params;
-  const { error } = await searchParams;
+  const { error, doc } = await searchParams;
   const cliente = await prisma.negocio.findUnique({ where: { id } });
   if (!cliente) notFound();
 
@@ -60,7 +60,7 @@ export default async function VenderPage({
   return (
     <div>
       <Link href={`/vendedor/cliente/${id}`} className="text-sm font-semibold text-[#1479c4]">← {cliente.nombreNegocio}</Link>
-      <h1 className="mt-1 text-xl font-extrabold text-slate-900">Vender</h1>
+      <h1 className="mt-1 text-xl font-extrabold text-slate-900">{doc === "factura" ? "🧾 Facturar" : "Vender"}</h1>
       <p className="text-xs text-slate-500">Precios de la lista: {lista?.nombre ?? "automática"}</p>
 
       {error === "factura" && (
@@ -74,7 +74,7 @@ export default async function VenderPage({
           negocioId={id}
           productos={productos}
           canales={canales}
-          docDefault={cliente.tipoDocumentoDefault}
+          docDefault={doc === "factura" ? "factura" : cliente.tipoDocumentoDefault}
           faltaFactura={faltaParaFactura(cliente)}
         />
       </div>
