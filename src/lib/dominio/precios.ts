@@ -21,6 +21,30 @@ export const canalPorTipoCliente: Record<string, string> = {
   supermercado: "supermercado",
 };
 
+/**
+ * Zonas de precio de RUTA (mayorista). El precio se aplica AUTOMÁTICAMENTE según la
+ * comuna del cliente mayorista/ruta — no según el tipo de cliente. Cada zona tiene su
+ * lista de precios (ListaPrecio.zona). Si la comuna de un cliente calza con una zona y
+ * existe su lista, se usa ese precio. Agregar comunas aquí según se necesite.
+ */
+export const ZONAS_RUTA: { zona: string; nombre: string; comunas: string[] }[] = [
+  { zona: "coronel_lota", nombre: "Ruta Coronel–Lota", comunas: ["coronel", "lota"] },
+  { zona: "metropolitano", nombre: "Ruta Metropolitano", comunas: ["san pedro", "concepcion", "conce", "chiguayante", "hualpen", "talcahuano", "penco", "hualqui"] },
+  { zona: "los_angeles", nombre: "Ruta Los Ángeles", comunas: ["santa juana", "los angeles", "nacimiento", "negrete", "laja", "san rosendo", "cabrero", "yumbel"] },
+];
+
+const normComuna = (s?: string | null) => (s ?? "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+
+/** Devuelve la zona de ruta a la que pertenece una comuna (o null si no calza con ninguna). */
+export function zonaDeComuna(comuna?: string | null): string | null {
+  const c = normComuna(comuna);
+  if (!c) return null;
+  for (const z of ZONAS_RUTA) {
+    if (z.comunas.some((x) => c === x || c.includes(x))) return z.zona;
+  }
+  return null;
+}
+
 /** Tipos de cliente (orden para UI). */
 export const TIPOS_CLIENTE = [
   "ruta",
@@ -106,12 +130,23 @@ export const ESCALONES_LOCAL: { perfil: string; desde: number; label: string }[]
 export async function listaParaCliente(negocioId: string): Promise<string | null> {
   const cliente = await prisma.negocio.findUnique({
     where: { id: negocioId },
-    select: { listaPrecioId: true, tipoCliente: true },
+    select: { listaPrecioId: true, tipoCliente: true, comuna: true },
   });
   if (!cliente) return null;
   if (cliente.listaPrecioId) return cliente.listaPrecioId;
 
   const canal = canalPorTipoCliente[cliente.tipoCliente] ?? "sala";
+
+  // Precio por ZONA de ruta: para clientes mayoristas/ruta (canal distinto de "sala"),
+  // el precio depende de la comuna. Si calza con una zona y existe su lista, se usa.
+  if (canal !== "sala") {
+    const zona = zonaDeComuna(cliente.comuna);
+    if (zona) {
+      const listaZona = await prisma.listaPrecio.findFirst({ where: { zona, activo: true }, select: { id: true } });
+      if (listaZona) return listaZona.id;
+    }
+  }
+
   const lista = await prisma.listaPrecio.findFirst({
     where: { canal, activo: true },
     select: { id: true },

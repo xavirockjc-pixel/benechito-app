@@ -289,6 +289,9 @@ model ListaPrecio {
   id            String    @id @default(cuid())
   nombre        String
   canal         String // sala | web | reparto | negocio | punto | revendedor | distribuidor | supermercado
+  // Zona de ruta: si está presente, esta lista se aplica automáticamente a los
+  // clientes mayoristas/ruta cuya comuna pertenece a esta zona (precio por zona).
+  zona          String?
   vigenciaDesde DateTime?
   vigenciaHasta DateTime?
   activo        Boolean   @default(true)

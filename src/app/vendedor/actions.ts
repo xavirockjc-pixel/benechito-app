@@ -1070,7 +1070,8 @@ export async function crearClienteRuta(formData: FormData) {
       requiereFactura: get("tipoDocumentoDefault") === "factura",
       latitud,
       longitud,
-      tipoCliente: "prospecto",
+      // Cliente de ruta = mayorista/comerciante → toma el precio de su zona (por comuna).
+      tipoCliente: "ruta",
       estado: "nuevo",
       origen: "ruta",
       actividades: {
