@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { tipoClienteLabel } from "@/lib/dominio/precios";
+import { claveSector, etiquetaSector } from "@/lib/dominio/sectores";
 import { CHECKLIST_VEHICULO, estadoRevisionColor, estadoRevisionLabel } from "@/lib/dominio/vehiculo";
 import MiUbicacion from "./MiUbicacion";
 import CatalogoVenta from "./CatalogoVenta";
@@ -133,14 +134,21 @@ export default async function VendedorHome({
 
   // Sectores (comunas) para el filtro rápido.
   const comunasRaw = await prisma.negocio.groupBy({ by: ["comuna"], _count: true });
-  const comunas = comunasRaw.map((c) => c.comuna).filter(Boolean).sort();
+  // Deduplica comunas escritas distinto (Lota=LOTA=lota): una sola etiqueta por clave.
+  const vistasComuna = new Set<string>();
+  const comunas: string[] = [];
+  for (const c of comunasRaw.map((x) => x.comuna).filter((x): x is string => !!x)) {
+    const k = claveSector(c);
+    if (!vistasComuna.has(k)) { vistasComuna.add(k); comunas.push(etiquetaSector(c)); }
+  }
+  comunas.sort();
 
   // ---- Modo filtro/todos: lista de clientes ----
   const lista = filtrando
     ? await prisma.negocio.findMany({
         where: {
-          ...(sector ? { comuna: sector } : {}),
-          ...(busca ? { OR: [{ nombreNegocio: { contains: busca, mode: "insensitive" } }, { nombreContacto: { contains: busca, mode: "insensitive" } }] } : {}),
+          ...(sector ? { comuna: { equals: sector, mode: "insensitive" } } : {}),
+          ...(busca ? { OR: [{ nombreNegocio: { contains: busca, mode: "insensitive" } }, { nombreContacto: { contains: busca, mode: "insensitive" } }, { comuna: { contains: busca, mode: "insensitive" } }, { sector: { contains: busca, mode: "insensitive" } }] } : {}),
         },
         orderBy: [{ comuna: "asc" }, { nombreNegocio: "asc" }],
         take: 200,
@@ -196,13 +204,17 @@ export default async function VendedorHome({
       {sp.vendido && <p className="mb-3 rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Venta registrada</p>}
       {Tabs}
 
-      {/* Buscador */}
+      {/* Buscador (por cliente o sector/ruta) + mensaje masivo */}
       <form className="flex gap-2">
         <input type="hidden" name="t" value="dia" />
-        <input name="q" defaultValue={busca} placeholder="🔎 Buscar cliente…" className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 outline-none focus:border-[#1479c4]" />
+        <input name="q" defaultValue={busca} placeholder="🔎 Buscar cliente o sector…" className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 outline-none focus:border-[#1479c4]" />
         {sector && <input type="hidden" name="sector" value={sector} />}
         <button className="rounded-xl bg-[#1479c4] px-4 font-bold text-white">Ir</button>
       </form>
+
+      <Link href="/vendedor/difundir" className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#1479c4] py-2.5 text-sm font-extrabold text-[#1479c4] active:bg-blue-50">
+        📢 Mensaje masivo (promos · recordar · agendar)
+      </Link>
 
       {/* Filtro por SECTOR + Ver todos */}
       <div className="mt-2 flex flex-wrap gap-1.5">
