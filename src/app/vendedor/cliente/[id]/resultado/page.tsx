@@ -36,6 +36,17 @@ export default async function ResultadoPage({
         <label className="block text-sm font-bold text-slate-700">Próxima visita (opcional)
           <input type="date" name="proxima" className={`mt-1 ${inputCls}`} />
         </label>
+
+        {/* Recordatorio de facturar: queda marcado en la ficha hasta que se emita */}
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+          <label className="flex items-center gap-2 text-sm font-bold text-amber-800">
+            <input type="checkbox" name="facturar" className="h-4 w-4 accent-amber-500" />
+            🧾 Falta facturar (recordármelo)
+          </label>
+          <input name="facturarNota" placeholder="Nota: monto o detalle (opcional)" className={`mt-2 ${inputCls}`} />
+          <p className="mt-1 text-[11px] text-amber-700">Queda como recordatorio en la ficha del cliente y se borra solo al marcar la factura como hecha.</p>
+        </div>
+
         <button className="w-full rounded-xl bg-[#1479c4] py-3 text-base font-extrabold text-white shadow active:brightness-95">
           Guardar resultado
         </button>

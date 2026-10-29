@@ -116,6 +116,15 @@ export async function crearDocumentoVenta(opts: CrearDocumentoOpts) {
     },
   });
 
+  // Modo manual (sin emisión automática): deja un recordatorio en la ficha del
+  // cliente de que falta emitir esta factura en el SII. Se borra al marcarla hecha.
+  if (opts.tipo === "factura" && !process.env.SII_N8N_WEBHOOK_URL) {
+    await prisma.negocio.update({
+      where: { id: opts.negocioId },
+      data: { facturarPendiente: true, facturarNota: `Factura por $${Math.round(opts.total).toLocaleString("es-CL")}` },
+    }).catch(() => {});
+  }
+
   await dispararEmision(doc.id);
   return doc;
 }

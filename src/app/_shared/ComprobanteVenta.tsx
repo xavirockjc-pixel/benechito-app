@@ -55,8 +55,14 @@ export default async function ComprobanteVenta({ ventaId, volver, volverLabel }:
   const neto = doc?.montoNeto != null ? Math.round(Number(doc.montoNeto)) : Math.round(total / 1.19);
   const iva = doc?.iva != null ? Math.round(Number(doc.iva)) : total - neto;
   const mostrarSII = esFactura && !yaEmitida;
-  const detalleSII = venta.items.length > 0
-    ? venta.items.map((i) => `${i.cantidad} x ${i.nombre} — ${fmtCLP(Number(i.precioUnit))} c/u`).join("\n")
+  // Detalle por producto en valores NETOS (sin IVA): el precio cobrado incluye IVA,
+  // así que el neto unitario = precio / 1.19. Es lo que se pega línea a línea en e-Factura.
+  const lineasNeto = venta.items.map((i) => {
+    const netoUnit = Math.round(Number(i.precioUnit) / 1.19);
+    return { nombre: i.nombre, cantidad: i.cantidad, netoUnit, netoTotal: netoUnit * i.cantidad };
+  });
+  const detalleSII = lineasNeto.length > 0
+    ? lineasNeto.map((l) => `${l.cantidad} x ${l.nombre} — neto ${fmtCLP(l.netoUnit)} c/u`).join("\n")
     : `Venta — Neto ${fmtCLP(neto)}`;
   const datosSII = [
     { label: "RUT comprador", value: venta.negocio.rut || "— (ingrésalo en el SII)" },
@@ -145,7 +151,7 @@ export default async function ComprobanteVenta({ ventaId, volver, volverLabel }:
       )}
 
       {/* Emitir en el SII (modo manual): link directo + datos para copiar */}
-      {mostrarSII && <EmitirSII url={SII_URL} datos={datosSII} detalle={detalleSII} />}
+      {mostrarSII && <EmitirSII url={SII_URL} datos={datosSII} detalle={detalleSII} lineas={lineasNeto} />}
 
       <EnviarWhatsApp texto={msg} telefono={venta.negocio.whatsapp || undefined} />
 

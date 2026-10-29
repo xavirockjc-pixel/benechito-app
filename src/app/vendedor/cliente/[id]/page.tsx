@@ -6,7 +6,7 @@ import { tipoClienteLabel, TIPOS_CLIENTE } from "@/lib/dominio/precios";
 import { RUTAS } from "@/lib/dominio/sectores";
 import GuardarUbicacionAqui from "../../GuardarUbicacionAqui";
 import ResultadoVozForm from "./ResultadoVozForm";
-import { registrarDeuda, editarClienteRuta, pasarClienteARuta } from "../../actions";
+import { registrarDeuda, editarClienteRuta, pasarClienteARuta, quitarRecordatorioFacturar } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -100,6 +100,21 @@ export default async function ClienteRuta({
         </div>
       </div>
 
+      {/* Recordatorio: falta facturar a este cliente (se borra al marcar hecho) */}
+      {cliente.facturarPendiente && (
+        <div className="mt-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
+          <p className="text-sm font-extrabold text-amber-800">🧾 Pendiente de facturar</p>
+          {cliente.facturarNota && <p className="mt-0.5 text-xs text-amber-700">{cliente.facturarNota}</p>}
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <Link href={`/vendedor/cliente/${cliente.id}/vender?doc=factura`} className="rounded-xl bg-[#0891b2] py-2.5 text-center text-sm font-extrabold text-white active:brightness-95">🧾 Facturar ahora</Link>
+            <form action={quitarRecordatorioFacturar}>
+              <input type="hidden" name="negocioId" value={cliente.id} />
+              <button className="w-full rounded-xl bg-amber-500 py-2.5 text-sm font-extrabold text-white active:brightness-95">✓ Ya facturé</button>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Prospecto: aviso + pasar a ruta de una tocada */}
       {esProspecto && (
         <div className="mt-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
@@ -120,11 +135,8 @@ export default async function ClienteRuta({
         <Link href={`/vendedor/cliente/${cliente.id}/cobrar`} className={`rounded-2xl py-6 text-center text-base font-extrabold text-white shadow active:brightness-95 ${saldo > 0 ? "bg-amber-500" : "bg-slate-300"}`}>
           💵<br />Cobrar
         </Link>
-        <Link href={`/vendedor/cliente/${cliente.id}/resultado`} className="rounded-2xl border-2 border-slate-200 bg-white py-6 text-center text-base font-extrabold text-slate-700 active:bg-slate-50">
-          📝<br />Resultado
-        </Link>
-        <Link href={`/vendedor/cliente/${cliente.id}/reponer`} className="rounded-2xl border-2 border-slate-200 bg-white py-6 text-center text-base font-extrabold text-slate-700 active:bg-slate-50">
-          🍫<br />Reponer
+        <Link href={`/vendedor/cliente/${cliente.id}/resultado`} className="col-span-2 rounded-2xl border-2 border-slate-200 bg-white py-5 text-center text-base font-extrabold text-slate-700 active:bg-slate-50">
+          📝 Resultado de la visita
         </Link>
       </div>
 

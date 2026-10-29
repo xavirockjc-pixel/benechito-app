@@ -33,6 +33,8 @@ model Negocio {
   giro                 String? // obligatorio (validación app) si tipoDocumentoDefault=factura
   direccionFacturacion String? // puede diferir de `direccion`
   emailFacturacion     String? // destino del PDF/XML
+  facturarPendiente    Boolean @default(false) // recordatorio: falta emitir una factura a este cliente
+  facturarNota         String? // detalle del recordatorio (monto/ref) — se borra al facturar
   tipoNegocio       String?
   direccion         String?
   // Ubicación GPS (capturada en terreno por el vendedor)

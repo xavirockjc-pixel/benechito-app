@@ -1023,24 +1023,36 @@ export async function reportarUbicacion(lat: number, lng: number) {
   await prisma.usuario.update({ where: { id: u.sub }, data: { ultimaLat: lat, ultimaLng: lng, ubicacionEn: new Date() } });
 }
 
-/** Registra el resultado de la visita (nota + próxima visita opcional). */
+/** Registra el resultado de la visita (nota + próxima visita + recordatorio de facturar). */
 export async function registrarResultado(formData: FormData) {
   const negocioId = String(formData.get("negocioId") ?? "").trim();
   const resultado = String(formData.get("resultado") ?? "").trim();
   const proximaStr = String(formData.get("proxima") ?? "").trim();
+  // Recordatorio de facturar: queda pendiente en la ficha hasta que se emita.
+  const facturar = String(formData.get("facturar") ?? "") === "on";
+  const facturarNota = String(formData.get("facturarNota") ?? "").trim() || null;
   if (!negocioId || !resultado) return;
 
   await prisma.actividad.create({
-    data: { negocioId, tipo: "contacto", descripcion: `Visita: ${resultado}` },
+    data: { negocioId, tipo: "contacto", descripcion: `Visita: ${resultado}${facturar ? " · ⚠️ falta facturar" : ""}` },
   });
-  if (proximaStr) {
-    await prisma.negocio.update({
-      where: { id: negocioId },
-      data: { proximaReposicion: new Date(proximaStr) },
-    });
-  }
+
+  const data: Record<string, unknown> = {};
+  if (proximaStr) data.proximaReposicion = new Date(proximaStr);
+  if (facturar) { data.facturarPendiente = true; data.facturarNota = facturarNota; }
+  if (Object.keys(data).length > 0) await prisma.negocio.update({ where: { id: negocioId }, data });
 
   revalidatePath(`/vendedor/cliente/${negocioId}`);
+  redirect(`/vendedor/cliente/${negocioId}`);
+}
+
+/** Marca como ya facturado: borra el recordatorio de la ficha ("✓ Ya facturé"). */
+export async function quitarRecordatorioFacturar(formData: FormData) {
+  const negocioId = String(formData.get("negocioId") ?? "").trim();
+  if (!negocioId) return;
+  await prisma.negocio.update({ where: { id: negocioId }, data: { facturarPendiente: false, facturarNota: null } }).catch(() => {});
+  revalidatePath(`/vendedor/cliente/${negocioId}`);
+  revalidatePath("/vendedor");
   redirect(`/vendedor/cliente/${negocioId}`);
 }
 

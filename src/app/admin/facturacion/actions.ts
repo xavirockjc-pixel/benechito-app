@@ -35,6 +35,8 @@ export async function marcarFacturada(formData: FormData) {
 
   const venta = await prisma.venta.findUnique({ where: { id: ventaId }, select: { total: true, negocioId: true } });
   await prisma.venta.update({ where: { id: ventaId }, data: { facturada: true, folioFactura: folio } });
+  // Factura emitida → borra el recordatorio "falta facturar" de la ficha del cliente.
+  if (venta?.negocioId) await prisma.negocio.update({ where: { id: venta.negocioId }, data: { facturarPendiente: false, facturarNota: null } }).catch(() => {});
 
   const total = Number(venta?.total ?? 0);
   const neto = Math.round(total / 1.19);
