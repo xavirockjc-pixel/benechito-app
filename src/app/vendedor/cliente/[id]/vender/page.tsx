@@ -76,6 +76,7 @@ export default async function VenderPage({
           canales={canales}
           docDefault={doc === "factura" ? "factura" : cliente.tipoDocumentoDefault}
           faltaFactura={faltaParaFactura(cliente)}
+          datosFactura={{ rut: cliente.rut ?? "", razonSocial: cliente.razonSocial ?? "", giro: cliente.giro ?? "" }}
         />
       </div>
     </div>

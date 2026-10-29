@@ -551,13 +551,28 @@ export async function venderTerreno(formData: FormData) {
   }
 
   // Documento tributario elegido en la venta (o el default del cliente).
-  const negFac = await prisma.negocio.findUnique({
+  let negFac = await prisma.negocio.findUnique({
     where: { id: negocioId },
     select: { tipoDocumentoDefault: true, rut: true, razonSocial: true, giro: true },
   });
   const tipoDoc = String(formData.get("tipoDocumento") ?? "").trim() || negFac?.tipoDocumentoDefault || "boleta";
-  if (tipoDoc === "factura" && faltaParaFactura(negFac ?? {}).length > 0) {
-    redirect(`/vendedor/cliente/${negocioId}/vender?error=factura`);
+  if (tipoDoc === "factura") {
+    // Datos de factura cargados en la misma pantalla de venta (RUT/razón social/giro):
+    // se guardan en el cliente para no tener que ir a la ficha a completarlos.
+    const rut = String(formData.get("rut") ?? "").trim();
+    const razonSocial = String(formData.get("razonSocial") ?? "").trim();
+    const giro = String(formData.get("giro") ?? "").trim();
+    if (rut || razonSocial || giro) {
+      const data: Record<string, unknown> = { tipoDocumentoDefault: "factura", requiereFactura: true };
+      if (rut) data.rut = rut;
+      if (razonSocial) data.razonSocial = razonSocial;
+      if (giro) data.giro = giro;
+      await prisma.negocio.update({ where: { id: negocioId }, data });
+      negFac = { ...(negFac ?? { tipoDocumentoDefault: "factura" }), ...data } as typeof negFac;
+    }
+    if (faltaParaFactura(negFac ?? {}).length > 0) {
+      redirect(`/vendedor/cliente/${negocioId}/vender?error=factura&doc=factura`);
+    }
   }
 
   const u = await usuarioActual();

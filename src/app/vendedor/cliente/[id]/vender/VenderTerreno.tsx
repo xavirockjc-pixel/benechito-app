@@ -24,12 +24,14 @@ export default function VenderTerreno({
   canales = [],
   docDefault = "boleta",
   faltaFactura = [],
+  datosFactura = { rut: "", razonSocial: "", giro: "" },
 }: {
   negocioId: string;
   productos: Prod[];
   canales?: { codigo: string; nombre: string }[];
   docDefault?: string;
   faltaFactura?: string[];
+  datosFactura?: { rut: string; razonSocial: string; giro: string };
 }) {
   const [cart, setCart] = useState<Record<string, number>>({});
   const add = (id: string) => setCart((c) => ({ ...c, [id]: (c[id] ?? 0) + 1 }));
@@ -196,10 +198,17 @@ export default function VenderTerreno({
             <option key={t} value={t}>📄 {tipoDocumentoLabel[t]}</option>
           ))}
         </select>
-        {tipoDoc === "factura" && faltaFactura.length > 0 && (
-          <p className="rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
-            ⚠️ Para facturar falta {faltaFactura.join(", ")} del cliente. Complétalo en su ficha antes de cerrar.
-          </p>
+        {tipoDoc === "factura" && (
+          <div className="rounded-lg border border-sky-200 bg-sky-50 p-2.5">
+            <p className="text-xs font-bold text-sky-800">🧾 Datos para la factura</p>
+            <p className="text-[11px] text-sky-700">Si no están, cárgalos aquí: se guardan en el cliente y la factura cierra al tiro.</p>
+            <input name="rut" defaultValue={datosFactura.rut} placeholder="RUT (ej: 12.345.678-9)"
+              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-500" />
+            <input name="razonSocial" defaultValue={datosFactura.razonSocial} placeholder="Razón social"
+              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-500" />
+            <input name="giro" defaultValue={datosFactura.giro} placeholder="Giro"
+              className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 outline-none focus:border-sky-500" />
+          </div>
         )}
         <select name="modo" value={modo} onChange={(e) => setModo(e.target.value)} className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800">
           <option value="efectivo">Pago: Efectivo</option>
