@@ -179,7 +179,7 @@ export default async function CamionPage() {
         href="/vendedor/cierre"
         className="mt-4 block rounded-xl bg-slate-900 py-3 text-center text-sm font-extrabold text-white active:brightness-95"
       >
-        🧾 Cierre de ruta del día
+        🧾 Rendir cuentas
       </Link>
 
       <div className="mt-5 text-center">

@@ -109,9 +109,9 @@ export default async function VendedorHome({
           <AccionRapida href="/vendedor/camion" icon="📦" label="Cargar camión" color="#b45309" />
         </div>
 
-        {/* Cerrar turno: total vendido y cuadre de mercadería */}
+        {/* Rendir cuentas: cuadre de dinero y mercadería del día */}
         <Link href="/vendedor/cierre" className="block rounded-2xl bg-slate-900 py-4 text-center text-base font-extrabold text-white shadow active:brightness-110">
-          🧾 Cerrar turno del día
+          🧾 Rendir cuentas
         </Link>
       </div>
     );

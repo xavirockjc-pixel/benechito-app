@@ -802,6 +802,18 @@ export async function registrarCobro(formData: FormData) {
 }
 
 /**
+ * Guarda el comprobante (imagen/archivo como data URL) de un pago por transferencia.
+ * Lo usa el vendedor al rendir cuentas para respaldar las transferencias del día.
+ */
+export async function subirComprobantePago(formData: FormData) {
+  const pagoId = String(formData.get("pagoId") ?? "").trim();
+  const comprobante = String(formData.get("comprobante") ?? "").trim();
+  if (!pagoId || !comprobante.startsWith("data:")) return;
+  await prisma.pago.update({ where: { id: pagoId }, data: { comprobante } });
+  revalidatePath("/vendedor/cierre");
+}
+
+/**
  * Abono a la CUENTA del cliente (sin elegir una venta): reparte el pago entre sus
  * ventas pendientes, de la más antigua a la más nueva (FIFO). Sirve para "me pagó
  * $X de lo que debe" sin tener que ir venta por venta.
