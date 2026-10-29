@@ -1349,6 +1349,32 @@ export async function devolverTodoABodega() {
 }
 
 /**
+ * Vacía el camión: deja en 0 el stock de productos y la caja de sabores del vehículo,
+ * SIN mandarlo a bodega (para corregir una carga equivocada o limpiar). Registra el
+ * ajuste de cada producto para que quede trazable.
+ */
+export async function vaciarCamion() {
+  const vehId = await miVehiculoId();
+  if (!vehId) return;
+
+  const [productos, sabores] = await Promise.all([
+    prisma.stock.findMany({ where: { ubicacionId: vehId, cantidad: { not: 0 } } }),
+    prisma.stockSabor.findMany({ where: { ubicacionId: vehId, cantidad: { not: 0 } } }),
+  ]);
+  for (const s of productos) {
+    await prisma.movimientoStock.create({
+      data: { productoId: s.productoId, tipo: "ajuste", ubicacionOrigenId: vehId, cantidad: s.cantidad, referencia: "vaciar-camion" },
+    }).catch(() => {});
+    await prisma.stock.update({ where: { productoId_ubicacionId: { productoId: s.productoId, ubicacionId: vehId } }, data: { cantidad: 0 } }).catch(() => {});
+  }
+  for (const s of sabores) {
+    await prisma.stockSabor.update({ where: { saborId_ubicacionId: { saborId: s.saborId, ubicacionId: vehId } }, data: { cantidad: 0 } }).catch(() => {});
+  }
+
+  revalidatePath("/vendedor/camion");
+}
+
+/**
  * El vendedor agrega un producto al catálogo (nombre, línea, formato, tipo).
  * NO fija precios ni costos: eso lo carga la central (privacidad por rol).
  * Queda activo para que se vea de inmediato.

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
-import { asignarVehiculo, cargarVehiculo, devolverTodoABodega, cargarSabor } from "../actions";
+import { asignarVehiculo, cargarVehiculo, devolverTodoABodega, cargarSabor, vaciarCamion } from "../actions";
 import { palabraPack } from "@/lib/dominio/empaque";
 import CargarCamionVoz from "./CargarCamionVoz";
 
@@ -140,6 +140,16 @@ export default async function CamionPage() {
             ↩️ Devolver todo a bodega ({totalCamion} u.)
           </button>
           <p className="mt-1 text-center text-xs text-slate-400">Al terminar la ruta, lo que no vendiste vuelve solo a bodega.</p>
+        </form>
+      )}
+
+      {/* Vaciar el camión: deja en 0 sin mandar a bodega (corregir carga equivocada) */}
+      {(totalCamion > 0 || totalCaja > 0) && (
+        <form action={vaciarCamion} className="mt-3">
+          <button className="w-full rounded-xl border-2 border-rose-200 bg-rose-50 py-3 text-sm font-bold text-rose-600 active:brightness-95">
+            🗑️ Vaciar camión (dejar en 0)
+          </button>
+          <p className="mt-1 text-center text-xs text-slate-400">Saca todos los productos y sabores del camión sin sumarlos a bodega. Úsalo para corregir una carga equivocada.</p>
         </form>
       )}
 
