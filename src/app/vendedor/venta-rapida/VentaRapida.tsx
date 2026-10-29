@@ -6,10 +6,11 @@ import { ETIQUETAS_VENTA, etiquetaVentaLabel, TIPOS_DOCUMENTO, tipoDocumentoLabe
 import { ventaRapida } from "../actions";
 import ControlVoz from "../ControlVoz";
 import CarruselFotos from "@/app/_shared/CarruselFotos";
+import { palabraPack } from "@/lib/dominio/empaque";
 import type { CambioVoz } from "@/lib/dominio/voz";
 
 type Tramo = { desde: number; precio: number };
-type Prod = { id: string; nombre: string; formato: string | null; precio: number; fotoUrl?: string | null; fotos?: string[]; tramos?: Tramo[] };
+type Prod = { id: string; nombre: string; formato: string | null; precio: number; unidadesPack?: number | null; fotoUrl?: string | null; fotos?: string[]; tramos?: Tramo[] };
 type Cliente = { id: string; nombreNegocio: string; comuna: string };
 
 /** Precio unitario según la cantidad: aplica el tramo de mayor volumen que alcance. */
@@ -52,7 +53,11 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
     setCart((c) => {
       const next = { ...c };
       for (const { productoId, delta } of cambios) {
-        const n = (next[productoId] ?? 0) + delta;
+        // En productos por bolsa/pack, la voz dice unidades → se convierten a bolsas.
+        const pack = productos.find((p) => p.id === productoId)?.unidadesPack ?? 0;
+        const d = pack > 0 ? Math.round(delta / pack) : delta;
+        if (d === 0) continue;
+        const n = (next[productoId] ?? 0) + d;
         if (n <= 0) delete next[productoId];
         else next[productoId] = n;
       }
@@ -60,10 +65,19 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
     });
 
   const porId = useMemo(() => new Map(productos.map((p) => [p.id, p])), [productos]);
-  const lineas = Object.entries(cart).map(([id, cantidad]) => {
+  // Los productos por bolsa/pack (Tú y Yo ×50, postres ×16): la cantidad del carrito
+  // son bolsas; el precio guardado es por unidad y se multiplica por el tamaño de bolsa.
+  const lineas = Object.entries(cart).map(([id, q]) => {
     const p = porId.get(id)!;
-    const precioUnit = precioUnitDe(p, cantidad); // aplica tramo por volumen según cantidad
-    return { productoId: id, nombre: p.nombre, cantidad, precioUnit, precioBase: p.precio };
+    const pack = p.unidadesPack ?? 0;
+    if (pack > 0) {
+      const unidades = q * pack;
+      const unit = precioUnitDe(p, unidades); // tramo por volumen según unidades
+      const porPack = unit * pack;
+      return { productoId: id, nombre: p.nombre, pack, packs: q, unidades, unit, precioUnit: porPack, cantidad: q, precioBase: p.precio * pack };
+    }
+    const precioUnit = precioUnitDe(p, q); // aplica tramo por volumen según cantidad
+    return { productoId: id, nombre: p.nombre, pack: 0, packs: 0, unidades: q, unit: precioUnit, precioUnit, cantidad: q, precioBase: p.precio };
   });
   const total = lineas.reduce((s, l) => s + l.precioUnit * l.cantidad, 0);
   const abonoNum = Math.min(Math.max(Number(abono.replace(/[^0-9]/g, "")) || 0, 0), total);
@@ -96,8 +110,8 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
               </span>
               <span className="block p-2">
                 <span className="block truncate text-sm font-semibold text-slate-900">{p.nombre}</span>
-                <span className="block text-[11px] text-slate-400">{p.formato ?? ""}</span>
-                <span className="font-bold text-[#1479c4]">{fmtCLP(p.precio)}</span>
+                <span className="block text-[11px] text-slate-400">{(p.unidadesPack ?? 0) > 0 ? `${palabraPack(p.unidadesPack!)} de ${p.unidadesPack}` : (p.formato ?? "")}</span>
+                <span className="font-bold text-[#1479c4]">{fmtCLP((p.unidadesPack ?? 0) > 0 ? p.precio * p.unidadesPack! : p.precio)}{(p.unidadesPack ?? 0) > 0 && <span className="text-[10px] font-semibold text-slate-400"> /{palabraPack(p.unidadesPack!)}</span>}</span>
                 {p.tramos && p.tramos.length > 0 && (
                   <span className="ml-1 text-[10px] font-bold text-green-600">📉 por mayor</span>
                 )}
@@ -137,8 +151,10 @@ export default function VentaRapida({ productos, clientes = [] }: { productos: P
                 <span className="min-w-0">
                   <span className="block truncate font-semibold text-slate-800">{l.nombre}</span>
                   <span className="text-[11px] text-slate-400">
-                    {fmtCLP(l.precioUnit)} c/u
-                    {l.precioUnit < l.precioBase && <span className="ml-1 font-bold text-green-600">📉 mayoreo</span>}
+                    {l.pack > 0
+                      ? <>{l.packs} {palabraPack(l.pack)}{l.packs !== 1 ? "s" : ""} de {l.pack} = {l.unidades} u · {fmtCLP(l.unit)}/u</>
+                      : <>{fmtCLP(l.precioUnit)} c/u</>}
+                    {l.unit < (l.pack > 0 ? l.precioBase / l.pack : l.precioBase) && <span className="ml-1 font-bold text-green-600">📉 mayoreo</span>}
                   </span>
                 </span>
                 <span className="flex items-center gap-2">

@@ -108,6 +108,10 @@ export default function VenderTerreno({
       <div className="grid grid-cols-2 gap-2">
         {productos.map((p) => {
           const n = cart[p.id] ?? 0;
+          const pk = p.unidadesPack ?? 0;
+          // Precio que se muestra: por BOLSA/PACK si el producto va por bolsa (el precio
+          // guardado es por unidad), o unitario si no tiene pack.
+          const precioMostrar = pk > 0 ? p.precio * pk : p.precio;
           return (
             <button
               key={p.id}
@@ -116,9 +120,9 @@ export default function VenderTerreno({
               className={`rounded-xl border p-3 text-left shadow-sm active:brightness-95 ${n > 0 ? "border-[#1479c4] bg-blue-50" : "border-slate-200 bg-white"}`}
             >
               <span className="block truncate font-semibold text-slate-900">{p.nombre}</span>
-              <span className="block text-xs text-slate-400">{p.unidadesPack && p.unidadesPack > 0 ? `${palabraPack(p.unidadesPack)} ×${p.unidadesPack}` : (p.formato ?? "")}</span>
+              <span className="block text-xs text-slate-400">{pk > 0 ? `${palabraPack(pk)} de ${pk}` : (p.formato ?? "")}</span>
               <span className="mt-1 flex items-center justify-between">
-                <span className="font-bold text-[#1479c4]">{fmtCLP(p.precio)}{p.tramos && p.tramos.length > 0 && <span className="ml-1 text-[10px] font-bold text-green-600">📉 x mayor</span>}</span>
+                <span className="font-bold text-[#1479c4]">{fmtCLP(precioMostrar)}{pk > 0 && <span className="text-[10px] font-semibold text-slate-400"> /{palabraPack(pk)}</span>}{p.tramos && p.tramos.length > 0 && <span className="ml-1 text-[10px] font-bold text-green-600">📉 x mayor</span>}</span>
                 {n > 0 && <span className="rounded-full bg-[#1479c4] px-2 text-xs font-bold text-white">{n}</span>}
               </span>
             </button>
