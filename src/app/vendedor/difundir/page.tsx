@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { claveSector, etiquetaSector } from "@/lib/dominio/sectores";
+import { rutaDeComuna } from "@/lib/dominio/sectores";
 import MensajeMasivo from "./MensajeMasivo";
 
 export const dynamic = "force-dynamic";
@@ -17,17 +17,16 @@ export default async function DifundirPage() {
     id: n.id,
     nombre: n.nombreNegocio,
     tel: n.whatsapp ?? "",
-    sector: etiquetaSector(n.sector || n.comuna),
+    sector: rutaDeComuna(n.sector || n.comuna).label,
   }));
 
-  // Sectores únicos (deduplicados por clave normalizada).
+  // Rutas únicas (agrupadas: San Pedro de la Paz = San Pedro, Lota Alto = Lota…).
   const vistos = new Set<string>();
   const sectores: string[] = [];
   for (const c of clientes) {
-    const k = claveSector(c.sector);
-    if (c.sector !== "Sin sector" && !vistos.has(k)) { vistos.add(k); sectores.push(c.sector); }
+    if (c.sector !== "Sin sector" && !vistos.has(c.sector)) { vistos.add(c.sector); sectores.push(c.sector); }
   }
-  sectores.sort();
+  sectores.sort((a, b) => a.localeCompare(b, "es"));
 
   const conTel = clientes.filter((c) => c.tel).length;
 

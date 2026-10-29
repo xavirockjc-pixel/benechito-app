@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { tipoClienteLabel } from "@/lib/dominio/precios";
-import { claveSector, etiquetaSector } from "@/lib/dominio/sectores";
+import { rutaDeComuna } from "@/lib/dominio/sectores";
 import { CHECKLIST_VEHICULO, estadoRevisionColor, estadoRevisionLabel } from "@/lib/dominio/vehiculo";
 import MiUbicacion from "./MiUbicacion";
 import CatalogoVenta from "./CatalogoVenta";
@@ -132,28 +132,33 @@ export default async function VendedorHome({
     );
   }
 
-  // Sectores (comunas) para el filtro rápido.
+  // RUTAS para el filtro rápido: agrupa las comunas que se recorren juntas
+  // (San Pedro de la Paz = San Pedro; Lota Alto = Lota; etc.). Un chip por ruta.
   const comunasRaw = await prisma.negocio.groupBy({ by: ["comuna"], _count: true });
-  // Deduplica comunas escritas distinto (Lota=LOTA=lota): una sola etiqueta por clave.
-  const vistasComuna = new Set<string>();
-  const comunas: string[] = [];
-  for (const c of comunasRaw.map((x) => x.comuna).filter((x): x is string => !!x)) {
-    const k = claveSector(c);
-    if (!vistasComuna.has(k)) { vistasComuna.add(k); comunas.push(etiquetaSector(c)); }
+  const rutasPresentes = new Map<string, string>(); // clave -> label
+  for (const row of comunasRaw) {
+    const r = rutaDeComuna(row.comuna);
+    if (r.clave) rutasPresentes.set(r.clave, r.label);
   }
-  comunas.sort();
+  const rutas = [...rutasPresentes.entries()]
+    .map(([clave, label]) => ({ clave, label }))
+    .sort((a, b) => a.label.localeCompare(b.label, "es"));
+  // Etiqueta de la ruta seleccionada (para el encabezado).
+  const sectorLabel = sector ? (rutasPresentes.get(sector) ?? sector) : "";
 
   // ---- Modo filtro/todos: lista de clientes ----
+  // El filtro por ruta se resuelve en JS con rutaDeComuna (agrupa las comunas).
   const lista = filtrando
-    ? await prisma.negocio.findMany({
-        where: {
-          ...(sector ? { comuna: { equals: sector, mode: "insensitive" } } : {}),
-          ...(busca ? { OR: [{ nombreNegocio: { contains: busca, mode: "insensitive" } }, { nombreContacto: { contains: busca, mode: "insensitive" } }, { comuna: { contains: busca, mode: "insensitive" } }, { sector: { contains: busca, mode: "insensitive" } }] } : {}),
-        },
-        orderBy: [{ comuna: "asc" }, { nombreNegocio: "asc" }],
-        take: 200,
-        include: { ventas: { where: { estadoPago: { in: PENDIENTE } }, select: { total: true, pagos: { select: { monto: true } } } } },
-      })
+    ? (
+        await prisma.negocio.findMany({
+          where: {
+            ...(busca ? { OR: [{ nombreNegocio: { contains: busca, mode: "insensitive" } }, { nombreContacto: { contains: busca, mode: "insensitive" } }, { comuna: { contains: busca, mode: "insensitive" } }, { sector: { contains: busca, mode: "insensitive" } }] } : {}),
+          },
+          orderBy: [{ comuna: "asc" }, { nombreNegocio: "asc" }],
+          take: 600,
+          include: { ventas: { where: { estadoPago: { in: PENDIENTE } }, select: { total: true, pagos: { select: { monto: true } } } } },
+        })
+      ).filter((c) => !sector || rutaDeComuna(c.comuna).clave === sector)
     : [];
 
   // ---- Vista del día ----
@@ -219,8 +224,8 @@ export default async function VendedorHome({
       {/* Filtro por SECTOR + Ver todos */}
       <div className="mt-2 flex flex-wrap gap-1.5">
         <Link href={qs({ vista: "todos", sector: "" })} className={`rounded-full border px-2.5 py-1 text-xs font-bold ${vista === "todos" && !sector ? "border-[#1479c4] bg-blue-50 text-[#1479c4]" : "border-slate-200 bg-white text-slate-500"}`}>👥 Todos</Link>
-        {comunas.map((c) => (
-          <Link key={c} href={qs({ sector: sector === c ? "" : c, vista: "todos" })} className={`rounded-full border px-2.5 py-1 text-xs font-bold ${sector === c ? "border-[#1479c4] bg-blue-50 text-[#1479c4]" : "border-slate-200 bg-white text-slate-500"}`}>📍 {c}</Link>
+        {rutas.map((r) => (
+          <Link key={r.clave} href={qs({ sector: sector === r.clave ? "" : r.clave, vista: "todos" })} className={`rounded-full border px-2.5 py-1 text-xs font-bold ${sector === r.clave ? "border-[#1479c4] bg-blue-50 text-[#1479c4]" : "border-slate-200 bg-white text-slate-500"}`}>📍 {r.label}</Link>
         ))}
         {filtrando && <Link href="/vendedor?t=dia" className="rounded-full px-2.5 py-1 text-xs font-bold text-slate-400">✕ Ver del día</Link>}
       </div>
@@ -229,14 +234,17 @@ export default async function VendedorHome({
         /* ---- Lista de clientes (todos / por sector / búsqueda) ---- */
         <div className="mt-4 space-y-2">
           <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-500">
-            {sector ? `📍 ${sector}` : busca ? "Resultados" : "👥 Todos los clientes"} <span className="text-slate-400">({lista.length})</span>
+            {sector ? `📍 ${sectorLabel}` : busca ? "Resultados" : "👥 Todos los clientes"} <span className="text-slate-400">({lista.length})</span>
           </h2>
           {lista.length === 0 && <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">Sin clientes que coincidan.</p>}
           {lista.map((c) => {
             const saldo = saldoDe(c.ventas);
+            const esProspecto = c.tipoCliente === "prospecto";
             return (
-              <Fila key={c.id} id={c.id} nombre={c.nombreNegocio} sub={`${c.comuna || "—"} · ${tipoClienteLabel[c.tipoCliente] ?? c.tipoCliente}`}
-                badge={saldo > 0 ? <span className="rounded-lg bg-red-100 px-2 py-1 text-xs font-bold text-red-700">Debe {fmtCLP(saldo)}</span> : null} />
+              <Fila key={c.id} id={c.id} nombre={c.nombreNegocio} prospecto={esProspecto}
+                sub={`${c.comuna || "—"} · ${tipoClienteLabel[c.tipoCliente] ?? c.tipoCliente}`}
+                badge={saldo > 0 ? <span className="rounded-lg bg-red-100 px-2 py-1 text-xs font-bold text-red-700">Debe {fmtCLP(saldo)}</span>
+                  : esProspecto ? <span className="rounded-lg bg-amber-100 px-2 py-1 text-xs font-bold text-amber-700">Prospecto</span> : null} />
             );
           })}
         </div>
@@ -288,11 +296,12 @@ function Grupo({ titulo, color, children }: { titulo: string; color: string; chi
   );
 }
 
-function Fila({ id, nombre, sub, badge }: { id: string; nombre: string; sub: string; badge?: React.ReactNode }) {
+function Fila({ id, nombre, sub, badge, prospecto }: { id: string; nombre: string; sub: string; badge?: React.ReactNode; prospecto?: boolean }) {
+  // Prospecto = borde ámbar a la izquierda para identificarlo de un vistazo y pasarlo a ruta.
   return (
-    <Link href={`/vendedor/cliente/${id}`} className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm active:bg-slate-50">
+    <Link href={`/vendedor/cliente/${id}`} className={`flex items-center justify-between rounded-xl border bg-white p-4 shadow-sm active:bg-slate-50 ${prospecto ? "border-l-4 border-l-amber-400 border-amber-200" : "border-slate-200"}`}>
       <div className="min-w-0">
-        <p className="truncate font-bold text-slate-900">{nombre}</p>
+        <p className="truncate font-bold text-slate-900">{prospecto && <span className="mr-1 text-amber-500">●</span>}{nombre}</p>
         <p className="truncate text-xs text-slate-500">{sub}</p>
       </div>
       {badge ?? <span className="ml-2 shrink-0 text-slate-300">›</span>}

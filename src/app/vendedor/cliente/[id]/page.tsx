@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
-import { tipoClienteLabel } from "@/lib/dominio/precios";
+import { tipoClienteLabel, TIPOS_CLIENTE } from "@/lib/dominio/precios";
+import { RUTAS } from "@/lib/dominio/sectores";
 import GuardarUbicacionAqui from "../../GuardarUbicacionAqui";
 import ResultadoVozForm from "./ResultadoVozForm";
-import { registrarDeuda } from "../../actions";
+import { registrarDeuda, editarClienteRuta, pasarClienteARuta } from "../../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +32,7 @@ export default async function ClienteRuta({
     (s, v) => s + (Number(v.total) - v.pagos.reduce((a, p) => a + Number(p.monto), 0)),
     0,
   );
+  const esProspecto = cliente.tipoCliente === "prospecto";
   const wa = cliente.whatsapp.replace(/[^0-9]/g, "");
   const msgVoy = encodeURIComponent(
     `Hola${cliente.nombreContacto ? " " + cliente.nombreContacto : ""}, soy de Benechito 🍦. Voy en camino a tu local, ¿te encuentro?`,
@@ -41,7 +43,7 @@ export default async function ClienteRuta({
       <Link href="/vendedor" className="text-sm font-semibold text-[#1479c4]">← Clientes</Link>
 
       <div className="mt-2 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <h1 className="text-xl font-extrabold text-slate-900">{cliente.nombreNegocio}</h1>
+        <h1 className="text-xl font-extrabold text-slate-900">{esProspecto && <span className="mr-1 text-amber-500">●</span>}{cliente.nombreNegocio}</h1>
         <p className="text-sm text-slate-500">
           {cliente.nombreContacto} · {cliente.comuna || "—"}
         </p>
@@ -98,6 +100,18 @@ export default async function ClienteRuta({
         </div>
       </div>
 
+      {/* Prospecto: aviso + pasar a ruta de una tocada */}
+      {esProspecto && (
+        <div className="mt-3 rounded-2xl border-2 border-amber-300 bg-amber-50 p-4">
+          <p className="text-sm font-extrabold text-amber-800">● Este cliente es PROSPECTO</p>
+          <p className="mt-0.5 text-xs text-amber-700">Pásalo a cliente de ruta para que tome el precio de su zona. (Se hace solo cuando deja un pedido o venta.)</p>
+          <form action={pasarClienteARuta} className="mt-2">
+            <input type="hidden" name="id" value={cliente.id} />
+            <button className="w-full rounded-xl bg-amber-500 py-2.5 text-sm font-extrabold text-white active:brightness-95">✓ Pasar a cliente de ruta</button>
+          </form>
+        </div>
+      )}
+
       {/* Acciones grandes */}
       <div className="mt-4 grid grid-cols-2 gap-3">
         <Link href={`/vendedor/cliente/${cliente.id}/vender`} className="rounded-2xl bg-[#1479c4] py-6 text-center text-base font-extrabold text-white shadow active:brightness-95">
@@ -150,6 +164,38 @@ export default async function ClienteRuta({
             <input name="motivo" placeholder="Ej: Deuda de antes / pedido pasado" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]" />
           </label>
           <button className="w-full rounded-xl bg-red-500 py-3 text-sm font-extrabold text-white active:brightness-95">Registrar deuda</button>
+        </form>
+      </details>
+
+      {/* Editar cliente / asignar ruta (define al prospecto y corrige datos) */}
+      <details className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <summary className="cursor-pointer text-sm font-extrabold text-slate-700">✏️ Editar cliente / asignar ruta</summary>
+        <form action={editarClienteRuta} className="mt-3 space-y-2">
+          <input type="hidden" name="id" value={cliente.id} />
+          <label className="block text-xs font-bold text-slate-600">Nombre del negocio
+            <input name="nombreNegocio" defaultValue={cliente.nombreNegocio} required className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]" />
+          </label>
+          <label className="block text-xs font-bold text-slate-600">Contacto
+            <input name="nombreContacto" defaultValue={cliente.nombreContacto ?? ""} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]" />
+          </label>
+          <label className="block text-xs font-bold text-slate-600">WhatsApp
+            <input name="whatsapp" inputMode="tel" defaultValue={cliente.whatsapp ?? ""} placeholder="Ej: 9 1234 5678" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]" />
+          </label>
+          <label className="block text-xs font-bold text-slate-600">Comuna / ruta
+            <input name="comuna" defaultValue={cliente.comuna ?? ""} list="rutas-lista" placeholder="Ej: Lota, Coronel, San Pedro…" className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]" />
+            <datalist id="rutas-lista">
+              {RUTAS.map((r) => <option key={r.clave} value={r.label.split(" · ")[0]} />)}
+            </datalist>
+          </label>
+          <label className="block text-xs font-bold text-slate-600">Dirección (opcional)
+            <input name="direccion" defaultValue={cliente.direccion ?? ""} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]" />
+          </label>
+          <label className="block text-xs font-bold text-slate-600">Tipo de cliente
+            <select name="tipoCliente" defaultValue={cliente.tipoCliente} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]">
+              {TIPOS_CLIENTE.map((t) => <option key={t} value={t}>{tipoClienteLabel[t] ?? t}</option>)}
+            </select>
+          </label>
+          <button className="w-full rounded-xl bg-[#1479c4] py-3 text-sm font-extrabold text-white active:brightness-95">Guardar cambios</button>
         </form>
       </details>
 

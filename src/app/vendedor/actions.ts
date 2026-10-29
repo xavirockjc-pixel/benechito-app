@@ -268,6 +268,7 @@ async function crearVentaReparto(negocioId: string, lineasIn: { producto: string
     await aplicarDelta(l.productoId, ubic, -l.cantidad);
     await prisma.movimientoStock.create({ data: { productoId: l.productoId, tipo: "venta", ubicacionOrigenId: ubic, cantidad: l.cantidad, referencia: venta.id } });
   }
+  await promoverSiProspecto(negocioId); // dejó pedido de reparto → se define para la ruta
   return venta.id;
 }
 
@@ -600,6 +601,7 @@ export async function venderTerreno(formData: FormData) {
   });
 
   await crearDocumentoVenta({ ventaId: venta.id, negocioId, tipo: tipoDoc, total, items });
+  await promoverSiProspecto(negocioId); // dejó pedido → se define para la ruta
 
   revalidatePath(`/vendedor/cliente/${negocioId}`);
   redirect(`/vendedor/comprobante/${venta.id}?volver=${encodeURIComponent(`/vendedor/cliente/${negocioId}`)}`);
@@ -733,6 +735,7 @@ export async function ventaRapida(formData: FormData) {
   }
 
   await crearDocumentoVenta({ ventaId: venta.id, negocioId: cliente.id, tipo: tipoDoc, total, items });
+  if (clienteReal) await promoverSiProspecto(cliente.id); // dejó venta → se define para la ruta
 
   revalidatePath("/vendedor/venta-rapida");
   redirect(`/vendedor/comprobante/${venta.id}?volver=${encodeURIComponent("/vendedor")}`);
@@ -1085,6 +1088,51 @@ export async function crearClienteRuta(formData: FormData) {
 
   revalidatePath("/vendedor");
   redirect(`/vendedor/cliente/${cliente.id}`);
+}
+
+/**
+ * Si el cliente es PROSPECTO, lo pasa automáticamente a cliente de RUTA (ya dejó un
+ * pedido/venta real → se "define" para la ruta y toma el precio de su zona por comuna).
+ * No toca a clientes que ya tienen otro tipo.
+ */
+async function promoverSiProspecto(negocioId: string) {
+  await prisma.negocio.updateMany({
+    where: { id: negocioId, tipoCliente: "prospecto" },
+    data: { tipoCliente: "ruta", estado: "activo" },
+  }).catch(() => {});
+}
+
+/** Pasa un prospecto a cliente de ruta de una tocada (botón en la ficha). */
+export async function pasarClienteARuta(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  await prisma.negocio.update({ where: { id }, data: { tipoCliente: "ruta", estado: "activo" } }).catch(() => {});
+  await prisma.actividad.create({ data: { negocioId: id, tipo: "contacto", descripcion: "Pasó de prospecto a cliente de ruta" } }).catch(() => {});
+  revalidatePath(`/vendedor/cliente/${id}`);
+  revalidatePath("/vendedor");
+  redirect(`/vendedor/cliente/${id}`);
+}
+
+/** Edita los datos del cliente desde la ruta: nombre, contacto, WhatsApp, comuna/ruta y tipo. */
+export async function editarClienteRuta(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  const get = (k: string) => String(formData.get(k) ?? "").trim();
+  const tipoCliente = get("tipoCliente") || "ruta";
+  const nombreNegocio = get("nombreNegocio");
+
+  const data: Record<string, unknown> = { tipoCliente };
+  if (nombreNegocio) data.nombreNegocio = nombreNegocio;
+  data.nombreContacto = get("nombreContacto") || null;
+  data.whatsapp = get("whatsapp");
+  data.comuna = get("comuna");
+  data.direccion = get("direccion") || null;
+  if (tipoCliente !== "prospecto") data.estado = "activo";
+
+  await prisma.negocio.update({ where: { id }, data });
+  revalidatePath(`/vendedor/cliente/${id}`);
+  revalidatePath("/vendedor");
+  redirect(`/vendedor/cliente/${id}`);
 }
 
 /** Fija/actualiza la ubicación GPS de un cliente existente (estando parado en el local). */
