@@ -4,11 +4,16 @@ import { useState } from "react";
 
 type Dato = { label: string; value: string; copiable?: boolean };
 
+// App oficial SII e-Factura (Android). Intent: abre la app si está instalada,
+// o cae a Play Store si no. En iOS/escritorio usamos la web del SII.
+const APP_PKG = "cl.sii.FacturaElectronica";
+const PLAY_URL = `https://play.google.com/store/apps/details?id=${APP_PKG}`;
+const APP_INTENT = `intent://#Intent;package=${APP_PKG};S.browser_fallback_url=${encodeURIComponent(PLAY_URL)};end`;
+
 /**
- * Atajo para EMITIR la factura en el SII (modo manual): abre el sistema de
- * facturación gratuito del SII y deja los datos de la venta listos para copiar
- * y pegar (RUT del comprador, neto, IVA, total y detalle). Así en el portal /
- * app E-factura solo se pega, sin re-digitar.
+ * Atajo para EMITIR la factura (modo manual) en la app SII e-Factura: copia los
+ * datos de la venta (RUT comprador, neto, IVA, total y detalle) y abre la app
+ * para pegarlos. El SII autocompleta el cliente con el RUT.
  */
 export default function EmitirSII({ url, datos, detalle }: { url: string; datos: Dato[]; detalle: string }) {
   const [copiado, setCopiado] = useState<string | null>(null);
@@ -19,21 +24,36 @@ export default function EmitirSII({ url, datos, detalle }: { url: string; datos:
       setCopiado(clave);
       setTimeout(() => setCopiado((c) => (c === clave ? null : c)), 1500);
     } catch {
-      /* algunos navegadores sin permiso: el usuario puede seleccionar a mano */
+      /* navegador sin permiso: el usuario puede seleccionar a mano */
     }
   };
 
   const todo = [...datos.filter((d) => d.copiable !== false).map((d) => `${d.label}: ${d.value}`), "", detalle].join("\n");
 
+  const abrirApp = () => {
+    const ua = navigator.userAgent || "";
+    const esAndroid = /Android/i.test(ua);
+    // Copiamos todo primero para que al pegar en la app ya esté listo.
+    copiar(todo, "__todo");
+    if (esAndroid) window.location.href = APP_INTENT; // abre app e-Factura (o Play Store)
+    else window.open(url, "_blank", "noopener,noreferrer"); // iOS/PC: web del SII
+  };
+
   return (
     <div className="rounded-xl border border-sky-200 bg-sky-50 p-3">
-      <p className="text-sm font-extrabold text-sky-800">🧾 Emitir la factura en el SII</p>
-      <p className="mt-0.5 text-xs text-sky-700">Abre el facturador gratuito del SII y pega estos datos (el SII autocompleta con el RUT).</p>
+      <p className="text-sm font-extrabold text-sky-800">🧾 Emitir la factura (SII e-Factura)</p>
+      <p className="mt-0.5 text-xs text-sky-700">1) Copia los datos · 2) abre la app · 3) pega (el SII autocompleta con el RUT).</p>
 
-      <a href={url} target="_blank" rel="noopener noreferrer"
-        className="mt-2 block rounded-lg bg-sky-700 py-2.5 text-center text-sm font-extrabold text-white active:brightness-110">
-        ↗ Abrir SII — Factura electrónica
-      </a>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <button type="button" onClick={() => copiar(todo, "__todo")}
+          className={`rounded-lg py-2.5 text-sm font-extrabold ${copiado === "__todo" ? "bg-green-600 text-white" : "border border-sky-300 bg-white text-sky-700"}`}>
+          {copiado === "__todo" ? "✓ Copiado" : "📋 Copiar datos"}
+        </button>
+        <button type="button" onClick={abrirApp}
+          className="rounded-lg bg-sky-700 py-2.5 text-sm font-extrabold text-white active:brightness-110">
+          📲 Abrir e-Factura
+        </button>
+      </div>
 
       <div className="mt-3 space-y-1.5">
         {datos.map((d) => (
@@ -50,10 +70,10 @@ export default function EmitirSII({ url, datos, detalle }: { url: string; datos:
         ))}
       </div>
 
-      <button type="button" onClick={() => copiar(todo, "__todo")}
-        className={`mt-2 w-full rounded-lg py-2 text-xs font-extrabold ${copiado === "__todo" ? "bg-green-600 text-white" : "border border-sky-300 bg-white text-sky-700"}`}>
-        {copiado === "__todo" ? "✓ Copiado todo" : "📋 Copiar todos los datos"}
-      </button>
+      <a href={url} target="_blank" rel="noopener noreferrer"
+        className="mt-2 block text-center text-[11px] font-semibold text-sky-600 underline">
+        o emitir en la web del SII ↗
+      </a>
     </div>
   );
 }
