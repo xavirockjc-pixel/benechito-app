@@ -18,7 +18,7 @@ export default async function FacturacionPage() {
     orderBy: { createdAt: "desc" },
     take: 400,
     include: {
-      venta: { select: { id: true, total: true, fecha: true, facturada: true } },
+      venta: { select: { id: true, total: true, fecha: true, facturada: true, items: { select: { nombre: true, cantidad: true, precioUnit: true } } } },
       negocio: { select: { nombreNegocio: true, rut: true, razonSocial: true, giro: true, direccionFacturacion: true, emailFacturacion: true, whatsapp: true } },
     },
   });
@@ -89,7 +89,8 @@ export default async function FacturacionPage() {
           {conRut.map((d) => (
             <div key={d.id} className="space-y-1">
               <FacturaPendiente ventaId={d.venta.id} total={Number(d.montoTotal)} fecha={fmt(d.venta.fecha)}
-                cliente={{ nombre: d.negocio.nombreNegocio, rut: d.negocio.rut, razonSocial: d.negocio.razonSocial, giro: d.negocio.giro, dir: d.negocio.direccionFacturacion, email: d.negocio.emailFacturacion }} />
+                cliente={{ nombre: d.negocio.nombreNegocio, rut: d.negocio.rut, razonSocial: d.negocio.razonSocial, giro: d.negocio.giro, dir: d.negocio.direccionFacturacion, email: d.negocio.emailFacturacion, tel: d.negocio.whatsapp }}
+                items={d.venta.items.map((i) => ({ nombre: i.nombre, cantidad: i.cantidad, precioUnit: Number(i.precioUnit) }))} />
               {autoOn && (
                 <form action={reintentarEmision} className="text-right">
                   <input type="hidden" name="documentoId" value={d.id} />

@@ -6,6 +6,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { desglosarDocumento } from "@/lib/dominio/ventas";
+import { notificarTelegram } from "@/lib/telegram";
+
+const CLP = (n: number) => "$" + Math.round(n).toLocaleString("es-CL");
 
 export type LineaDocumento = {
   productoId?: string | null;
@@ -117,12 +120,24 @@ export async function crearDocumentoVenta(opts: CrearDocumentoOpts) {
   });
 
   // Modo manual (sin emisión automática): deja un recordatorio en la ficha del
-  // cliente de que falta emitir esta factura en el SII. Se borra al marcarla hecha.
+  // cliente de que falta emitir esta factura en el SII, y avisa a la central
+  // (Telegram) con los datos para hacerla (cliente, RUT, fono, total, detalle).
   if (opts.tipo === "factura" && !process.env.SII_N8N_WEBHOOK_URL) {
+    const neg = await prisma.negocio.findUnique({
+      where: { id: opts.negocioId },
+      select: { nombreNegocio: true, razonSocial: true, rut: true, whatsapp: true },
+    });
     await prisma.negocio.update({
       where: { id: opts.negocioId },
-      data: { facturarPendiente: true, facturarNota: `Factura por $${Math.round(opts.total).toLocaleString("es-CL")}` },
+      data: { facturarPendiente: true, facturarNota: `Factura por ${CLP(opts.total)}` },
     }).catch(() => {});
+
+    const nombre = neg?.razonSocial || neg?.nombreNegocio || "Cliente";
+    const lineas = await prisma.ventaItem.findMany({ where: { ventaId: opts.ventaId }, select: { nombre: true, cantidad: true } });
+    const detalle = lineas.length ? "\n" + lineas.map((l) => `• ${l.cantidad}× ${l.nombre}`).join("\n") : "";
+    notificarTelegram(
+      `🧾 *Factura por emitir* (venta en ruta)\n👤 ${nombre}\n🪪 RUT: ${neg?.rut ?? "— (falta)"}\n📞 ${neg?.whatsapp || "—"}\n💵 Total: ${CLP(opts.total)} (neto ${CLP(montoNeto ?? Math.round(opts.total / 1.19))})${detalle}\n\n→ Hazla en benechito.com/admin/facturacion`,
+    ).catch(() => {});
   }
 
   await dispararEmision(doc.id);
