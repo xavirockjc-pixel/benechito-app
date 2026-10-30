@@ -10,6 +10,7 @@ import { crearDocumentoVenta } from "@/lib/facturacion";
 import { canalPorTipoCliente } from "@/lib/dominio/canales";
 import { ordenarPorCercania } from "@/lib/dominio/reparto";
 import { notificarTelegram } from "@/lib/telegram";
+import { enviarWhatsApp } from "@/lib/whatsapp";
 import { resolverLinkMapa } from "@/app/admin/negocios/actions";
 
 // ===== Pedidos de reparto (WhatsApp → agenda → ruta) =====
@@ -1089,6 +1090,7 @@ export async function registrarResultado(formData: FormData) {
 export async function marcarFacturadaRuta(formData: FormData) {
   const ventaId = String(formData.get("ventaId") ?? "").trim();
   const folio = String(formData.get("folio") ?? "").trim() || null;
+  const archivo = String(formData.get("archivo") ?? "").trim(); // dataURL del PDF/foto (opcional)
   if (!ventaId) return;
 
   const venta = await prisma.venta.findUnique({ where: { id: ventaId }, select: { total: true, negocioId: true } });
@@ -1101,10 +1103,25 @@ export async function marcarFacturadaRuta(formData: FormData) {
   if (doc) {
     await prisma.documentoVenta.update({
       where: { id: doc.id },
-      data: { estado: "emitido", tipo: "factura", ...(folio ? { folio } : {}), montoNeto: neto, iva, montoTotal: total, fechaEmision: doc.fechaEmision ?? new Date() },
+      data: { estado: "emitido", tipo: "factura", ...(folio ? { folio } : {}), montoNeto: neto, iva, montoTotal: total, ...(archivo.startsWith("data:") ? { urlPdf: archivo } : {}), fechaEmision: doc.fechaEmision ?? new Date() },
     }).catch(() => {});
   }
-  if (venta?.negocioId) await prisma.negocio.update({ where: { id: venta.negocioId }, data: { facturarPendiente: false, facturarNota: null } }).catch(() => {});
+  if (venta?.negocioId) {
+    await prisma.negocio.update({ where: { id: venta.negocioId }, data: { facturarPendiente: false, facturarNota: null } }).catch(() => {});
+    // Envía la factura al cliente desde el número Benechito (con el PDF si se adjuntó).
+    const cli = await prisma.negocio.findUnique({ where: { id: venta.negocioId }, select: { nombreNegocio: true, razonSocial: true, whatsapp: true } });
+    if (cli?.whatsapp) {
+      const nombre = cli.razonSocial || cli.nombreNegocio || "";
+      const esPdf = archivo.startsWith("data:application/pdf");
+      const msg = `Hola ${nombre} 👋, aquí está tu factura de Benechito 🐝 por $${Math.round(total).toLocaleString("es-CL")}${folio ? ` (N° ${folio})` : ""}. ¡Gracias por tu compra!`;
+      await enviarWhatsApp({
+        telefono: cli.whatsapp, nombre, mensaje: msg,
+        archivoBase64: archivo.startsWith("data:") ? archivo : null,
+        archivoNombre: `factura-${folio || ventaId}.${esPdf ? "pdf" : "jpg"}`,
+        archivoTipo: esPdf ? "application/pdf" : "image/jpeg",
+      }).catch(() => {});
+    }
+  }
 
   revalidatePath("/vendedor/facturar");
   revalidatePath("/vendedor");

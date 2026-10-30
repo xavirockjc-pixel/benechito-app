@@ -4,6 +4,7 @@ import { fmtCLP } from "@/lib/dominio/pedidos";
 import { tipoDocumentoLabel, estadoDocumentoLabel, medioPagoLabel } from "@/lib/dominio/ventas";
 import EnviarWhatsApp from "@/components/EnviarWhatsApp";
 import EmitirSII from "./EmitirSII";
+import { whatsappCentralActivo } from "@/lib/whatsapp";
 
 // Facturador gratuito del SII (sección Factura electrónica). Se puede sobrescribir
 // con la variable SII_EMITIR_URL si usas un enlace directo distinto.
@@ -153,7 +154,15 @@ export default async function ComprobanteVenta({ ventaId, volver, volverLabel }:
       {/* Emitir en el SII (modo manual): link directo + datos para copiar */}
       {mostrarSII && <EmitirSII url={SII_URL} datos={datosSII} detalle={detalleSII} lineas={lineasNeto} />}
 
-      <EnviarWhatsApp texto={msg} telefono={venta.negocio.whatsapp || undefined} />
+      {/* Envío al cliente: si el número central (Benechito) está activo, se envió
+          solo desde ahí; si no, botón manual (abre tu WhatsApp). */}
+      {whatsappCentralActivo() && !esMostrador && venta.negocio.whatsapp ? (
+        <p className="rounded-xl bg-emerald-50 px-4 py-3 text-center text-sm font-semibold text-emerald-700">
+          ✓ Comprobante enviado al cliente desde el número Benechito
+        </p>
+      ) : (
+        <EnviarWhatsApp texto={msg} telefono={venta.negocio.whatsapp || undefined} />
+      )}
 
       <Link href={volver} className="block rounded-xl bg-[#0f7a44] py-3 text-center text-base font-extrabold text-white shadow-sm active:brightness-110">
         {volverLabel}

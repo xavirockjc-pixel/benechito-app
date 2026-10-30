@@ -7,6 +7,7 @@
 import { prisma } from "@/lib/prisma";
 import { desglosarDocumento } from "@/lib/dominio/ventas";
 import { notificarTelegram } from "@/lib/telegram";
+import { enviarWhatsApp } from "@/lib/whatsapp";
 
 const CLP = (n: number) => "$" + Math.round(n).toLocaleString("es-CL");
 
@@ -139,6 +140,24 @@ export async function crearDocumentoVenta(opts: CrearDocumentoOpts) {
       `🧾 *Factura por emitir* (venta en ruta)\n👤 ${nombre}\n🪪 RUT: ${neg?.rut ?? "— (falta)"}\n📞 ${neg?.whatsapp || "—"}\n💵 Total: ${CLP(opts.total)} (neto ${CLP(montoNeto ?? Math.round(opts.total / 1.19))})${detalle}\n\n→ Hazla en benechito.com/admin/facturacion`,
     ).catch(() => {});
   }
+
+  // Envía el COMPROBANTE al cliente desde el número Benechito (central), si está
+  // configurado el webhook. Así el cliente lo recibe siempre del mismo contacto,
+  // sin que el vendedor abra su WhatsApp personal. No bloquea la venta.
+  try {
+    const cli = await prisma.negocio.findUnique({
+      where: { id: opts.negocioId },
+      select: { nombreNegocio: true, razonSocial: true, whatsapp: true },
+    });
+    const esMostrador = cli?.nombreNegocio === "Consumidor Final";
+    if (cli?.whatsapp && !esMostrador) {
+      const its = await prisma.ventaItem.findMany({ where: { ventaId: opts.ventaId }, select: { nombre: true, cantidad: true } });
+      const lineas = its.length ? its.map((i) => `• ${i.cantidad}× ${i.nombre}`).join("\n") + "\n" : "";
+      const docTxt = opts.tipo === "factura" ? "Tu factura va en camino." : opts.tipo === "boleta" ? "Boleta emitida." : "";
+      const msg = `🐝 *Benechito* — Comprobante\n${lineas}*Total: ${CLP(opts.total)}*\n${docTxt}\n¡Gracias por tu compra! 🙌`;
+      enviarWhatsApp({ telefono: cli.whatsapp, nombre: cli.razonSocial || cli.nombreNegocio || "", mensaje: msg }).catch(() => {});
+    }
+  } catch { /* el envío nunca rompe la venta */ }
 
   await dispararEmision(doc.id);
   return doc;

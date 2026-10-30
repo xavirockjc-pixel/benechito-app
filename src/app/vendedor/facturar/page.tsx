@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import EmitirSII from "@/app/_shared/EmitirSII";
-import { marcarFacturadaRuta } from "../actions";
+import MarcarFactura from "./MarcarFactura";
 
 export const dynamic = "force-dynamic";
 
@@ -88,26 +88,8 @@ export default async function FacturarVendedor() {
             {/* Datos + netos para copiar + abrir e-Factura */}
             <EmitirSII url={SII_URL} datos={datosSII} detalle={detalleSII} lineas={lineasNeto} />
 
-            {/* Enviar la factura al cliente + marcar hecha */}
-            <div className="grid grid-cols-2 gap-2">
-              {wa ? (
-                <a href={wa} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-emerald-600 py-2.5 text-center text-sm font-extrabold text-white active:brightness-95">💬 Enviar al cliente</a>
-              ) : (
-                <span className="rounded-lg bg-slate-100 py-2.5 text-center text-sm font-bold text-slate-400">Sin WhatsApp</span>
-              )}
-              <form action={marcarFacturadaRuta}>
-                <input type="hidden" name="ventaId" value={d.venta.id} />
-                <button className="w-full rounded-lg bg-[#0f766e] py-2.5 text-sm font-extrabold text-white active:brightness-95">✓ Ya facturé</button>
-              </form>
-            </div>
-            <details className="text-center">
-              <summary className="cursor-pointer list-none text-[11px] font-semibold text-slate-400">anotar N° de folio (opcional)</summary>
-              <form action={marcarFacturadaRuta} className="mt-2 flex items-center justify-center gap-2">
-                <input type="hidden" name="ventaId" value={d.venta.id} />
-                <input name="folio" inputMode="numeric" placeholder="N° factura" className="w-28 rounded-lg border border-slate-300 px-2 py-1.5 text-sm" />
-                <button className="rounded-lg bg-[#0f766e] px-3 py-1.5 text-xs font-extrabold text-white">Guardar y marcar</button>
-              </form>
-            </details>
+            {/* Marcar facturada + enviar al cliente (adjunta el PDF) desde el número central */}
+            <MarcarFactura ventaId={d.venta.id} waFallback={wa} />
           </div>
         );
       })}
