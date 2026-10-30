@@ -46,11 +46,12 @@ export default async function VendedorHome({
 
     // Pedidos por entregar: aviso para no saltárselos (atrasados / hoy).
     const finHoy = new Date(hoy); finHoy.setDate(finHoy.getDate() + 1);
-    const [ultimaRevision, repHoy, repAtras, pendientesTotal] = await Promise.all([
+    const [ultimaRevision, repHoy, repAtras, pendientesTotal, facturasPend] = await Promise.all([
       prisma.revisionVehiculo.findFirst({ where: vehiculoId ? { vehiculoId } : {}, orderBy: { fecha: "desc" } }),
       prisma.pedidoReparto.count({ where: { estado: { in: ["pendiente", "en_ruta"] }, fecha: { gte: hoy, lt: finHoy } } }),
       prisma.pedidoReparto.count({ where: { estado: { in: ["pendiente", "en_ruta"] }, fecha: { lt: hoy } } }),
       prisma.pedidoReparto.count({ where: { estado: { in: ["pendiente", "en_ruta"] } } }),
+      prisma.documentoVenta.count({ where: { tipo: "factura", estado: "pendiente", venta: { is: { facturada: false } } } }),
     ]);
 
     // Km del día y estado del chequeo (desde la última revisión del vehículo).
@@ -109,6 +110,13 @@ export default async function VendedorHome({
           <AccionRapida href="/vendedor/nuevo" icon="➕" label="Cliente nuevo" color="#0f766e" />
           <AccionRapida href="/vendedor/camion" icon="📦" label="Cargar camión" color="#b45309" />
         </div>
+
+        {/* Por facturar: ventas que esperan su factura (modo manual) */}
+        {facturasPend > 0 && (
+          <Link href="/vendedor/facturar" className="block rounded-2xl bg-[#0891b2] py-4 text-center text-base font-extrabold text-white shadow active:brightness-110">
+            🧾 Por facturar ({facturasPend}) →
+          </Link>
+        )}
 
         {/* Rendir cuentas: cuadre de dinero y mercadería del día */}
         <Link href="/vendedor/cierre" className="block rounded-2xl bg-slate-900 py-4 text-center text-base font-extrabold text-white shadow active:brightness-110">

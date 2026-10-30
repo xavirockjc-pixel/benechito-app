@@ -1081,6 +1081,35 @@ export async function registrarResultado(formData: FormData) {
   redirect(`/vendedor/cliente/${negocioId}`);
 }
 
+/**
+ * Marca una venta como FACTURADA desde el vendedor (anota el folio opcional),
+ * sincroniza el DocumentoVenta a "emitido" y borra el recordatorio del cliente.
+ * Igual que en el panel, pero accesible en terreno.
+ */
+export async function marcarFacturadaRuta(formData: FormData) {
+  const ventaId = String(formData.get("ventaId") ?? "").trim();
+  const folio = String(formData.get("folio") ?? "").trim() || null;
+  if (!ventaId) return;
+
+  const venta = await prisma.venta.findUnique({ where: { id: ventaId }, select: { total: true, negocioId: true } });
+  await prisma.venta.update({ where: { id: ventaId }, data: { facturada: true, folioFactura: folio } });
+
+  const total = Number(venta?.total ?? 0);
+  const neto = Math.round(total / 1.19);
+  const iva = total - neto;
+  const doc = await prisma.documentoVenta.findFirst({ where: { ventaId }, orderBy: { createdAt: "desc" } });
+  if (doc) {
+    await prisma.documentoVenta.update({
+      where: { id: doc.id },
+      data: { estado: "emitido", tipo: "factura", ...(folio ? { folio } : {}), montoNeto: neto, iva, montoTotal: total, fechaEmision: doc.fechaEmision ?? new Date() },
+    }).catch(() => {});
+  }
+  if (venta?.negocioId) await prisma.negocio.update({ where: { id: venta.negocioId }, data: { facturarPendiente: false, facturarNota: null } }).catch(() => {});
+
+  revalidatePath("/vendedor/facturar");
+  revalidatePath("/vendedor");
+}
+
 /** Marca como ya facturado: borra el recordatorio de la ficha ("✓ Ya facturé"). */
 export async function quitarRecordatorioFacturar(formData: FormData) {
   const negocioId = String(formData.get("negocioId") ?? "").trim();
