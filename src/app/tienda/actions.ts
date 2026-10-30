@@ -7,7 +7,6 @@ import { prisma } from "@/lib/prisma";
 import { mpConfigurado, crearPreferencia } from "@/lib/mercadopago";
 import { notificarTelegram } from "@/lib/telegram";
 import { enviarWhatsApp } from "@/lib/whatsapp";
-import { site } from "@/lib/config";
 
 type LineaCarro = { productoId: string; cantidad: number; sabor?: string };
 
@@ -178,24 +177,25 @@ export async function crearPedidoTienda(formData: FormData) {
     );
   }
 
-  // Aviso INSTANTÁNEO por WhatsApp (desde el número Benechito) a quien lo gestiona
-  // (local o vendedor según el routing) + confirmación al cliente. No bloquea la venta.
+  // El aviso principal al equipo es el SONIDO de la app (se gestiona todo ahí).
+  // El WhatsApp al encargado es OPCIONAL: solo si se configuran los números.
+  // Además, la misma app le manda el acuse de recibo al CLIENTE por WhatsApp.
   {
     const totalMsg = pedido.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0);
     const lineasMsg = pedido.items.map((it) => `• ${it.cantidad}x ${it.producto.nombre}`).join("\n");
     const paraVendedor = destino === "reparto";
-    const destinoNum = paraVendedor
-      ? (process.env.NOTIF_VENDEDOR_WHATSAPP || site.whatsapp)
-      : (process.env.NOTIF_LOCAL_WHATSAPP || site.whatsapp);
-    const quien = paraVendedor ? "🚚 RUTA (vendedor)" : "🏪 LOCAL";
-    const entregaMsg = tipoEntrega === "retiro" ? "🏪 Retiro en local"
-      : tipoEntrega === "delivery" ? `🛵 Despacho (moto) · ${comuna}`
-      : `🚚 Reparto de ruta · ${comuna}`;
-    await enviarWhatsApp({
-      telefono: destinoNum,
-      mensaje: `🔔 *NUEVO PEDIDO WEB* — ${quien}\n👤 ${nombre}${telefono ? ` · ${telefono}` : ""}\n${entregaMsg}${direccion ? `\n🏠 ${direccion}` : ""}\n\n${lineasMsg}\n💰 $${totalMsg.toLocaleString("es-CL")} ${pedido.pagado ? "(pagado)" : "(por cobrar)"}\n\n→ Confírmalo en la app.`,
-    }).catch(() => {});
-    // Confirmación al cliente (acuse de recibo).
+    const destinoNum = paraVendedor ? process.env.NOTIF_VENDEDOR_WHATSAPP : process.env.NOTIF_LOCAL_WHATSAPP;
+    if (destinoNum) {
+      const quien = paraVendedor ? "🚚 RUTA (vendedor)" : "🏪 LOCAL";
+      const entregaMsg = tipoEntrega === "retiro" ? "🏪 Retiro en local"
+        : tipoEntrega === "delivery" ? `🛵 Despacho (moto) · ${comuna}`
+        : `🚚 Reparto de ruta · ${comuna}`;
+      await enviarWhatsApp({
+        telefono: destinoNum,
+        mensaje: `🔔 *NUEVO PEDIDO WEB* — ${quien}\n👤 ${nombre}${telefono ? ` · ${telefono}` : ""}\n${entregaMsg}${direccion ? `\n🏠 ${direccion}` : ""}\n\n${lineasMsg}\n💰 $${totalMsg.toLocaleString("es-CL")} ${pedido.pagado ? "(pagado)" : "(por cobrar)"}\n\n→ Confírmalo en la app.`,
+      }).catch(() => {});
+    }
+    // Acuse de recibo al cliente (la app le verifica el pedido).
     if (telefono) await enviarWhatsApp({
       telefono, nombre,
       mensaje: `🐝 ¡Hola ${nombre.split(" ")[0] || nombre}! Recibimos tu pedido en Benechito:\n${lineasMsg}\n💰 Total: $${totalMsg.toLocaleString("es-CL")}\n${tipoEntrega === "retiro" ? "🏪 Lo dejamos listo para retiro en el local." : "🛵 Te avisamos apenas salga el despacho."}\n¡Gracias por tu compra! 🙌`,

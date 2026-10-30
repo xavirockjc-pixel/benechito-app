@@ -11,9 +11,10 @@ import { useRouter } from "next/navigation";
  */
 const KEY = "benechito_avisos_pedidos";
 
-export default function AvisoNuevosPedidos({ count, segundos = 20, etiqueta = "pedido" }: { count: number; segundos?: number; etiqueta?: string }) {
+export default function AvisoNuevosPedidos({ count, segundos = 15, etiqueta = "pedido" }: { count: number; segundos?: number; etiqueta?: string }) {
   const router = useRouter();
   const prev = useRef<number | null>(null);
+  const wakeRef = useRef<WakeLockSentinel | null>(null);
   const [activo, setActivo] = useState(true);
   const [permiso, setPermiso] = useState<string>("default");
 
@@ -30,6 +31,27 @@ export default function AvisoNuevosPedidos({ count, segundos = 20, etiqueta = "p
     const id = setInterval(() => router.refresh(), segundos * 1000);
     return () => clearInterval(id);
   }, [router, segundos]);
+
+  // Mantiene la PANTALLA ENCENDIDA mientras los avisos están activos (modo POS),
+  // y la re-activa al volver a la pestaña. Se libera al silenciar o salir.
+  useEffect(() => {
+    let cancelado = false;
+    const pedir = async () => {
+      try {
+        const nav = navigator as Navigator & { wakeLock?: { request: (t: "screen") => Promise<WakeLockSentinel> } };
+        if (activo && nav.wakeLock && document.visibilityState === "visible") {
+          wakeRef.current = await nav.wakeLock.request("screen");
+        }
+      } catch { /* ignore */ }
+    };
+    const onVis = () => { if (!cancelado && document.visibilityState === "visible") pedir(); };
+    if (activo) { pedir(); document.addEventListener("visibilitychange", onVis); }
+    return () => {
+      cancelado = true;
+      document.removeEventListener("visibilitychange", onVis);
+      try { wakeRef.current?.release(); wakeRef.current = null; } catch { /* ignore */ }
+    };
+  }, [activo]);
 
   const ding = () => {
     try {
@@ -51,11 +73,14 @@ export default function AvisoNuevosPedidos({ count, segundos = 20, etiqueta = "p
     } catch { /* ignore */ }
   };
 
+  // Alerta repetida (más notoria, tipo POS): suena varias veces al entrar un pedido.
+  const alerta = () => { [0, 800, 1600].forEach((ms) => setTimeout(ding, ms)); };
+
   // Detecta pedidos nuevos (sube el total) y avisa.
   useEffect(() => {
     if (prev.current != null && count > prev.current && activo) {
       const nuevos = count - prev.current;
-      ding();
+      alerta();
       try {
         if (typeof Notification !== "undefined" && Notification.permission === "granted") {
           new Notification("🛒 Pedido nuevo", {

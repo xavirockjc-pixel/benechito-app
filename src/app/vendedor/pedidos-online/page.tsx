@@ -4,6 +4,7 @@ import { estadoPedidoLabel } from "@/lib/dominio/pedidos";
 import { entregarPedidoReparto, borrarPedidoReparto, resolverPedidoWeb, pagoPedidoReparto, editarPedidoReparto } from "../actions";
 import CapturaPedido from "../pedidos/CapturaPedido";
 import VentaDictada from "../pedidos/VentaDictada";
+import AvisoNuevosPedidos from "@/app/_shared/AvisoNuevosPedidos";
 
 export const dynamic = "force-dynamic";
 
@@ -90,6 +91,7 @@ export default async function PedidosOnline({ searchParams }: { searchParams: Pr
 
   return (
     <div className="mx-auto max-w-lg space-y-4">
+      <AvisoNuevosPedidos count={porEntregar.length} etiqueta="pedido" />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-extrabold text-slate-900">🛍️ Pedidos online</h1>
