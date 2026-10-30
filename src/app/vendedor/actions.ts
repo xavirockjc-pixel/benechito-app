@@ -1083,6 +1083,78 @@ export async function registrarResultado(formData: FormData) {
 }
 
 /**
+ * Factura RÁPIDA (a mano): genera una factura escribiendo solo el monto o líneas a
+ * mano (nombre, cantidad, precio), SIN catálogo y SIN mover stock. Para facturar algo
+ * que ya se vendió/entregó, sin registrar la venta de nuevo. Si el cliente no tiene
+ * datos tributarios, se pueden cargar aquí mismo. Crea la venta (documento factura) +
+ * el DocumentoVenta pendiente (que avisa y deja el comprobante con los netos).
+ */
+export async function facturaRapida(formData: FormData) {
+  const negocioId = String(formData.get("negocioId") ?? "").trim();
+  if (!negocioId) return;
+
+  // Datos de factura cargados a mano (se guardan en el cliente si vienen).
+  const rut = String(formData.get("rut") ?? "").trim();
+  const razonSocial = String(formData.get("razonSocial") ?? "").trim();
+  const giro = String(formData.get("giro") ?? "").trim();
+  if (rut || razonSocial || giro) {
+    const data: Record<string, unknown> = { tipoDocumentoDefault: "factura", requiereFactura: true };
+    if (rut) data.rut = rut;
+    if (razonSocial) data.razonSocial = razonSocial;
+    if (giro) data.giro = giro;
+    await prisma.negocio.update({ where: { id: negocioId }, data }).catch(() => {});
+  }
+
+  // Líneas a mano: JSON [{nombre,cantidad,precioUnit}] o, si no, monto+concepto.
+  let lineas: { nombre: string; cantidad: number; precioUnit: number }[] = [];
+  try { lineas = JSON.parse(String(formData.get("items") ?? "[]")); } catch { lineas = []; }
+  lineas = (lineas || []).filter((l) => l && l.nombre?.trim() && Number.isFinite(l.cantidad) && l.cantidad > 0 && Number.isFinite(l.precioUnit) && l.precioUnit >= 0);
+  if (lineas.length === 0) {
+    const monto = Number(String(formData.get("monto") ?? "").replace(/[^0-9]/g, "")) || 0;
+    const concepto = String(formData.get("concepto") ?? "").trim() || "Venta";
+    if (monto > 0) lineas = [{ nombre: concepto, cantidad: 1, precioUnit: monto }];
+  }
+  if (lineas.length === 0) return;
+
+  const total = lineas.reduce((s, l) => s + l.cantidad * l.precioUnit, 0);
+
+  // Verifica datos tributarios (con lo recién guardado).
+  const negFac = await prisma.negocio.findUnique({ where: { id: negocioId }, select: { rut: true, razonSocial: true, giro: true } });
+  if (faltaParaFactura(negFac ?? {}).length > 0) {
+    redirect(`/vendedor/factura-rapida?cliente=${negocioId}&error=factura`);
+  }
+
+  // Pago: pagado (por defecto) o a crédito (queda en cuenta corriente).
+  const modo = String(formData.get("modo") ?? "pagado").trim();
+  const medioRaw = String(formData.get("medio") ?? "efectivo").trim();
+  const medio = (MEDIOS_PAGO as readonly string[]).includes(medioRaw) && medioRaw !== "credito" ? medioRaw : "efectivo";
+  const estadoPago = modo === "credito" ? "pendiente" : "pagado";
+
+  const ubicacionId =
+    (await miVehiculoId()) ??
+    (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } }))?.id ??
+    (await prisma.ubicacion.findFirst())?.id;
+  if (!ubicacionId) return;
+
+  const u = await usuarioActual();
+  const venta = await prisma.venta.create({
+    data: {
+      negocioId, ubicacionId, vendedorId: u?.sub ?? null, total,
+      estadoPago, documento: documentoLegacy("factura"), canal: "ruta",
+      etiqueta: "Factura a mano",
+      ...(estadoPago === "pagado" ? { pagos: { create: { medio, monto: total } } } : {}),
+    },
+  });
+  await marcarAsistenciaAuto(u?.sub, "Factura en terreno");
+  // NO mueve stock (no es una venta nueva de inventario, es solo la factura).
+  await crearDocumentoVenta({ ventaId: venta.id, negocioId, tipo: "factura", total, items: lineas });
+
+  revalidatePath("/vendedor/facturar");
+  revalidatePath(`/vendedor/cliente/${negocioId}`);
+  redirect(`/vendedor/comprobante/${venta.id}?volver=${encodeURIComponent("/vendedor/facturar")}`);
+}
+
+/**
  * Marca una venta como FACTURADA desde el vendedor (anota el folio opcional),
  * sincroniza el DocumentoVenta a "emitido" y borra el recordatorio del cliente.
  * Igual que en el panel, pero accesible en terreno.

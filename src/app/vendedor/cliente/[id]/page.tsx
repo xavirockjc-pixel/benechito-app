@@ -149,6 +149,12 @@ export default async function ClienteRuta({
       >
         🧾 Facturar a este cliente
       </Link>
+      <Link
+        href={`/vendedor/factura-rapida?cliente=${cliente.id}`}
+        className="mt-2 block text-center text-xs font-semibold text-[#0891b2] underline"
+      >
+        o factura a mano (solo monto/producto, sin vender de nuevo)
+      </Link>
 
       {/* Registro de visita por voz (compra/abono/factura/agenda, todo centralizado) */}
       <div className="mt-4">

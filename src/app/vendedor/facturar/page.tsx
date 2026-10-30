@@ -35,6 +35,11 @@ export default async function FacturarVendedor() {
         <span className="rounded-full bg-[#0891b2] px-3 py-1 text-sm font-extrabold text-white">{docs.length}</span>
       </div>
 
+      {/* Factura a mano: solo monto o producto, sin vender de nuevo */}
+      <Link href="/vendedor/factura-rapida" className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#0891b2] py-2.5 text-sm font-extrabold text-[#0891b2] active:bg-cyan-50">
+        ➕ Factura rápida (a mano — solo monto o producto)
+      </Link>
+
       {docs.length === 0 && (
         <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
           ✅ No hay ventas pendientes de facturar.
