@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { listaParaCliente, resolverPrecio, listaIdPorTipo } from "@/lib/dominio/precios";
 import { esEstadoPedido } from "@/lib/dominio/pedidos";
+import { enviarWhatsApp } from "@/lib/whatsapp";
 
 /** Cliente genérico de mostrador (walk-in), para pedidos sin cliente. */
 async function clienteMostrador() {
@@ -148,6 +149,25 @@ export async function cambiarEstadoPedido(formData: FormData) {
   if (!pedidoId || !esEstadoPedido(estado)) return;
 
   await prisma.pedido.update({ where: { id: pedidoId }, data: { estado } });
+
+  // Avisa al CLIENTE por WhatsApp (número Benechito) en los pasos clave del pedido.
+  if (["confirmado", "listo", "entregado"].includes(estado)) {
+    const p = await prisma.pedido.findUnique({
+      where: { id: pedidoId },
+      select: { tipoEntrega: true, negocio: { select: { nombreNegocio: true, nombreContacto: true, whatsapp: true } } },
+    });
+    const tel = p?.negocio?.whatsapp;
+    const nom = (p?.negocio?.nombreContacto || p?.negocio?.nombreNegocio || "").split(" ")[0];
+    if (tel) {
+      const esRetiro = p?.tipoEntrega === "retiro";
+      const txt = estado === "confirmado"
+        ? `🐝 Benechito: ¡confirmamos tu pedido${nom ? `, ${nom}` : ""}! Lo estamos preparando. 🙌`
+        : estado === "listo"
+          ? (esRetiro ? `✅ ¡Tu pedido está LISTO para retirar en el local! Te esperamos 🏪🐝` : `🛵 ¡Tu pedido va en camino! En breve lo recibes 🐝`)
+          : `✔️ ¡Pedido entregado! Gracias por preferir Benechito 🐝. ¡Que lo disfrutes!`;
+      await enviarWhatsApp({ telefono: tel, nombre: nom, mensaje: txt }).catch(() => {});
+    }
+  }
 
   // Al entregar, deja registro en la ficha del cliente (historial para promociones/CRM).
   if (estado === "entregado") {

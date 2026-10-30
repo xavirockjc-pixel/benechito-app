@@ -17,7 +17,9 @@ function siguiente(estado: string): string | null {
 
 export default async function PedidosLocal() {
   const pedidos = await prisma.pedido.findMany({
-    where: { estado: { notIn: ["entregado", "finalizado"] } },
+    // El LOCAL gestiona retiro y despacho con moto (destino local); el reparto de
+    // ruta va al vendedor. Incluye pedidos antiguos sin destino definido.
+    where: { estado: { notIn: ["entregado", "finalizado"] }, OR: [{ destino: { not: "reparto" } }, { destino: null }] },
     orderBy: { createdAt: "asc" },
     include: {
       negocio: { select: { nombreNegocio: true, whatsapp: true, latitud: true, longitud: true, direccion: true } },

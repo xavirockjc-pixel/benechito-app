@@ -6,6 +6,8 @@ import { headers } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { mpConfigurado, crearPreferencia } from "@/lib/mercadopago";
 import { notificarTelegram } from "@/lib/telegram";
+import { enviarWhatsApp } from "@/lib/whatsapp";
+import { site } from "@/lib/config";
 
 type LineaCarro = { productoId: string; cantidad: number; sabor?: string };
 
@@ -133,7 +135,9 @@ export async function crearPedidoTienda(formData: FormData) {
   const ZONAS_DELIVERY = ["coronel", "lota"];
   const esZonaDelivery = ZONAS_DELIVERY.includes(comuna.toLowerCase());
   const tipoEntrega = entrega !== "despacho" ? "retiro" : esZonaDelivery ? "delivery" : "reparto";
-  const destino = entrega === "despacho" ? "reparto" : "local";
+  // Routing a la app que lo gestiona: SOLO el reparto de ruta (fuera de zona) va al
+  // vendedor; el retiro y el despacho con moto (en zona) los gestiona el LOCAL.
+  const destino = tipoEntrega === "reparto" ? "reparto" : "local";
   const TARIFA_LABEL: Record<string, string> = { detalle: "Consumidor/detalle", online: "Promocional online", comerciante: "Mayorista/comerciante", distribuidor: "Distribuidor" };
   const entregaTxt = entrega !== "despacho"
     ? "Retira en local"
@@ -174,7 +178,31 @@ export async function crearPedidoTienda(formData: FormData) {
     );
   }
 
-  ["/admin/retiros", "/admin/pedidos", "/caja"].forEach((r) => revalidatePath(r));
+  // Aviso INSTANTÁNEO por WhatsApp (desde el número Benechito) a quien lo gestiona
+  // (local o vendedor según el routing) + confirmación al cliente. No bloquea la venta.
+  {
+    const totalMsg = pedido.items.reduce((s, it) => s + Number(it.precioUnit) * it.cantidad, 0);
+    const lineasMsg = pedido.items.map((it) => `• ${it.cantidad}x ${it.producto.nombre}`).join("\n");
+    const paraVendedor = destino === "reparto";
+    const destinoNum = paraVendedor
+      ? (process.env.NOTIF_VENDEDOR_WHATSAPP || site.whatsapp)
+      : (process.env.NOTIF_LOCAL_WHATSAPP || site.whatsapp);
+    const quien = paraVendedor ? "🚚 RUTA (vendedor)" : "🏪 LOCAL";
+    const entregaMsg = tipoEntrega === "retiro" ? "🏪 Retiro en local"
+      : tipoEntrega === "delivery" ? `🛵 Despacho (moto) · ${comuna}`
+      : `🚚 Reparto de ruta · ${comuna}`;
+    await enviarWhatsApp({
+      telefono: destinoNum,
+      mensaje: `🔔 *NUEVO PEDIDO WEB* — ${quien}\n👤 ${nombre}${telefono ? ` · ${telefono}` : ""}\n${entregaMsg}${direccion ? `\n🏠 ${direccion}` : ""}\n\n${lineasMsg}\n💰 $${totalMsg.toLocaleString("es-CL")} ${pedido.pagado ? "(pagado)" : "(por cobrar)"}\n\n→ Confírmalo en la app.`,
+    }).catch(() => {});
+    // Confirmación al cliente (acuse de recibo).
+    if (telefono) await enviarWhatsApp({
+      telefono, nombre,
+      mensaje: `🐝 ¡Hola ${nombre.split(" ")[0] || nombre}! Recibimos tu pedido en Benechito:\n${lineasMsg}\n💰 Total: $${totalMsg.toLocaleString("es-CL")}\n${tipoEntrega === "retiro" ? "🏪 Lo dejamos listo para retiro en el local." : "🛵 Te avisamos apenas salga el despacho."}\n¡Gracias por tu compra! 🙌`,
+    }).catch(() => {});
+  }
+
+  ["/admin/retiros", "/admin/pedidos", "/caja", "/caja/pedidos", "/vendedor/pedidos-online"].forEach((r) => revalidatePath(r));
 
   // Pago en línea con Mercado Pago (si está configurado): redirige al checkout.
   if (mpConfigurado()) {

@@ -39,13 +39,15 @@ export default async function PedidosOnline({ searchParams }: { searchParams: Pr
   const [reparto, web, repEntregado, webEntregado, negocios, entregadosHoy] = await Promise.all([
     prisma.pedidoReparto.findMany({ where: { estado: { in: ["pendiente", "en_ruta"] } }, orderBy: [{ fecha: "asc" }, { orden: "asc" }], take: 200 }),
     prisma.pedido.findMany({
-      where: { tipoEntrega: { in: ["delivery", "despacho", "reparto"] }, estado: { notIn: ["entregado", "finalizado"] } },
+      // El vendedor SOLO gestiona el reparto de ruta (destino reparto). El retiro y
+      // el despacho con moto los ve el local.
+      where: { destino: "reparto", estado: { notIn: ["entregado", "finalizado"] } },
       orderBy: [{ fechaAgenda: "asc" }, { createdAt: "asc" }], take: 200,
       include: { negocio: { select: { nombreNegocio: true, whatsapp: true, latitud: true, longitud: true } }, items: { include: { producto: { select: { nombre: true } } } } },
     }),
     prisma.pedidoReparto.findMany({ where: { estado: "entregado", entregadoEn: { gte: hace7 } }, orderBy: { entregadoEn: "desc" }, take: 100 }),
     prisma.pedido.findMany({
-      where: { tipoEntrega: { in: ["delivery", "despacho", "reparto"] }, estado: { in: ["entregado", "finalizado"] }, createdAt: { gte: hace7 } },
+      where: { destino: "reparto", estado: { in: ["entregado", "finalizado"] }, createdAt: { gte: hace7 } },
       orderBy: { createdAt: "desc" }, take: 100,
       include: { negocio: { select: { nombreNegocio: true } }, items: { include: { producto: { select: { nombre: true } } } } },
     }),
