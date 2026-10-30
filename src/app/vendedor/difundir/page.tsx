@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { rutaDeComuna } from "@/lib/dominio/sectores";
+import { whatsappCentralActivo } from "@/lib/whatsapp";
 import MensajeMasivo from "./MensajeMasivo";
 
 export const dynamic = "force-dynamic";
 
-export default async function DifundirPage() {
+export default async function DifundirPage({ searchParams }: { searchParams: Promise<{ enviados?: string }> }) {
+  const { enviados } = await searchParams;
+  const central = whatsappCentralActivo();
   const negocios = await prisma.negocio.findMany({
     where: { nombreNegocio: { not: "Consumidor Final" } },
     select: { id: true, nombreNegocio: true, whatsapp: true, comuna: true, sector: true },
@@ -40,7 +43,13 @@ export default async function DifundirPage() {
         </p>
       </div>
 
-      <MensajeMasivo clientes={clientes} sectores={sectores} />
+      {enviados && (
+        <p className="rounded-xl bg-green-100 px-4 py-2.5 text-center text-sm font-bold text-green-700">
+          ✓ {enviados} mensaje(s) enviado(s) desde el número Benechito
+        </p>
+      )}
+
+      <MensajeMasivo clientes={clientes} sectores={sectores} central={central} />
     </div>
   );
 }

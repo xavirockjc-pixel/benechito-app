@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { enviarMensajeMasivo } from "./actions";
 
 type Cliente = { id: string; nombre: string; sector: string; tel: string };
 
@@ -13,7 +14,7 @@ const PLANTILLAS: { icon: string; label: string; texto: string }[] = [
 
 const waNum = (w: string) => { const d = (w || "").replace(/\D/g, ""); return d.startsWith("56") ? d : d.length === 9 ? "56" + d : d; };
 
-export default function MensajeMasivo({ clientes, sectores }: { clientes: Cliente[]; sectores: string[] }) {
+export default function MensajeMasivo({ clientes, sectores, central = false }: { clientes: Cliente[]; sectores: string[]; central?: boolean }) {
   const [texto, setTexto] = useState(PLANTILLAS[0].texto);
   const [link, setLink] = useState("");
   const [sector, setSector] = useState("");
@@ -72,7 +73,22 @@ export default function MensajeMasivo({ clientes, sectores }: { clientes: Client
         <span className="font-semibold text-slate-500">{enviados.size} enviados</span>
       </div>
 
-      {/* Lista de envío: toca "Enviar" de cada uno (WhatsApp abre con el mensaje listo) */}
+      {/* Envío CENTRAL (desde el número Benechito): manda a todos de una, sin abrir
+          el WhatsApp del teléfono. Ideal para avisar la ruta y pedir que agenden. */}
+      {central && (
+        <form action={enviarMensajeMasivo} className="rounded-xl border border-emerald-200 bg-emerald-50 p-3">
+          <input type="hidden" name="texto" value={texto} />
+          <input type="hidden" name="link" value={link} />
+          <input type="hidden" name="sector" value={sector} />
+          <button className="w-full rounded-lg bg-emerald-600 py-3 text-sm font-extrabold text-white active:brightness-95">
+            📣 Enviar a {destinatarios.length} desde el número Benechito
+          </button>
+          <p className="mt-1 text-center text-[11px] text-emerald-700">Sale de un solo contacto; no abre tu WhatsApp. {sector ? `Ruta: ${sector}.` : "Todas las rutas."}</p>
+        </form>
+      )}
+
+      {/* Lista de envío uno por uno (respaldo / si el número central no está): abre WhatsApp del teléfono */}
+      {central && <p className="pt-1 text-center text-xs font-bold text-slate-400">— o enviar uno por uno —</p>}
       <ul className="space-y-1.5">
         {destinatarios.map((c) => {
           const ya = enviados.has(c.id);
