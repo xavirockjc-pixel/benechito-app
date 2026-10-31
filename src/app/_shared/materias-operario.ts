@@ -102,3 +102,33 @@ export async function consumirMateriaOperario(formData: FormData) {
   revalidatePath("/produccion/insumos");
   revalidatePath("/admin/materias");
 }
+
+/**
+ * CONTEO de un insumo: el operario elige el insumo y anota CUÁNTO QUEDA realmente.
+ * El stock se ajusta a lo contado y la diferencia queda registrada (merma si quedó
+ * menos de lo que el sistema esperaba, ajuste si quedó más). Enlazado al cerebro.
+ */
+export async function contarInsumo(formData: FormData) {
+  const materiaPrimaId = String(formData.get("materiaPrimaId") ?? "").trim();
+  const queda = Number(String(formData.get("queda") ?? "").trim().replace(",", "."));
+  if (!materiaPrimaId || !Number.isFinite(queda) || queda < 0) return;
+
+  const mat = await prisma.materiaPrima.findUnique({ where: { id: materiaPrimaId }, select: { stock: true } });
+  if (!mat) return;
+  const diff = Math.round((queda - mat.stock) * 1000) / 1000;
+
+  const u = await usuarioActual();
+  await prisma.materiaPrima.update({ where: { id: materiaPrimaId }, data: { stock: queda } });
+  if (diff !== 0) {
+    await prisma.movimientoMateria.create({
+      data: {
+        materiaPrimaId, tipo: diff < 0 ? "merma" : "ajuste", cantidad: Math.abs(diff),
+        motivo: `Conteo: quedan ${queda}`, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+      },
+    });
+  }
+
+  revalidatePath("/produccion/insumos");
+  revalidatePath("/bodega/insumos");
+  revalidatePath("/admin/materias");
+}

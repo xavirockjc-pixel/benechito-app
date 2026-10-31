@@ -52,6 +52,12 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   for (const r of recs) (recomendaciones[r.linea ?? "__todas__"] ??= []).push(r.texto);
   const equipoTrato = equipoTratoRaw.map((t) => ({ id: t.id, nombre: t.nombre }));
   const totalHoy = registroHoy.reduce((s, m) => s + m.cantidad, 0);
+  // Resumen de hoy POR PERSONA (compacto, para no mostrar el listado largo).
+  const porPersonaHoy = new Map<string, number>();
+  for (const m of registroHoy) {
+    const quien = (m.detalle || "Sin nombre").trim();
+    porPersonaHoy.set(quien, (porPersonaHoy.get(quien) ?? 0) + m.cantidad);
+  }
 
   return (
     <div className="space-y-5">
@@ -82,34 +88,34 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
       {/* Reporte por producto (elige → ventana del producto → guarda → ← Volver) */}
       <ProduccionForm saboresPorLinea={saboresProd} equipo={equipoTrato} recomendaciones={recomendaciones} pines={pines} />
 
-      {/* Producido hoy (resumen) */}
+      {/* Producido hoy (resumen compacto por persona) */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-sm font-bold text-slate-900">🧾 Producido hoy</h2>
-          {totalHoy > 0 && <span className="text-xs font-semibold text-slate-400">{totalHoy} u.</span>}
+          {totalHoy > 0 && <span className="rounded-full bg-teal-100 px-2.5 py-0.5 text-xs font-extrabold text-teal-700">{totalHoy} u.</span>}
         </div>
         {registroHoy.length === 0 ? (
           <p className="text-sm text-slate-500">Aún no registras producción hoy.</p>
         ) : (
-          <ul className="divide-y divide-slate-100 text-sm">
-            {registroHoy.map((m) => (
-              <li key={m.id} className="flex items-center justify-between py-1.5">
-                <span className="min-w-0">
-                  <span className="font-bold text-teal-700">+{m.cantidad}</span>{" "}
-                  <span className="text-slate-800">{m.nombre}</span>
-                  {m.detalle && <span className="block text-[11px] font-semibold text-[#0f766e]">👤 {m.detalle}</span>}
-                </span>
-                <span className="shrink-0 text-xs text-slate-400">
-                  {fmtHora(m.fecha)}
-                </span>
+          <ul className="space-y-1.5 text-sm">
+            {[...porPersonaHoy.entries()].sort((a, b) => b[1] - a[1]).map(([quien, cant]) => (
+              <li key={quien} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+                <span className="font-semibold text-slate-800">👤 {quien}</span>
+                <span className="font-extrabold text-teal-700">{cant} u.</span>
               </li>
             ))}
           </ul>
         )}
-        <p className="mt-2 text-[11px] leading-tight text-slate-400">
-          Solo ves lo del día. Los totales, costos y pagos se ven únicamente en el panel.
-        </p>
       </section>
+
+      {/* Calendario / registro por día, semana y mes (quién fabricó cuántos) */}
+      <Link href="/produccion/registro" className="flex items-center justify-between rounded-2xl bg-slate-900 px-4 py-4 text-white shadow active:brightness-110">
+        <span className="min-w-0">
+          <span className="block text-sm font-extrabold">📅 Registro / calendario</span>
+          <span className="block text-[11px] font-semibold text-slate-300">Por día, semana y mes · quién fabricó cuántos</span>
+        </span>
+        <span className="text-xl">›</span>
+      </Link>
     </div>
   );
 }
