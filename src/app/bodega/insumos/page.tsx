@@ -1,16 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import MateriaPickerOperario from "@/app/_shared/MateriaPickerOperario";
 import InsumoVoz from "@/app/_shared/InsumoVoz";
+import BuscadorBodega from "./BuscadorBodega";
 import { ingresarMateriaOperario, sacarMateriaOperario, crearMateriaOperario } from "@/app/_shared/materias-operario";
 import { fmtCant, categoriaLabel, categoriaIcono, tipoMovMateriaLabel, stockBajo } from "@/lib/dominio/materias";
 
 export const dynamic = "force-dynamic";
 
-const fmtFecha = (d: Date) =>
-  new Date(d).toLocaleString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+const fmtHora = (d: Date) => new Date(d).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" });
+const fmtDia = (d: Date) => new Date(d).toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" });
+const diaKey = (d: Date) => new Date(d).toLocaleDateString("es-CL");
 
 export default async function BodegaInsumos() {
-  const [materiales, movs] = await Promise.all([
+  const [materiales, movs, entradas] = await Promise.all([
     prisma.materiaPrima.findMany({
       where: { activo: true },
       orderBy: [{ categoria: "asc" }, { nombre: "asc" }],
@@ -19,14 +21,32 @@ export default async function BodegaInsumos() {
     // Registro reciente: entradas Y salidas/consumos (lo que se ha sacado). Sin costos.
     prisma.movimientoMateria.findMany({
       orderBy: { fecha: "desc" },
-      take: 60,
+      take: 120,
       include: { materiaPrima: { select: { nombre: true, unidad: true } } },
     }),
+    // Últimas llegadas (entradas) para el buscador: "cuándo llegó cada cosa".
+    prisma.movimientoMateria.findMany({ where: { tipo: "entrada" }, orderBy: { fecha: "desc" }, select: { materiaPrimaId: true, fecha: true }, take: 800 }),
   ]);
 
   const pick = materiales.map((m) => ({ id: m.id, nombre: m.nombre, unidad: m.unidad, categoria: m.categoria }));
   const porCat = (c: string) => materiales.filter((m) => m.categoria === c);
   const bajos = materiales.filter((m) => stockBajo(m.stock, m.stockMinimo));
+
+  // Última llegada por insumo (primera aparición en entradas, ya ordenadas desc).
+  const llegadaDe = new Map<string, Date>();
+  for (const e of entradas) if (!llegadaDe.has(e.materiaPrimaId)) llegadaDe.set(e.materiaPrimaId, e.fecha);
+  const buscador = materiales.map((m) => ({
+    id: m.id, nombre: m.nombre, unidad: m.unidad, stock: m.stock, bajo: stockBajo(m.stock, m.stockMinimo),
+    ultimaLlegada: llegadaDe.has(m.id) ? fmtDia(llegadaDe.get(m.id)!) : null,
+  }));
+
+  // Movimientos agrupados por día (no se muestran todos de corrido).
+  const porFecha = new Map<string, { label: string; items: typeof movs }>();
+  for (const m of movs) {
+    const k = diaKey(m.fecha);
+    (porFecha.get(k) ?? porFecha.set(k, { label: fmtDia(m.fecha), items: [] }).get(k)!).items.push(m);
+  }
+  const dias = [...porFecha.values()];
 
   return (
     <div>
@@ -38,6 +58,11 @@ export default async function BodegaInsumos() {
           ⚠️ <b>Por acabarse:</b> {bajos.map((m) => `${m.nombre} (${fmtCant(m.stock, m.unidad)})`).join(", ")}.
         </div>
       )}
+
+      {/* Buscador del bodeguero (dicta / escribe → cuándo llegó + cuánto queda) */}
+      <div className="mt-4">
+        <BuscadorBodega materiales={buscador} />
+      </div>
 
       {/* Por voz: ingresar o crear */}
       <div className="mt-4">
@@ -84,27 +109,27 @@ export default async function BodegaInsumos() {
         </div>
       </details>
 
-      {/* Lo que queda (existencias, sin costos) */}
+      {/* Lo que queda (existencias) — separado por sector, en ventanas retráctiles */}
       <h2 className="mb-2 mt-6 text-sm font-bold uppercase tracking-wide text-slate-400">Lo que queda en bodega</h2>
       {materiales.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
           Aún no hay insumos. La central los crea primero.
         </p>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {(["insumo", "material"] as const).map((cat) => {
             const lista = porCat(cat);
             if (lista.length === 0) return null;
             return (
-              <div key={cat}>
-                <p className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">
-                  {categoriaIcono[cat]} {categoriaLabel[cat]}
-                </p>
-                <div className="space-y-1">
+              <details key={cat} className="rounded-xl border border-slate-200 bg-white shadow-sm">
+                <summary className="cursor-pointer list-none px-3 py-2.5 text-sm font-extrabold text-slate-700">
+                  {categoriaIcono[cat]} {categoriaLabel[cat]} <span className="text-slate-400">({lista.length})</span>
+                </summary>
+                <div className="space-y-1 border-t border-slate-100 p-2">
                   {lista.map((m) => {
                     const bajo = stockBajo(m.stock, m.stockMinimo);
                     return (
-                      <div key={m.id} className={`flex items-center justify-between rounded-lg border bg-white px-3 py-2 text-sm shadow-sm ${bajo ? "border-red-300" : "border-slate-200"}`}>
+                      <div key={m.id} className={`flex items-center justify-between rounded-lg border px-3 py-2 text-sm ${bajo ? "border-red-200 bg-red-50" : "border-slate-100 bg-white"}`}>
                         <span className="min-w-0 truncate text-slate-800">{m.nombre}</span>
                         <span className={`ml-2 shrink-0 font-extrabold ${bajo ? "text-red-600" : "text-slate-900"}`}>
                           {fmtCant(m.stock, m.unidad)}{bajo && <span className="ml-1 rounded bg-red-100 px-1 py-0.5 text-[10px] font-bold text-red-700">bajo</span>}
@@ -113,37 +138,47 @@ export default async function BodegaInsumos() {
                     );
                   })}
                 </div>
-              </div>
+              </details>
             );
           })}
         </div>
       )}
 
-      {/* Registro de movimientos */}
-      <h2 className="mb-2 mt-6 text-sm font-bold uppercase tracking-wide text-slate-400">Registro de movimientos ({movs.length})</h2>
-      {movs.length === 0 ? (
+      {/* Registro de movimientos — por día (ventanas retráctiles, hoy abierto) */}
+      <h2 className="mb-2 mt-6 text-sm font-bold uppercase tracking-wide text-slate-400">Movimientos por día</h2>
+      {dias.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400">Sin movimientos aún.</p>
       ) : (
-        <ul className="space-y-1">
-          {movs.map((m) => {
-            const entra = m.tipo === "entrada" || (m.tipo === "ajuste" && m.cantidad >= 0);
-            return (
-              <li key={m.id} className="flex items-center justify-between rounded-lg bg-white px-3 py-2 text-sm shadow-sm">
-                <span className="min-w-0 truncate">
-                  <span className={`font-bold ${entra ? "text-green-600" : "text-amber-600"}`}>
-                    {entra ? "+" : "−"}{fmtCant(Math.abs(m.cantidad), m.materiaPrima.unidad)}
-                  </span>{" "}
-                  <span className="text-slate-800">{m.materiaPrima.nombre}</span>{" "}
-                  <span className="text-xs text-slate-400">· {tipoMovMateriaLabel[m.tipo] ?? m.tipo}</span>
-                </span>
-                <span className="shrink-0 text-xs text-slate-400">{m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtFecha(m.fecha)}</span>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="space-y-2">
+          {dias.map((d, idx) => (
+            <details key={d.label + idx} open={idx === 0} className="rounded-xl border border-slate-200 bg-white shadow-sm">
+              <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2.5 text-sm font-extrabold text-slate-700">
+                <span className="capitalize">{d.label}</span>
+                <span className="text-xs font-semibold text-slate-400">{d.items.length} mov.</span>
+              </summary>
+              <ul className="space-y-1 border-t border-slate-100 p-2">
+                {d.items.map((m) => {
+                  const entra = m.tipo === "entrada" || (m.tipo === "ajuste" && m.cantidad >= 0);
+                  return (
+                    <li key={m.id} className="flex items-center justify-between rounded-lg px-2 py-1.5 text-sm">
+                      <span className="min-w-0 truncate">
+                        <span className={`font-bold ${entra ? "text-green-600" : "text-amber-600"}`}>
+                          {entra ? "+" : "−"}{fmtCant(Math.abs(m.cantidad), m.materiaPrima.unidad)}
+                        </span>{" "}
+                        <span className="text-slate-800">{m.materiaPrima.nombre}</span>{" "}
+                        <span className="text-xs text-slate-400">· {tipoMovMateriaLabel[m.tipo] ?? m.tipo}</span>
+                      </span>
+                      <span className="shrink-0 text-xs text-slate-400">{m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </details>
+          ))}
+        </div>
       )}
       <p className="mt-2 text-[11px] leading-tight text-slate-400">
-        Ves cantidades y movimientos. Los costos y el valor en dinero se ven solo en la central.
+        Ves cantidades y movimientos por día. Los costos y el valor en dinero se ven solo en la central.
       </p>
     </div>
   );

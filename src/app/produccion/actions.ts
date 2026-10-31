@@ -692,14 +692,14 @@ export async function registrarMezclas(formData: FormData) {
   const nota = String(formData.get("nota") ?? "").trim() || null;
   const u = await usuarioActual();
 
-  // Lee los insumos usados (uso_<id> = cantidad). Solo los que traen cantidad > 0.
+  // Lee los insumos usados (uso_<id> = cantidad). OPCIONAL: se puede registrar solo
+  // los baldes/mezclas (sin insumos) y el cerebro estima el consumo con lo aprendido.
   const usos: { materiaPrimaId: string; cantidad: number }[] = [];
   for (const [k, v] of formData.entries()) {
     if (!k.startsWith("uso_")) continue;
     const cant = Number(String(v).replace(",", "."));
     if (Number.isFinite(cant) && cant > 0) usos.push({ materiaPrimaId: k.slice(4), cantidad: cant });
   }
-  if (usos.length === 0) return;
 
   const reg = await prisma.produccionMezcla.create({
     data: { tipo, mezclas, nota, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
