@@ -3,8 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { fmtCant, unidadLabel, stockBajo } from "@/lib/dominio/materias";
 import AjusteStockVoz from "./AjusteStockVoz";
-import TablaStockEditable from "./TablaStockEditable";
 import { eliminarMovimiento } from "./actions";
+
+// Icono/orden por tipo de ubicación, para separar los stocks (local / fábrica / camión).
+const TIPO_INFO: Record<string, { icon: string; label: string; orden: number }> = {
+  sala: { icon: "🏪", label: "Local (Sala de Ventas)", orden: 0 },
+  bodega: { icon: "🏭", label: "Fábrica / Bodega", orden: 1 },
+  vehiculo: { icon: "🚚", label: "Camión", orden: 2 },
+  otro: { icon: "📍", label: "Otro", orden: 3 },
+};
 
 const tipoMovLabel: Record<string, string> = { ingreso: "➕ Ingreso", merma: "➖ Merma", ajuste: "🔧 Ajuste", transferencia: "🔄 Transferencia" };
 const fmtMovFecha = (d: Date) => new Date(d).toLocaleDateString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
@@ -21,10 +28,12 @@ export default async function InventarioPage({ searchParams }: { searchParams: P
   const { t } = await searchParams;
   const tab = ["productos", "insumos", "materiales"].includes(t ?? "") ? t! : "productos";
 
-  const [productos, ubicaciones, stock, materias, movimientos] = await Promise.all([
+  const [productos, ubicaciones, stock, stockSabor, sabores, materias, movimientos] = await Promise.all([
     prisma.producto.findMany({ where: { activo: true }, orderBy: [{ linea: "asc" }, { nombre: "asc" }] }),
     prisma.ubicacion.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
     prisma.stock.findMany(),
+    prisma.stockSabor.findMany(),
+    prisma.sabor.findMany({ select: { id: true, nombre: true } }),
     prisma.materiaPrima.findMany({ where: { activo: true }, orderBy: [{ categoria: "asc" }, { nombre: "asc" }] }),
     prisma.movimientoStock.findMany({
       where: { tipo: { in: ["ingreso", "merma", "ajuste", "transferencia"] } },
@@ -33,7 +42,10 @@ export default async function InventarioPage({ searchParams }: { searchParams: P
     }),
   ]);
 
-  const cantObj: Record<string, number> = Object.fromEntries(stock.map((s) => [`${s.productoId}:${s.ubicacionId}`, s.cantidad]));
+  const prodById = new Map(productos.map((p) => [p.id, p]));
+  const saborById = new Map(sabores.map((s) => [s.id, s.nombre]));
+  // Ubicaciones ordenadas por tipo (local → fábrica → camión) para separar los stocks.
+  const ubicOrden = [...ubicaciones].sort((a, b) => ((TIPO_INFO[a.tipo]?.orden ?? 9) - (TIPO_INFO[b.tipo]?.orden ?? 9)) || a.nombre.localeCompare(b.nombre));
 
   // Valor invertido (stock × costo) por sección.
   const valorProductos = productos.reduce((acc, p) => {
@@ -75,10 +87,66 @@ export default async function InventarioPage({ searchParams }: { searchParams: P
           {ubicaciones.length === 0 ? (
             <p className="rounded-xl border border-dashed border-slate-300 p-6 text-sm text-slate-500">No hay ubicaciones. Créalas en Ubicaciones.</p>
           ) : (
-            <>
-              <TablaStockEditable titulo="🏭 Fábrica y producción" productos={productos.filter((p) => !p.soloLocal).map((p) => ({ id: p.id, nombre: p.nombre, stockMinimo: p.stockMinimo }))} ubicaciones={ubicaciones.map((u) => ({ id: u.id, nombre: u.nombre }))} cant={cantObj} />
-              <TablaStockEditable titulo="🛒 Solo local (Sala de Ventas)" productos={productos.filter((p) => p.soloLocal).map((p) => ({ id: p.id, nombre: p.nombre, stockMinimo: p.stockMinimo }))} ubicaciones={ubicaciones.map((u) => ({ id: u.id, nombre: u.nombre }))} cant={cantObj} vacio="No hay productos exclusivos del local." />
-            </>
+            <div className="space-y-2">
+              <p className="text-xs text-slate-400">Separado por ubicación. Cada sección muestra solo lo que tiene stock (no sale todo el listado).</p>
+              {ubicOrden.map((u) => {
+                const info = TIPO_INFO[u.tipo] ?? TIPO_INFO.otro;
+                const prods = stock
+                  .filter((s) => s.ubicacionId === u.id && s.cantidad !== 0)
+                  .map((s) => ({ id: s.productoId, nombre: prodById.get(s.productoId)?.nombre ?? "—", cantidad: s.cantidad, min: prodById.get(s.productoId)?.stockMinimo ?? 0 }))
+                  .sort((a, b) => a.nombre.localeCompare(b.nombre));
+                const helados = stockSabor
+                  .filter((s) => s.ubicacionId === u.id && s.cantidad !== 0)
+                  .map((s) => ({ id: s.saborId, nombre: saborById.get(s.saborId) ?? "—", cantidad: s.cantidad }))
+                  .sort((a, b) => a.nombre.localeCompare(b.nombre));
+                const total = prods.length + helados.length;
+                return (
+                  <details key={u.id} className="rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-extrabold text-slate-800">
+                      <span>{info.icon} {u.nombre} <span className="text-xs font-semibold text-slate-400">· {info.label}</span></span>
+                      <span className="rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-bold text-slate-500">{total} con stock</span>
+                    </summary>
+                    <div className="border-t border-slate-100 p-3">
+                      {total === 0 ? (
+                        <p className="text-sm text-slate-400">Sin stock aquí.</p>
+                      ) : (
+                        <div className="space-y-3">
+                          {prods.length > 0 && (
+                            <div>
+                              <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">🍫 Productos</p>
+                              <ul className="divide-y divide-slate-100 text-sm">
+                                {prods.map((p) => {
+                                  const bajo = p.min > 0 && p.cantidad <= p.min;
+                                  return (
+                                    <li key={p.id} className="flex items-center justify-between py-1.5">
+                                      <span className="min-w-0 truncate text-slate-800">{p.nombre}</span>
+                                      <span className={`ml-2 shrink-0 font-bold ${p.cantidad < 0 ? "text-red-600" : bajo ? "text-amber-600" : "text-slate-900"}`}>{p.cantidad}{bajo && p.cantidad >= 0 ? " ⚠" : ""}</span>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+                          )}
+                          {helados.length > 0 && (
+                            <div>
+                              <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">🍦 Helados (cámara / fabricación)</p>
+                              <ul className="divide-y divide-slate-100 text-sm">
+                                {helados.map((h) => (
+                                  <li key={h.id} className="flex items-center justify-between py-1.5">
+                                    <span className="min-w-0 truncate text-slate-800">{h.nombre}</span>
+                                    <span className={`ml-2 shrink-0 font-bold ${h.cantidad < 0 ? "text-red-600" : "text-slate-900"}`}>{h.cantidad}</span>
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </details>
+                );
+              })}
+            </div>
           )}
 
           {/* Ajustar stock de productos (con voz) */}
