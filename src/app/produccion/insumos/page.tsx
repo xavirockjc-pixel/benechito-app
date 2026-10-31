@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { registrarAcceso } from "@/lib/dominio/accesos";
 import { prisma } from "@/lib/prisma";
 import { fmtCant, subtipoLabel, subtipoIcono, stockBajo } from "@/lib/dominio/materias";
@@ -35,6 +36,10 @@ export default async function ProduccionInsumos() {
         <h1 className="text-xl font-extrabold text-slate-900">🧴 Insumos disponibles</h1>
         <p className="text-xs text-slate-500">Esencias, colores y polvos para hacer las bases y los sabores. Esto es lo que hay en bodega.</p>
       </div>
+
+      <Link href="/produccion/mezclas" className="block rounded-xl bg-[#b45309] py-3 text-center text-sm font-extrabold text-white shadow active:brightness-95">
+        🧪 Registrar mezclas (anota lo que usaste) →
+      </Link>
 
       {bajos.length > 0 && (
         <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">

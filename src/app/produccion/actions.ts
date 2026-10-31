@@ -678,3 +678,48 @@ export async function toggleNotaProduccion(formData: FormData) {
   revalidatePath("/admin/notas");
   redirect("/produccion/bitacora");
 }
+
+/**
+ * Registra las MEZCLAS hechas en un turno: cuántas mezclas de un tipo y cuánto se
+ * usó de cada insumo (lo que el operario pesó). Descuenta el stock de cada insumo y
+ * deja el movimiento de consumo con referencia a este registro, para el control de
+ * consumo/merma y el pronóstico de duración en el cerebro.
+ * Campos del form: mezclas, tipo, nota, y `uso_<materiaId>` = cantidad usada.
+ */
+export async function registrarMezclas(formData: FormData) {
+  const mezclas = Math.max(1, Math.floor(Number(String(formData.get("mezclas") ?? "1").replace(/[^0-9]/g, "")) || 1));
+  const tipo = String(formData.get("tipo") ?? "mezcla").trim() || "mezcla";
+  const nota = String(formData.get("nota") ?? "").trim() || null;
+  const u = await usuarioActual();
+
+  // Lee los insumos usados (uso_<id> = cantidad). Solo los que traen cantidad > 0.
+  const usos: { materiaPrimaId: string; cantidad: number }[] = [];
+  for (const [k, v] of formData.entries()) {
+    if (!k.startsWith("uso_")) continue;
+    const cant = Number(String(v).replace(",", "."));
+    if (Number.isFinite(cant) && cant > 0) usos.push({ materiaPrimaId: k.slice(4), cantidad: cant });
+  }
+  if (usos.length === 0) return;
+
+  const reg = await prisma.produccionMezcla.create({
+    data: { tipo, mezclas, nota, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+  });
+
+  for (const x of usos) {
+    await prisma.materiaPrima.update({ where: { id: x.materiaPrimaId }, data: { stock: { decrement: x.cantidad } } }).catch(() => {});
+    await prisma.movimientoMateria.create({
+      data: {
+        materiaPrimaId: x.materiaPrimaId, tipo: "consumo", cantidad: x.cantidad,
+        motivo: `${mezclas} mezcla${mezclas > 1 ? "s" : ""} de ${tipo}`,
+        referencia: reg.id, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+      },
+    }).catch(() => {});
+  }
+  await marcarAsistenciaAuto(u?.sub, "Mezclas en producción").catch(() => {});
+
+  revalidatePath("/produccion/mezclas");
+  revalidatePath("/produccion/insumos");
+  revalidatePath("/bodega/insumos");
+  revalidatePath("/admin/materias");
+  redirect("/produccion/mezclas?ok=1");
+}

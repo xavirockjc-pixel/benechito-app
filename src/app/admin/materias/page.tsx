@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import {
   CATEGORIAS, UNIDADES, categoriaLabel, categoriaIcono, unidadLabel, fmtCant, tipoMovMateriaLabel, stockBajo,
+  diasRestantes, promedioPorMezcla, urgenciaDuracion,
 } from "@/lib/dominio/materias";
 import MateriaRow from "./MateriaRow";
 import { crearMateria } from "./actions";
@@ -18,8 +19,10 @@ export default async function MateriasCentral() {
 
   const en30dias = new Date();
   en30dias.setDate(en30dias.getDate() + 30);
+  const hace30 = new Date();
+  hace30.setDate(hace30.getDate() - 30);
 
-  const [materiales, movs, mermasMes, porVencer] = await Promise.all([
+  const [materiales, movs, mermasMes, porVencer, consumo30, mezclas30Agg] = await Promise.all([
     prisma.materiaPrima.findMany({ where: { activo: true }, orderBy: [{ categoria: "asc" }, { nombre: "asc" }] }),
     prisma.movimientoMateria.findMany({
       orderBy: { fecha: "desc" }, take: 40,
@@ -35,6 +38,10 @@ export default async function MateriasCentral() {
       include: { materiaPrima: { select: { nombre: true, unidad: true } } },
       orderBy: { vence: "asc" }, take: 30,
     }),
+    // Consumo de los últimos 30 días por insumo (para pronosticar duración).
+    prisma.movimientoMateria.groupBy({ by: ["materiaPrimaId"], where: { tipo: "consumo", fecha: { gte: hace30 } }, _sum: { cantidad: true } }),
+    // Total de mezclas hechas en el período (para el promedio por mezcla "aprendido").
+    prisma.produccionMezcla.aggregate({ _sum: { mezclas: true }, where: { fecha: { gte: hace30 } } }),
   ]);
 
   const mats = materiales.map((m) => ({
@@ -44,6 +51,19 @@ export default async function MateriasCentral() {
   const valorTotal = mats.reduce((s, m) => s + (m.costo != null ? m.stock * m.costo : 0), 0);
   const bajos = mats.filter((m) => stockBajo(m.stock, m.stockMinimo));
   const porCat = (cat: string) => mats.filter((m) => m.categoria === cat);
+
+  // Pronóstico de duración (cerebro): según el consumo de los últimos 30 días, cuántos
+  // días dura el stock de cada insumo y cuánto se usa por mezcla (aprendido).
+  const consumoDe = new Map(consumo30.map((c) => [c.materiaPrimaId, Math.abs(Number(c._sum.cantidad ?? 0))]));
+  const mezclas30 = Number(mezclas30Agg._sum.mezclas ?? 0);
+  const pronostico = mats
+    .map((m) => {
+      const cons = consumoDe.get(m.id) ?? 0;
+      const dias = diasRestantes(m.stock, cons, 30);
+      return { ...m, cons, dias, porMezcla: promedioPorMezcla(cons, mezclas30), urg: urgenciaDuracion(dias) };
+    })
+    .filter((p) => p.cons > 0)
+    .sort((a, b) => (a.dias ?? 9999) - (b.dias ?? 9999));
 
   // Pérdida por mermas del mes (para ajustar costos reales).
   const perdidaMermas = mermasMes.reduce(
@@ -105,6 +125,33 @@ export default async function MateriasCentral() {
               );
             })}
           </ul>
+        </div>
+      )}
+
+      {/* Pronóstico de duración (cerebro): cuánto dura cada insumo al ritmo actual */}
+      {pronostico.length > 0 && (
+        <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="font-bold text-slate-800">📈 Pronóstico de duración</span>
+            <span className="text-[11px] text-slate-400">según consumo de 30 días{mezclas30 > 0 ? ` · ${mezclas30} mezclas` : ""}</span>
+          </div>
+          <ul className="mt-2 space-y-1">
+            {pronostico.map((p) => {
+              const col = p.urg === "critico" ? "text-red-600" : p.urg === "pronto" ? "text-amber-600" : "text-slate-500";
+              return (
+                <li key={p.id} className="flex items-center justify-between gap-2 border-t border-slate-100 pt-1">
+                  <span className="min-w-0 truncate text-slate-700">
+                    {p.nombre} <span className="text-xs text-slate-400">· quedan {fmtCant(p.stock, p.unidad)}{p.porMezcla != null ? ` · ${fmtCant(Number(p.porMezcla.toFixed(2)), p.unidad)}/mezcla` : ""}</span>
+                  </span>
+                  <span className={`shrink-0 text-right text-xs font-bold ${col}`}>
+                    {p.dias == null ? "—" : p.dias <= 0 ? "¡se acabó!" : `~${p.dias} día${p.dias !== 1 ? "s" : ""}`}
+                    {(p.urg === "critico" || p.urg === "pronto") && <span className="block text-[10px] font-semibold">⚠️ va a faltar</span>}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-2 text-[11px] text-slate-400">Se calcula con lo que registra producción al hacer mezclas. Mientras más registros, más exacto.</p>
         </div>
       )}
 

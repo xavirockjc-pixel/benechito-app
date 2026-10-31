@@ -45,3 +45,29 @@ export function fmtCant(n: number, unidad?: string | null): string {
 export function stockBajo(stock: number, minimo: number): boolean {
   return minimo > 0 && stock <= minimo;
 }
+
+/**
+ * Pronóstico de duración de un insumo: cuántos DÍAS durará el stock al ritmo de
+ * consumo observado (consumoPeriodo en `dias`). Devuelve null si aún no hay consumo
+ * registrado (no se puede estimar). El cerebro lo usa para avisar "va a faltar".
+ */
+export function diasRestantes(stock: number, consumoPeriodo: number, dias: number): number | null {
+  if (consumoPeriodo <= 0 || dias <= 0) return null;
+  const porDia = consumoPeriodo / dias;
+  if (porDia <= 0) return null;
+  return Math.max(0, Math.floor(stock / porDia));
+}
+
+/** Consumo promedio por MEZCLA (lo que el cerebro "aprende"): total usado / total mezclas. */
+export function promedioPorMezcla(consumoTotal: number, mezclasTotal: number): number | null {
+  if (mezclasTotal <= 0) return null;
+  return consumoTotal / mezclasTotal;
+}
+
+/** Color/urgencia del pronóstico según días restantes. */
+export function urgenciaDuracion(dias: number | null): "sin_datos" | "ok" | "pronto" | "critico" {
+  if (dias == null) return "sin_datos";
+  if (dias <= 3) return "critico";
+  if (dias <= 10) return "pronto";
+  return "ok";
+}
