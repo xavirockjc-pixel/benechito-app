@@ -723,3 +723,75 @@ export async function registrarMezclas(formData: FormData) {
   revalidatePath("/admin/materias");
   redirect("/produccion/mezclas?ok=1");
 }
+
+/**
+ * Edita un registro de producción (corrige cantidad / nombre / quién lo hizo).
+ * Si cambia la cantidad, ajusta el stock (StockSabor o Stock) por la diferencia.
+ */
+export async function editarRegistroProduccion(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  const mov = await prisma.movimientoBodega.findUnique({ where: { id } });
+  if (!mov || mov.zona !== "produccion") return;
+
+  const nuevaCant = Math.max(0, Math.floor(Number(String(formData.get("cantidad") ?? "").replace(/[^0-9]/g, "")) || 0));
+  const nombre = String(formData.get("nombre") ?? "").trim() || mov.nombre;
+  const detalle = String(formData.get("detalle") ?? "").trim() || null;
+  const delta = nuevaCant - mov.cantidad;
+
+  if (delta !== 0 && mov.ubicacionId) {
+    if (mov.clase === "sabor") {
+      await prisma.stockSabor.update({ where: { saborId_ubicacionId: { saborId: mov.refId, ubicacionId: mov.ubicacionId } }, data: { cantidad: { increment: delta } } }).catch(() => {});
+    } else {
+      await prisma.stock.update({ where: { productoId_ubicacionId: { productoId: mov.refId, ubicacionId: mov.ubicacionId } }, data: { cantidad: { increment: delta } } }).catch(() => {});
+    }
+  }
+  await prisma.movimientoBodega.update({ where: { id }, data: { cantidad: nuevaCant, nombre, detalle } });
+
+  revalidatePath("/produccion/registro");
+  revalidatePath("/produccion");
+  revalidatePath("/admin");
+}
+
+/**
+ * Borra un registro de producción (p. ej. de prueba) y DEVUELVE el stock que había
+ * sumado (StockSabor o Stock, en su ubicación).
+ */
+export async function borrarRegistroProduccion(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  const mov = await prisma.movimientoBodega.findUnique({ where: { id } });
+  if (!mov || mov.zona !== "produccion") return;
+
+  if (mov.ubicacionId && mov.cantidad !== 0) {
+    if (mov.clase === "sabor") {
+      await prisma.stockSabor.update({ where: { saborId_ubicacionId: { saborId: mov.refId, ubicacionId: mov.ubicacionId } }, data: { cantidad: { decrement: mov.cantidad } } }).catch(() => {});
+    } else {
+      await prisma.stock.update({ where: { productoId_ubicacionId: { productoId: mov.refId, ubicacionId: mov.ubicacionId } }, data: { cantidad: { decrement: mov.cantidad } } }).catch(() => {});
+    }
+  }
+  await prisma.movimientoBodega.delete({ where: { id } }).catch(() => {});
+
+  revalidatePath("/produccion/registro");
+  revalidatePath("/produccion");
+  revalidatePath("/admin");
+}
+
+/**
+ * Borra un registro de BALDES/MEZCLAS y devuelve a stock los insumos que había
+ * descontado (los MovimientoMateria de consumo con referencia a esa mezcla).
+ */
+export async function borrarMezcla(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  const movs = await prisma.movimientoMateria.findMany({ where: { referencia: id, tipo: "consumo" } });
+  for (const mv of movs) {
+    await prisma.materiaPrima.update({ where: { id: mv.materiaPrimaId }, data: { stock: { increment: mv.cantidad } } }).catch(() => {});
+  }
+  await prisma.movimientoMateria.deleteMany({ where: { referencia: id } }).catch(() => {});
+  await prisma.produccionMezcla.delete({ where: { id } }).catch(() => {});
+
+  revalidatePath("/produccion/mezclas");
+  revalidatePath("/produccion/insumos");
+  revalidatePath("/admin/materias");
+}

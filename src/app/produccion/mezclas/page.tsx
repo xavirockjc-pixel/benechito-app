@@ -2,7 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { registrarAcceso } from "@/lib/dominio/accesos";
 import { categoriaIcono, categoriaLabel, fmtCant, promedioPorMezcla } from "@/lib/dominio/materias";
-import { registrarMezclas } from "../actions";
+import { registrarMezclas, borrarMezcla } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -123,9 +123,12 @@ export default async function ProduccionMezclas({ searchParams }: { searchParams
           <h2 className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">Últimos registros</h2>
           <ul className="space-y-1 text-sm">
             {ultimos.map((r) => (
-              <li key={r.id} className="flex items-center justify-between rounded-lg bg-white px-3 py-2 shadow-sm">
-                <span className="font-semibold text-slate-700">{r.mezclas}× {r.tipo}</span>
-                <span className="text-xs text-slate-400">{r.nombreUsuario ? `${r.nombreUsuario} · ` : ""}{fmtDia(r.fecha)}</span>
+              <li key={r.id} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2 shadow-sm">
+                <span className="min-w-0 truncate font-semibold text-slate-700">{r.mezclas}× {r.tipo}</span>
+                <span className="flex shrink-0 items-center gap-2">
+                  <span className="text-xs text-slate-400">{r.nombreUsuario ? `${r.nombreUsuario} · ` : ""}{fmtDia(r.fecha)}</span>
+                  <form action={borrarMezcla}><input type="hidden" name="id" value={r.id} /><button className="text-xs font-bold text-rose-500">🗑️</button></form>
+                </span>
               </li>
             ))}
           </ul>
