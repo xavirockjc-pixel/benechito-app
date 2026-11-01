@@ -1164,6 +1164,8 @@ export async function marcarFacturadaRuta(formData: FormData) {
   const folio = String(formData.get("folio") ?? "").trim() || null;
   const archivo = String(formData.get("archivo") ?? "").trim(); // dataURL del PDF/foto (opcional)
   if (!ventaId) return;
+  const tieneDoc = archivo.startsWith("data:"); // se adjuntó el documento de la factura
+  let enviado = false;
 
   const venta = await prisma.venta.findUnique({ where: { id: ventaId }, select: { total: true, negocioId: true } });
   await prisma.venta.update({ where: { id: ventaId }, data: { facturada: true, folioFactura: folio } });
@@ -1180,23 +1182,27 @@ export async function marcarFacturadaRuta(formData: FormData) {
   }
   if (venta?.negocioId) {
     await prisma.negocio.update({ where: { id: venta.negocioId }, data: { facturarPendiente: false, facturarNota: null } }).catch(() => {});
-    // Envía la factura al cliente desde el número Benechito (con el PDF si se adjuntó).
+    // Envía la factura al cliente SOLO si se adjuntó el documento (PDF/foto). Sin
+    // documento no se manda nada (no tiene sentido avisar sin la factura adjunta).
     const cli = await prisma.negocio.findUnique({ where: { id: venta.negocioId }, select: { nombreNegocio: true, razonSocial: true, whatsapp: true } });
-    if (cli?.whatsapp) {
+    if (cli?.whatsapp && tieneDoc) {
       const nombre = cli.razonSocial || cli.nombreNegocio || "";
       const esPdf = archivo.startsWith("data:application/pdf");
       const msg = `Hola ${nombre} 👋, aquí está tu factura de Benechito 🐝 por $${Math.round(total).toLocaleString("es-CL")}${folio ? ` (N° ${folio})` : ""}. ¡Gracias por tu compra!`;
-      await enviarWhatsApp({
+      const r = await enviarWhatsApp({
         telefono: cli.whatsapp, nombre, mensaje: msg,
-        archivoBase64: archivo.startsWith("data:") ? archivo : null,
+        archivoBase64: archivo,
         archivoNombre: `factura-${folio || ventaId}.${esPdf ? "pdf" : "jpg"}`,
         archivoTipo: esPdf ? "application/pdf" : "image/jpeg",
-      }).catch(() => {});
+      }).catch(() => ({ ok: false, motivo: "error" }));
+      enviado = r.ok;
     }
   }
 
   revalidatePath("/vendedor/facturar");
   revalidatePath("/vendedor");
+  // Avisa el resultado: enviada al cliente, o solo marcada (sin documento).
+  redirect(`/vendedor/facturar?${enviado ? "enviado=1" : "hecho=1"}`);
 }
 
 /** Marca como ya facturado: borra el recordatorio de la ficha ("✓ Ya facturé"). */

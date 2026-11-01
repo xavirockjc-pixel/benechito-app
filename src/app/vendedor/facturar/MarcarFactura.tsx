@@ -32,10 +32,10 @@ export default function MarcarFactura({ ventaId, waFallback }: { ventaId: string
           <input type="file" accept="application/pdf,image/*" onChange={pick} className="hidden" />
         </label>
       </div>
-      <button className="w-full rounded-lg bg-emerald-600 py-2.5 text-sm font-extrabold text-white active:brightness-95">
-        ✓ Facturada — enviar al cliente
+      <button className={`w-full rounded-lg py-2.5 text-sm font-extrabold text-white active:brightness-95 ${archivo ? "bg-emerald-600" : "bg-slate-500"}`}>
+        {archivo ? "✓ Facturada — enviar al cliente" : "✓ Marcar facturada (sin enviar)"}
       </button>
-      <p className="text-center text-[11px] text-slate-400">Se envía desde el número Benechito. Adjunta el PDF para que le llegue la factura.</p>
+      <p className="text-center text-[11px] text-slate-400">{archivo ? "Se enviará la factura al cliente desde el número Benechito." : "Adjunta el PDF/foto para enviarle la factura al cliente. Sin documento, solo se marca."}</p>
       {waFallback && (
         <a href={waFallback} target="_blank" rel="noopener noreferrer" className="block text-center text-[11px] text-slate-400 underline">
           o abrir mi WhatsApp (si aún no está conectado el número central)

@@ -13,7 +13,8 @@ const waNum = (w: string) => { const d = (w || "").replace(/\D/g, ""); return d.
 // Pantalla del vendedor: ventas que quedaron para FACTURAR (modo manual). Muestra
 // la venta, el RUT del cliente y los netos para copiar en e-Factura, y permite
 // enviarle la factura al cliente por WhatsApp apenas se emite.
-export default async function FacturarVendedor() {
+export default async function FacturarVendedor({ searchParams }: { searchParams: Promise<{ enviado?: string; hecho?: string }> }) {
+  const { enviado, hecho } = await searchParams;
   const docs = await prisma.documentoVenta.findMany({
     where: { tipo: "factura", estado: "pendiente", venta: { is: { facturada: false } } },
     orderBy: { createdAt: "desc" },
@@ -34,6 +35,9 @@ export default async function FacturarVendedor() {
         </div>
         <span className="rounded-full bg-[#0891b2] px-3 py-1 text-sm font-extrabold text-white">{docs.length}</span>
       </div>
+
+      {enviado && <p className="rounded-xl bg-green-100 px-4 py-2.5 text-center text-sm font-bold text-green-700">✓ Factura enviada al cliente</p>}
+      {hecho && <p className="rounded-xl bg-slate-100 px-4 py-2.5 text-center text-sm font-bold text-slate-600">✓ Marcada como facturada (no se envió: falta adjuntar el documento)</p>}
 
       {/* Factura a mano: solo monto o producto, sin vender de nuevo */}
       <Link href="/vendedor/factura-rapida" className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#0891b2] py-2.5 text-sm font-extrabold text-[#0891b2] active:bg-cyan-50">
