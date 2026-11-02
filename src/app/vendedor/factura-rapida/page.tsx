@@ -17,6 +17,18 @@ export default async function FacturaRapidaPage({ searchParams }: { searchParams
   }));
   const prefill = cliente ? clientes.find((c) => c.id === cliente) ?? null : null;
 
+  // Lo que compró el cliente (su última venta con detalle): para cargarlo y facturar
+  // solo los montos, por su unidad de venta (bolsa de 50 / pack de 16).
+  let sugeridos: { nombre: string; cantidad: number; precioUnit: number }[] = [];
+  if (prefill) {
+    const ult = await prisma.venta.findFirst({
+      where: { negocioId: prefill.id, items: { some: {} } },
+      orderBy: { fecha: "desc" },
+      select: { items: { select: { nombre: true, cantidad: true, precioUnit: true } } },
+    });
+    sugeridos = (ult?.items ?? []).map((i) => ({ nombre: i.nombre, cantidad: i.cantidad, precioUnit: Number(i.precioUnit) }));
+  }
+
   return (
     <div className="mx-auto max-w-lg space-y-3">
       <div>
@@ -29,7 +41,7 @@ export default async function FacturaRapidaPage({ searchParams }: { searchParams
           ⚠️ Faltan datos tributarios del cliente (RUT, razón social o giro). Complétalos abajo.
         </p>
       )}
-      <FacturaRapida clientes={clientes} prefill={prefill} />
+      <FacturaRapida clientes={clientes} prefill={prefill} sugeridos={sugeridos} />
     </div>
   );
 }

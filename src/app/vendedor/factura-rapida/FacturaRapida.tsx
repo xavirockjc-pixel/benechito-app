@@ -9,11 +9,16 @@ type Linea = { nombre: string; cantidad: string; precio: string };
 
 const inputCls = "w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-[#1479c4]";
 
-export default function FacturaRapida({ clientes, prefill }: { clientes: Cliente[]; prefill: Cliente | null }) {
+type Sugerido = { nombre: string; cantidad: number; precioUnit: number };
+
+export default function FacturaRapida({ clientes, prefill, sugeridos = [] }: { clientes: Cliente[]; prefill: Cliente | null; sugeridos?: Sugerido[] }) {
   const [cliente, setCliente] = useState<Cliente | null>(prefill);
   const [q, setQ] = useState("");
   const [lineas, setLineas] = useState<Linea[]>([{ nombre: "", cantidad: "1", precio: "" }]);
   const [modo, setModo] = useState("pagado");
+
+  const cargarCompra = () =>
+    setLineas(sugeridos.length ? sugeridos.map((s) => ({ nombre: s.nombre, cantidad: String(s.cantidad), precio: String(Math.round(s.precioUnit)) })) : [{ nombre: "", cantidad: "1", precio: "" }]);
 
   const suger = useMemo(() => {
     const t = q.trim().toLowerCase();
@@ -73,6 +78,14 @@ export default function FacturaRapida({ clientes, prefill }: { clientes: Cliente
           <input name="razonSocial" defaultValue={cliente?.razonSocial} placeholder="Razón social" className={`mt-2 ${inputCls}`} />
           <input name="giro" defaultValue={cliente?.giro} placeholder="Giro" className={`mt-2 ${inputCls}`} />
         </div>
+      )}
+
+      {/* Cargar lo que compró el cliente (su última venta, por bolsa 50 / pack 16) */}
+      {cliente && sugeridos.length > 0 && (
+        <button type="button" onClick={cargarCompra}
+          className="w-full rounded-xl border-2 border-dashed border-[#0891b2] py-2.5 text-sm font-extrabold text-[#0891b2] active:bg-cyan-50">
+          🛒 Cargar lo que compró ({sugeridos.length} ítem{sugeridos.length > 1 ? "s" : ""})
+        </button>
       )}
 
       {/* Líneas a mano (monto o producto) */}

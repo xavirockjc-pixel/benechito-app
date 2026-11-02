@@ -933,6 +933,15 @@ model MovimientoMateria {
   @@index([referencia])
 }
 
+/// Día de la semana asignado a cada RUTA del vendedor (para la preventa: se avisa a
+/// los clientes de esa ruta el día anterior). `ruta` = clave de ruta (coronel, lota…).
+model RutaDia {
+  ruta      String   @id
+  dia       Int // 0=Domingo .. 6=Sábado
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 /// Registro de MEZCLAS hechas en producción: cuántas mezclas de un tipo se hicieron
 /// y (vía MovimientoMateria con referencia = este id) qué insumos y cuánto se usó.
 /// Sirve para el control de consumo, merma (de más / de menos) y el pronóstico de

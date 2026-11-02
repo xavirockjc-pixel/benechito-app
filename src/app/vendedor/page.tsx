@@ -225,9 +225,14 @@ export default async function VendedorHome({
         <button className="rounded-xl bg-[#1479c4] px-4 font-bold text-white">Ir</button>
       </form>
 
-      <Link href="/vendedor/difundir" className="flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-[#1479c4] py-2.5 text-sm font-extrabold text-[#1479c4] active:bg-blue-50">
-        📢 Mensaje masivo (promos · recordar · agendar)
-      </Link>
+      <div className="grid grid-cols-2 gap-2">
+        <Link href="/vendedor/difundir" className="flex items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[#1479c4] py-2.5 text-xs font-extrabold text-[#1479c4] active:bg-blue-50">
+          📢 Mensaje masivo
+        </Link>
+        <Link href="/vendedor/preventa" className="flex items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[#0891b2] py-2.5 text-xs font-extrabold text-[#0891b2] active:bg-cyan-50">
+          📅 Preventa por ruta
+        </Link>
+      </div>
 
       {/* Filtro por SECTOR + Ver todos */}
       <div className="mt-2 flex flex-wrap gap-1.5">

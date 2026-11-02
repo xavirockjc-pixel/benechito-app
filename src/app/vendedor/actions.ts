@@ -1151,7 +1151,8 @@ export async function facturaRapida(formData: FormData) {
 
   revalidatePath("/vendedor/facturar");
   revalidatePath(`/vendedor/cliente/${negocioId}`);
-  redirect(`/vendedor/comprobante/${venta.id}?volver=${encodeURIComponent("/vendedor/facturar")}`);
+  // Va a "Por facturar": ahí se adjunta el PDF y se envía al cliente (con documento).
+  redirect("/vendedor/facturar?nueva=1");
 }
 
 /**
