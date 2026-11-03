@@ -147,10 +147,13 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
       </div>
 
       {/* Período: Hoy / Semana / Mes (para que los números no se acumulen) */}
-      <div className="mt-4 inline-flex gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
-        {([["hoy", "Hoy"], ["semana", "Semana"], ["mes", "Mes"]] as const).map(([k, lbl]) => (
-          <Link key={k} href={`/admin?p=${k}`} className={`rounded-lg px-4 py-1.5 text-sm font-bold ${periodo === k ? "bg-slate-900 text-white" : "text-slate-500"}`}>{lbl}</Link>
-        ))}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <div className="inline-flex gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+          {([["hoy", "Hoy"], ["semana", "Semana"], ["mes", "Mes"]] as const).map(([k, lbl]) => (
+            <Link key={k} href={`/admin?p=${k}`} className={`rounded-lg px-4 py-1.5 text-sm font-bold ${periodo === k ? "bg-slate-900 text-white" : "text-slate-500"}`}>{lbl}</Link>
+          ))}
+        </div>
+        <Link href="/admin/historial" className="text-sm font-bold text-[#1479c4]">📊 Ver historial (atrás) →</Link>
       </div>
 
       {/* Montos con ojito (venta del período + por canal) */}
