@@ -2,11 +2,12 @@ import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { desmarcarFacturada } from "./actions";
 import FacturaPendiente from "./FacturaPendiente";
+import EnviarFactura from "./EnviarFactura";
 
 export const dynamic = "force-dynamic";
 
 const fmt = (d: Date) => new Date(d).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" });
-const waNum = (w: string) => { const d = (w || "").replace(/\D/g, ""); return d.startsWith("56") ? d : d.length === 9 ? "56" + d : d; };
+const fmtHora = (d: Date) => new Date(d).toLocaleString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export default async function FacturacionPage() {
   // Ventas con documento factura (o cliente con RUT) que aún no se han facturado.
@@ -24,17 +25,32 @@ export default async function FacturacionPage() {
   const emitidas = ventas.filter((v) => v.facturada);
   const totalPend = pendientes.reduce((s, v) => s + Number(v.total), 0);
 
+  // Estado de envío de cada factura emitida (último documento de la venta).
+  const docs = emitidas.length
+    ? await prisma.documentoVenta.findMany({
+        where: { ventaId: { in: emitidas.map((v) => v.id) } },
+        orderBy: { createdAt: "desc" },
+        select: { ventaId: true, fechaEnvio: true, canalEnvio: true },
+      })
+    : [];
+  const envioDe = new Map<string, { fechaEnvio: Date | null; canalEnvio: string | null }>();
+  for (const d of docs) if (!envioDe.has(d.ventaId)) envioDe.set(d.ventaId, { fechaEnvio: d.fechaEnvio, canalEnvio: d.canalEnvio });
+
+  const enviadas = emitidas.filter((v) => envioDe.get(v.id)?.fechaEnvio);
+  const porEnviar = emitidas.filter((v) => !envioDe.get(v.id)?.fechaEnvio);
+
   return (
     <div className="mx-auto max-w-3xl">
       <h1 className="text-2xl font-extrabold text-slate-900">🧾 Facturación</h1>
       <p className="text-sm text-slate-500">
-        Recordatorio de facturas por emitir: ventas de clientes con RUT que compran con factura. Se dejará listo para enlazar con el SII/tu emisor.
+        Recordatorio de facturas por emitir y <b>registro de envío al cliente</b>: cuando mandas la factura, queda marcada como enviada aquí (aunque tu teléfono no muestre los mensajes enviados).
       </p>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-2xl font-extrabold text-amber-700">{pendientes.length}</p><p className="text-xs font-semibold text-amber-700">Por facturar</p></div>
         <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-2xl font-extrabold text-slate-900">{fmtCLP(totalPend)}</p><p className="text-xs font-semibold text-slate-500">Monto pendiente</p></div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-2xl font-extrabold text-green-700">{emitidas.length}</p><p className="text-xs font-semibold text-slate-500">Emitidas</p></div>
+        <div className="rounded-xl border border-orange-200 bg-orange-50 p-4"><p className="text-2xl font-extrabold text-orange-700">{porEnviar.length}</p><p className="text-xs font-semibold text-orange-700">Sin enviar al cliente</p></div>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-2xl font-extrabold text-emerald-700">{enviadas.length}</p><p className="text-xs font-semibold text-emerald-700">Enviadas ✅</p></div>
       </div>
 
       {/* Por facturar */}
@@ -56,11 +72,49 @@ export default async function FacturacionPage() {
         </div>
       )}
 
+      {/* Facturas emitidas: ¿se enviaron al cliente? */}
+      {emitidas.length > 0 && (
+        <>
+          <h2 className="mb-1 mt-7 text-sm font-bold uppercase tracking-wide text-slate-500">Enviar al cliente ({emitidas.length})</h2>
+          <p className="mb-2 text-xs text-slate-400">Toca “Enviar” para mandar la factura. Queda registrada como enviada con fecha y canal.</p>
+          <div className="space-y-2">
+            {emitidas.slice(0, 60).map((v) => {
+              const nombre = v.negocio.razonSocial || v.negocio.nombreNegocio;
+              const env = envioDe.get(v.id);
+              return (
+                <div key={v.id} className={`rounded-xl border p-3 ${env?.fechaEnvio ? "border-emerald-200 bg-emerald-50/40" : "border-orange-200 bg-orange-50/40"}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-slate-800">{nombre}</p>
+                      <p className="text-xs text-slate-500">{fmtCLP(Number(v.total))}{v.folioFactura ? ` · folio ${v.folioFactura}` : ""} · {fmt(v.fecha)}</p>
+                    </div>
+                    <form action={desmarcarFacturada}><input type="hidden" name="ventaId" value={v.id} /><button className="text-[11px] font-semibold text-slate-400">deshacer</button></form>
+                  </div>
+                  <div className="mt-2">
+                    <EnviarFactura
+                      ventaId={v.id}
+                      nombre={nombre}
+                      total={Number(v.total)}
+                      folio={v.folioFactura}
+                      whatsapp={v.negocio.whatsapp || null}
+                      email={v.negocio.emailFacturacion || null}
+                      enviadaEn={env?.fechaEnvio ? fmtHora(env.fechaEnvio) : null}
+                      canal={env?.canalEnvio ?? null}
+                    />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="mt-2 text-[11px] text-slate-400">📎 El mensaje lleva un enlace a la factura. “Enviada” = tú la mandaste; que el cliente la abra o no es cosa de él.</p>
+        </>
+      )}
+
       {/* Emisión electrónica: preparado, pendiente de proveedor */}
       <details className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm">
         <summary className="cursor-pointer font-bold text-slate-700">⚡ Emisión electrónica (boleta/factura) — preparado</summary>
         <div className="mt-2 space-y-2 text-slate-600">
-          <p>Hoy esto funciona como <b>recordatorio + registro de folio</b>. Para emitir con un clic hacia el SII falta enchufar un <b>proveedor DTE</b>. Cuando lo decidas, se conecta aquí mismo.</p>
+          <p>Hoy esto funciona como <b>recordatorio + registro de folio y envío</b>. Para emitir con un clic hacia el SII falta enchufar un <b>proveedor DTE</b>. Cuando lo decidas, se conecta aquí mismo.</p>
           <p className="font-semibold text-slate-700">Para activarlo necesitarás:</p>
           <ul className="list-disc space-y-1 pl-5">
             <li>Elegir proveedor (ej: LibreDTE, Bsale) o certificado propio del SII.</li>
@@ -70,30 +124,6 @@ export default async function FacturacionPage() {
           <p className="text-xs text-slate-500">🔒 Las claves y el certificado los cargas tú en la configuración del servidor; el sistema nunca los expone.</p>
         </div>
       </details>
-
-      {/* Emitidas */}
-      {emitidas.length > 0 && (
-        <>
-          <h2 className="mb-2 mt-6 text-sm font-bold uppercase tracking-wide text-slate-500">Emitidas ({emitidas.length})</h2>
-          <div className="space-y-1.5">
-            {emitidas.slice(0, 40).map((v) => {
-              const nombre = v.negocio.razonSocial || v.negocio.nombreNegocio;
-              const msg = `Hola ${nombre} 👋, aquí está tu factura${v.folioFactura ? ` N° ${v.folioFactura}` : ""} por ${fmtCLP(Number(v.total))} de Benechito 🐝. ¡Gracias!`;
-              const wa = v.negocio.whatsapp ? `https://wa.me/${waNum(v.negocio.whatsapp)}?text=${encodeURIComponent(msg)}` : null;
-              const mail = v.negocio.emailFacturacion ? `mailto:${v.negocio.emailFacturacion}?subject=${encodeURIComponent("Tu factura Benechito")}&body=${encodeURIComponent(msg)}` : null;
-              return (
-                <div key={v.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm">
-                  <span className="min-w-0 flex-1 truncate font-semibold text-slate-600">{nombre} · {fmtCLP(Number(v.total))}{v.folioFactura ? ` · folio ${v.folioFactura}` : ""}</span>
-                  {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white">📲 WhatsApp</a>}
-                  {mail && <a href={mail} className="shrink-0 rounded-lg bg-sky-600 px-2.5 py-1 text-xs font-bold text-white">✉️ Email</a>}
-                  <form action={desmarcarFacturada}><input type="hidden" name="ventaId" value={v.id} /><button className="shrink-0 text-xs font-semibold text-slate-400">deshacer</button></form>
-                </div>
-              );
-            })}
-          </div>
-          <p className="mt-2 text-[11px] text-slate-400">📎 El mensaje va listo; adjunta el PDF de la factura (el que bajas del SII) al enviarlo. Cuando conectemos un proveedor DTE, se enviará solo con el PDF.</p>
-        </>
-      )}
     </div>
   );
 }
