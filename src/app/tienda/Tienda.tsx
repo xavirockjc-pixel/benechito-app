@@ -368,6 +368,9 @@ export default function Tienda({
               )}
               {entrega === "despacho" && (
                 <>
+                  <div className="rounded-xl bg-azul/10 px-3 py-2.5 text-xs font-semibold text-azul">
+                    🛵 <b>Delivery a domicilio solo en Coronel y Lota.</b> En otras comunas (San Pedro, etc.) te lo dejamos <b>agendando para el día de ruta</b> de tu sector (ej: lunes Coronel · martes Lota · jueves San Pedro). 📍 <b>Compartir tu ubicación es obligatorio.</b>
+                  </div>
                   <select name="comuna" value={comuna} onChange={(e) => setComuna(e.target.value)} required
                     className="w-full rounded-xl border border-crema-2 bg-crema/40 px-4 py-3 text-sm outline-none focus:border-naranja">
                     <option value="">¿En qué comuna? *</option>

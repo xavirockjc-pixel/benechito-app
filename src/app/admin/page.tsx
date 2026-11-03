@@ -4,6 +4,7 @@ import { fmtCLP } from "@/lib/dominio/pedidos";
 import { getCanalMaps } from "@/lib/dominio/canales";
 import PanelMontos from "./PanelMontos";
 import AvisoAccesoAdmin from "./AvisoAccesoAdmin";
+import CerebroAviso from "./CerebroAviso";
 import EmpezarNuevoDia from "@/app/_shared/EmpezarNuevoDia";
 import { empezarNuevoDia } from "@/app/bodega/actions";
 
@@ -122,15 +123,7 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
           <span className="shrink-0 text-2xl">→</span>
         </Link>
       )}
-      {nCerebro > 0 && (
-        <Link href="/admin/pendientes" className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 shadow-sm transition hover:brightness-[0.99]">
-          <span className="min-w-0">
-            <span className="block text-base font-extrabold text-amber-800">🐝 El cerebro notó {nCerebro} cosa{nCerebro > 1 ? "s" : ""} por revisar</span>
-            <span className="block text-sm text-amber-700">Algo quedó sin actualizar o sin cuadrar. Toca para arreglar u omitir.</span>
-          </span>
-          <span className="shrink-0 text-2xl text-amber-500">→</span>
-        </Link>
-      )}
+      <CerebroAviso n={nCerebro} />
       {/* Encabezado */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
