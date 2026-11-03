@@ -110,6 +110,15 @@ export default async function ResumenPorApp() {
         </Tarjeta>
       </div>
 
+      {/* Analítica de la ruta del vendedor (pasó / omitió / compró) */}
+      <Link href="/admin/ruta-vendedor" className="mt-5 flex items-center justify-between rounded-2xl bg-slate-900 px-4 py-4 text-white shadow active:brightness-110">
+        <span className="min-w-0">
+          <span className="block text-sm font-extrabold">🚚 Recorrido de la ruta de hoy</span>
+          <span className="block text-[11px] font-semibold text-slate-300">Cuántos pasó, cuáles omitió y cuáles compraron, vs la ruta establecida</span>
+        </span>
+        <span className="text-xl">›</span>
+      </Link>
+
       {/* Dónde está cada vendedor (ubicación en vivo) */}
       <div className="mt-5">
         <div className="mb-2 flex items-center justify-between">
