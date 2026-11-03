@@ -63,7 +63,10 @@ export default async function InventarioPage({ searchParams }: { searchParams: P
           <h1 className="text-2xl font-extrabold text-slate-900">Inventario</h1>
           <p className="text-sm text-slate-500">Stock por tipo, con el dinero invertido en cada uno.</p>
         </div>
-        <Link href="/admin/inventario/ubicaciones" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-500">Ubicaciones</Link>
+        <div className="flex gap-2">
+          <Link href="/admin/salidas" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-500">➖ Salidas</Link>
+          <Link href="/admin/inventario/ubicaciones" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 hover:border-slate-500">Ubicaciones</Link>
+        </div>
       </div>
 
       {/* Valor invertido por sección */}

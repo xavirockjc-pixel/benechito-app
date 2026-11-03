@@ -577,6 +577,7 @@ model MovimientoStock {
   ubicacionDestinoId String?
   cantidad           Int
   referencia         String? // id de venta, pedido, orden de producción, etc.
+  motivo             String? // motivo libre de una salida (ej: cliente, "al local", merma)
   fecha              DateTime   @default(now())
 
   @@index([productoId])

@@ -75,9 +75,10 @@ export default async function MateriasCentral() {
     <div className="mx-auto max-w-2xl">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-extrabold text-slate-900">🧪 Materias primas y materiales</h1>
-        <Link href="/admin/materias/recetas" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white active:brightness-110">
-          📋 Recetas
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/admin/rendimiento" className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-bold text-slate-700 active:bg-slate-50">🧮 Rendimiento</Link>
+          <Link href="/admin/materias/recetas" className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white active:brightness-110">📋 Recetas</Link>
+        </div>
       </div>
       <p className="text-sm text-slate-500">Existencias que se descuentan al fabricar. El total y los costos solo se ven aquí.</p>
 
