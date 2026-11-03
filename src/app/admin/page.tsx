@@ -15,41 +15,46 @@ const LINEAS_HELADO = new Set(["paletas", "paletas_premium", "postres_500", "cas
 // Paleta de marca para rotar en las tarjetas por canal.
 const COLORES_CANAL = ["#d8a944", "#2f9e44", "#1479c4", "#f28a1e", "#e23b2c"];
 
-export default async function Panel() {
+export default async function Panel({ searchParams }: { searchParams: Promise<{ p?: string }> }) {
   const ahora = new Date();
   const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
   const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+  const inicioSemana = new Date(inicioHoy); inicioSemana.setDate(inicioHoy.getDate() - ((inicioHoy.getDay() + 6) % 7)); // lunes
 
-  const [ventasHoy, ventasMes, sumaVentas, sumaPagos, pedidosPend, totalClientes, canalMes, ventasProd] = await Promise.all([
-    prisma.venta.aggregate({ _sum: { total: true }, where: { fecha: { gte: inicioHoy } } }),
-    prisma.venta.aggregate({ _sum: { total: true }, where: { fecha: { gte: inicioMes } } }),
+  // Período elegido (por defecto HOY, para que no se acumulen los números).
+  const sp = await searchParams;
+  const periodo = sp.p === "semana" ? "semana" : sp.p === "mes" ? "mes" : "hoy";
+  const desde = periodo === "mes" ? inicioMes : periodo === "semana" ? inicioSemana : inicioHoy;
+  const periodoLabel = periodo === "mes" ? "del mes" : periodo === "semana" ? "de la semana" : "de hoy";
+
+  const [ventasPeriodo, sumaVentas, sumaPagos, pedidosPend, totalClientes, canalPeriodo, ventasProd] = await Promise.all([
+    prisma.venta.aggregate({ _sum: { total: true }, where: { fecha: { gte: desde } } }),
     prisma.venta.aggregate({ _sum: { total: true } }),
     prisma.pago.aggregate({ _sum: { monto: true } }),
     prisma.pedido.count({ where: { estado: { notIn: ["entregado", "finalizado"] } } }),
     prisma.negocio.count(),
-    prisma.venta.groupBy({ by: ["canal"], _sum: { total: true }, where: { fecha: { gte: inicioMes } } }),
-    prisma.movimientoStock.groupBy({ by: ["productoId"], _sum: { cantidad: true }, where: { tipo: "venta", fecha: { gte: inicioMes } } }),
+    prisma.venta.groupBy({ by: ["canal"], _sum: { total: true }, where: { fecha: { gte: desde } } }),
+    prisma.movimientoStock.groupBy({ by: ["productoId"], _sum: { cantidad: true }, where: { tipo: "venta", fecha: { gte: desde } } }),
   ]);
 
-  const totalHoy = Number(ventasHoy._sum.total ?? 0);
-  const totalMes = Number(ventasMes._sum.total ?? 0);
+  const totalPeriodo = Number(ventasPeriodo._sum.total ?? 0);
   const porCobrar = Math.max(0, Number(sumaVentas._sum.total ?? 0) - Number(sumaPagos._sum.monto ?? 0));
   const { label: canalLabel } = await getCanalMaps();
 
-  // Montos (ocultos con el ojito): comercial + por canal, cada uno con su color/ícono.
+  // Montos (ocultos con el ojito): venta del período + desglose por canal + deuda total.
   const montos = [
-    { label: "Ventas de hoy", valor: fmtCLP(totalHoy), href: "/admin/ventas", color: "#1479c4", icon: "💰" },
-    { label: "Ventas del mes", valor: fmtCLP(totalMes), href: "/admin/ventas", color: "#f28a1e", icon: "📅" },
-    { label: "Por cobrar", valor: fmtCLP(porCobrar), href: "/admin/cobranza", color: "#e23b2c", icon: "⏳" },
-    ...canalMes
+    { label: `Ventas ${periodoLabel}`, valor: fmtCLP(totalPeriodo), href: "/admin/ventas", color: "#1479c4", icon: "💰" },
+    ...canalPeriodo
       .filter((c) => Number(c._sum.total ?? 0) > 0)
+      .sort((a, b) => Number(b._sum.total ?? 0) - Number(a._sum.total ?? 0))
       .map((c, i) => ({
-        label: canalLabel[c.canal] ?? c.canal,
+        label: `${canalLabel[c.canal] ?? c.canal} ${periodoLabel}`,
         valor: fmtCLP(Number(c._sum.total ?? 0)),
         href: `/admin/ventas?canal=${c.canal}`,
         color: COLORES_CANAL[i % COLORES_CANAL.length],
         icon: "📊",
       })),
+    { label: "Por cobrar (deuda total)", valor: fmtCLP(porCobrar), href: "/admin/cobranza", color: "#e23b2c", icon: "⏳" },
   ];
 
   // Ranking de más vendidos (mes), separado dulce/helado.
@@ -113,7 +118,14 @@ export default async function Panel() {
         </div>
       </div>
 
-      {/* Montos con ojito (comercial + por canal) */}
+      {/* Período: Hoy / Semana / Mes (para que los números no se acumulen) */}
+      <div className="mt-4 inline-flex gap-1 rounded-xl border border-slate-200 bg-white p-1 shadow-sm">
+        {([["hoy", "Hoy"], ["semana", "Semana"], ["mes", "Mes"]] as const).map(([k, lbl]) => (
+          <Link key={k} href={`/admin?p=${k}`} className={`rounded-lg px-4 py-1.5 text-sm font-bold ${periodo === k ? "bg-slate-900 text-white" : "text-slate-500"}`}>{lbl}</Link>
+        ))}
+      </div>
+
+      {/* Montos con ojito (venta del período + por canal) */}
       <PanelMontos items={montos} />
 
       {/* Conteos rápidos (sin dinero) */}
@@ -142,22 +154,26 @@ export default async function Panel() {
         <EmpezarNuevoDia action={empezarNuevoDia} label="Cerrar el día (empezar cómputo nuevo)" />
       </div>
 
-      {/* Más vendidos del mes: dulces vs helados */}
-      <div className="mt-8 grid gap-6 lg:grid-cols-2">
-        <RankingCol titulo="🍫 Dulces más vendidos" filas={dulces} color="#e0730c" />
-        <RankingCol titulo="🍦 Helados más vendidos" filas={helados} color="#1479c4" />
+      {/* Más vendidos del período: dulces vs helados */}
+      <div className="mt-8">
+        <h2 className="font-display text-base font-extrabold text-slate-900">Más vendidos {periodoLabel}</h2>
+        <p className="mb-3 text-xs text-slate-500">Cuenta <b>todas las ventas que descuentan stock</b>: local (caja), ruta/terreno (camión del vendedor) y bodega (retiros de distribuidores). No separa por lugar.</p>
+        <div className="grid gap-6 lg:grid-cols-2">
+          <RankingCol titulo="🍫 Dulces más vendidos" filas={dulces} color="#e0730c" periodo={periodoLabel} />
+          <RankingCol titulo="🍦 Helados más vendidos" filas={helados} color="#1479c4" periodo={periodoLabel} />
+        </div>
       </div>
     </div>
   );
 }
 
-function RankingCol({ titulo, filas, color }: { titulo: string; filas: { id: string; u: number; p: { nombre: string } | undefined }[]; color: string }) {
+function RankingCol({ titulo, filas, color, periodo }: { titulo: string; filas: { id: string; u: number; p: { nombre: string } | undefined }[]; color: string; periodo: string }) {
   const max = Math.max(1, ...filas.map((f) => f.u));
   return (
     <div className="kpi-card">
       <h2 className="mb-3 font-display text-base font-extrabold text-slate-900">{titulo}</h2>
       {filas.length === 0 ? (
-        <p className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400">Sin ventas este mes.</p>
+        <p className="rounded-xl border border-dashed border-slate-300 p-4 text-center text-xs text-slate-400">Sin ventas {periodo}.</p>
       ) : (
         <div className="space-y-1">
           {filas.map((f, i) => (
