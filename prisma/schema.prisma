@@ -1190,6 +1190,9 @@ model DocumentoVenta {
   fechaEmision          DateTime?
   fechaEnvio            DateTime?
   canalEnvio            String?   // email | whatsapp
+  // Enlace propio para que el mensaje al cliente lleve la factura (el PDF).
+  // No se rastrea si la abrió: solo nos importa dejar registro de que se envió.
+  enlaceToken           String?   @unique
   createdAt             DateTime  @default(now())
 
   @@index([ventaId])

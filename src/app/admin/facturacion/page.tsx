@@ -3,11 +3,12 @@ import { fmtCLP } from "@/lib/dominio/pedidos";
 import { tipoDocumentoLabel } from "@/lib/dominio/ventas";
 import { desmarcarFacturada, reintentarEmision, reintentarPendientes } from "./actions";
 import FacturaPendiente from "./FacturaPendiente";
+import EnviarFactura from "./EnviarFactura";
 
 export const dynamic = "force-dynamic";
 
 const fmt = (d: Date) => new Date(d).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" });
-const waNum = (w: string) => { const d = (w || "").replace(/\D/g, ""); return d.startsWith("56") ? d : d.length === 9 ? "56" + d : d; };
+const fmtHora = (d: Date) => new Date(d).toLocaleString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
 export default async function FacturacionPage() {
   const autoOn = Boolean(process.env.SII_N8N_WEBHOOK_URL);
@@ -28,6 +29,7 @@ export default async function FacturacionPage() {
   const boletasPendientes = docs.filter((d) => d.estado === "pendiente" && d.tipo === "boleta");
   const emitidos = docs.filter((d) => ["emitido", "enviado", "pagado"].includes(d.estado) || (d.estado === "pendiente" && d.venta.facturada));
   const totalPendFact = factPendientes.reduce((s, d) => s + Number(d.montoTotal), 0);
+  const enviados = emitidos.filter((d) => d.fechaEnvio).length;
 
   const conRut = factPendientes.filter((d) => d.negocio.rut);
   const sinRut = factPendientes.filter((d) => !d.negocio.rut);
@@ -36,7 +38,7 @@ export default async function FacturacionPage() {
     <div className="mx-auto max-w-3xl">
       <h1 className="text-2xl font-extrabold text-slate-900">🧾 Facturación electrónica</h1>
       <p className="text-sm text-slate-500">
-        Boletas y facturas de las ventas de la caja, el vendedor en ruta y el panel. Cada documento se envía al cliente por WhatsApp o email.
+        Boletas y facturas de las ventas de la caja, el vendedor en ruta y el panel. Cada documento se envía al cliente por WhatsApp o email y queda registrado como enviado.
       </p>
 
       {/* Estado de la emisión automática */}
@@ -56,7 +58,7 @@ export default async function FacturacionPage() {
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="text-2xl font-extrabold text-amber-700">{factPendientes.length}</p><p className="text-xs font-semibold text-amber-700">Facturas por emitir</p></div>
         <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-2xl font-extrabold text-slate-900">{fmtCLP(totalPendFact)}</p><p className="text-xs font-semibold text-slate-500">Monto pendiente</p></div>
         <div className="rounded-xl border border-red-200 bg-red-50 p-4"><p className="text-2xl font-extrabold text-red-700">{rechazados.length}</p><p className="text-xs font-semibold text-red-700">Rechazados</p></div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4"><p className="text-2xl font-extrabold text-green-700">{emitidos.length}</p><p className="text-xs font-semibold text-slate-500">Emitidos</p></div>
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4"><p className="text-2xl font-extrabold text-emerald-700">{enviados}/{emitidos.length}</p><p className="text-xs font-semibold text-emerald-700">Enviados al cliente ✅</p></div>
       </div>
 
       {/* Rechazados por el SII/emisor */}
@@ -134,36 +136,48 @@ export default async function FacturacionPage() {
         </div>
       </details>
 
-      {/* Emitidos */}
+      {/* Emitidos: enviar al cliente y dejar registro del envío */}
       {emitidos.length > 0 && (
         <>
-          <h2 className="mb-2 mt-6 text-sm font-bold uppercase tracking-wide text-slate-500">Emitidos ({emitidos.length})</h2>
-          <div className="space-y-1.5">
-            {emitidos.slice(0, 40).map((d) => {
+          <h2 className="mb-1 mt-7 text-sm font-bold uppercase tracking-wide text-slate-500">Emitidos · enviar al cliente ({enviados}/{emitidos.length} enviados)</h2>
+          <p className="mb-2 text-xs text-slate-400">Al tocar “Enviar” queda registrado aquí como enviado (fecha + canal), aunque tu teléfono no muestre los mensajes enviados.</p>
+          <div className="space-y-2">
+            {emitidos.slice(0, 60).map((d) => {
               const nombre = d.negocio.razonSocial || d.negocio.nombreNegocio;
               const label = tipoDocumentoLabel[d.tipo] ?? d.tipo;
               const pdfPublico = d.urlPdf && d.urlPdf.startsWith("http") ? d.urlPdf : null;
-              const msg = `Hola ${nombre} 👋, aquí está tu ${label.toLowerCase()}${d.folio ? ` N° ${d.folio}` : ""} por ${fmtCLP(Number(d.montoTotal))} de Benechito 🐝.${pdfPublico ? ` PDF: ${pdfPublico}` : ""} ¡Gracias!`;
-              const wa = d.negocio.whatsapp ? `https://wa.me/${waNum(d.negocio.whatsapp)}?text=${encodeURIComponent(msg)}` : null;
-              const mail = d.negocio.emailFacturacion ? `mailto:${d.negocio.emailFacturacion}?subject=${encodeURIComponent(`Tu ${label.toLowerCase()} Benechito`)}&body=${encodeURIComponent(msg)}` : null;
               return (
-                <div key={d.id} className="flex flex-wrap items-center gap-2 rounded-xl bg-slate-100 px-4 py-2.5 text-sm">
-                  <span className="min-w-0 flex-1 truncate font-semibold text-slate-600">
-                    {label} · {nombre} · {fmtCLP(Number(d.montoTotal))}{d.folio ? ` · folio ${d.folio}` : ""} · {fmt(d.venta.fecha)}
-                  </span>
-                  {pdfPublico && <a href={pdfPublico} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">📎 PDF</a>}
-                  {wa && <a href={wa} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-lg bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white">📲 WhatsApp</a>}
-                  {mail && <a href={mail} className="shrink-0 rounded-lg bg-sky-600 px-2.5 py-1 text-xs font-bold text-white">✉️ Email</a>}
-                  {d.tipo === "factura" && (
-                    <form action={desmarcarFacturada}><input type="hidden" name="ventaId" value={d.venta.id} /><button className="shrink-0 text-xs font-semibold text-slate-400">deshacer</button></form>
-                  )}
+                <div key={d.id} className={`rounded-xl border p-3 ${d.fechaEnvio ? "border-emerald-200 bg-emerald-50/40" : "border-orange-200 bg-orange-50/40"}`}>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-slate-800">{label} · {nombre}</p>
+                      <p className="text-xs text-slate-500">{fmtCLP(Number(d.montoTotal))}{d.folio ? ` · folio ${d.folio}` : ""} · {fmt(d.venta.fecha)}</p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {pdfPublico && <a href={pdfPublico} target="_blank" rel="noopener noreferrer" className="rounded-lg bg-slate-900 px-2.5 py-1 text-xs font-bold text-white">📎 PDF</a>}
+                      {d.tipo === "factura" && (
+                        <form action={desmarcarFacturada}><input type="hidden" name="ventaId" value={d.venta.id} /><button className="text-[11px] font-semibold text-slate-400">deshacer</button></form>
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <EnviarFactura
+                      ventaId={d.venta.id}
+                      nombre={nombre}
+                      total={Number(d.montoTotal)}
+                      folio={d.folio}
+                      label={label}
+                      whatsapp={d.negocio.whatsapp || null}
+                      email={d.negocio.emailFacturacion || null}
+                      enviadaEn={d.fechaEnvio ? fmtHora(d.fechaEnvio) : null}
+                      canal={d.canalEnvio ?? null}
+                    />
+                  </div>
                 </div>
               );
             })}
           </div>
-          <p className="mt-2 text-[11px] text-slate-400">
-            📎 Si el documento tiene PDF, el link va dentro del mensaje. Si lo emitiste a mano en el SII, adjunta el PDF al enviar.
-          </p>
+          <p className="mt-2 text-[11px] text-slate-400">📎 El mensaje lleva el enlace a la factura. “Enviado” = tú lo mandaste; que el cliente lo abra o no es cosa de él.</p>
         </>
       )}
     </div>
