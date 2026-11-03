@@ -37,6 +37,13 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
     prisma.movimientoStock.groupBy({ by: ["productoId"], _sum: { cantidad: true }, where: { tipo: "venta", fecha: { gte: desde } } }),
   ]);
 
+  // Más vendidos POR LUGAR (de dónde salieron): local (sala) / camión-ruta (vehículo) / bodega.
+  const [ventasPorLugar, ubics] = await Promise.all([
+    prisma.movimientoStock.groupBy({ by: ["productoId", "ubicacionOrigenId"], _sum: { cantidad: true }, where: { tipo: "venta", fecha: { gte: desde } } }),
+    prisma.ubicacion.findMany({ select: { id: true, tipo: true } }),
+  ]);
+  const tipoUbic = new Map(ubics.map((u) => [u.id, u.tipo]));
+
   const totalPeriodo = Number(ventasPeriodo._sum.total ?? 0);
   const porCobrar = Math.max(0, Number(sumaVentas._sum.total ?? 0) - Number(sumaPagos._sum.monto ?? 0));
   const { label: canalLabel } = await getCanalMaps();
@@ -67,6 +74,27 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
     .sort((a, b) => b.u - a.u);
   const helados = ranking.filter((r) => LINEAS_HELADO.has(r.p!.linea)).slice(0, 6);
   const dulces = ranking.filter((r) => !LINEAS_HELADO.has(r.p!.linea)).slice(0, 6);
+
+  // Ranking POR LUGAR (de dónde salieron las ventas).
+  const lugarDe = (uid: string | null) => {
+    const t = uid ? tipoUbic.get(uid) : undefined;
+    return t === "sala" ? "🏪 Local" : t === "vehiculo" ? "🚚 Camión / Ruta" : t === "bodega" ? "🏭 Bodega (retiros)" : "📍 Otro";
+  };
+  const porLugar = new Map<string, Map<string, number>>();
+  for (const v of ventasPorLugar) {
+    const u = Number(v._sum.cantidad ?? 0);
+    if (u <= 0) continue;
+    const lugar = lugarDe(v.ubicacionOrigenId);
+    const m = porLugar.get(lugar) ?? new Map<string, number>();
+    m.set(v.productoId, (m.get(v.productoId) ?? 0) + u);
+    porLugar.set(lugar, m);
+  }
+  const rankingLugar = ["🏪 Local", "🚚 Camión / Ruta", "🏭 Bodega (retiros)", "📍 Otro"]
+    .filter((l) => porLugar.has(l))
+    .map((l) => ({
+      lugar: l,
+      filas: [...porLugar.get(l)!.entries()].map(([id, u]) => ({ id, u, p: pById.get(id) })).filter((r) => r.p).sort((a, b) => b.u - a.u).slice(0, 5),
+    }));
 
   // Estado de puesta en marcha (para invitar a "Primeros pasos" si falta algo).
   const [nTrab, nProd, nPrec, nStk] = await Promise.all([
@@ -163,6 +191,19 @@ export default async function Panel({ searchParams }: { searchParams: Promise<{ 
           <RankingCol titulo="🍦 Helados más vendidos" filas={helados} color="#1479c4" periodo={periodoLabel} />
         </div>
       </div>
+
+      {/* Más vendidos POR LUGAR: de dónde salieron (local / camión-ruta / bodega) */}
+      {rankingLugar.length > 0 && (
+        <div className="mt-8">
+          <h2 className="font-display text-base font-extrabold text-slate-900">📍 Más vendidos por lugar {periodoLabel}</h2>
+          <p className="mb-3 text-xs text-slate-500">De dónde salieron las ventas: la caja del <b>Local</b>, el <b>camión</b> del vendedor (ruta/terreno) o la <b>bodega</b> (retiros de distribuidores).</p>
+          <div className="grid gap-6 lg:grid-cols-3">
+            {rankingLugar.map((r) => (
+              <RankingCol key={r.lugar} titulo={r.lugar} filas={r.filas} color="#2f9e44" periodo={periodoLabel} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
