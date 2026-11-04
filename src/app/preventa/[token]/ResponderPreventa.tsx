@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { dejarPedidoPreventa, posponerPreventa } from "../actions";
 
-type Item = { id: string; nombre: string; sub: string };
+type Item = { id: string; nombre: string; sub: string; img?: string };
 
 /**
  * Selector del cliente: +/− por producto arma un texto de pedido, o el botón de
@@ -32,9 +32,15 @@ export default function ResponderPreventa({ token, items }: { token: string; ite
             const n = qty[it.id] ?? 0;
             return (
               <li key={it.id} className="flex items-center justify-between gap-2 py-2">
-                <span className="min-w-0">
-                  <span className="block text-sm font-bold text-tinta">{it.nombre}</span>
-                  {it.sub && <span className="block text-[11px] text-choco-2">{it.sub}</span>}
+                <span className="flex min-w-0 items-center gap-2.5">
+                  {it.img && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={it.img} alt={it.nombre} className="h-12 w-12 shrink-0 rounded-lg object-cover ring-1 ring-crema-2" />
+                  )}
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold text-tinta">{it.nombre}</span>
+                    {it.sub && <span className="block text-[11px] text-choco-2">{it.sub}</span>}
+                  </span>
                 </span>
                 <span className="flex shrink-0 items-center gap-2">
                   <button type="button" onClick={() => set(it.id, -1)} disabled={n === 0}

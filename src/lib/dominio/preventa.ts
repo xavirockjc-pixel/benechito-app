@@ -30,16 +30,16 @@ export function esEstadoPreventa(v: string): v is EstadoPreventa {
  * Catálogo FIJO que ve el cliente en el seleccionador de preventa de ruta.
  * (No depende del catálogo de tienda; son los productos que se reponen en ruta.)
  */
-export const CATALOGO_PREVENTA: { nombre: string; sub: string }[] = [
-  { nombre: "Tú y Yo tradicional", sub: "bolsa 50 u." },
-  { nombre: "Tú y Yo surtido", sub: "bolsa 50 u." },
-  { nombre: "Paleta de leche surtida", sub: "bolsa 50 u." },
-  { nombre: "Paleta de agua surtida", sub: "bolsa 50 u." },
-  { nombre: "Postre artesanal surtido", sub: "pack 16 u." },
-  { nombre: "Cuchuflís surtidos", sub: "pack 4 u." },
-  { nombre: "Trufas surtidas", sub: "" },
-  { nombre: "Bandeja de trufas tradicionales", sub: "bandeja" },
-  { nombre: "Bandeja de cocada tradicionales", sub: "bandeja" },
+export const CATALOGO_PREVENTA: { nombre: string; sub: string; img: string }[] = [
+  { nombre: "Tú y Yo tradicional", sub: "bolsa 50 u.", img: "/productos/tu-y-yo.jpg" },
+  { nombre: "Tú y Yo surtido", sub: "bolsa 50 u.", img: "/productos/tu-y-yo.jpg" },
+  { nombre: "Paleta de leche surtida", sub: "bolsa 50 u.", img: "/productos/paletas-leche.jpg" },
+  { nombre: "Paleta de agua surtida", sub: "bolsa 50 u.", img: "/productos/paletas-agua.jpg" },
+  { nombre: "Postre artesanal surtido", sub: "pack 16 u.", img: "/productos/postres.jpg" },
+  { nombre: "Cuchuflís surtidos", sub: "pack 4 u.", img: "/productos/cuchufli-a.jpg" },
+  { nombre: "Trufas surtidas", sub: "bolsa 40 u. · $4.000", img: "/productos/trufas.jpg" },
+  { nombre: "Bandeja de trufas tradicionales", sub: "40 u. · $4.000", img: "/catalogo/trufa-manjar-nueces.jpg" },
+  { nombre: "Bandeja de cocada tradicionales", sub: "$3.500", img: "/productos/cocadas.jpg" },
 ];
 
 /**

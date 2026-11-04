@@ -36,7 +36,7 @@ export default async function PreventaCliente({
   const diaRuta = rutaDia ? DIAS[rutaDia.dia] : null;
 
   // Catálogo FIJO de preventa de ruta (los productos que se reponen).
-  const items = CATALOGO_PREVENTA.map((p, i) => ({ id: `p${i}`, nombre: p.nombre, sub: p.sub }));
+  const items = CATALOGO_PREVENTA.map((p, i) => ({ id: `p${i}`, nombre: p.nombre, sub: p.sub, img: p.img }));
 
   const nombre = negocio.nombreNegocio || negocio.nombreContacto || "cliente";
   const waBenechito = whatsappLink(`¡Hola Benechito! Soy ${nombre}. `);
