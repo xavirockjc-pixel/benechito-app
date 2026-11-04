@@ -46,12 +46,14 @@ export default async function VendedorHome({
 
     // Pedidos por entregar: aviso para no saltárselos (atrasados / hoy).
     const finHoy = new Date(hoy); finHoy.setDate(finHoy.getDate() + 1);
-    const [ultimaRevision, repHoy, repAtras, pendientesTotal, facturasPend] = await Promise.all([
+    const [ultimaRevision, repHoy, repAtras, pendientesTotal, facturasPend, preventaResp] = await Promise.all([
       prisma.revisionVehiculo.findFirst({ where: vehiculoId ? { vehiculoId } : {}, orderBy: { fecha: "desc" } }),
       prisma.pedidoReparto.count({ where: { estado: { in: ["pendiente", "en_ruta"] }, fecha: { gte: hoy, lt: finHoy } } }),
       prisma.pedidoReparto.count({ where: { estado: { in: ["pendiente", "en_ruta"] }, fecha: { lt: hoy } } }),
       prisma.pedidoReparto.count({ where: { estado: { in: ["pendiente", "en_ruta"] } } }),
       prisma.documentoVenta.count({ where: { tipo: "factura", estado: "pendiente", venta: { is: { facturada: false } } } }),
+      // Respuestas de preventa sin atender (el cliente pidió o dijo que pasa).
+      prisma.preventa.count({ where: { atendida: false, estado: { notIn: ["enviada", "sin_respuesta"] } } }),
     ]);
 
     // Km del día y estado del chequeo (desde la última revisión del vehículo).
@@ -83,6 +85,11 @@ export default async function VendedorHome({
         {avisoPend && (
           <Link href="/vendedor/pedidos-online" className="block rounded-xl bg-rose-600 px-4 py-3 text-center text-sm font-extrabold text-white shadow active:scale-95">
             {avisoPend} →
+          </Link>
+        )}
+        {preventaResp > 0 && (
+          <Link href="/vendedor/preventa" className="block rounded-xl bg-[#0f766e] px-4 py-3 text-center text-sm font-extrabold text-white shadow active:scale-95">
+            📬 {preventaResp} cliente{preventaResp > 1 ? "s" : ""} respondió{preventaResp > 1 ? "eron" : ""} la preventa →
           </Link>
         )}
         {Tabs}
