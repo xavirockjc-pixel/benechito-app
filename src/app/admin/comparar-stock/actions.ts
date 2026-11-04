@@ -61,13 +61,15 @@ export async function vaciarBodegaCero() {
     prisma.stockSabor.findMany({ where: { ubicacionId: bodUb, cantidad: { not: 0 } }, include: { sabor: { select: { nombre: true } } } }),
     prisma.stock.findMany({ where: { ubicacionId: bodUb, cantidad: { not: 0 } }, include: { producto: { select: { nombre: true } } } }),
   ]);
+  // zona "ajuste": estos movimientos los hace el PANEL (admin), no el bodeguero.
+  // Van aparte para no ensuciar el registro de bodega (que solo muestra zona "bodega").
   for (const f of sab) {
     await prisma.stockSabor.update({ where: { id: f.id }, data: { cantidad: 0 } });
-    await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "ajuste", clase: "sabor", refId: f.saborId, nombre: f.sabor.nombre, cantidad: -f.cantidad, detalle: "Bodega a 0 (arrancar desde cero)", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+    await prisma.movimientoBodega.create({ data: { zona: "ajuste", ubicacionId: bodUb, tipo: "ajuste", clase: "sabor", refId: f.saborId, nombre: f.sabor.nombre, cantidad: -f.cantidad, detalle: "Bodega a 0 (arrancar desde cero)", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
   }
   for (const f of prod) {
     await prisma.stock.update({ where: { id: f.id }, data: { cantidad: 0 } });
-    await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "ajuste", clase: "producto", refId: f.productoId, nombre: f.producto.nombre, cantidad: -f.cantidad, detalle: "Bodega a 0 (arrancar desde cero)", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+    await prisma.movimientoBodega.create({ data: { zona: "ajuste", ubicacionId: bodUb, tipo: "ajuste", clase: "producto", refId: f.productoId, nombre: f.producto.nombre, cantidad: -f.cantidad, detalle: "Bodega a 0 (arrancar desde cero)", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
   }
   revalidar();
 }
@@ -85,19 +87,21 @@ export async function cuadrarItem(formData: FormData) {
   const ubId = donde === "bodega" ? await ubicacionBodegaId() : await ubicacionProduccionId();
   if (!ubId) return;
   const u = await usuarioActual();
+  // Movimiento del PANEL (admin): va a zona "ajuste", fuera del registro del bodeguero.
+  const zonaMov = donde === "bodega" ? "ajuste" : "produccion";
 
   if (clase === "sab") {
     const row = await prisma.stockSabor.findUnique({ where: { saborId_ubicacionId: { saborId: refId, ubicacionId: ubId } } });
     if (!row || row.cantidad === 0) return;
     await prisma.stockSabor.update({ where: { id: row.id }, data: { cantidad: 0 } });
     const s = await prisma.sabor.findUnique({ where: { id: refId }, select: { nombre: true } });
-    await prisma.movimientoBodega.create({ data: { zona: donde, ubicacionId: ubId, tipo: "ajuste", clase: "sabor", refId, nombre: s?.nombre ?? "—", cantidad: -row.cantidad, detalle: "Cuadrado a 0 (comparador)", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+    await prisma.movimientoBodega.create({ data: { zona: zonaMov, ubicacionId: ubId, tipo: "ajuste", clase: "sabor", refId, nombre: s?.nombre ?? "—", cantidad: -row.cantidad, detalle: "Cuadrado a 0 (comparador)", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
   } else {
     const row = await prisma.stock.findUnique({ where: { productoId_ubicacionId: { productoId: refId, ubicacionId: ubId } } });
     if (!row || row.cantidad === 0) return;
     await prisma.stock.update({ where: { id: row.id }, data: { cantidad: 0 } });
     const p = await prisma.producto.findUnique({ where: { id: refId }, select: { nombre: true } });
-    await prisma.movimientoBodega.create({ data: { zona: donde, ubicacionId: ubId, tipo: "ajuste", clase: "producto", refId, nombre: p?.nombre ?? "—", cantidad: -row.cantidad, detalle: "Cuadrado a 0 (comparador)", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+    await prisma.movimientoBodega.create({ data: { zona: zonaMov, ubicacionId: ubId, tipo: "ajuste", clase: "producto", refId, nombre: p?.nombre ?? "—", cantidad: -row.cantidad, detalle: "Cuadrado a 0 (comparador)", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
   }
   revalidar();
 }

@@ -106,25 +106,50 @@ export default async function HistorialBodega() {
                     </div>
                   )}
 
-                  {/* Movimientos de bodega */}
-                  {d.movs.length > 0 && (
-                    <div>
-                      <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">📦 Movimientos</p>
-                      <ul className="divide-y divide-slate-100 text-sm">
-                        {d.movs.map((m) => (
-                          <li key={m.id} className="flex items-center justify-between gap-2 py-1">
-                            <span className="min-w-0">
-                              <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : m.tipo === "mixto" ? "text-[#b45309]" : m.tipo === "ajuste" ? "text-blue-600" : "text-red-600"}`}>
-                                {m.tipo === "entrada" ? "📥 +" : m.tipo === "mixto" ? "🍬 " : m.tipo === "ajuste" ? "✏️ " : "📤 −"}{m.cantidad}
-                              </span>{" "}
-                              <span className="text-slate-800">{m.nombre}</span>
-                            </span>
-                            <span className="shrink-0 text-xs text-slate-400">{m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
+                  {/* Movimientos de bodega: entró/salió primero; correcciones de conteo aparte */}
+                  {(() => {
+                    const principales = d.movs.filter((m) => m.tipo !== "ajuste");
+                    const correcciones = d.movs.filter((m) => m.tipo === "ajuste");
+                    return (
+                      <>
+                        {principales.length > 0 && (
+                          <div>
+                            <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">📦 Movimientos</p>
+                            <ul className="divide-y divide-slate-100 text-sm">
+                              {principales.map((m) => (
+                                <li key={m.id} className="flex items-center justify-between gap-2 py-1">
+                                  <span className="min-w-0">
+                                    <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : m.tipo === "mixto" ? "text-[#b45309]" : "text-red-600"}`}>
+                                      {m.tipo === "entrada" ? "📥 +" : m.tipo === "mixto" ? "🍬 " : "📤 −"}{m.cantidad}
+                                    </span>{" "}
+                                    <span className="text-slate-800">{m.nombre}</span>
+                                  </span>
+                                  <span className="shrink-0 text-xs text-slate-400">{m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        {correcciones.length > 0 && (
+                          <details>
+                            <summary className="cursor-pointer text-[11px] font-bold uppercase tracking-wide text-blue-600">✏️ Correcciones de conteo ({correcciones.length})</summary>
+                            <ul className="mt-1 divide-y divide-slate-100 text-sm">
+                              {correcciones.map((m) => (
+                                <li key={m.id} className="flex items-center justify-between gap-2 py-1">
+                                  <span className="min-w-0">
+                                    <span className="font-bold text-blue-600">✏️ {m.cantidad}</span>{" "}
+                                    <span className="text-slate-800">{m.nombre}</span>
+                                    {m.detalle && <span className="text-xs text-slate-400"> · {m.detalle}</span>}
+                                  </span>
+                                  <span className="shrink-0 text-xs text-slate-400">{m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </details>
+                        )}
+                      </>
+                    );
+                  })()}
 
                   {/* Devoluciones de ruta */}
                   {d.devos.length > 0 && (

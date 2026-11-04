@@ -100,6 +100,12 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
   else lineasStock.push("Sin packs en bodega.");
   const textoStock = lineasStock.join("\n");
 
+  // El registro del día: lo que entró/salió (lo que de verdad movió el bodeguero,
+  // por voz o a mano) va primero; las correcciones de conteo (ajustes) van aparte,
+  // plegadas, para no saturar.
+  const movPrincipales = registroHoy.filter((m) => m.tipo !== "ajuste");
+  const movCorrecciones = registroHoy.filter((m) => m.tipo === "ajuste");
+
   // Pendiente por recibir de Producción (stock que fabricó Producción y aún no entra a bodega).
   const prodUb = await ubicacionProduccionId();
   const [pendSab, pendProd] = prodUb
@@ -209,30 +215,53 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
       {/* Registro del día (plegado) + enlace al calendario por día */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-bold text-slate-900">🧾 Registro de hoy <span className="text-xs font-normal text-slate-400">({registroHoy.length})</span></h2>
+          <h2 className="text-sm font-bold text-slate-900">🧾 Registro de hoy <span className="text-xs font-normal text-slate-400">({movPrincipales.length})</span></h2>
           <Link href="/bodega/historial" className="shrink-0 rounded-lg bg-[#b45309]/10 px-3 py-1.5 text-xs font-bold text-[#b45309]">📅 Ver por día</Link>
         </div>
         {registroHoy.length === 0 ? (
           <p className="mt-2 text-sm text-slate-500">Aún no registras movimientos hoy.</p>
         ) : (
-          <details className="mt-2">
-            <summary className="cursor-pointer text-sm font-semibold text-slate-600">Ver los {registroHoy.length} movimiento{registroHoy.length === 1 ? "" : "s"} de hoy</summary>
-            <ul className="mt-1 divide-y divide-slate-100 text-sm">
-              {registroHoy.map((m) => (
-                <li key={m.id} className="flex items-center justify-between py-1.5">
-                  <span className="min-w-0">
-                    <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : m.tipo === "mixto" ? "text-[#b45309]" : m.tipo === "ajuste" ? "text-blue-600" : "text-red-600"}`}>
-                      {m.tipo === "entrada" ? "📥 +" : m.tipo === "mixto" ? "🍬 " : m.tipo === "ajuste" ? "✏️ " : "📤 −"}{m.cantidad}
-                    </span>{" "}
-                    <span className="text-slate-800">{m.nombre}</span>
-                  </span>
-                  <span className="shrink-0 text-xs text-slate-400">
-                    {m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </details>
+          <>
+            {movPrincipales.length > 0 && (
+              <ul className="mt-2 divide-y divide-slate-100 text-sm">
+                {movPrincipales.map((m) => (
+                  <li key={m.id} className="flex items-center justify-between py-1.5">
+                    <span className="min-w-0">
+                      <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : m.tipo === "mixto" ? "text-[#b45309]" : "text-red-600"}`}>
+                        {m.tipo === "entrada" ? "📥 +" : m.tipo === "mixto" ? "🍬 " : "📤 −"}{m.cantidad}
+                      </span>{" "}
+                      <span className="text-slate-800">{m.nombre}</span>
+                    </span>
+                    <span className="shrink-0 text-xs text-slate-400">
+                      {m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {movPrincipales.length === 0 && (
+              <p className="mt-2 text-sm text-slate-500">Hoy solo hay correcciones de conteo.</p>
+            )}
+            {movCorrecciones.length > 0 && (
+              <details className="mt-2 border-t border-slate-100 pt-2">
+                <summary className="cursor-pointer text-xs font-semibold text-blue-600">✏️ Correcciones de conteo ({movCorrecciones.length})</summary>
+                <ul className="mt-1 divide-y divide-slate-100 text-sm">
+                  {movCorrecciones.map((m) => (
+                    <li key={m.id} className="flex items-center justify-between py-1.5">
+                      <span className="min-w-0">
+                        <span className="font-bold text-blue-600">✏️ {m.cantidad}</span>{" "}
+                        <span className="text-slate-800">{m.nombre}</span>
+                        {m.detalle && <span className="text-xs text-slate-400"> · {m.detalle}</span>}
+                      </span>
+                      <span className="shrink-0 text-xs text-slate-400">
+                        {m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </>
         )}
         <p className="mt-2 text-[11px] leading-tight text-slate-400">
           El historial por día (movimientos, ventas y devoluciones) está en <b>📅 Registro por día</b>.

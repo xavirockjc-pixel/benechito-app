@@ -46,6 +46,11 @@ const RESTAR = ["quita", "quitar", "quitame", "saca", "sacar", "sacame", "resta"
 // Conectores que separan una orden de otra ("tres trufas Y dos paletas").
 const SEPARADORES = new Set(["y", "mas", "ademas", "tambien", "luego", "despues"]);
 
+// Palabras que DISTINGUEN una variante de otra del mismo producto. Si el usuario
+// dice una de estas, el producto elegido DEBE tener la misma (nunca confundir
+// "paleta de leche" con "paleta de agua", ni "tú y yo surtido" con "tradicional").
+const DISCRIMINADORES = new Set(["agua", "leche", "premium", "tradicional", "surtido"]);
+
 // Palabras a ignorar al comparar nombres de producto (verbos de acción, conectores…).
 const RELLENO = new Set([
   "de", "el", "la", "los", "las", "un", "una", "unos", "unas", "y", "con", "por", "favor", "mas", "otra", "otro",
@@ -125,11 +130,18 @@ export function interpretarComandoVenta(texto: string, productos: ProdVoz[]): Ca
 
     // Empareja el producto: el que tenga más tokens coincidentes en el segmento.
     const segTokens = palabras.filter((w) => !RELLENO.has(w) && !RESTAR.includes(w) && !(w in NUMEROS) && !/^\d+$/.test(w));
+    // Variantes que el usuario nombró explícitamente (agua/leche/premium/…).
+    const segDisc = new Set(segTokens.filter((w) => DISCRIMINADORES.has(w)));
     let mejor: { p: (typeof prods)[number]; score: number } | null = null;
     for (const p of prods) {
+      const prodDisc = p.tokens.filter((t) => DISCRIMINADORES.has(t));
+      // Si el usuario dijo una variante y este producto es de OTRA variante, se descarta.
+      // Así "paleta de leche" nunca cae en "paleta de agua".
+      if (segDisc.size > 0 && prodDisc.length > 0 && !prodDisc.some((d) => segDisc.has(d))) continue;
       let score = 0;
       for (const pt of p.tokens) {
-        if (segTokens.some((st) => coincide(st, pt))) score++;
+        // La palabra que distingue la variante pesa más que las genéricas ("paleta").
+        if (segTokens.some((st) => coincide(st, pt))) score += DISCRIMINADORES.has(pt) ? 2 : 1;
       }
       if (score > 0 && (!mejor || score > mejor.score)) mejor = { p, score };
     }
