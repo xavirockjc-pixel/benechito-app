@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { rutaDeComuna } from "@/lib/dominio/sectores";
+import { CATALOGO_PREVENTA } from "@/lib/dominio/preventa";
 import { whatsappLink } from "@/lib/config";
 import ResponderPreventa from "./ResponderPreventa";
 
@@ -34,18 +35,8 @@ export default async function PreventaCliente({
   const rutaDia = ruta.clave ? await prisma.rutaDia.findUnique({ where: { ruta: ruta.clave } }).catch(() => null) : null;
   const diaRuta = rutaDia ? DIAS[rutaDia.dia] : null;
 
-  // Productos que repone (catálogo de ruta / publicados en tienda).
-  const productos = await prisma.producto.findMany({
-    where: { activo: true, soloLocal: false, OR: [{ seccion: "ruta" }, { publicarTienda: true }] },
-    orderBy: [{ seccion: "asc" }, { nombre: "asc" }],
-    take: 40,
-    select: { id: true, nombre: true, formato: true, unidadesPack: true },
-  });
-  const items = productos.map((p) => ({
-    id: p.id,
-    nombre: p.nombre,
-    sub: (p.unidadesPack ?? 0) > 0 ? `${p.unidadesPack} u.` : (p.formato ?? ""),
-  }));
+  // Catálogo FIJO de preventa de ruta (los productos que se reponen).
+  const items = CATALOGO_PREVENTA.map((p, i) => ({ id: `p${i}`, nombre: p.nombre, sub: p.sub }));
 
   const nombre = negocio.nombreNegocio || negocio.nombreContacto || "cliente";
   const waBenechito = whatsappLink(`¡Hola Benechito! Soy ${nombre}. `);

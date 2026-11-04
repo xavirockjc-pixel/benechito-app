@@ -27,6 +27,22 @@ export function esEstadoPreventa(v: string): v is EstadoPreventa {
 }
 
 /**
+ * Catálogo FIJO que ve el cliente en el seleccionador de preventa de ruta.
+ * (No depende del catálogo de tienda; son los productos que se reponen en ruta.)
+ */
+export const CATALOGO_PREVENTA: { nombre: string; sub: string }[] = [
+  { nombre: "Tú y Yo tradicional", sub: "bolsa 50 u." },
+  { nombre: "Tú y Yo surtido", sub: "bolsa 50 u." },
+  { nombre: "Paleta de leche surtida", sub: "bolsa 50 u." },
+  { nombre: "Paleta de agua surtida", sub: "bolsa 50 u." },
+  { nombre: "Postre artesanal surtido", sub: "pack 16 u." },
+  { nombre: "Cuchuflís surtidos", sub: "pack 4 u." },
+  { nombre: "Trufas surtidas", sub: "" },
+  { nombre: "Bandeja de trufas tradicionales", sub: "bandeja" },
+  { nombre: "Bandeja de cocada tradicionales", sub: "bandeja" },
+];
+
+/**
  * Mensaje por defecto de preventa. `{nombre}` se reemplaza por el del cliente y
  * `{link}` por su link personal para responder (elegir productos o decir que pasa).
  */
