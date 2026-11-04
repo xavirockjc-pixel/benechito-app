@@ -80,11 +80,11 @@ export async function recibirDeProduccion(formData: FormData) {
       const { sueltos: idSueltos, pack: idPack } = await productosPostre();
       if (sueltos > 0) {
         await prisma.stock.upsert({ where: { productoId_ubicacionId: { productoId: idSueltos, ubicacionId: bodUb } }, update: { cantidad: { increment: sueltos } }, create: { productoId: idSueltos, ubicacionId: bodUb, cantidad: sueltos } });
-        await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "entrada", clase: "producto", refId: idSueltos, nombre: "Postres sueltos", cantidad: sueltos, detalle: "Recibido de producción", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+        await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "entrada", motivo: "produccion", clase: "producto", refId: idSueltos, nombre: "Postres sueltos", cantidad: sueltos, detalle: "Recibido de producción", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
       }
       if (packs > 0) {
         await prisma.stock.upsert({ where: { productoId_ubicacionId: { productoId: idPack, ubicacionId: bodUb } }, update: { cantidad: { increment: packs } }, create: { productoId: idPack, ubicacionId: bodUb, cantidad: packs } });
-        await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "entrada", clase: "producto", refId: idPack, nombre: "Pack postres x16", cantidad: packs, detalle: `Recibido de producción (${packs * 16} u.)`, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+        await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "entrada", motivo: "produccion", clase: "producto", refId: idPack, nombre: "Pack postres x16", cantidad: packs, detalle: `Recibido de producción (${packs * 16} u.)`, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
       }
       continue;
     }
@@ -101,7 +101,7 @@ export async function recibirDeProduccion(formData: FormData) {
       });
       const s = await prisma.sabor.findUnique({ where: { id: it.refId }, select: { nombre: true } });
       await prisma.movimientoBodega.create({
-        data: { zona: "bodega", ubicacionId: bodUb, tipo: "entrada", clase: "sabor", refId: it.refId, nombre: s?.nombre ?? it.nombre ?? "—", cantidad: mover, detalle: "Recibido de producción", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+        data: { zona: "bodega", ubicacionId: bodUb, tipo: "entrada", motivo: "produccion", clase: "sabor", refId: it.refId, nombre: s?.nombre ?? it.nombre ?? "—", cantidad: mover, detalle: "Recibido de producción", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
       });
     } else {
       const origen = await prisma.stock.findUnique({ where: { productoId_ubicacionId: { productoId: it.refId, ubicacionId: prodUb } } });
@@ -115,7 +115,7 @@ export async function recibirDeProduccion(formData: FormData) {
       });
       const p = await prisma.producto.findUnique({ where: { id: it.refId }, select: { nombre: true } });
       await prisma.movimientoBodega.create({
-        data: { zona: "bodega", ubicacionId: bodUb, tipo: "entrada", clase: "producto", refId: it.refId, nombre: p?.nombre ?? it.nombre ?? "—", cantidad: mover, detalle: "Recibido de producción", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+        data: { zona: "bodega", ubicacionId: bodUb, tipo: "entrada", motivo: "produccion", clase: "producto", refId: it.refId, nombre: p?.nombre ?? it.nombre ?? "—", cantidad: mover, detalle: "Recibido de producción", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
       });
     }
   }
@@ -133,6 +133,11 @@ export async function recibirDeProduccion(formData: FormData) {
  */
 export async function registrarSalidaDestino(formData: FormData) {
   const destino = String(formData.get("destino") ?? "").trim();
+  // Motivo de la salida: venta | distribuidor | local | otro (el camión se registra
+  // solo desde la app del vendedor). Por defecto "otro".
+  const motivosOk = new Set(["venta", "distribuidor", "local", "otro"]);
+  const motivoRaw = String(formData.get("motivo") ?? "").trim();
+  const motivo = motivosOk.has(motivoRaw) ? motivoRaw : "otro";
   type It = { id: string; nombre?: string; cantidad: number };
   let items: It[] = [];
   try { items = JSON.parse(String(formData.get("items") ?? "[]")); } catch { return; }
@@ -161,14 +166,14 @@ export async function registrarSalidaDestino(formData: FormData) {
       const baja = Math.min(it.cantidad, row?.cantidad ?? it.cantidad);
       await prisma.stockSabor.upsert({ where: { saborId_ubicacionId: { saborId: refId, ubicacionId: bodUb } }, update: { cantidad: { decrement: baja } }, create: { saborId: refId, ubicacionId: bodUb, cantidad: -baja } });
       if (!nombre) nombre = (await prisma.sabor.findUnique({ where: { id: refId }, select: { nombre: true } }))?.nombre ?? "—";
-      await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "salida", clase: "sabor", refId, nombre, cantidad: -baja, detalle: destino ? `Para: ${destino}` : "Salida", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+      await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "salida", motivo, clase: "sabor", refId, nombre, cantidad: -baja, detalle: destino ? `Para: ${destino}` : "Salida", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
       await prisma.salidaBodega.create({ data: { clase: "sabor", refId, nombre, cantidad: baja, destinoTexto: destino || null, negocioId, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
     } else {
       const row = await prisma.stock.findUnique({ where: { productoId_ubicacionId: { productoId: refId, ubicacionId: bodUb } } });
       const baja = Math.min(it.cantidad, row?.cantidad ?? it.cantidad);
       await prisma.stock.upsert({ where: { productoId_ubicacionId: { productoId: refId, ubicacionId: bodUb } }, update: { cantidad: { decrement: baja } }, create: { productoId: refId, ubicacionId: bodUb, cantidad: -baja } });
       if (!nombre) nombre = (await prisma.producto.findUnique({ where: { id: refId }, select: { nombre: true } }))?.nombre ?? "—";
-      await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "salida", clase: "producto", refId, nombre, cantidad: -baja, detalle: destino ? `Para: ${destino}` : "Salida", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
+      await prisma.movimientoBodega.create({ data: { zona: "bodega", ubicacionId: bodUb, tipo: "salida", motivo, clase: "producto", refId, nombre, cantidad: -baja, detalle: destino ? `Para: ${destino}` : "Salida", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
       await prisma.salidaBodega.create({ data: { clase: "producto", refId, nombre, cantidad: baja, destinoTexto: destino || null, negocioId, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null } });
     }
   }
@@ -215,6 +220,8 @@ export async function moverStockBodega(formData: FormData) {
         zona,
         ubicacionId: ubic,
         tipo: aplicado > 0 ? "entrada" : "merma",
+        // Entrada por voz/mano del bodeguero → "manual"; si es salida, es merma.
+        motivo: aplicado > 0 ? "manual" : "merma",
         clase,
         refId,
         nombre,
@@ -411,6 +418,7 @@ export async function armarMixto(formData: FormData) {
       zona: "bodega",
       ubicacionId: bod,
       tipo: "mixto",
+      motivo: "mixto",
       clase: "producto",
       refId: productoMixtoId,
       nombre: nombreMixto,
@@ -463,7 +471,7 @@ export async function crearProductoBodega(formData: FormData) {
       data: { productoId: producto.id, tipo: "ingreso", ubicacionDestinoId: bodega, cantidad, referencia: "bodega-app" },
     });
     await prisma.movimientoBodega.create({
-      data: { zona: "bodega", ubicacionId: bodega, tipo: "entrada", clase: "producto", refId: producto.id, nombre, cantidad, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+      data: { zona: "bodega", ubicacionId: bodega, tipo: "entrada", motivo: "manual", clase: "producto", refId: producto.id, nombre, cantidad, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
     });
   }
 
@@ -511,7 +519,7 @@ export async function crearProductoDistribucion(formData: FormData) {
       });
       await prisma.movimientoBodega.create({
         data: {
-          zona: "sala", ubicacionId: sala, tipo: "entrada", clase: "producto",
+          zona: "sala", ubicacionId: sala, tipo: "entrada", motivo: "manual", clase: "producto",
           refId: producto.id, nombre, cantidad,
           usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
         },

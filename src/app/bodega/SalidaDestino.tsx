@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { registrarSalidaDestino } from "./actions";
+import { MOTIVOS_SALIDA_MANUAL, motivoLabel } from "@/lib/dominio/movimientos";
 
 type SpeechRec = {
   lang: string; interimResults: boolean; continuous: boolean; maxAlternatives: number;
@@ -30,6 +31,7 @@ function parseItems(txt: string): { nombre: string; cantidad: number }[] {
 /** Salió de bodega PARA alguien. Captura ítems + destino (voz: "20 tú y yo para don Juan"). */
 export default function SalidaDestino({ catalogo = [], clientes = [] }: { catalogo?: { id: string; nombre: string }[]; clientes?: string[] }) {
   const [destino, setDestino] = useState("");
+  const [motivo, setMotivo] = useState<string>("venta");
   const [filas, setFilas] = useState<Fila[]>([{ key: 1, nombre: "", cantidad: "" }]);
   const [enviando, setEnviando] = useState(false);
   const [soportado, setSoportado] = useState(true);
@@ -83,12 +85,30 @@ export default function SalidaDestino({ catalogo = [], clientes = [] }: { catalo
     setEnviando(true);
     const fd = new FormData();
     fd.set("destino", destino.trim());
+    fd.set("motivo", motivo);
     fd.set("items", JSON.stringify(items));
     try { await registrarSalidaDestino(fd); } finally { setEnviando(false); }
   }
 
   return (
     <div className="space-y-3">
+      {/* Motivo de la salida */}
+      <div>
+        <p className="mb-1 text-sm font-bold text-slate-700">Motivo de la salida</p>
+        <div className="flex flex-wrap gap-2">
+          {MOTIVOS_SALIDA_MANUAL.map((m) => {
+            const { emoji, label } = motivoLabel(m);
+            const activo = motivo === m;
+            return (
+              <button key={m} type="button" onClick={() => setMotivo(m)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-bold active:brightness-95 ${activo ? "border-[#b45309] bg-amber-50 text-[#b45309]" : "border-slate-300 bg-white text-slate-600"}`}>
+                {emoji} {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       <label className="block text-sm font-bold text-slate-700">¿Para quién / a dónde salió?
         <input value={destino} onChange={(e) => setDestino(e.target.value)} list="clientes-sug" placeholder="Ej: don Juan, ruta sur, almacén X"
           className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm" />

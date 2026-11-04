@@ -658,9 +658,12 @@ model DespachoLote {
 /// Denormalizado (guarda el nombre) para mostrar el "registro del día" sin joins.
 model MovimientoBodega {
   id            String   @id @default(cuid())
-  zona          String   @default("bodega") // bodega | sala (a qué app/ubicación pertenece)
+  zona          String   @default("bodega") // bodega | sala | produccion | ajuste (a qué registro pertenece)
   ubicacionId   String? // ubicación afectada (bodega o sala)
-  tipo          String // entrada | merma | mixto
+  tipo          String // entrada | salida | merma | mixto | ajuste
+  // Motivo de una salida: camion | local | distribuidor | venta | otro.
+  // En entradas: produccion | manual. Da el orden "por sección" del registro.
+  motivo        String?
   clase         String // producto | sabor
   refId         String // id del producto o sabor
   nombre        String // nombre al momento del registro

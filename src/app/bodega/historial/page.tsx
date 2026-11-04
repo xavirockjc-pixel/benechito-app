@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
+import { esEntrada, esSalida, esCorreccion, motivoDe, motivoLabel, MOTIVOS_SALIDA } from "@/lib/dominio/movimientos";
 
 export const dynamic = "force-dynamic";
 
@@ -106,22 +107,28 @@ export default async function HistorialBodega() {
                     </div>
                   )}
 
-                  {/* Movimientos de bodega: entró/salió primero; correcciones de conteo aparte */}
+                  {/* Movimientos por sección: Entradas · Salidas (por motivo) · Correcciones */}
                   {(() => {
-                    const principales = d.movs.filter((m) => m.tipo !== "ajuste");
-                    const correcciones = d.movs.filter((m) => m.tipo === "ajuste");
+                    const entradas = d.movs.filter(esEntrada);
+                    const salidas = d.movs.filter(esSalida);
+                    const correcciones = d.movs.filter(esCorreccion);
+                    const porMotivo = new Map<string, typeof salidas>();
+                    for (const m of salidas) {
+                      const k = motivoDe(m);
+                      if (!porMotivo.has(k)) porMotivo.set(k, []);
+                      porMotivo.get(k)!.push(m);
+                    }
+                    const motivosOrdenados = [...porMotivo.keys()].sort((a, b) => MOTIVOS_SALIDA.indexOf(a as never) - MOTIVOS_SALIDA.indexOf(b as never));
                     return (
                       <>
-                        {principales.length > 0 && (
+                        {entradas.length > 0 && (
                           <div>
-                            <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-400">📦 Movimientos</p>
+                            <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-green-700">📥 Entradas</p>
                             <ul className="divide-y divide-slate-100 text-sm">
-                              {principales.map((m) => (
+                              {entradas.map((m) => (
                                 <li key={m.id} className="flex items-center justify-between gap-2 py-1">
                                   <span className="min-w-0">
-                                    <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : m.tipo === "mixto" ? "text-[#b45309]" : "text-red-600"}`}>
-                                      {m.tipo === "entrada" ? "📥 +" : m.tipo === "mixto" ? "🍬 " : "📤 −"}{m.cantidad}
-                                    </span>{" "}
+                                    <span className="font-bold text-green-700">{m.tipo === "mixto" ? "🍬 " : "+"}{m.cantidad}</span>{" "}
                                     <span className="text-slate-800">{m.nombre}</span>
                                   </span>
                                   <span className="shrink-0 text-xs text-slate-400">{m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}</span>
@@ -130,6 +137,35 @@ export default async function HistorialBodega() {
                             </ul>
                           </div>
                         )}
+
+                        {salidas.length > 0 && (
+                          <div>
+                            <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-red-600">📤 Salidas</p>
+                            <div className="space-y-2">
+                              {motivosOrdenados.map((mot) => {
+                                const lista = porMotivo.get(mot)!;
+                                const total = lista.reduce((s, m) => s + Math.abs(m.cantidad), 0);
+                                const { emoji, label } = motivoLabel(mot);
+                                return (
+                                  <div key={mot} className="rounded-lg bg-slate-50 p-2">
+                                    <p className="mb-0.5 flex justify-between text-xs font-bold text-slate-600">
+                                      <span>{emoji} {label}</span><span className="text-red-600">−{total} u.</span>
+                                    </p>
+                                    <ul className="divide-y divide-slate-100 text-sm">
+                                      {lista.map((m) => (
+                                        <li key={m.id} className="flex items-center justify-between gap-2 py-1">
+                                          <span className="min-w-0 text-slate-800">{m.nombre}{m.detalle && m.detalle !== "Cargado al camión" ? <span className="text-xs text-slate-400"> · {m.detalle}</span> : null}</span>
+                                          <span className="shrink-0 text-xs text-slate-500"><b className="text-red-600">−{Math.abs(m.cantidad)}</b> · {m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}</span>
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
                         {correcciones.length > 0 && (
                           <details>
                             <summary className="cursor-pointer text-[11px] font-bold uppercase tracking-wide text-blue-600">✏️ Correcciones de conteo ({correcciones.length})</summary>

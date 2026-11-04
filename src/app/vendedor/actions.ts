@@ -1357,6 +1357,7 @@ export async function cargarSabor(formData: FormData) {
 
   await aplicarDeltaSabor(saborId, bod, -cantidad);
   await aplicarDeltaSabor(saborId, vehId, cantidad);
+  await registrarSalidaCamion(bod, "sabor", saborId, cantidad);
 
   revalidatePath("/vendedor/camion");
 }
@@ -1415,8 +1416,26 @@ export async function cargarVehiculo(formData: FormData) {
   await prisma.movimientoStock.create({
     data: { productoId, tipo: "transferencia", ubicacionOrigenId: bod, ubicacionDestinoId: vehId, cantidad },
   });
+  await registrarSalidaCamion(bod, "producto", productoId, cantidad);
 
   revalidatePath("/vendedor/camion");
+}
+
+/**
+ * Deja en el registro de BODEGA la salida al camión (para que figure como salida,
+ * no solo como transferencia interna). Nombre del producto/sabor + quién cargó.
+ */
+async function registrarSalidaCamion(bodId: string, clase: "producto" | "sabor", refId: string, cantidad: number) {
+  const u = await usuarioActual();
+  const nombre = clase === "producto"
+    ? (await prisma.producto.findUnique({ where: { id: refId }, select: { nombre: true } }))?.nombre ?? "—"
+    : (await prisma.sabor.findUnique({ where: { id: refId }, select: { nombre: true } }))?.nombre ?? "—";
+  await prisma.movimientoBodega.create({
+    data: {
+      zona: "bodega", ubicacionId: bodId, tipo: "salida", motivo: "camion", clase, refId,
+      nombre, cantidad, detalle: "Cargado al camión", usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+    },
+  }).catch(() => {});
 }
 
 /** Carga VARIOS productos al camión de una vez (usado por el modo voz). */
@@ -1440,6 +1459,7 @@ export async function cargarVehiculoLote(formData: FormData) {
     await prisma.movimientoStock.create({
       data: { productoId: it.productoId, tipo: "transferencia", ubicacionOrigenId: bod, ubicacionDestinoId: vehId, cantidad: it.cantidad },
     });
+    await registrarSalidaCamion(bod, "producto", it.productoId, it.cantidad);
   }
 
   revalidatePath("/vendedor/camion");

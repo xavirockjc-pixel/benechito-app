@@ -13,6 +13,7 @@ import Link from "next/link";
 import { ubicacionProduccionId } from "@/lib/dominio/ubicaciones";
 import { POSTRE_LINEAS } from "@/lib/dominio/produccion";
 import { palabraPack } from "@/lib/dominio/empaque";
+import { esEntrada, esSalida, esCorreccion, motivoDe, motivoLabel, MOTIVOS_SALIDA } from "@/lib/dominio/movimientos";
 import { empezarNuevoDia, productosPostre } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -100,11 +101,19 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
   else lineasStock.push("Sin packs en bodega.");
   const textoStock = lineasStock.join("\n");
 
-  // El registro del día: lo que entró/salió (lo que de verdad movió el bodeguero,
-  // por voz o a mano) va primero; las correcciones de conteo (ajustes) van aparte,
-  // plegadas, para no saturar.
-  const movPrincipales = registroHoy.filter((m) => m.tipo !== "ajuste");
-  const movCorrecciones = registroHoy.filter((m) => m.tipo === "ajuste");
+  // El registro del día, por sección: entradas, salidas (por motivo) y las
+  // correcciones de conteo aparte (plegadas) para no saturar.
+  const movEntradas = registroHoy.filter(esEntrada);
+  const movSalidas = registroHoy.filter(esSalida);
+  const movCorrecciones = registroHoy.filter(esCorreccion);
+  const salidasPorMotivo = new Map<string, typeof movSalidas>();
+  for (const m of movSalidas) {
+    const k = motivoDe(m);
+    if (!salidasPorMotivo.has(k)) salidasPorMotivo.set(k, []);
+    salidasPorMotivo.get(k)!.push(m);
+  }
+  const motivosHoy = [...salidasPorMotivo.keys()].sort((a, b) => MOTIVOS_SALIDA.indexOf(a as never) - MOTIVOS_SALIDA.indexOf(b as never));
+  const totalMovimientos = movEntradas.length + movSalidas.length;
 
   // Pendiente por recibir de Producción (stock que fabricó Producción y aún no entra a bodega).
   const prodUb = await ubicacionProduccionId();
@@ -215,31 +224,57 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
       {/* Registro del día (plegado) + enlace al calendario por día */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-bold text-slate-900">🧾 Registro de hoy <span className="text-xs font-normal text-slate-400">({movPrincipales.length})</span></h2>
+          <h2 className="text-sm font-bold text-slate-900">🧾 Registro de hoy <span className="text-xs font-normal text-slate-400">({totalMovimientos})</span></h2>
           <Link href="/bodega/historial" className="shrink-0 rounded-lg bg-[#b45309]/10 px-3 py-1.5 text-xs font-bold text-[#b45309]">📅 Ver por día</Link>
         </div>
         {registroHoy.length === 0 ? (
           <p className="mt-2 text-sm text-slate-500">Aún no registras movimientos hoy.</p>
         ) : (
           <>
-            {movPrincipales.length > 0 && (
-              <ul className="mt-2 divide-y divide-slate-100 text-sm">
-                {movPrincipales.map((m) => (
-                  <li key={m.id} className="flex items-center justify-between py-1.5">
-                    <span className="min-w-0">
-                      <span className={`font-bold ${m.tipo === "entrada" ? "text-green-700" : m.tipo === "mixto" ? "text-[#b45309]" : "text-red-600"}`}>
-                        {m.tipo === "entrada" ? "📥 +" : m.tipo === "mixto" ? "🍬 " : "📤 −"}{m.cantidad}
-                      </span>{" "}
-                      <span className="text-slate-800">{m.nombre}</span>
-                    </span>
-                    <span className="shrink-0 text-xs text-slate-400">
-                      {m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+            {movEntradas.length > 0 && (
+              <div className="mt-2">
+                <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-green-700">📥 Entradas</p>
+                <ul className="divide-y divide-slate-100 text-sm">
+                  {movEntradas.map((m) => (
+                    <li key={m.id} className="flex items-center justify-between py-1.5">
+                      <span className="min-w-0">
+                        <span className="font-bold text-green-700">{m.tipo === "mixto" ? "🍬 " : "+"}{m.cantidad}</span>{" "}
+                        <span className="text-slate-800">{m.nombre}</span>
+                      </span>
+                      <span className="shrink-0 text-xs text-slate-400">{m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
-            {movPrincipales.length === 0 && (
+            {movSalidas.length > 0 && (
+              <div className="mt-3">
+                <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-red-600">📤 Salidas</p>
+                <div className="space-y-2">
+                  {motivosHoy.map((mot) => {
+                    const lista = salidasPorMotivo.get(mot)!;
+                    const total = lista.reduce((s, m) => s + Math.abs(m.cantidad), 0);
+                    const { emoji, label } = motivoLabel(mot);
+                    return (
+                      <div key={mot} className="rounded-lg bg-slate-50 p-2">
+                        <p className="mb-0.5 flex justify-between text-xs font-bold text-slate-600">
+                          <span>{emoji} {label}</span><span className="text-red-600">−{total} u.</span>
+                        </p>
+                        <ul className="divide-y divide-slate-100 text-sm">
+                          {lista.map((m) => (
+                            <li key={m.id} className="flex items-center justify-between py-1">
+                              <span className="min-w-0 text-slate-800">{m.nombre}</span>
+                              <span className="shrink-0 text-xs text-slate-500"><b className="text-red-600">−{Math.abs(m.cantidad)}</b> · {m.nombreUsuario ? `${m.nombreUsuario} · ` : ""}{fmtHora(m.fecha)}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {totalMovimientos === 0 && (
               <p className="mt-2 text-sm text-slate-500">Hoy solo hay correcciones de conteo.</p>
             )}
             {movCorrecciones.length > 0 && (
