@@ -718,13 +718,18 @@ model Preventa {
   negocio   Negocio  @relation(fields: [negocioId], references: [id], onDelete: Cascade)
   negocioId String
   mensaje   String?
-  // estado: enviada | pedido | visita | no_necesita | sin_respuesta
+  // estado: enviada | pedido | pospone | visita | no_necesita | sin_respuesta
   estado    String   @default("enviada")
   canal     String   @default("whatsapp")
+  // Respuesta del cliente desde el link de preventa (qué pidió / cuándo vuelve).
+  detalle      String?  // lo que el cliente dijo que necesita (texto armado del selector)
+  atendida     Boolean  @default(false) // el vendedor ya la vio/gestionó
+  respondidoEn DateTime? // cuándo respondió el cliente (null = solo enviada)
   createdAt DateTime @default(now())
 
   @@index([negocioId])
   @@index([estado])
+  @@index([atendida])
 }
 
 // ===========================================================================
