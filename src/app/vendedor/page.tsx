@@ -2,9 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { usuarioActual } from "@/lib/auth";
 import { fmtCLP } from "@/lib/dominio/pedidos";
-import { tipoClienteLabel } from "@/lib/dominio/precios";
 import { rutaDeComuna } from "@/lib/dominio/sectores";
-import { esDormido } from "@/lib/dominio/clientes";
+import { normalizarTelefono } from "@/lib/whatsapp";
 import { CHECKLIST_VEHICULO, estadoRevisionColor, estadoRevisionLabel } from "@/lib/dominio/vehiculo";
 import MiUbicacion from "./MiUbicacion";
 import CatalogoVenta from "./CatalogoVenta";
@@ -57,10 +56,6 @@ export default async function VendedorHome({
       prisma.preventa.count({ where: { atendida: false, estado: { notIn: ["enviada", "sin_respuesta"] } } }),
     ]);
 
-    // Clientes dormidos (compraban seguido y se callaron) para la alerta.
-    const ventasAgg = await prisma.venta.groupBy({ by: ["negocioId"], _count: { _all: true }, _max: { fecha: true }, _min: { fecha: true } });
-    const dormidos = ventasAgg.filter((a) => esDormido(a._min.fecha, a._max.fecha, a._count._all, new Date())).length;
-
     // Km del día y estado del chequeo (desde la última revisión del vehículo).
     const revHoy = ultimaRevision ? new Date(ultimaRevision.fecha) >= hoy : false;
     const kmRecorrido = ultimaRevision && ultimaRevision.kmEntrada > ultimaRevision.kmSalida
@@ -95,11 +90,6 @@ export default async function VendedorHome({
         {preventaResp > 0 && (
           <Link href="/vendedor/preventa" className="block rounded-xl bg-[#0f766e] px-4 py-3 text-center text-sm font-extrabold text-white shadow active:scale-95">
             📬 {preventaResp} cliente{preventaResp > 1 ? "s" : ""} respondió{preventaResp > 1 ? "eron" : ""} la preventa →
-          </Link>
-        )}
-        {dormidos > 0 && (
-          <Link href="/vendedor/dormidos" className="block rounded-xl bg-amber-500 px-4 py-3 text-center text-sm font-extrabold text-white shadow active:scale-95">
-            💤 {dormidos} cliente{dormidos > 1 ? "s" : ""} se {dormidos > 1 ? "están durmiendo" : "está durmiendo"} — recupéra{dormidos > 1 ? "los" : "lo"} →
           </Link>
         )}
         {Tabs}
@@ -172,18 +162,36 @@ export default async function VendedorHome({
   const sectorLabel = sector ? (rutasPresentes.get(sector) ?? sector) : "";
 
   // ---- Modo filtro/todos: lista de clientes ----
-  // El filtro por ruta se resuelve en JS con rutaDeComuna (agrupa las comunas).
+  // Busca por nombre del negocio, contacto, comuna/sector o TELÉFONO (normalizado,
+  // para encontrar al cliente cuando llega un comprobante de un número no agendado).
+  const digits = busca.replace(/\D/g, "");
+  const incluirVentas = { ventas: { where: { estadoPago: { in: PENDIENTE } }, select: { total: true, pagos: { select: { monto: true } } } } } as const;
   const lista = filtrando
-    ? (
-        await prisma.negocio.findMany({
-          where: {
-            ...(busca ? { OR: [{ nombreNegocio: { contains: busca, mode: "insensitive" } }, { nombreContacto: { contains: busca, mode: "insensitive" } }, { comuna: { contains: busca, mode: "insensitive" } }, { sector: { contains: busca, mode: "insensitive" } }] } : {}),
-          },
+    ? await (async () => {
+        const base = await prisma.negocio.findMany({
+          where: busca ? { OR: [
+            { nombreNegocio: { contains: busca, mode: "insensitive" } },
+            { nombreContacto: { contains: busca, mode: "insensitive" } },
+            { comuna: { contains: busca, mode: "insensitive" } },
+            { sector: { contains: busca, mode: "insensitive" } },
+            ...(digits.length >= 3 ? [{ whatsapp: { contains: digits } }] : []),
+          ] } : {},
           orderBy: [{ comuna: "asc" }, { nombreNegocio: "asc" }],
           take: 600,
-          include: { ventas: { where: { estadoPago: { in: PENDIENTE } }, select: { total: true, pagos: { select: { monto: true } } } } },
-        })
-      ).filter((c) => !sector || rutaDeComuna(c.comuna).clave === sector)
+          include: incluirVentas,
+        });
+        let merged = base;
+        // Si el número viene con espacios/+ y el contains no calzó, comparo por los
+        // últimos 8 dígitos ya normalizados.
+        if (digits.length >= 7) {
+          const tail = digits.slice(-8);
+          const conTel = await prisma.negocio.findMany({ where: { whatsapp: { not: "" } }, take: 3000, include: incluirVentas });
+          const ids = new Set(base.map((b) => b.id));
+          const extra = conTel.filter((c) => !ids.has(c.id) && normalizarTelefono(c.whatsapp).includes(tail));
+          merged = [...extra, ...base]; // los que calzan por teléfono, primero
+        }
+        return merged.filter((c) => !sector || rutaDeComuna(c.comuna).clave === sector);
+      })()
     : [];
 
   // ---- Vista del día ----
@@ -237,7 +245,7 @@ export default async function VendedorHome({
       {/* Buscador (por cliente o sector/ruta) + mensaje masivo */}
       <form className="flex gap-2">
         <input type="hidden" name="t" value="dia" />
-        <input name="q" defaultValue={busca} placeholder="🔎 Buscar cliente o sector…" className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 outline-none focus:border-[#1479c4]" />
+        <input name="q" defaultValue={busca} placeholder="🔎 Nombre, teléfono o sector…" className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-3 text-slate-800 outline-none focus:border-[#1479c4]" />
         {sector && <input type="hidden" name="sector" value={sector} />}
         <button className="rounded-xl bg-[#1479c4] px-4 font-bold text-white">Ir</button>
       </form>
@@ -250,16 +258,8 @@ export default async function VendedorHome({
           📅 Preventa por ruta
         </Link>
       </div>
-      <div className="mt-2 grid grid-cols-2 gap-2">
-        <Link href="/vendedor/armar-ruta" className="flex items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[#0f766e] py-2.5 text-xs font-extrabold text-[#0f766e] active:bg-emerald-50">
-          🧭 Armar ruta
-        </Link>
-        <Link href="/vendedor/historial-ruta" className="flex items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-400 py-2.5 text-xs font-extrabold text-slate-600 active:bg-slate-50">
-          📊 Ranking por ruta
-        </Link>
-      </div>
-      <Link href="/vendedor/dormidos" className="mt-2 flex items-center justify-center gap-1 rounded-xl border-2 border-dashed border-amber-400 py-2.5 text-xs font-extrabold text-amber-600 active:bg-amber-50">
-        💤 Clientes dormidos (recuperar)
+      <Link href="/vendedor/armar-ruta" className="mt-2 flex items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[#0f766e] py-2.5 text-xs font-extrabold text-[#0f766e] active:bg-emerald-50">
+        🧭 Armar ruta del día (por ubicación)
       </Link>
 
       {/* Filtro por SECTOR + Ver todos */}
@@ -277,15 +277,37 @@ export default async function VendedorHome({
           <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-500">
             {sector ? `📍 ${sectorLabel}` : busca ? "Resultados" : "👥 Todos los clientes"} <span className="text-slate-400">({lista.length})</span>
           </h2>
-          {lista.length === 0 && <p className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">Sin clientes que coincidan.</p>}
+          {lista.length === 0 && (
+            <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center">
+              <p className="text-sm text-slate-500">Ningún cliente con ese nombre o teléfono.</p>
+              <Link href={`/vendedor/nuevo?${busca ? (digits.length >= 7 ? `tel=${encodeURIComponent(busca)}` : `nombre=${encodeURIComponent(busca)}`) : ""}`}
+                className="mt-3 inline-block rounded-xl bg-[#1479c4] px-4 py-2.5 text-sm font-extrabold text-white active:brightness-95">➕ Agregar este cliente</Link>
+            </div>
+          )}
           {lista.map((c) => {
             const saldo = saldoDe(c.ventas);
             const esProspecto = c.tipoCliente === "prospecto";
+            const wa = (c.whatsapp || "").replace(/\D/g, "");
             return (
-              <Fila key={c.id} id={c.id} nombre={c.nombreNegocio} prospecto={esProspecto}
-                sub={`${c.comuna || "—"} · ${tipoClienteLabel[c.tipoCliente] ?? c.tipoCliente}`}
-                badge={saldo > 0 ? <span className="rounded-lg bg-red-100 px-2 py-1 text-xs font-bold text-red-700">Debe {fmtCLP(saldo)}</span>
-                  : esProspecto ? <span className="rounded-lg bg-amber-100 px-2 py-1 text-xs font-bold text-amber-700">Prospecto</span> : null} />
+              <div key={c.id} className={`rounded-xl border bg-white p-3 shadow-sm ${esProspecto ? "border-l-4 border-l-amber-400 border-amber-200" : "border-slate-200"}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <Link href={`/vendedor/cliente/${c.id}`} className="min-w-0 flex-1">
+                    <p className="truncate font-bold text-slate-900">{esProspecto && <span className="mr-1 text-amber-500">●</span>}{c.nombreNegocio}</p>
+                    <p className="truncate text-xs text-slate-500">
+                      {c.nombreContacto ? `${c.nombreContacto} · ` : ""}{c.comuna || "—"}{c.whatsapp ? ` · 📱 ${c.whatsapp}` : " · sin WhatsApp"}
+                    </p>
+                  </Link>
+                  {saldo > 0 ? <span className="shrink-0 rounded-lg bg-red-100 px-2 py-1 text-xs font-bold text-red-700">Debe {fmtCLP(saldo)}</span>
+                    : esProspecto ? <span className="shrink-0 rounded-lg bg-amber-100 px-2 py-1 text-xs font-bold text-amber-700">Prospecto</span> : null}
+                </div>
+                <div className="mt-2 flex gap-2">
+                  {wa && <a href={`https://wa.me/${wa}`} target="_blank" rel="noreferrer" className="flex-1 rounded-lg bg-green-600 py-2 text-center text-xs font-bold text-white">💬 WhatsApp</a>}
+                  {c.latitud != null && c.longitud != null
+                    ? <a href={`https://www.google.com/maps/dir/?api=1&destination=${c.latitud},${c.longitud}`} target="_blank" rel="noreferrer" className="flex-1 rounded-lg bg-[#1479c4] py-2 text-center text-xs font-bold text-white">🗺️ Cómo llegar</a>
+                    : <span className="flex-1 rounded-lg bg-slate-100 py-2 text-center text-xs font-semibold text-slate-400">sin ubicación</span>}
+                  <Link href={`/vendedor/cliente/${c.id}`} className="flex-1 rounded-lg bg-slate-100 py-2 text-center text-xs font-bold text-slate-600">Ver / vender</Link>
+                </div>
+              </div>
             );
           })}
         </div>

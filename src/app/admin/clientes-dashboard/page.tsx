@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { rutaDeComuna } from "@/lib/dominio/sectores";
+import { esDormido } from "@/lib/dominio/clientes";
 
 export const dynamic = "force-dynamic";
 
@@ -13,30 +15,43 @@ export default async function ClientesDashboard() {
 
   const negocios = await prisma.negocio.findMany({
     select: {
-      id: true, nombreNegocio: true, comuna: true, puntos: true, estado: true, createdAt: true, fechaIngreso: true,
+      id: true, nombreNegocio: true, comuna: true, sector: true, puntos: true, estado: true, createdAt: true, fechaIngreso: true,
       ventas: { select: { total: true, fecha: true, pagos: { select: { monto: true } } } },
     },
   });
 
+  const ahora = new Date();
   const clientes = negocios.map((c) => {
     const compras = c.ventas.filter((v) => num(v.total) > 0);
     const total = compras.reduce((s, v) => s + num(v.total), 0);
     const pagado = c.ventas.reduce((s, v) => s + v.pagos.reduce((a, p) => a + num(p.monto), 0), 0);
     const saldo = c.ventas.reduce((s, v) => s + num(v.total), 0) - pagado;
     const fechas = compras.map((v) => new Date(v.fecha).getTime());
-    const ultima = fechas.length ? Math.max(...fechas) : null;
-    const dias = ultima ? Math.floor((hoy - ultima) / 864e5) : null;
+    const ultimaMs = fechas.length ? Math.max(...fechas) : null;
+    const primeraMs = fechas.length ? Math.min(...fechas) : null;
+    const dias = ultimaMs ? Math.floor((hoy - ultimaMs) / 864e5) : null;
     const nCompras = compras.length;
     const ticket = nCompras ? total / nCompras : 0;
     const nuevo = new Date(c.createdAt) >= hace30;
-    return { id: c.id, nombre: c.nombreNegocio, comuna: c.comuna, puntos: c.puntos ?? 0, total, saldo, ultima: ultima ? new Date(ultima) : null, dias, nCompras, ticket, nuevo };
+    const dormido = esDormido(primeraMs ? new Date(primeraMs) : null, ultimaMs ? new Date(ultimaMs) : null, nCompras, ahora);
+    return { id: c.id, nombre: c.nombreNegocio, comuna: c.comuna, ruta: rutaDeComuna(c.sector || c.comuna).label, puntos: c.puntos ?? 0, total, saldo, ultima: ultimaMs ? new Date(ultimaMs) : null, dias, nCompras, ticket, nuevo, dormido };
   });
 
   const conCompras = clientes.filter((c) => c.nCompras > 0);
   const mejores = [...conCompras].sort((a, b) => b.total - a.total).slice(0, 10);
-  const dormidos = conCompras.filter((c) => c.dias !== null && c.dias > 45).sort((a, b) => b.total - a.total).slice(0, 12);
+  const dormidos = conCompras.filter((c) => c.dormido).sort((a, b) => b.total - a.total).slice(0, 15);
   const nuevos = clientes.filter((c) => c.nuevo).slice(0, 12);
   const deudores = clientes.filter((c) => c.saldo > 0).sort((a, b) => b.saldo - a.saldo).slice(0, 12);
+
+  // Ranking por ruta: total comprado y nº de clientes por zona.
+  const porRuta = new Map<string, { total: number; clientes: number }>();
+  for (const c of conCompras) {
+    const r = porRuta.get(c.ruta) ?? { total: 0, clientes: 0 };
+    r.total += c.total; r.clientes += 1;
+    porRuta.set(c.ruta, r);
+  }
+  const ranking = [...porRuta.entries()].map(([ruta, d]) => ({ ruta, ...d })).sort((a, b) => b.total - a.total);
+  const maxRuta = Math.max(1, ...ranking.map((r) => r.total));
 
   const totalVendido = conCompras.reduce((s, c) => s + c.total, 0);
   const ticketGlobal = conCompras.length ? totalVendido / conCompras.reduce((s, c) => s + c.nCompras, 0) : 0;
@@ -75,8 +90,25 @@ export default async function ClientesDashboard() {
         ))}
       </Seccion>
 
+      {/* Ranking por ruta */}
+      <Seccion titulo="📍 Ranking por ruta" sub="total comprado por zona" vacia="Aún sin ventas por ruta.">
+        {ranking.map((r, i) => (
+          <li key={r.ruta} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-[#1479c4] text-xs font-extrabold text-white">{i + 1}</span>
+              <span className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-slate-900">{r.ruta}</p>
+                <p className="text-[11px] text-slate-400">{r.clientes} cliente(s) que compran</p>
+              </span>
+              <span className="shrink-0 text-sm font-extrabold text-[#1479c4] tabular-nums">{CLP(r.total)}</span>
+            </div>
+            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-[#1479c4]" style={{ width: `${(r.total / maxRuta) * 100}%` }} /></div>
+          </li>
+        ))}
+      </Seccion>
+
       {/* Por reactivar */}
-      <Seccion titulo="😴 Dormidos — por reactivar" sub="+45 días sin comprar (los de más valor primero)" vacia="Nadie dormido. ¡Bien ahí!">
+      <Seccion titulo="😴 Dormidos — por reactivar" sub="dejaron su ritmo de compra (los de más valor primero)" vacia="Nadie dormido. ¡Bien ahí!">
         {dormidos.map((c) => (
           <li key={c.id} className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/50 p-3 shadow-sm">
             <Link href={`/admin/negocios/${c.id}`} className="min-w-0 flex-1">

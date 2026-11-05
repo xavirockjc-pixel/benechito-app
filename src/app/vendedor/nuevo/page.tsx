@@ -6,8 +6,8 @@ import MicDictado from "@/components/MicDictado";
 
 const inputCls = "w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#1479c4]";
 
-export default async function NuevoClienteRuta({ searchParams }: { searchParams: Promise<{ nombre?: string }> }) {
-  const { nombre } = await searchParams;
+export default async function NuevoClienteRuta({ searchParams }: { searchParams: Promise<{ nombre?: string; tel?: string }> }) {
+  const { nombre, tel } = await searchParams;
   return (
     <div>
       <Link href="/vendedor" className="text-sm font-semibold text-[#1479c4]">← Clientes</Link>
@@ -28,7 +28,7 @@ export default async function NuevoClienteRuta({ searchParams }: { searchParams:
           <input name="nombreContacto" className={`mt-1 ${inputCls}`} />
         </label>
         <label className="block text-sm font-bold text-slate-700">WhatsApp
-          <input name="whatsapp" inputMode="tel" placeholder="+56 9 …" className={`mt-1 ${inputCls}`} />
+          <input name="whatsapp" inputMode="tel" defaultValue={tel ?? ""} placeholder="+56 9 …" className={`mt-1 ${inputCls}`} />
         </label>
         <label className="block text-sm font-bold text-slate-700">Comuna
           <input name="comuna" className={`mt-1 ${inputCls}`} />
