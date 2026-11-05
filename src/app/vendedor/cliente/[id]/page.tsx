@@ -135,8 +135,11 @@ export default async function ClienteRuta({
         <Link href={`/vendedor/cliente/${cliente.id}/cobrar`} className={`rounded-2xl py-6 text-center text-base font-extrabold text-white shadow active:brightness-95 ${saldo > 0 ? "bg-amber-500" : "bg-slate-300"}`}>
           💵<br />Cobrar
         </Link>
-        <Link href={`/vendedor/cliente/${cliente.id}/resultado`} className="col-span-2 rounded-2xl border-2 border-slate-200 bg-white py-5 text-center text-base font-extrabold text-slate-700 active:bg-slate-50">
+        <Link href={`/vendedor/cliente/${cliente.id}/resultado`} className="rounded-2xl border-2 border-slate-200 bg-white py-5 text-center text-base font-extrabold text-slate-700 active:bg-slate-50">
           📝 Resultado de la visita
+        </Link>
+        <Link href={`/vendedor/cliente/${cliente.id}/historial`} className="rounded-2xl border-2 border-slate-200 bg-white py-5 text-center text-base font-extrabold text-slate-700 active:bg-slate-50">
+          📊 Historial de compras
         </Link>
       </div>
 

@@ -240,9 +240,14 @@ export default async function VendedorHome({
           📅 Preventa por ruta
         </Link>
       </div>
-      <Link href="/vendedor/armar-ruta" className="mt-2 flex items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[#0f766e] py-2.5 text-xs font-extrabold text-[#0f766e] active:bg-emerald-50">
-        🧭 Armar ruta del día (por ubicación)
-      </Link>
+      <div className="mt-2 grid grid-cols-2 gap-2">
+        <Link href="/vendedor/armar-ruta" className="flex items-center justify-center gap-1 rounded-xl border-2 border-dashed border-[#0f766e] py-2.5 text-xs font-extrabold text-[#0f766e] active:bg-emerald-50">
+          🧭 Armar ruta
+        </Link>
+        <Link href="/vendedor/historial-ruta" className="flex items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-400 py-2.5 text-xs font-extrabold text-slate-600 active:bg-slate-50">
+          📊 Historial por ruta
+        </Link>
+      </div>
 
       {/* Filtro por SECTOR + Ver todos */}
       <div className="mt-2 flex flex-wrap gap-1.5">
