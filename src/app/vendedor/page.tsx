@@ -4,6 +4,7 @@ import { usuarioActual } from "@/lib/auth";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { tipoClienteLabel } from "@/lib/dominio/precios";
 import { rutaDeComuna } from "@/lib/dominio/sectores";
+import { esDormido } from "@/lib/dominio/clientes";
 import { CHECKLIST_VEHICULO, estadoRevisionColor, estadoRevisionLabel } from "@/lib/dominio/vehiculo";
 import MiUbicacion from "./MiUbicacion";
 import CatalogoVenta from "./CatalogoVenta";
@@ -56,6 +57,10 @@ export default async function VendedorHome({
       prisma.preventa.count({ where: { atendida: false, estado: { notIn: ["enviada", "sin_respuesta"] } } }),
     ]);
 
+    // Clientes dormidos (compraban seguido y se callaron) para la alerta.
+    const ventasAgg = await prisma.venta.groupBy({ by: ["negocioId"], _count: { _all: true }, _max: { fecha: true }, _min: { fecha: true } });
+    const dormidos = ventasAgg.filter((a) => esDormido(a._min.fecha, a._max.fecha, a._count._all, new Date())).length;
+
     // Km del día y estado del chequeo (desde la última revisión del vehículo).
     const revHoy = ultimaRevision ? new Date(ultimaRevision.fecha) >= hoy : false;
     const kmRecorrido = ultimaRevision && ultimaRevision.kmEntrada > ultimaRevision.kmSalida
@@ -90,6 +95,11 @@ export default async function VendedorHome({
         {preventaResp > 0 && (
           <Link href="/vendedor/preventa" className="block rounded-xl bg-[#0f766e] px-4 py-3 text-center text-sm font-extrabold text-white shadow active:scale-95">
             📬 {preventaResp} cliente{preventaResp > 1 ? "s" : ""} respondió{preventaResp > 1 ? "eron" : ""} la preventa →
+          </Link>
+        )}
+        {dormidos > 0 && (
+          <Link href="/vendedor/dormidos" className="block rounded-xl bg-amber-500 px-4 py-3 text-center text-sm font-extrabold text-white shadow active:scale-95">
+            💤 {dormidos} cliente{dormidos > 1 ? "s" : ""} se {dormidos > 1 ? "están durmiendo" : "está durmiendo"} — recupéra{dormidos > 1 ? "los" : "lo"} →
           </Link>
         )}
         {Tabs}
@@ -245,9 +255,12 @@ export default async function VendedorHome({
           🧭 Armar ruta
         </Link>
         <Link href="/vendedor/historial-ruta" className="flex items-center justify-center gap-1 rounded-xl border-2 border-dashed border-slate-400 py-2.5 text-xs font-extrabold text-slate-600 active:bg-slate-50">
-          📊 Historial por ruta
+          📊 Ranking por ruta
         </Link>
       </div>
+      <Link href="/vendedor/dormidos" className="mt-2 flex items-center justify-center gap-1 rounded-xl border-2 border-dashed border-amber-400 py-2.5 text-xs font-extrabold text-amber-600 active:bg-amber-50">
+        💤 Clientes dormidos (recuperar)
+      </Link>
 
       {/* Filtro por SECTOR + Ver todos */}
       <div className="mt-2 flex flex-wrap gap-1.5">
