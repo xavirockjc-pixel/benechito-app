@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { fmtCLP } from "@/lib/dominio/pedidos";
-import { MEDIOS_PAGO, medioPagoLabel, TIPOS_DOCUMENTO, tipoDocumentoLabel } from "@/lib/dominio/ventas";
+import { medioPagoLabel, TIPOS_DOCUMENTO, tipoDocumentoLabel } from "@/lib/dominio/ventas";
 import ControlVoz from "../vendedor/ControlVoz";
 import type { CambioVoz } from "@/lib/dominio/voz";
 import { venderCaja } from "./actions";
@@ -34,6 +34,7 @@ export default function CajaPOS({ productos, clientes = [], errorFactura = false
   const [qCliente, setQCliente] = useState("");
   const [nuevoCliente, setNuevoCliente] = useState(false);
   const [tipoDoc, setTipoDoc] = useState("boleta");
+  const [medio, setMedio] = useState("efectivo");
 
   const clientesFiltrados = useMemo(() => {
     const t = qCliente.trim().toLowerCase();
@@ -266,12 +267,31 @@ export default function CajaPOS({ productos, clientes = [], errorFactura = false
             </>
           )}
 
-          <select name="medio" defaultValue="efectivo" className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-800 outline-none focus:border-[#0f7a44]">
-            {MEDIOS_PAGO.filter((m) => m !== "credito").map((m) => <option key={m} value={m}>{medioPagoLabel[m]}</option>)}
-          </select>
+          {/* Cómo paga: botones grandes para no equivocarse */}
+          <input type="hidden" name="medio" value={medio} />
+          <div>
+            <p className="mb-1 text-xs font-bold uppercase tracking-wide text-slate-400">¿Cómo paga?</p>
+            <div className="grid grid-cols-3 gap-2">
+              {([["efectivo", "💵", "Efectivo"], ["debito", "💳", "Débito"], ["transferencia", "📲", "Transferencia"]] as const).map(([m, ic, lbl]) => (
+                <button key={m} type="button" onClick={() => setMedio(m)}
+                  className={`flex flex-col items-center gap-0.5 rounded-xl border-2 py-2.5 text-xs font-extrabold active:brightness-95 ${medio === m ? "border-[#0f7a44] bg-[#0f7a44]/10 text-[#0f7a44]" : "border-slate-200 bg-white text-slate-500"}`}>
+                  <span className="text-xl">{ic}</span>{lbl}
+                </button>
+              ))}
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-2">
+              {([["tarjeta", "Tarjeta crédito"], ["otro", "Otro"]] as const).map(([m, lbl]) => (
+                <button key={m} type="button" onClick={() => setMedio(m)}
+                  className={`rounded-full border px-3 py-1 text-[11px] font-bold active:brightness-95 ${medio === m ? "border-[#0f7a44] bg-[#0f7a44]/10 text-[#0f7a44]" : "border-slate-200 bg-white text-slate-500"}`}>
+                  {lbl}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <button disabled={lineas.length === 0 || (tipoDoc === "factura" && !cliente && !nuevoCliente)}
             className="w-full rounded-lg bg-[#0f7a44] px-4 py-3.5 text-lg font-extrabold text-white shadow-sm transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-40">
-            Cobrar {total > 0 ? fmtCLP(total) : ""}
+            Cobrar {total > 0 ? fmtCLP(total) : ""} <span className="text-sm font-bold opacity-90">· {medioPagoLabel[medio] ?? medio}</span>
           </button>
         </form>
       </div>

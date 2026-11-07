@@ -6,7 +6,9 @@ export type TipoCV = (typeof TIPOS_CV)[number];
 export const cvLabel: Record<string, string> = {
   apertura: "Apertura (efectivo inicial)",
   deposito: "Depósito (entra efectivo)",
-  pago: "Pago de cuenta (entra efectivo)",
+  // "Cobro de cuenta": el cliente paga su cuenta (agua, luz…) y entra efectivo.
+  // Palabra distinta del "Pago" de la caja local (donde el local PAGA y sale plata).
+  pago: "Cobro de cuenta (agua/luz) — entra",
   comision: "Comisión ganada",
   giro: "Giro (sale efectivo)",
   retiro: "Retiro a banco (sale efectivo)",

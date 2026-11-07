@@ -79,7 +79,7 @@ export default function MovCajaVecinaForm() {
 
       {/* Tipos rápidos (los más usados) */}
       <div className="mb-2 grid grid-cols-3 gap-1.5">
-        {([["giro", "📤 Giro"], ["deposito", "📥 Depósito"], ["pago", "💵 Pago"]] as const).map(([t, etiqueta]) => (
+        {([["giro", "📤 Giro"], ["deposito", "📥 Depósito"], ["pago", "💵 Cobro cuenta"]] as const).map(([t, etiqueta]) => (
           <button key={t} type="button" onClick={() => setTipo(t)}
             className={`rounded-lg px-2 py-2 text-xs font-extrabold transition active:scale-95 ${tipo === t ? "bg-[#0f7a44] text-white" : "bg-slate-100 text-slate-600"}`}>
             {etiqueta}

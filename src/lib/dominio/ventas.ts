@@ -2,14 +2,15 @@
 // venta. Son cosas distintas: el estado de pago se DERIVA de la suma de pagos vs. el total.
 // Ver ARQUITECTURA-ECOSYSTEM.md §4.3 y §9.
 
-export const MEDIOS_PAGO = ["efectivo", "transferencia", "tarjeta", "credito", "otro"] as const;
+export const MEDIOS_PAGO = ["efectivo", "debito", "transferencia", "tarjeta", "credito", "otro"] as const;
 export type MedioPago = (typeof MEDIOS_PAGO)[number];
 
 export const medioPagoLabel: Record<string, string> = {
   efectivo: "Efectivo",
+  debito: "Débito",
   transferencia: "Transferencia",
-  tarjeta: "Tarjeta",
-  credito: "Crédito",
+  tarjeta: "Tarjeta crédito",
+  credito: "Crédito (fiado)",
   otro: "Otro",
 };
 

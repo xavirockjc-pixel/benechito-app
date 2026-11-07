@@ -11,9 +11,10 @@ export const MOTIVOS_CAJA: MotivoCaja[] = [
   { key: "sencillo", label: "Sencillo / vuelto", icon: "🪙", tipo: "ingreso" },
   { key: "aporte", label: "Ingreso extra", icon: "➕", tipo: "ingreso" },
   // Sale dinero
-  { key: "compra", label: "Compra insumos", icon: "🛒", tipo: "egreso", gasto: true, categoria: "insumos" },
-  { key: "pago", label: "Pago", icon: "💸", tipo: "egreso", gasto: true, categoria: "otros" },
-  { key: "retiro", label: "Retiro / vuelto", icon: "📤", tipo: "egreso" },
+  { key: "compra", label: "Compra de algo", icon: "🛒", tipo: "egreso", gasto: true, categoria: "insumos" },
+  { key: "pago_factura", label: "Pago factura", icon: "🧾", tipo: "egreso", gasto: true, categoria: "proveedores" },
+  { key: "pago", label: "Pago cuenta/servicio", icon: "💸", tipo: "egreso", gasto: true, categoria: "servicios" },
+  { key: "salida", label: "Salida / retiro", icon: "📤", tipo: "egreso" },
   { key: "otro", label: "Otro", icon: "⚙️", tipo: "egreso" },
 ];
 
@@ -25,11 +26,12 @@ export function normalizaCajaMov(s: string) {
 
 /** Detecta el motivo por lo dictado. */
 export function detectaMotivoCaja(t: string): string {
+  if (/(factura|boleta proveedor)/.test(t)) return "pago_factura";
   if (/(compra|comprar|insumo|mercaderia|proveedor)/.test(t)) return "compra";
-  if (/(pago|pagar|cuenta|servicio|flete|arriendo|luz|agua)/.test(t)) return "pago";
+  if (/(pago|pagar|cuenta|servicio|flete|arriendo|luz|agua|internet)/.test(t)) return "pago";
   if (/(sencillo|vuelto|cambio)/.test(t)) return "sencillo";
   if (/(aporte|ingreso|agrego|meto|deposito)/.test(t)) return "aporte";
-  if (/(retiro|saco|saqué|saque)/.test(t)) return "retiro";
+  if (/(salida|retiro|saco|saqué|saque)/.test(t)) return "salida";
   return "compra";
 }
 
