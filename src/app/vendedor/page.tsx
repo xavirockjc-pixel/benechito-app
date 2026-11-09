@@ -113,6 +113,7 @@ export default async function VendedorHome({
         {/* Acciones rápidas */}
         <div className="grid grid-cols-2 gap-2">
           <AccionRapida href="/vendedor/venta-rapida" icon="🛒" label="Vender / Facturar" color="#1479c4" />
+          <AccionRapida href="/vendedor/venta-mano" icon="✍️" label="Venta a mano" color="#7c3aed" />
           <AccionRapida href="/vendedor/pedidos-online" icon="🛍️" label={`Pedidos online${pendientesTotal > 0 ? ` (${pendientesTotal})` : ""}`} color="#0891b2" />
           <AccionRapida href="/vendedor/nuevo" icon="➕" label="Cliente nuevo" color="#0f766e" />
           <AccionRapida href="/vendedor/camion" icon="📦" label="Cargar camión" color="#b45309" />

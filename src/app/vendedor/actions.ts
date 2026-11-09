@@ -655,6 +655,66 @@ async function clienteMostrador() {
 }
 
 /**
+ * Venta a mano / particular: SIN elegir producto. Se registra solo el MONTO, una
+ * nota del pedido y el pago (pagó todo / abonó / fiado) con su medio (efectivo,
+ * transferencia o débito). Opcionalmente crea un cliente particular con su nombre y
+ * teléfono; si no, va a "Consumidor Final". No toca stock (es un monto libre).
+ */
+export async function ventaMano(formData: FormData) {
+  const monto = Math.max(0, Math.round(Number(String(formData.get("monto") ?? "").replace(/[^0-9]/g, "")) || 0));
+  if (monto <= 0) redirect("/vendedor/venta-mano?error=monto");
+  const nota = String(formData.get("nota") ?? "").trim();
+  const estado = String(formData.get("estado") ?? "pagado").trim(); // pagado | abono | fiado
+  const medioRaw = String(formData.get("medio") ?? "efectivo").trim();
+  const medio = (MEDIOS_PAGO as readonly string[]).includes(medioRaw) && medioRaw !== "credito" ? medioRaw : "efectivo";
+
+  // Cliente: si viene nombre, se crea un particular; si no, Consumidor Final.
+  const nombre = String(formData.get("clienteNombre") ?? "").trim();
+  const telefono = String(formData.get("clienteTelefono") ?? "").trim();
+  let negocioId: string;
+  if (nombre) {
+    const nuevo = await prisma.negocio.create({
+      data: { nombreContacto: nombre, nombreNegocio: nombre, whatsapp: telefono, comuna: "", tipoCliente: "consumidor", estado: "punto_activo", origen: "manual" },
+    });
+    negocioId = nuevo.id;
+  } else {
+    negocioId = (await clienteMostrador()).id;
+  }
+
+  // Pago según estado.
+  let abono = Math.max(0, Math.round(Number(String(formData.get("abono") ?? "").replace(/[^0-9]/g, "")) || 0));
+  if (estado === "pagado") abono = monto;
+  else if (estado === "fiado") abono = 0;
+  abono = Math.min(abono, monto);
+  const estadoPago = estadoPagoDe(monto, abono);
+  const pagos = abono > 0 ? { create: { medio, monto: abono } } : undefined;
+
+  const ubicacionId =
+    (await miVehiculoId()) ??
+    (await prisma.ubicacion.findFirst({ where: { tipo: "vehiculo" } }))?.id ??
+    (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } }))?.id ??
+    (await prisma.ubicacion.findFirst())?.id;
+  if (!ubicacionId) redirect("/vendedor/venta-mano?error=ubicacion");
+
+  const u = await usuarioActual();
+  const etiqueta = `A mano${nota ? `: ${nota}` : ""}`.slice(0, 180);
+  const venta = await prisma.venta.create({
+    data: { negocioId, ubicacionId: ubicacionId!, vendedorId: u?.sub ?? null, total: monto, estadoPago, canal: "terreno", etiqueta, ...(pagos ? { pagos } : {}) },
+  });
+  await marcarAsistenciaAuto(u?.sub, "Venta a mano");
+
+  const desc = estado === "abono"
+    ? `Venta a mano $${monto.toLocaleString("es-CL")}: abonó $${abono.toLocaleString("es-CL")} (${medio}), debe $${(monto - abono).toLocaleString("es-CL")}`
+    : estado === "fiado"
+      ? `Venta a mano a crédito $${monto.toLocaleString("es-CL")}`
+      : `Venta a mano $${monto.toLocaleString("es-CL")} (${medio})`;
+  await prisma.actividad.create({ data: { negocioId, tipo: "venta", descripcion: `${desc}${nota ? ` · ${nota}` : ""}` } });
+
+  revalidatePath("/vendedor");
+  redirect(`/vendedor/comprobante/${venta.id}?volver=${encodeURIComponent("/vendedor?vendido=1")}`);
+}
+
+/**
  * Venta rápida en terreno: venta directa a público. Puede ir SIN cliente (contado)
  * o, si se elige un cliente, permite pago, abono (paga una parte, queda debiendo) o
  * fiado (crédito). Se registra a nombre del vendedor y descuenta del camión.
