@@ -1,8 +1,16 @@
 import { prisma } from "@/lib/prisma";
 import VentaRapida from "./venta-rapida/VentaRapida";
 
-/** Elige la lista de precios: Reparto → Sala → primera con precios. */
-async function listaVenta(): Promise<{ id: string; nombre: string } | null> {
+/**
+ * Elige la lista de precios según la ZONA de ruta elegida (precio por sector).
+ * Si se pasa `zona`, usa la lista de reparto de esa zona; si no, Reparto → Sala →
+ * primera con precios.
+ */
+async function listaVenta(zona?: string): Promise<{ id: string; nombre: string } | null> {
+  if (zona) {
+    const lz = await prisma.listaPrecio.findFirst({ where: { canal: "reparto", zona, activo: true }, select: { id: true, nombre: true } });
+    if (lz && (await prisma.precioProducto.count({ where: { listaId: lz.id } })) > 0) return lz;
+  }
   for (const canal of ["reparto", "sala"]) {
     const l = await prisma.listaPrecio.findFirst({ where: { canal, activo: true }, select: { id: true, nombre: true } });
     if (l && (await prisma.precioProducto.count({ where: { listaId: l.id } })) > 0) return l;
@@ -12,8 +20,8 @@ async function listaVenta(): Promise<{ id: string; nombre: string } | null> {
 }
 
 /** Catálogo con fotos + venta por voz (cliente nuevo/existente, boleta/factura, debe o no). */
-export default async function CatalogoVenta() {
-  const lista = await listaVenta();
+export default async function CatalogoVenta({ zona }: { zona?: string } = {}) {
+  const lista = await listaVenta(zona);
 
   const [precios, tramosRaw] = lista
     ? await Promise.all([

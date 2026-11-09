@@ -18,7 +18,7 @@ const saldoDe = (ventas: { total: unknown; pagos: { monto: unknown }[] }[]) =>
 export default async function VendedorHome({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; sector?: string; vista?: string; vendido?: string; t?: string }>;
+  searchParams: Promise<{ q?: string; sector?: string; vista?: string; vendido?: string; t?: string; zona?: string }>;
 }) {
   const sp = await searchParams;
   const busca = (sp.q ?? "").trim();
@@ -142,8 +142,21 @@ export default async function VendedorHome({
         {sp.vendido && <p className="mb-3 rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Venta registrada</p>}
         {Tabs}
         <h1 className="mb-2 text-lg font-extrabold text-slate-900">🛍️ Catálogo</h1>
-        <p className="mb-3 text-xs text-slate-500">Muéstralo al cliente, elige por voz o tocando, y cierra la venta (boleta/factura, paga o queda debiendo).</p>
-        <CatalogoVenta />
+        <p className="mb-2 text-xs text-slate-500">Elige la zona para ver los precios del sector, muéstralo al cliente y cierra la venta.</p>
+        {(() => {
+          const ZONAS = [{ z: "coronel_lota", l: "📍 Coronel · Lota" }, { z: "metropolitano", l: "📍 San Pedro · Conce" }, { z: "los_angeles", l: "📍 Sta. Juana · L. Ángeles" }];
+          const zonaSel = ZONAS.some((x) => x.z === sp.zona) ? sp.zona! : "coronel_lota";
+          return (
+            <>
+              <div className="mb-3 flex flex-wrap gap-1.5">
+                {ZONAS.map((x) => (
+                  <Link key={x.z} href={`/vendedor?t=cat&zona=${x.z}`} className={`rounded-full border px-3 py-1.5 text-xs font-bold ${zonaSel === x.z ? "border-[#1479c4] bg-blue-50 text-[#1479c4]" : "border-slate-200 bg-white text-slate-500"}`}>{x.l}</Link>
+                ))}
+              </div>
+              <CatalogoVenta zona={zonaSel} />
+            </>
+          );
+        })()}
       </div>
     );
   }
