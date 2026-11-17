@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
+import { medioPagoLabel } from "@/lib/dominio/ventas";
 import { abrirCaja, sesionAbierta } from "./actions";
 import { ESCALONES_LOCAL } from "@/lib/dominio/precios";
 import CajaPOS from "./CajaPOS";
@@ -36,17 +37,22 @@ export default async function CajaPage({ searchParams }: { searchParams?: Promis
   // Caja abierta → resumen + POS.
   const salaUbic = (await prisma.ubicacion.findFirst({ where: { tipo: "sala" } })) ?? (await prisma.ubicacion.findFirst());
 
-  const [prods, precios, stockSala, ventas, clientes] = await Promise.all([
+  const [prods, precios, stockSala, ventas, clientes, movsCaja] = await Promise.all([
     // Catálogo del LOCAL: todo lo activo salvo los productos de la sección ruta (del vendedor).
     prisma.producto.findMany({ where: { activo: true, seccion: { not: "ruta" } }, orderBy: { nombre: "asc" } }),
     prisma.precioProducto.findMany({ include: { lista: { select: { canal: true } } } }),
     salaUbic ? prisma.stock.findMany({ where: { ubicacionId: salaUbic.id } }) : Promise.resolve([]),
-    prisma.venta.findMany({ where: { sesionCajaId: sesion.id }, include: { pagos: true } }),
+    prisma.venta.findMany({
+      where: { sesionCajaId: sesion.id },
+      include: { pagos: true, negocio: { select: { nombreNegocio: true } } },
+      orderBy: { fecha: "desc" },
+    }),
     prisma.negocio.findMany({
       where: { nombreNegocio: { not: "Consumidor Final" } },
       select: { id: true, nombreNegocio: true, comuna: true, rut: true },
       orderBy: { nombreNegocio: "asc" },
     }),
+    prisma.movimientoCaja.findMany({ where: { sesionCajaId: sesion.id }, orderBy: { fecha: "desc" } }),
   ]);
 
   // Precio neto por producto → canal → { base (cantMin 1) y tramos por volumen }.
@@ -117,6 +123,48 @@ export default async function CajaPage({ searchParams }: { searchParams?: Promis
       </div>
 
       <CajaPOS productos={productos} clientes={clientes} errorFactura={sp.error === "factura"} />
+
+      {/* Ventas de hoy: lo que se ha vendido en esta caja (abierto para que se vea). */}
+      <section className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-extrabold text-slate-900">🧾 Ventas de hoy <span className="text-xs font-normal text-slate-400">({nVentas} · {fmtCLP(totalVendido)})</span></h2>
+          <Link href="/admin/registro-dia" className="shrink-0 rounded-lg bg-[#0f7a44]/10 px-3 py-1.5 text-xs font-bold text-[#0f7a44]">📅 Ver por día</Link>
+        </div>
+        {ventas.length === 0 ? (
+          <p className="mt-2 text-sm text-slate-500">Aún no hay ventas hoy.</p>
+        ) : (
+          <ul className="mt-2 divide-y divide-slate-100 text-sm">
+            {ventas.slice(0, 40).map((v) => {
+              const medio = v.pagos[0]?.medio ?? "";
+              return (
+                <li key={v.id} className="flex items-center justify-between gap-2 py-1.5">
+                  <span className="min-w-0">
+                    <span className="font-bold text-slate-900">{fmtCLP(Number(v.total))}</span>{" "}
+                    <span className="text-slate-500">{v.negocio?.nombreNegocio && v.negocio.nombreNegocio !== "Consumidor Final" ? v.negocio.nombreNegocio : "Mostrador"}</span>
+                    {medio && <span className="ml-1 text-xs text-slate-400">· {medioPagoLabel[medio] ?? medio}</span>}
+                  </span>
+                  <span className="shrink-0 text-xs text-slate-400">{new Date(v.fecha).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}</span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {movsCaja.length > 0 && (
+          <details className="mt-3 border-t border-slate-100 pt-2">
+            <summary className="cursor-pointer text-xs font-bold text-slate-600">💵 Movimientos de dinero de hoy ({movsCaja.length})</summary>
+            <ul className="mt-1 divide-y divide-slate-100 text-sm">
+              {movsCaja.map((m) => (
+                <li key={m.id} className="flex items-center justify-between gap-2 py-1.5">
+                  <span className="min-w-0 truncate text-slate-700">{m.tipo === "ingreso" ? "➕" : "➖"} {m.concepto}</span>
+                  <span className={`shrink-0 font-bold ${m.tipo === "ingreso" ? "text-emerald-600" : "text-rose-600"}`}>{m.tipo === "ingreso" ? "+" : "−"}{fmtCLP(Number(m.monto))}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        )}
+        <p className="mt-2 text-[11px] text-slate-400">¿Hubo un error en una venta? Se corrige en <b>📅 Ver por día</b> (con clave). *Próximamente.</p>
+      </section>
 
       <div className="mt-4"><MovCajaLocalForm /></div>
 
