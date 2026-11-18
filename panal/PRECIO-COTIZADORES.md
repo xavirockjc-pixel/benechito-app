@@ -55,3 +55,39 @@ arma solo y cómo queda el PDF. El profesionalismo vende solo.
 1. Su cotizador **con su marca** (lo preparas tú).
 2. El **link** (en tu Hostinger) o el **archivo**.
 3. La **guía de uso** (ver `USAR-COTIZADOR.md`) para que sepa cotizar y mandar el link.
+
+---
+
+# 🌟 Cotizador Landing (el premium) + servidor, hosting y combos
+
+El **Cotizador Landing** (quiénes somos + galería + servicios seleccionables + planes
++ firma + PDF) es el producto más completo. Se cobra como el premium.
+
+## Precio sugerido
+| | Instalación (una vez) | Mensualidad |
+|---|---|---|
+| **Cotizador Landing** | **$280.000** | **$30.000/mes** |
+
+- **Instalación:** marca, galería, servicios, planes, términos y publicado en su URL.
+- **Mensualidad:** hosting en tu dominio + cambios (precios, fotos, servicios) + soporte.
+  **Esta es la "mantención de la página".**
+
+## ¿Necesito un servidor propio? (importante)
+- **NO para estos cotizadores.** Son páginas **estáticas**: con **UN** plan de **Hostinger**
+  + tu dominio alojas a **todos** tus clientes (cada uno en su carpeta o subdominio:
+  `tudominio.cl/alfayomega`). Tu costo real es bajo (~$40.000–$60.000 al año el plan) y
+  lo **repartes entre los 112**. La "mantención del servidor" para estáticos es casi nula.
+- **El VPS/servidor propio** solo lo necesitas para clientes con **sistema completo / nube**
+  (tipo Benechito), NO para estos cotizadores ni landings.
+- O sea: le vendes "hosting en tu dominio" dentro de la mensualidad, y tu costo es mínimo
+  → **el margen es alto**.
+
+## Combos (sube el ticket)
+| Pack | Qué incluye | Precio sugerido |
+|---|---|---|
+| **Presencia** | Cotizador Landing + mantención | $280.000 + $30.000/mes |
+| **Digital** | Presencia + **Marketing** (redes/contenido) | + $150.000/mes |
+| **Pro** | Digital + landing/menú/agenda del negocio | a cotizar según alcance |
+
+> El gancho es la **instalación**; el negocio que crece es la **mensualidad** (hosting +
+> mantención + marketing). Un cliente en Pack Digital deja ~$180.000/mes recurrentes.
