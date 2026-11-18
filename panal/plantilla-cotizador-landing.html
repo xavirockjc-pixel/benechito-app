@@ -314,11 +314,20 @@
   <button class="cta cta-a" id="svcSave" style="width:100%; margin-top:12px">Guardar servicios</button>
 </div></div>
 
-<!-- selector de rubro / estilo -->
+<!-- selector de rubro y segmentos -->
 <div class="modal" id="estiloModal"><div class="msheet">
-  <h2>🎨 Elige el rubro / estilo <button class="x" id="estiloX">✕</button></h2>
-  <p class="hint" style="margin-top:0">Aplica colores, tipografía, estilo 3D y ejemplos de ese rubro. Después edita todo a la medida de tu cliente.</p>
-  <div id="estiloGrid" style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px"></div>
+  <h2 id="estiloTit">🎨 Elige tu rubro <button class="x" id="estiloX">✕</button></h2>
+  <div id="estiloStep1">
+    <p class="hint" style="margin-top:0">Elige tu rubro: cambia colores, tipografía y estilo 3D. Luego eliges tus servicios.</p>
+    <input id="rubroBuscar" placeholder="🔎 Buscar rubro…" style="width:100%;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:11px 12px;color:var(--ink);font-size:1rem;margin-bottom:12px">
+    <div id="estiloGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px"></div>
+  </div>
+  <div id="estiloStep2" hidden>
+    <button class="mini" id="rubroBack" style="margin-bottom:10px">← Volver a rubros</button>
+    <p class="hint" style="margin-top:0">Marca los <b>servicios</b> que ofreces en <b id="segRubro"></b>. Después editas precios y fotos.</p>
+    <div id="segList"></div>
+    <button class="cta cta-a" id="segApply" style="width:100%;margin-top:10px">Aplicar rubro y servicios</button>
+  </div>
 </div></div>
 
 <!-- editor planes -->
@@ -1026,59 +1035,138 @@ const NEGOCIO = {
   function openM(id){ $(id).classList.add("open"); } function closeM(id){ $(id).classList.remove("open"); }
   [["negModal","negX"],["svcModal","svcX"],["planModal","planX"],["galModal","galX"],["termModal","termX"],["estiloModal","estiloX"],["accModal","accX"],["regModal","regX"]].forEach(function(p){ $(p[1]).onclick=function(){ closeM(p[0]); }; var m=$(p[0]); m.addEventListener("click",function(e){ if(e.target===m) closeM(p[0]); }); });
 
-  // ---- presets por rubro ----
+  // ---- presets por rubro (rubro + segmentos) ----
   var PRESETS=[
     { k:"clima", label:"Clima / Frío", emoji:"❄️", color:{bg:"#0a1026",accent:"#38bdf8",accentDark:"#0ea5e9"}, font:"Space Grotesk", shape:"ico", unidad:"equipos",
       rubro:"Refrigeración y climatización", titulo:"Arma tu servicio de frío y clima.", frase:"Elige lo que necesitas, mira el valor al instante y acéptalo con tu firma.",
-      servicios:[{emoji:"❄️",nombre:"Instalación de aire acondicionado",desc:"Montaje de unidad split, incluye puesta en marcha.",precio:150000},{emoji:"🧰",nombre:"Mantención de equipo",desc:"Revisión, limpieza e informe.",precio:45000},{emoji:"🧊",nombre:"Cámara frigorífica",desc:"Instalación o revisión de cámaras de frío.",precio:220000},{emoji:"📶",nombre:"Monitoreo WiFi 24/7",desc:"Monitoreo remoto de tus equipos.",precio:25000},{emoji:"📐",nombre:"Proyecto / asesoría",desc:"Eficiencia térmica y asesoría.",precio:90000}],
-      planes:[{nombre:"Preventiva",tipo:"Mantención periódica",precio:45000,destacado:true,incluye:["Revisión programada","Limpieza y chequeo","Informe de estado"]},{nombre:"Correctiva",tipo:"Reparación por falla",precio:60000,destacado:false,incluye:["Diagnóstico","Reparación","Garantía del trabajo"]},{nombre:"Instalación",tipo:"Montaje nuevo",precio:150000,destacado:false,incluye:["Montaje","Materiales","Puesta en marcha"]}] },
+      seg:[{e:"❄️",n:"Instalación de aire acondicionado",d:"Montaje de unidad split.",p:150000},{e:"🧰",n:"Mantención de equipo",d:"Revisión, limpieza e informe.",p:45000},{e:"🧊",n:"Cámara frigorífica",d:"Instalación o revisión.",p:220000},{e:"🔧",n:"Recarga de gas",d:"Gas refrigerante y presiones.",p:60000},{e:"📶",n:"Monitoreo WiFi 24/7",d:"Monitoreo remoto.",p:25000},{e:"📐",n:"Proyecto / asesoría",d:"Eficiencia térmica.",p:90000}],
+      planes:[{nombre:"Preventiva",tipo:"Mantención periódica",precio:45000,destacado:true,incluye:["Revisión programada","Limpieza y chequeo","Informe de estado"]},{nombre:"Correctiva",tipo:"Reparación por falla",precio:60000,destacado:false,incluye:["Diagnóstico","Reparación","Garantía"]},{nombre:"Instalación",tipo:"Montaje nuevo",precio:150000,destacado:false,incluye:["Montaje","Materiales","Puesta en marcha"]}] },
     { k:"construccion", label:"Construcción", emoji:"🏗️", color:{bg:"#16130d",accent:"#ff7a1a",accentDark:"#e85d04"}, font:"Oswald", shape:"box", unidad:"partidas",
       rubro:"Construcción y obras", titulo:"Cotiza tu obra, partida por partida.", frase:"Elige las partidas, revisa el valor y aprueba con tu firma.",
-      servicios:[{emoji:"🧱",nombre:"Obra gruesa",desc:"Fundaciones, radier, estructura.",precio:800000},{emoji:"🎨",nombre:"Terminaciones",desc:"Pintura, revestimientos, pisos.",precio:450000},{emoji:"⚡",nombre:"Instalación eléctrica",desc:"Canalización y tableros.",precio:300000},{emoji:"🚿",nombre:"Gasfitería",desc:"Agua, desagües y artefactos.",precio:280000},{emoji:"📐",nombre:"Proyecto y planos",desc:"Diseño y permisos.",precio:200000}],
-      planes:[{nombre:"Solo mano de obra",tipo:"Tú pones materiales",precio:400000,destacado:false,incluye:["Equipo de trabajo","Herramientas","Supervisión"]},{nombre:"Llave en mano",tipo:"Todo incluido",precio:900000,destacado:true,incluye:["Mano de obra","Materiales","Garantía de obra"]},{nombre:"Supervisión técnica",tipo:"Inspección",precio:250000,destacado:false,incluye:["Visitas en terreno","Informe de avance","Control de calidad"]}] },
+      seg:[{e:"🧱",n:"Obra gruesa",d:"Fundaciones, radier, estructura.",p:800000},{e:"🎨",n:"Terminaciones",d:"Pintura, revestimientos, pisos.",p:450000},{e:"⚡",n:"Instalación eléctrica",d:"Canalización y tableros.",p:300000},{e:"🚿",n:"Gasfitería",d:"Agua, desagües, artefactos.",p:280000},{e:"🪟",n:"Puertas y ventanas",d:"Provisión e instalación.",p:220000},{e:"📐",n:"Proyecto y planos",d:"Diseño y permisos.",p:200000}],
+      planes:[{nombre:"Mano de obra",tipo:"Tú pones materiales",precio:400000,destacado:false,incluye:["Equipo de trabajo","Herramientas","Supervisión"]},{nombre:"Llave en mano",tipo:"Todo incluido",precio:900000,destacado:true,incluye:["Mano de obra","Materiales","Garantía de obra"]},{nombre:"Supervisión",tipo:"Inspección técnica",precio:250000,destacado:false,incluye:["Visitas en terreno","Informe de avance","Control de calidad"]}] },
+    { k:"instalaciones", label:"Instalaciones", emoji:"🔌", color:{bg:"#141206",accent:"#f6c21a",accentDark:"#d9a106"}, font:"Oswald", shape:"octa", unidad:"puntos",
+      rubro:"Instalaciones y mantención", titulo:"Instalaciones y arreglos, bien hechos.", frase:"Elige el trabajo, revisa el valor y acéptalo con tu firma.",
+      seg:[{e:"⚡",n:"Instalación eléctrica",d:"Enchufes, luminarias, tablero.",p:60000},{e:"🚿",n:"Gasfitería",d:"Fugas, llaves, artefactos.",p:50000},{e:"🔥",n:"Gas / calefón",d:"Instalación y certificación.",p:80000},{e:"📺",n:"Soportes y montajes",d:"TV, muebles, repisas.",p:30000},{e:"🚪",n:"Cerrajería",d:"Chapas y cerraduras.",p:35000},{e:"🛠️",n:"Mantención general",d:"Arreglos varios del hogar.",p:40000}],
+      planes:[{nombre:"Visita simple",tipo:"1 trabajo",precio:40000,destacado:false,incluye:["Diagnóstico","1 reparación","Garantía"]},{nombre:"Pack hogar",tipo:"Varios arreglos",precio:90000,destacado:true,incluye:["Hasta 4 trabajos","Materiales menores","Prioridad"]},{nombre:"Mantención mensual",tipo:"Recurrente",precio:60000,destacado:false,incluye:["Visita mensual","Revisión general","Descuentos"]}] },
     { k:"legal", label:"Abogados", emoji:"⚖️", color:{bg:"#0b0e1a",accent:"#c9a227",accentDark:"#a6841c"}, font:"Playfair Display", shape:"torus", unidad:"casos",
       rubro:"Servicios jurídicos", titulo:"Asesoría legal, clara y formal.", frase:"Revisa el alcance, el honorario y acepta con tu firma.",
-      servicios:[{emoji:"📄",nombre:"Redacción de contrato",desc:"Elaboración y revisión de contratos.",precio:120000},{emoji:"⚖️",nombre:"Representación judicial",desc:"Patrocinio y poder en causa.",precio:400000},{emoji:"🏢",nombre:"Constitución de empresa",desc:"Sociedad y trámites.",precio:180000},{emoji:"🤝",nombre:"Asesoría / consulta",desc:"Orientación legal por tema.",precio:60000},{emoji:"🗂️",nombre:"Trámite / gestión",desc:"Gestiones y escritos.",precio:90000}],
-      planes:[{nombre:"Consulta",tipo:"Orientación puntual",precio:60000,destacado:false,incluye:["Reunión","Análisis del caso","Recomendación"]},{nombre:"Patrocinio",tipo:"Acompañamiento",precio:300000,destacado:true,incluye:["Representación","Escritos","Seguimiento de causa"]},{nombre:"Retainer mensual",tipo:"Asesoría continua",precio:250000,destacado:false,incluye:["Consultas ilimitadas","Revisión de documentos","Prioridad"]}] },
-    { k:"salud", label:"Salud / Clínico", emoji:"🩺", color:{bg:"#0a1a1b",accent:"#2dd4bf",accentDark:"#14b8a6"}, font:"Mulish", shape:"sphere", unidad:"sesiones",
-      rubro:"Servicios de salud", titulo:"Agenda tu atención con confianza.", frase:"Elige la atención, revisa el valor y confirma con tu firma.",
-      servicios:[{emoji:"🩺",nombre:"Consulta",desc:"Evaluación y diagnóstico.",precio:35000},{emoji:"🔁",nombre:"Control",desc:"Seguimiento de tratamiento.",precio:25000},{emoji:"💉",nombre:"Procedimiento",desc:"Procedimiento clínico menor.",precio:60000},{emoji:"🧪",nombre:"Exámenes",desc:"Toma de muestras / informe.",precio:40000},{emoji:"📱",nombre:"Telemedicina",desc:"Atención remota.",precio:20000}],
-      planes:[{nombre:"Básico",tipo:"Plan de entrada",precio:25000,destacado:false,incluye:["Consulta","Control incluido","Receta"]},{nombre:"Integral",tipo:"El recomendado",precio:45000,destacado:true,incluye:["Consulta + controles","Exámenes básicos","Seguimiento"]},{nombre:"Premium",tipo:"Atención completa",precio:80000,destacado:false,incluye:["Todo lo integral","Telemedicina 24/7","Prioridad de agenda"]}] },
+      seg:[{e:"📄",n:"Redacción de contrato",d:"Elaboración y revisión.",p:120000},{e:"⚖️",n:"Representación judicial",d:"Patrocinio y poder.",p:400000},{e:"🏢",n:"Constitución de empresa",d:"Sociedad y trámites.",p:180000},{e:"🤝",n:"Asesoría / consulta",d:"Orientación legal.",p:60000},{e:"🗂️",n:"Trámite / gestión",d:"Escritos y gestiones.",p:90000},{e:"📑",n:"Cobranza",d:"Gestión de deudas.",p:150000}],
+      planes:[{nombre:"Consulta",tipo:"Orientación puntual",precio:60000,destacado:false,incluye:["Reunión","Análisis del caso","Recomendación"]},{nombre:"Patrocinio",tipo:"Acompañamiento",precio:300000,destacado:true,incluye:["Representación","Escritos","Seguimiento"]},{nombre:"Retainer mensual",tipo:"Asesoría continua",precio:250000,destacado:false,incluye:["Consultas ilimitadas","Revisión de documentos","Prioridad"]}] },
+    { k:"contabilidad", label:"Contabilidad", emoji:"🧮", color:{bg:"#0a1014",accent:"#2dd4bf",accentDark:"#14b8a6"}, font:"Mulish", shape:"octa", unidad:"meses",
+      rubro:"Contabilidad y tributario", titulo:"Tu contabilidad, ordenada y al día.", frase:"Elige los servicios, revisa el valor y acepta con tu firma.",
+      seg:[{e:"📊",n:"Contabilidad mensual",d:"Registro y balance.",p:80000},{e:"🧾",n:"Declaración de IVA",d:"F29 mensual.",p:30000},{e:"📅",n:"Renta anual",d:"Operación renta.",p:120000},{e:"👥",n:"Remuneraciones",d:"Liquidaciones y previred.",p:50000},{e:"🏢",n:"Inicio de actividades",d:"Trámites SII.",p:60000},{e:"💼",n:"Asesoría tributaria",d:"Planificación.",p:90000}],
+      planes:[{nombre:"Básico",tipo:"Boleta de honorarios",precio:40000,destacado:false,incluye:["IVA mensual","Declaraciones","Soporte"]},{nombre:"Pyme",tipo:"El recomendado",precio:90000,destacado:true,incluye:["Contabilidad completa","Remuneraciones","Renta anual"]},{nombre:"Empresa",tipo:"Full",precio:180000,destacado:false,incluye:["Todo lo Pyme","Asesoría tributaria","Reportes"]}] },
     { k:"consultoria", label:"Consultoría", emoji:"📊", color:{bg:"#120e24",accent:"#8b5cf6",accentDark:"#7c3aed"}, font:"Space Grotesk", shape:"octa", unidad:"meses",
       rubro:"Consultoría y asesoría", titulo:"Diseñemos tu solución a medida.", frase:"Arma el alcance, revisa la inversión y aprueba con tu firma.",
-      servicios:[{emoji:"🔎",nombre:"Diagnóstico",desc:"Levantamiento y análisis.",precio:250000},{emoji:"🧭",nombre:"Estrategia",desc:"Plan y hoja de ruta.",precio:400000},{emoji:"⚙️",nombre:"Implementación",desc:"Ejecución acompañada.",precio:600000},{emoji:"🎓",nombre:"Capacitación",desc:"Formación del equipo.",precio:180000},{emoji:"📈",nombre:"Seguimiento",desc:"Medición de resultados.",precio:150000}],
-      planes:[{nombre:"Mensual",tipo:"Acompañamiento",precio:300000,destacado:false,incluye:["Reuniones semanales","Soporte","Informe mensual"]},{nombre:"Trimestral",tipo:"El recomendado",precio:250000,destacado:true,incluye:["Todo lo mensual","Plan de acción","Prioridad"]},{nombre:"Proyecto cerrado",tipo:"Alcance definido",precio:500000,destacado:false,incluye:["Alcance fijo","Entregables","Garantía"]}] },
-    { k:"estetica", label:"Estética", emoji:"💅", color:{bg:"#1a0f16",accent:"#e0a3b4",accentDark:"#c77d94"}, font:"Cormorant Garamond", shape:"sphere", unidad:"sesiones",
-      rubro:"Estética y belleza", titulo:"Diseña tu experiencia de belleza.", frase:"Elige tus tratamientos, mira el valor y resérvalo con tu firma.",
-      servicios:[{emoji:"✨",nombre:"Limpieza facial",desc:"Limpieza profunda e hidratación.",precio:30000},{emoji:"💆",nombre:"Masaje",desc:"Relajación y descontracturante.",precio:35000},{emoji:"🪒",nombre:"Depilación",desc:"Por zona, a elección.",precio:20000},{emoji:"🌸",nombre:"Tratamiento facial",desc:"Tratamiento específico.",precio:45000},{emoji:"👰",nombre:"Pack novia",desc:"Preparación completa.",precio:120000}],
-      planes:[{nombre:"Básico",tipo:"1 sesión",precio:30000,destacado:false,incluye:["Evaluación","1 tratamiento","Recomendaciones"]},{nombre:"Premium",tipo:"El recomendado",precio:25000,destacado:true,incluye:["Pack de sesiones","Precio preferente","Seguimiento"]},{nombre:"VIP",tipo:"Experiencia completa",precio:60000,destacado:false,incluye:["Todos los tratamientos","Atención prioritaria","Productos incluidos"]}] },
+      seg:[{e:"🔎",n:"Diagnóstico",d:"Levantamiento y análisis.",p:250000},{e:"🧭",n:"Estrategia",d:"Plan y hoja de ruta.",p:400000},{e:"⚙️",n:"Implementación",d:"Ejecución acompañada.",p:600000},{e:"🎓",n:"Capacitación",d:"Formación del equipo.",p:180000},{e:"📈",n:"Seguimiento",d:"Medición de resultados.",p:150000},{e:"💡",n:"Mentoría",d:"Acompañamiento 1 a 1.",p:120000}],
+      planes:[{nombre:"Mensual",tipo:"Acompañamiento",precio:300000,destacado:false,incluye:["Reuniones semanales","Soporte","Informe mensual"]},{nombre:"Trimestral",tipo:"El recomendado",precio:250000,destacado:true,incluye:["Todo lo mensual","Plan de acción","Prioridad"]},{nombre:"Proyecto",tipo:"Alcance cerrado",precio:500000,destacado:false,incluye:["Alcance fijo","Entregables","Garantía"]}] },
+    { k:"coach", label:"Coaching", emoji:"🚀", color:{bg:"#101026",accent:"#a78bfa",accentDark:"#8b5cf6"}, font:"Poppins", shape:"sphere", unidad:"sesiones",
+      rubro:"Coaching y desarrollo", titulo:"Impulsa tu próximo nivel.", frase:"Elige tu programa, revisa el valor y comprométete con tu firma.",
+      seg:[{e:"🎯",n:"Sesión de coaching",d:"1 a 1 enfocada en objetivos.",p:40000},{e:"🧠",n:"Coaching de liderazgo",d:"Para jefaturas y equipos.",p:60000},{e:"💼",n:"Coaching ejecutivo",d:"Alta dirección.",p:90000},{e:"🌱",n:"Coaching de vida",d:"Metas personales.",p:35000},{e:"👥",n:"Taller grupal",d:"Dinámica de equipo.",p:150000},{e:"📞",n:"Seguimiento",d:"Acompañamiento entre sesiones.",p:20000}],
+      planes:[{nombre:"Sesión única",tipo:"Prueba",precio:40000,destacado:false,incluye:["1 sesión","Plan de acción","Material"]},{nombre:"Programa",tipo:"El recomendado",precio:35000,destacado:true,incluye:["Pack de sesiones","Seguimiento","Precio preferente"]},{nombre:"Transformación",tipo:"Intensivo",precio:70000,destacado:false,incluye:["Sesiones semanales","Soporte continuo","Evaluaciones"]}] },
+    { k:"consejeria", label:"Consejería / Terapia", emoji:"🫶", color:{bg:"#0e1420",accent:"#5eead4",accentDark:"#2dd4bf"}, font:"Mulish", shape:"sphere", unidad:"sesiones",
+      rubro:"Consejería y bienestar", titulo:"Un espacio para ti, con calma.", frase:"Elige la atención, revisa el valor y confirma con tu firma.",
+      seg:[{e:"🫶",n:"Sesión individual",d:"Atención personal.",p:35000},{e:"👫",n:"Terapia de pareja",d:"Acompañamiento en pareja.",p:45000},{e:"👨‍👩‍👧",n:"Terapia familiar",d:"Para la familia.",p:50000},{e:"🧘",n:"Manejo de ansiedad",d:"Herramientas y seguimiento.",p:38000},{e:"📱",n:"Atención online",d:"Videollamada.",p:30000},{e:"🔁",n:"Control de seguimiento",d:"Sesión de control.",p:25000}],
+      planes:[{nombre:"Sesión",tipo:"Individual",precio:35000,destacado:false,incluye:["1 sesión","Plan de trabajo","Material"]},{nombre:"Proceso",tipo:"El recomendado",precio:30000,destacado:true,incluye:["Pack de sesiones","Seguimiento","Valor preferente"]},{nombre:"Acompañamiento",tipo:"Continuo",precio:28000,destacado:false,incluye:["Sesiones semanales","Contacto entre sesiones","Prioridad"]}] },
+    { k:"capacitacion", label:"Capacitaciones", emoji:"🎓", color:{bg:"#0d1424",accent:"#60a5fa",accentDark:"#3b82f6"}, font:"Poppins", shape:"ico", unidad:"cupos",
+      rubro:"Capacitación y cursos", titulo:"Capacita a tu equipo con expertos.", frase:"Arma tu programa, revisa el valor y acéptalo con tu firma.",
+      seg:[{e:"🎓",n:"Curso presencial",d:"Relator en tu empresa.",p:300000},{e:"💻",n:"Curso online",d:"En vivo o grabado.",p:150000},{e:"📜",n:"Curso certificado",d:"Con certificado.",p:200000},{e:"👥",n:"Taller práctico",d:"Hands-on por grupo.",p:180000},{e:"🏢",n:"Programa a medida",d:"Diseñado para ti.",p:500000},{e:"📚",n:"Material y evaluación",d:"Contenido y pruebas.",p:60000}],
+      planes:[{nombre:"Curso",tipo:"1 jornada",precio:150000,destacado:false,incluye:["Relator","Material","Certificado"]},{nombre:"Programa",tipo:"El recomendado",precio:120000,destacado:true,incluye:["Varias jornadas","Evaluación","Seguimiento"]},{nombre:"Plan empresa",tipo:"Anual",precio:100000,destacado:false,incluye:["Cursos del año","Descuentos","Reportes"]}] },
+    { k:"asesoria", label:"Asesorías", emoji:"💼", color:{bg:"#111625",accent:"#818cf8",accentDark:"#6366f1"}, font:"Space Grotesk", shape:"torus", unidad:"meses",
+      rubro:"Asesorías profesionales", titulo:"Asesoría experta, a tu medida.", frase:"Elige los servicios, revisa el valor y acepta con tu firma.",
+      seg:[{e:"💼",n:"Asesoría general",d:"Orientación por tema.",p:70000},{e:"📈",n:"Asesoría financiera",d:"Finanzas y proyecciones.",p:120000},{e:"🧩",n:"Asesoría de procesos",d:"Mejora y orden.",p:150000},{e:"🤝",n:"Asesoría comercial",d:"Ventas y clientes.",p:130000},{e:"📋",n:"Asesoría laboral",d:"Contratos y RRHH.",p:90000},{e:"📞",n:"Soporte continuo",d:"Acompañamiento.",p:60000}],
+      planes:[{nombre:"Puntual",tipo:"1 asesoría",precio:70000,destacado:false,incluye:["Reunión","Diagnóstico","Recomendaciones"]},{nombre:"Mensual",tipo:"El recomendado",precio:130000,destacado:true,incluye:["Acompañamiento","Reportes","Prioridad"]},{nombre:"Proyecto",tipo:"Alcance fijo",precio:300000,destacado:false,incluye:["Entregables","Implementación","Garantía"]}] },
+    { k:"salud", label:"Salud / Clínico", emoji:"🩺", color:{bg:"#0a1a1b",accent:"#2dd4bf",accentDark:"#14b8a6"}, font:"Mulish", shape:"sphere", unidad:"sesiones",
+      rubro:"Servicios de salud", titulo:"Agenda tu atención con confianza.", frase:"Elige la atención, revisa el valor y confirma con tu firma.",
+      seg:[{e:"🩺",n:"Consulta",d:"Evaluación y diagnóstico.",p:35000},{e:"🔁",n:"Control",d:"Seguimiento.",p:25000},{e:"💉",n:"Procedimiento",d:"Procedimiento menor.",p:60000},{e:"🧪",n:"Exámenes",d:"Toma de muestras.",p:40000},{e:"💊",n:"Tratamiento",d:"Plan de tratamiento.",p:50000},{e:"📱",n:"Telemedicina",d:"Atención remota.",p:20000}],
+      planes:[{nombre:"Básico",tipo:"Plan de entrada",precio:25000,destacado:false,incluye:["Consulta","Control incluido","Receta"]},{nombre:"Integral",tipo:"El recomendado",precio:45000,destacado:true,incluye:["Consulta + controles","Exámenes básicos","Seguimiento"]},{nombre:"Premium",tipo:"Atención completa",precio:80000,destacado:false,incluye:["Todo lo integral","Telemedicina 24/7","Prioridad"]}] },
+    { k:"odontologia", label:"Odontología", emoji:"🦷", color:{bg:"#0a1620",accent:"#38bdf8",accentDark:"#0ea5e9"}, font:"Mulish", shape:"sphere", unidad:"piezas",
+      rubro:"Odontología", titulo:"Tu sonrisa en las mejores manos.", frase:"Elige los tratamientos, revisa el valor y acepta con tu firma.",
+      seg:[{e:"🪥",n:"Limpieza / profilaxis",d:"Destartraje y pulido.",p:30000},{e:"🦷",n:"Tapadura / obturación",d:"Resina por pieza.",p:35000},{e:"😬",n:"Ortodoncia",d:"Evaluación y plan.",p:60000},{e:"✨",n:"Blanqueamiento",d:"En clínica.",p:120000},{e:"🔧",n:"Endodoncia",d:"Tratamiento de conducto.",p:90000},{e:"🦷",n:"Implante",d:"Pieza unitaria.",p:450000}],
+      planes:[{nombre:"Control",tipo:"Preventivo",precio:30000,destacado:false,incluye:["Examen","Limpieza","Diagnóstico"]},{nombre:"Plan integral",tipo:"El recomendado",precio:45000,destacado:true,incluye:["Controles","Tapaduras","Prioridad"]},{nombre:"Estético",tipo:"Sonrisa",precio:120000,destacado:false,incluye:["Blanqueamiento","Pulido","Seguimiento"]}] },
+    { k:"podologia", label:"Podología", emoji:"🦶", color:{bg:"#0e1620",accent:"#34d399",accentDark:"#10b981"}, font:"Mulish", shape:"sphere", unidad:"sesiones",
+      rubro:"Podología", titulo:"Pies sanos, pasos firmes.", frase:"Elige la atención, revisa el valor y confírmala con tu firma.",
+      seg:[{e:"🦶",n:"Podología general",d:"Atención integral.",p:25000},{e:"💅",n:"Uña encarnada",d:"Tratamiento.",p:30000},{e:"🩹",n:"Tratamiento de hongos",d:"Micosis.",p:28000},{e:"🧴",n:"Reflexología",d:"Masaje podal.",p:22000},{e:"👣",n:"Pie diabético",d:"Atención especializada.",p:35000},{e:"🏠",n:"Atención a domicilio",d:"En tu casa.",p:40000}],
+      planes:[{nombre:"Sesión",tipo:"Atención general",precio:25000,destacado:false,incluye:["Evaluación","Tratamiento","Recomendaciones"]},{nombre:"Plan de control",tipo:"El recomendado",precio:22000,destacado:true,incluye:["Sesiones periódicas","Seguimiento","Valor preferente"]},{nombre:"Domicilio",tipo:"A tu casa",precio:40000,destacado:false,incluye:["Visita","Atención completa","Sin traslados"]}] },
+    { k:"veterinaria", label:"Veterinaria", emoji:"🐾", color:{bg:"#0c1612",accent:"#34d399",accentDark:"#059669"}, font:"Poppins", shape:"sphere", unidad:"mascotas",
+      rubro:"Veterinaria", titulo:"Cuidamos a los que más quieres.", frase:"Elige la atención, revisa el valor y confirma con tu firma.",
+      seg:[{e:"🩺",n:"Consulta veterinaria",d:"Evaluación general.",p:25000},{e:"💉",n:"Vacunas",d:"Esquema de vacunación.",p:20000},{e:"✂️",n:"Esterilización",d:"Cirugía.",p:80000},{e:"🦷",n:"Limpieza dental",d:"Higiene bucal.",p:60000},{e:"🛁",n:"Peluquería canina",d:"Baño y corte.",p:25000},{e:"🏠",n:"Atención a domicilio",d:"En tu hogar.",p:35000}],
+      planes:[{nombre:"Consulta",tipo:"Atención simple",precio:25000,destacado:false,incluye:["Evaluación","Diagnóstico","Receta"]},{nombre:"Plan salud",tipo:"El recomendado",precio:30000,destacado:true,incluye:["Consultas","Vacunas","Descuentos"]},{nombre:"Integral",tipo:"Completo",precio:50000,destacado:false,incluye:["Todo el plan","Exámenes","Prioridad"]}] },
+    { k:"estetica", label:"Estética / Cosmetología", emoji:"💆", color:{bg:"#1a0f16",accent:"#e0a3b4",accentDark:"#c77d94"}, font:"Cormorant Garamond", shape:"sphere", unidad:"sesiones",
+      rubro:"Estética y cosmetología", titulo:"Diseña tu experiencia de belleza.", frase:"Elige tus tratamientos, mira el valor y resérvalo con tu firma.",
+      seg:[{e:"✨",n:"Limpieza facial",d:"Profunda e hidratante.",p:30000},{e:"💆",n:"Masaje",d:"Relajante o reductor.",p:35000},{e:"🌸",n:"Tratamiento facial",d:"Específico.",p:45000},{e:"🪒",n:"Depilación",d:"Por zona.",p:20000},{e:"💉",n:"Tratamiento corporal",d:"Reductor / tonificante.",p:50000},{e:"👰",n:"Pack novia",d:"Preparación completa.",p:120000}],
+      planes:[{nombre:"Sesión",tipo:"1 tratamiento",precio:30000,destacado:false,incluye:["Evaluación","1 tratamiento","Recomendaciones"]},{nombre:"Pack",tipo:"El recomendado",precio:25000,destacado:true,incluye:["Varias sesiones","Precio preferente","Seguimiento"]},{nombre:"VIP",tipo:"Experiencia",precio:60000,destacado:false,incluye:["Todos los tratamientos","Prioridad","Productos"]}] },
+    { k:"peluqueria", label:"Peluquería / Barbería", emoji:"💇", color:{bg:"#16111a",accent:"#f0abfc",accentDark:"#d946ef"}, font:"Poppins", shape:"sphere", unidad:"servicios",
+      rubro:"Peluquería y barbería", titulo:"Tu estilo, a tu manera.", frase:"Elige tus servicios, mira el valor y resérvalo con tu firma.",
+      seg:[{e:"✂️",n:"Corte",d:"Dama, varón o niño.",p:12000},{e:"🎨",n:"Tinte / color",d:"Coloración.",p:35000},{e:"💆",n:"Peinado",d:"Evento o fiesta.",p:20000},{e:"🧔",n:"Barba",d:"Perfilado y arreglo.",p:8000},{e:"💅",n:"Manicure / pedicure",d:"Manos y pies.",p:15000},{e:"✨",n:"Tratamiento capilar",d:"Hidratación / keratina.",p:40000}],
+      planes:[{nombre:"Básico",tipo:"Corte",precio:12000,destacado:false,incluye:["Lavado","Corte","Peinado"]},{nombre:"Combo",tipo:"El recomendado",precio:25000,destacado:true,incluye:["Corte + barba","O corte + color","Precio pack"]},{nombre:"Full look",tipo:"Experiencia",precio:50000,destacado:false,incluye:["Corte + color","Tratamiento","Peinado"]}] },
+    { k:"educacion", label:"Educación / Clases", emoji:"📚", color:{bg:"#0d1424",accent:"#fbbf24",accentDark:"#f59e0b"}, font:"Poppins", shape:"ico", unidad:"clases",
+      rubro:"Clases particulares", titulo:"Aprende a tu ritmo, con un profe.", frase:"Elige las clases, mira el valor y acéptalas con tu firma.",
+      seg:[{e:"➗",n:"Matemáticas",d:"Por nivel.",p:12000},{e:"🔬",n:"Ciencias",d:"Física, química, biología.",p:12000},{e:"🗣️",n:"Idiomas",d:"Inglés y más.",p:15000},{e:"🎵",n:"Música",d:"Instrumento o canto.",p:14000},{e:"💻",n:"Computación",d:"Herramientas y programación.",p:16000},{e:"📝",n:"Preparación PAES",d:"Ensayo y repaso.",p:18000}],
+      planes:[{nombre:"Clase suelta",tipo:"1 clase",precio:14000,destacado:false,incluye:["1 hora","Material","Ejercicios"]},{nombre:"Pack mensual",tipo:"El recomendado",precio:12000,destacado:true,incluye:["Clases semanales","Seguimiento","Valor preferente"]},{nombre:"Intensivo",tipo:"Preparación",precio:16000,destacado:false,incluye:["Varias por semana","Ensayos","Informe de avance"]}] },
+    { k:"banqueteria", label:"Banquetería / Eventos", emoji:"🍽️", color:{bg:"#1a1210",accent:"#e8b04b",accentDark:"#c98a1f"}, font:"Cormorant Garamond", shape:"torus", unidad:"personas",
+      rubro:"Banquetería y eventos", titulo:"Hacemos de tu evento algo memorable.", frase:"Arma tu evento, mira el valor y resérvalo con tu firma.",
+      seg:[{e:"🍽️",n:"Servicio de banquetería",d:"Por persona.",p:18000},{e:"🥂",n:"Cóctel / aperitivo",d:"Bocados y bebidas.",p:9000},{e:"🎂",n:"Torta / postres",d:"Mesa dulce.",p:40000},{e:"🧑‍🍳",n:"Garzones",d:"Personal de servicio.",p:50000},{e:"🎪",n:"Montaje / mobiliario",d:"Mesas, sillas, mantelería.",p:150000},{e:"🎵",n:"Ambientación",d:"Decoración y música.",p:200000}],
+      planes:[{nombre:"Cóctel",tipo:"Por persona",precio:9000,destacado:false,incluye:["Bocados","Bebidas","Servicio"]},{nombre:"Almuerzo / cena",tipo:"El recomendado",precio:18000,destacado:true,incluye:["Menú completo","Garzones","Montaje básico"]},{nombre:"Full evento",tipo:"Todo incluido",precio:28000,destacado:false,incluye:["Banquete","Montaje","Ambientación"]}] },
+    { k:"venta", label:"Venta de productos", emoji:"🛍️", color:{bg:"#0e1420",accent:"#34d399",accentDark:"#10b981"}, font:"Poppins", shape:"sphere", unidad:"unidades",
+      rubro:"Venta de productos", titulo:"Elige tus productos y cotiza al instante.", frase:"Arma tu pedido, mira el total y acéptalo con tu firma.",
+      seg:[{e:"📦",n:"Producto A",d:"Describe tu producto.",p:15000},{e:"📦",n:"Producto B",d:"Describe tu producto.",p:25000},{e:"📦",n:"Producto C",d:"Describe tu producto.",p:40000},{e:"🎁",n:"Pack / combo",d:"Varios productos.",p:60000},{e:"🚚",n:"Despacho",d:"Envío a domicilio.",p:5000},{e:"🔧",n:"Instalación",d:"Puesta en marcha.",p:20000}],
+      planes:[{nombre:"Minorista",tipo:"Compra simple",precio:15000,destacado:false,incluye:["Producto","Garantía","Boleta"]},{nombre:"Mayorista",tipo:"El recomendado",precio:12000,destacado:true,incluye:["Precio por volumen","Despacho","Prioridad"]},{nombre:"Distribuidor",tipo:"Grandes cantidades",precio:10000,destacado:false,incluye:["Mejor precio","Crédito","Soporte"]}] },
+    { k:"compraventa", label:"Compra-venta", emoji:"🔁", color:{bg:"#101418",accent:"#22d3ee",accentDark:"#06b6d4"}, font:"Space Grotesk", shape:"octa", unidad:"artículos",
+      rubro:"Compra y venta", titulo:"Compramos y vendemos, con transparencia.", frase:"Elige la operación, revisa el valor y acéptala con tu firma.",
+      seg:[{e:"💰",n:"Tasación",d:"Valor de tu artículo.",p:10000},{e:"🤝",n:"Compra",d:"Te compramos.",p:0},{e:"🏷️",n:"Venta",d:"Vendemos por ti.",p:0},{e:"🔁",n:"Permuta",d:"Cambio con diferencia.",p:0},{e:"📋",n:"Consignación",d:"Dejas y te pagamos al vender.",p:0},{e:"🚚",n:"Traslado",d:"Retiro y entrega.",p:15000}],
+      planes:[{nombre:"Tasación",tipo:"Valoriza",precio:10000,destacado:false,incluye:["Evaluación","Informe","Oferta"]},{nombre:"Consignación",tipo:"El recomendado",precio:0,destacado:true,incluye:["Exhibición","Difusión","Comisión al vender"]},{nombre:"Venta directa",tipo:"Pago inmediato",precio:0,destacado:false,incluye:["Oferta al tiro","Pago contado","Sin esperas"]}] },
+    { k:"fotografia", label:"Fotografía / Video", emoji:"📸", color:{bg:"#111118",accent:"#f59e0b",accentDark:"#d97706"}, font:"Space Grotesk", shape:"octa", unidad:"sesiones",
+      rubro:"Fotografía y video", titulo:"Capturamos tus mejores momentos.", frase:"Arma tu sesión, mira el valor y resérvala con tu firma.",
+      seg:[{e:"📸",n:"Sesión de fotos",d:"Estudio o exterior.",p:60000},{e:"💍",n:"Matrimonio",d:"Cobertura completa.",p:400000},{e:"🎂",n:"Evento / cumpleaños",d:"Cobertura.",p:120000},{e:"🏢",n:"Producto / empresa",d:"Catálogo y marca.",p:150000},{e:"🎬",n:"Video",d:"Edición incluida.",p:200000},{e:"🖼️",n:"Álbum / impresión",d:"Entrega física.",p:50000}],
+      planes:[{nombre:"Básico",tipo:"1 sesión",precio:60000,destacado:false,incluye:["1 hora","Fotos editadas","Entrega digital"]},{nombre:"Completo",tipo:"El recomendado",precio:120000,destacado:true,incluye:["Sesión extendida","Más fotos","Álbum digital"]},{nombre:"Premium",tipo:"Evento",precio:300000,destacado:false,incluye:["Cobertura total","Video","Álbum impreso"]}] },
     { k:"general", label:"Servicios (general)", emoji:"🧰", color:{bg:"#0e1420",accent:"#34d399",accentDark:"#10b981"}, font:"Poppins", shape:"sphere", unidad:"unidades",
       rubro:"Servicios profesionales", titulo:"Arma tu servicio a tu medida.", frase:"Elige lo que necesitas, mira el valor al instante y acéptalo con tu firma.",
-      servicios:[{emoji:"🧰",nombre:"Servicio básico",desc:"Describe este servicio.",precio:30000},{emoji:"🔧",nombre:"Servicio estándar",desc:"Describe este servicio.",precio:50000},{emoji:"⭐",nombre:"Servicio premium",desc:"Describe este servicio.",precio:90000},{emoji:"📦",nombre:"Materiales / insumos",desc:"Describe este ítem.",precio:25000},{emoji:"📐",nombre:"Visita / diagnóstico",desc:"Describe este servicio.",precio:20000}],
+      seg:[{e:"🧰",n:"Servicio básico",d:"Describe este servicio.",p:30000},{e:"🔧",n:"Servicio estándar",d:"Describe este servicio.",p:50000},{e:"⭐",n:"Servicio premium",d:"Describe este servicio.",p:90000},{e:"📦",n:"Materiales / insumos",d:"Describe este ítem.",p:25000},{e:"📐",n:"Visita / diagnóstico",d:"Describe este servicio.",p:20000}],
       planes:[{nombre:"Básico",tipo:"Plan de entrada",precio:30000,destacado:false,incluye:["Lo esencial","Soporte","Garantía"]},{nombre:"Completo",tipo:"El recomendado",precio:50000,destacado:true,incluye:["Todo lo básico","Más cobertura","Prioridad"]},{nombre:"Premium",tipo:"Todo incluido",precio:90000,destacado:false,incluye:["Todo lo completo","Atención preferente","Extras"]}] }
   ];
-  $("tEstilo").onclick=function(){ renderEstilo(); openM("estiloModal"); };
-  function renderEstilo(){
-    var g=$("estiloGrid"); g.innerHTML="";
-    PRESETS.forEach(function(ps){
-      var d=document.createElement("button"); d.className="mini"; d.style.cssText="display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 8px;border-radius:14px;cursor:pointer";
-      d.innerHTML='<span style="font-size:1.6rem">'+ps.emoji+'</span><b style="font-size:.86rem">'+esc(ps.label)+'</b><span style="display:flex;gap:4px"><i style="width:14px;height:14px;border-radius:50%;background:'+ps.color.accent+';display:inline-block"></i><i style="width:14px;height:14px;border-radius:50%;background:'+ps.color.bg+';border:1px solid var(--line);display:inline-block"></i></span>';
-      d.onclick=function(){ applyPreset(ps); };
+  var rubroSel=null;
+  $("tEstilo").onclick=function(){ showStep(1); renderEstilo(""); openM("estiloModal"); };
+  $("rubroBuscar").oninput=function(){ renderEstilo(this.value); };
+  $("rubroBack").onclick=function(){ showStep(1); };
+  function showStep(n){ $("estiloStep1").hidden=(n!==1); $("estiloStep2").hidden=(n!==2); if($("estiloTit").firstChild) $("estiloTit").firstChild.textContent=(n===1?"🎨 Elige tu rubro ":"🧩 Elige tus servicios "); }
+  function renderEstilo(q){
+    q=(q||"").toLowerCase().trim(); var g=$("estiloGrid"); g.innerHTML="";
+    PRESETS.filter(function(ps){ return !q || (ps.label+" "+ps.rubro).toLowerCase().indexOf(q)>-1; }).forEach(function(ps){
+      var d=document.createElement("button"); d.className="mini"; d.style.cssText="display:flex;flex-direction:column;align-items:center;gap:6px;padding:13px 8px;border-radius:14px;cursor:pointer";
+      d.innerHTML='<span style="font-size:1.5rem">'+ps.emoji+'</span><b style="font-size:.8rem;text-align:center;line-height:1.2">'+esc(ps.label)+'</b><span style="display:flex;gap:4px"><i style="width:13px;height:13px;border-radius:50%;background:'+ps.color.accent+';display:inline-block"></i><i style="width:13px;height:13px;border-radius:50%;background:'+ps.color.bg+';border:1px solid var(--line);display:inline-block"></i></span>';
+      d.onclick=function(){ selectRubro(ps); };
       g.appendChild(d);
     });
+    if(!g.children.length) g.innerHTML='<p class="hint">Sin resultados. Prueba otra palabra.</p>';
   }
-  function applyPreset(ps){
+  function applyTheme(ps){
     cfg.color={bg:ps.color.bg,accent:ps.color.accent,accentDark:ps.color.accentDark};
     cfg.font=ps.font; cfg.shape=ps.shape; cfg.unidad=ps.unidad;
     cfg.rubro=ps.rubro; cfg.titulo=ps.titulo; cfg.frase=ps.frase;
-    cfg.servicios=JSON.parse(JSON.stringify(ps.servicios));
-    cfg.planes=JSON.parse(JSON.stringify(ps.planes));
-    sel={}; planSel=-1; equipos=1;
-    saveCfg(); saveSel();
-    applyBrand(); renderGal(); renderCat(); renderPlanes(); renderResumen(); update3D();
-    closeM("estiloModal"); flash("✨ Estilo aplicado — ahora edita tu marca e imágenes");
+    applyBrand(); update3D();
   }
-  addEventListener("keydown",function(e){ if(e.key==="Escape") document.querySelectorAll(".modal.open").forEach(function(m){m.classList.remove("open");}); });
+  function selectRubro(ps){
+    rubroSel=ps; applyTheme(ps);
+    $("segRubro").textContent=ps.label;
+    var c=$("segList"); c.innerHTML="";
+    ps.seg.forEach(function(s,i){
+      var lab=document.createElement("label"); lab.className="chkline"; lab.style.margin="8px 0";
+      lab.innerHTML='<input type="checkbox" data-i="'+i+'" checked><span><b>'+esc(s.e+" "+s.n)+'</b> · '+money(s.p)+'<br><small style="color:var(--muted)">'+esc(s.d||'')+'</small></span>';
+      c.appendChild(lab);
+    });
+    showStep(2);
+  }
+  $("segApply").onclick=function(){
+    if(!rubroSel) return; var ps=rubroSel; var chosen=[];
+    $("segList").querySelectorAll('input[type=checkbox]').forEach(function(ch){ if(ch.checked){ var s=ps.seg[parseInt(ch.dataset.i,10)]; chosen.push({img:"",emoji:s.e,nombre:s.n,desc:s.d||"",precio:s.p}); } });
+    if(!chosen.length){ flash("Marca al menos un servicio."); return; }
+    cfg.servicios=chosen; cfg.planes=JSON.parse(JSON.stringify(ps.planes||[]));
+    sel={}; planSel=-1; equipos=1; saveCfg(); saveSel();
+    applyBrand(); renderGal(); renderCat(); renderPlanes(); renderResumen(); update3D();
+    closeM("estiloModal"); flash("✨ Rubro aplicado — ahora edita tu marca, fotos y precios");
+  };
 
   // ---- negocio ----
   $("tNeg").onclick=function(){ fillNeg(); openM("negModal"); };
