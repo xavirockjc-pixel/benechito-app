@@ -244,6 +244,9 @@ model Empresa {
   modoSimple        Boolean    @default(true)
   // PIN/código por producto en Producción (JSON {linea: pin}). Vacío = sin bloqueo.
   pinesProduccion   String?
+  // Clave del dueño para autorizar correcciones de ventas (anular / cambiar medio)
+  // desde la Caja y el Central. Vacío = aún no configurada.
+  cajaPin           String?
   sucursales Sucursal[]
   configFacturacion ConfigFacturacion?
   createdAt  DateTime   @default(now())

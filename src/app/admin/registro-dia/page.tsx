@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { getCanalMaps } from "@/lib/dominio/canales";
 import { medioPagoLabel } from "@/lib/dominio/ventas";
+import { usuarioActual } from "@/lib/auth";
+import { ROLES_FULL } from "@/lib/dominio/permisos";
+import CorregirVenta from "@/app/_shared/CorregirVenta";
+import ConfigCajaPin from "@/app/_shared/ConfigCajaPin";
 
 export const dynamic = "force-dynamic";
 
@@ -27,7 +31,7 @@ export default async function RegistroDiaPage() {
   const ahora = new Date();
   const desde = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate() - (DIAS - 1));
 
-  const [ventas, movsCaja, movsBodega, { label: canalLabel }] = await Promise.all([
+  const [ventas, movsCaja, movsBodega, { label: canalLabel }, usuario, emp] = await Promise.all([
     prisma.venta.findMany({
       where: { fecha: { gte: desde } },
       orderBy: { fecha: "desc" }, take: 3000,
@@ -36,7 +40,11 @@ export default async function RegistroDiaPage() {
     prisma.movimientoCaja.findMany({ where: { fecha: { gte: desde } }, orderBy: { fecha: "desc" }, take: 2000 }),
     prisma.movimientoBodega.findMany({ where: { zona: "bodega", fecha: { gte: desde } }, orderBy: { fecha: "desc" }, take: 3000 }),
     getCanalMaps(),
+    usuarioActual(),
+    prisma.empresa.findFirst({ select: { cajaPin: true } }),
   ]);
+  const esDueno = ROLES_FULL.includes(usuario?.rol ?? "");
+  const pinConfigurado = Boolean((emp?.cajaPin ?? "").trim());
 
   type Dia = { fecha: Date; ventas: typeof ventas; caja: typeof movsCaja; bodega: typeof movsBodega };
   const porDia = new Map<string, Dia>();
@@ -58,6 +66,8 @@ export default async function RegistroDiaPage() {
         <h1 className="mt-1 text-2xl font-extrabold text-slate-900">📅 Registro por día</h1>
         <p className="text-sm text-slate-500">Toca un día para ver sus ventas, movimientos de caja y de bodega.</p>
       </div>
+
+      {esDueno && <ConfigCajaPin configurada={pinConfigurado} />}
 
       {dias.length === 0 ? (
         <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">Sin actividad en los últimos {DIAS} días.</p>
@@ -109,9 +119,12 @@ export default async function RegistroDiaPage() {
                             const medio = v.pagos[0]?.medio ?? "";
                             const quien = v.negocio?.nombreNegocio && v.negocio.nombreNegocio !== "Consumidor Final" ? v.negocio.nombreNegocio : (v.vendedor?.nombre ? `Ruta · ${v.vendedor.nombre}` : "Mostrador");
                             return (
-                              <li key={v.id} className="flex items-center justify-between gap-2 py-1">
-                                <span className="min-w-0 truncate text-slate-700">{quien} <span className="text-xs text-slate-400">· {canalLabel[v.canal ?? ""] ?? v.canal}{medio ? ` · ${medioPagoLabel[medio] ?? medio}` : ""}</span></span>
-                                <span className="shrink-0 text-xs text-slate-500"><b className="text-slate-800">{fmtCLP(num(v.total))}</b> · {fmtHora(v.fecha)}</span>
+                              <li key={v.id} className="py-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="min-w-0 truncate text-slate-700">{quien} <span className="text-xs text-slate-400">· {canalLabel[v.canal ?? ""] ?? v.canal}{medio ? ` · ${medioPagoLabel[medio] ?? medio}` : ""}</span></span>
+                                  <span className="shrink-0 text-xs text-slate-500"><b className="text-slate-800">{fmtCLP(num(v.total))}</b> · {fmtHora(v.fecha)}</span>
+                                </div>
+                                {esDueno && <CorregirVenta ventaId={v.id} medioActual={medio} />}
                               </li>
                             );
                           })}

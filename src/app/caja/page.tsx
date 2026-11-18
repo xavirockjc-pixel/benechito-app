@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { medioPagoLabel } from "@/lib/dominio/ventas";
+import CorregirVenta from "@/app/_shared/CorregirVenta";
 import { abrirCaja, sesionAbierta } from "./actions";
 import { ESCALONES_LOCAL } from "@/lib/dominio/precios";
 import CajaPOS from "./CajaPOS";
@@ -137,13 +138,16 @@ export default async function CajaPage({ searchParams }: { searchParams?: Promis
             {ventas.slice(0, 40).map((v) => {
               const medio = v.pagos[0]?.medio ?? "";
               return (
-                <li key={v.id} className="flex items-center justify-between gap-2 py-1.5">
-                  <span className="min-w-0">
-                    <span className="font-bold text-slate-900">{fmtCLP(Number(v.total))}</span>{" "}
-                    <span className="text-slate-500">{v.negocio?.nombreNegocio && v.negocio.nombreNegocio !== "Consumidor Final" ? v.negocio.nombreNegocio : "Mostrador"}</span>
-                    {medio && <span className="ml-1 text-xs text-slate-400">· {medioPagoLabel[medio] ?? medio}</span>}
-                  </span>
-                  <span className="shrink-0 text-xs text-slate-400">{new Date(v.fecha).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}</span>
+                <li key={v.id} className="py-1.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="min-w-0">
+                      <span className="font-bold text-slate-900">{fmtCLP(Number(v.total))}</span>{" "}
+                      <span className="text-slate-500">{v.negocio?.nombreNegocio && v.negocio.nombreNegocio !== "Consumidor Final" ? v.negocio.nombreNegocio : "Mostrador"}</span>
+                      {medio && <span className="ml-1 text-xs text-slate-400">· {medioPagoLabel[medio] ?? medio}</span>}
+                    </span>
+                    <span className="shrink-0 text-xs text-slate-400">{new Date(v.fecha).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" })}</span>
+                  </div>
+                  <CorregirVenta ventaId={v.id} medioActual={medio} />
                 </li>
               );
             })}
@@ -163,7 +167,7 @@ export default async function CajaPage({ searchParams }: { searchParams?: Promis
             </ul>
           </details>
         )}
-        <p className="mt-2 text-[11px] text-slate-400">¿Hubo un error en una venta? Se corrige en <b>📅 Ver por día</b> (con clave). *Próximamente.</p>
+        <p className="mt-2 text-[11px] text-slate-400">¿Hubo un error en una venta? Toca <b>✏️ Corregir</b> en la venta (anular o cambiar el medio) con la clave del dueño.</p>
       </section>
 
       <div className="mt-4"><MovCajaLocalForm /></div>
