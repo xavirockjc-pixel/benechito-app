@@ -151,6 +151,28 @@
   .svcedit .del{background:none; border:0; color:var(--muted); cursor:pointer; font-size:1.1rem}
   .addsvc{background:var(--surface); border:1px dashed var(--line); color:var(--bright); border-radius:10px; padding:11px; font-weight:800; cursor:pointer; width:100%; margin-top:4px}
 
+  /* galería */
+  .gal{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px}
+  .gal figure{margin:0; border-radius:14px; overflow:hidden; border:1px solid var(--line); aspect-ratio:4/3; background:var(--surface-2)}
+  .gal img{width:100%; height:100%; object-fit:cover; transition:transform .4s ease} .gal figure:hover img{transform:scale(1.06)}
+  .galedit{display:flex; gap:8px; flex-wrap:wrap; margin-top:4px}
+  .galedit .ph{position:relative; width:74px; height:74px; border-radius:10px; overflow:hidden; border:1px solid var(--line)} .galedit .ph img{width:100%;height:100%;object-fit:cover} .galedit .ph button{position:absolute;top:2px;right:2px;border:0;background:rgba(0,0,0,.6);color:#fff;border-radius:6px;width:20px;height:20px;cursor:pointer}
+  .galedit .addg{width:74px;height:74px;border:2px dashed var(--line);border-radius:10px;display:grid;place-items:center;font-size:1.5rem;color:var(--muted);cursor:pointer;background:var(--surface)}
+  /* planes */
+  .planes-ctl{display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px; background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:12px 15px}
+  .planes-ctl .lab{font-weight:800; font-size:.92rem} .planes-ctl small{color:var(--muted); font-size:.8rem}
+  .stepper{display:inline-flex; align-items:center; gap:4px} .stepper button{width:34px; height:34px; border-radius:9px; border:1px solid var(--line); background:var(--surface-2); color:var(--ink); font-size:1.1rem; cursor:pointer} .stepper input{width:48px; text-align:center; background:var(--bg); border:1px solid var(--line); border-radius:9px; color:var(--ink); padding:7px 4px; font-weight:800}
+  .planes{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; align-items:start}
+  .plan{position:relative; background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:18px; cursor:pointer; transition:border-color .2s, box-shadow .2s, transform .2s}
+  .plan:hover{transform:translateY(-3px)} .plan.on{border-color:var(--accent); box-shadow:0 0 0 1px var(--accent), 0 22px 46px -24px var(--glow)}
+  .plan .badge{position:absolute; top:-10px; left:16px; background:linear-gradient(180deg,var(--bright),var(--accentDark)); color:#042033; font-size:.66rem; font-weight:800; padding:3px 10px; border-radius:999px}
+  .plan .pn{font-family:var(--disp); font-weight:700; font-size:1.15rem} .plan .tp{color:var(--accent); font-size:.7rem; font-weight:700; margin:3px 0 8px; font-family:var(--mono); text-transform:uppercase; letter-spacing:.1em}
+  .plan .pp{font-family:var(--disp); font-size:1.5rem; font-weight:700; color:var(--bright)} .plan .pp small{font-size:.7rem; color:var(--muted); font-weight:500}
+  .plan ul{list-style:none; padding:0; margin:12px 0 0; display:grid; gap:6px} .plan li{font-size:.85rem; color:var(--ink); padding-left:20px; position:relative} .plan li::before{content:"✓"; position:absolute; left:0; color:var(--accent); font-weight:800}
+  .plan .pick{margin-top:14px; width:100%; border:1px solid var(--accent); background:transparent; color:var(--bright); border-radius:10px; padding:10px; font-weight:800; cursor:pointer; font-size:.86rem}
+  .plan.on .pick{background:linear-gradient(180deg,var(--bright),var(--accentDark)); color:#042033; border-color:transparent}
+  .planedit{border:1px solid var(--line); border-radius:12px; padding:12px; margin-bottom:10px} .planedit input,.planedit textarea{width:100%; background:var(--surface); border:1px solid var(--line); border-radius:9px; padding:8px 9px; color:var(--ink); font-size:.9rem; margin-bottom:6px} .planedit textarea{min-height:66px} .planedit .ph{display:flex; gap:8px} .planedit .ph input{flex:1}
+
   /* aceptación / firma */
   .accsum{background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:14px; font-size:.9rem; text-align:left}
   .accsum .row{display:flex; justify-content:space-between; gap:12px; padding:3px 0} .accsum .row b{color:var(--bright); text-align:right}
@@ -180,6 +202,8 @@
   <div class="tools">
     <button class="tgl" id="tNeg">⚙️ Negocio</button>
     <button class="tgl" id="tSvc">🧩 Servicios</button>
+    <button class="tgl" id="tPlan">📋 Planes</button>
+    <button class="tgl" id="tGal">🖼️ Galería</button>
     <button class="tgl" id="tTerm">📝 Términos</button>
   </div>
 </div></header>
@@ -199,10 +223,23 @@
   <button class="cta-scroll" id="ctaScroll">Arma tu servicio ↓</button>
 </div></section>
 
+<!-- GALERÍA -->
+<section class="wrap" id="galSec">
+  <div class="sec-h"><span class="eyebrow">Lo que hacemos</span><h2>Trabajos reales.</h2><p>Instalaciones y mantenciones hechas por nuestro equipo.</p></div>
+  <div class="gal" id="gal"></div>
+</section>
+
 <!-- ARMADOR -->
 <section class="wrap" id="armador">
   <div class="sec-h"><span class="eyebrow">Arma tu servicio</span><h2>Elige lo que necesitas y mira el total al instante.</h2><p>Toca cada servicio para agregarlo. Puedes ajustar la cantidad; el valor se suma solo.</p></div>
   <div class="cat" id="cat"></div>
+</section>
+
+<!-- PLANES -->
+<section class="wrap" id="planSec">
+  <div class="sec-h"><span class="eyebrow">Planes de mantención</span><h2>Elige tu plan.</h2><p>Preventiva, correctiva o instalación. El valor se ajusta a tu número de equipos.</p></div>
+  <div class="planes-ctl" id="planesCtl"><span class="lab">¿Cuántos equipos?</span><div class="stepper"><button id="eqMinus" aria-label="menos">−</button><input id="eqNum" class="tab" value="1" inputmode="numeric"><button id="eqPlus" aria-label="más">＋</button></div><small>El plan elegido se multiplica por tus equipos.</small></div>
+  <div class="planes" id="planes"></div>
 </section>
 
 <!-- RESUMEN -->
@@ -271,6 +308,23 @@
   <div id="svcEdit"></div>
   <button class="addsvc" id="addSvc">＋ Agregar servicio</button>
   <button class="cta cta-a" id="svcSave" style="width:100%; margin-top:12px">Guardar servicios</button>
+</div></div>
+
+<!-- editor planes -->
+<div class="modal" id="planModal"><div class="msheet">
+  <h2>📋 Planes de mantención <button class="x" id="planX">✕</button></h2>
+  <p class="hint" style="margin-top:0">Cada plan tiene nombre, tipo, valor por equipo y qué incluye. El cliente elige uno.</p>
+  <div id="planEdit"></div>
+  <button class="addsvc" id="addPlan">＋ Agregar plan</button>
+  <button class="cta cta-a" id="planSave" style="width:100%; margin-top:12px">Guardar planes</button>
+</div></div>
+
+<!-- editor galería -->
+<div class="modal" id="galModal"><div class="msheet">
+  <h2>🖼️ Galería de trabajos <button class="x" id="galX">✕</button></h2>
+  <p class="hint" style="margin-top:0">Sube fotos reales de tus trabajos. Se muestran en la sección "Lo que hacemos".</p>
+  <div class="galedit" id="galEdit"></div>
+  <input id="galFile" type="file" accept="image/*" multiple>
 </div></div>
 
 <!-- editor términos -->
@@ -764,7 +818,15 @@ const NEGOCIO = {
   cfg.logo=clean(cfg.logo); cfg.hero=clean(cfg.hero); if(cfg.nosotros) cfg.nosotros.img=clean(cfg.nosotros.img);
   cfg.servicios.forEach(function(sv){ sv.img=clean(sv.img); });
   if(!cfg.folioBase) cfg.folioBase="001";
-  var sel={}; try{ var ss=JSON.parse(localStorage.getItem(LS_SEL)||"null"); if(ss) sel=ss; }catch(e){}
+  if(!cfg.galeria) cfg.galeria=[];
+  if(!cfg.galeria.length){ cfg.galeria=cfg.servicios.filter(function(s){return s.img;}).map(function(s){return s.img;}).slice(0,6); }
+  if(!cfg.planes) cfg.planes=[
+    { nombre:"Preventiva", tipo:"Mantención periódica", precio:45000, destacado:true, incluye:["Revisión y limpieza programada","Chequeo de gas y presiones","Informe de estado","Prioridad en la agenda"] },
+    { nombre:"Correctiva", tipo:"Reparación por falla", precio:60000, destacado:false, incluye:["Diagnóstico de la falla","Reparación del equipo","Repuestos menores incluidos","Garantía del trabajo"] },
+    { nombre:"Instalación", tipo:"Montaje nuevo", precio:150000, destacado:false, incluye:["Montaje del equipo","Materiales de instalación","Puesta en marcha","Capacitación de uso"] }
+  ];
+  var sel={}, planSel=-1, equipos=1;
+  try{ var ss=JSON.parse(localStorage.getItem(LS_SEL)||"null"); if(ss){ sel=ss.sel||ss||{}; if(typeof ss.plan==="number") planSel=ss.plan; if(ss.eq) equipos=ss.eq; } }catch(e){}
 
   var $=function(id){return document.getElementById(id);};
   var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});};
@@ -772,7 +834,7 @@ const NEGOCIO = {
   function darken(hex){ try{var c=hex.replace('#','');if(c.length===3)c=c.split('').map(function(x){return x+x;}).join('');var r=Math.max(0,parseInt(c.slice(0,2),16)-26),g=Math.max(0,parseInt(c.slice(2,4),16)-26),b=Math.max(0,parseInt(c.slice(4,6),16)-26);return '#'+[r,g,b].map(function(x){return x.toString(16).padStart(2,'0');}).join('');}catch(e){return hex;} }
   function waLink(msg){ return "https://wa.me/"+(cfg.whatsapp||'').replace(/\D/g,'')+"?text="+encodeURIComponent(msg); }
   function saveCfg(){ try{localStorage.setItem(LS,JSON.stringify(cfg));}catch(e){ flash("⚠️ Memoria llena (imágenes muy pesadas)"); } }
-  function saveSel(){ try{localStorage.setItem(LS_SEL,JSON.stringify(sel));}catch(e){} }
+  function saveSel(){ try{localStorage.setItem(LS_SEL,JSON.stringify({sel:sel,plan:planSel,eq:equipos}));}catch(e){} }
   function flash(m){ $("finMsg").textContent=m; setTimeout(function(){$("finMsg").textContent="";},2600); }
   function comprimir(file,max,q){ return new Promise(function(res,rej){ var r=new FileReader(); r.onload=function(){ var im=new Image(); im.onload=function(){ var w=im.width,h=im.height; if(w>h&&w>max){h=Math.round(h*max/w);w=max;} else if(h>max){w=Math.round(w*max/h);h=max;} var cv=document.createElement("canvas"); cv.width=w;cv.height=h; cv.getContext("2d").drawImage(im,0,0,w,h); res(cv.toDataURL("image/jpeg",q||0.72)); }; im.onerror=rej; im.src=r.result; }; r.onerror=rej; r.readAsDataURL(file); }); }
 
@@ -823,20 +885,44 @@ const NEGOCIO = {
   function toggle(i){ if(sel[i]) delete sel[i]; else sel[i]=1; saveSel(); renderCat(); renderResumen(); }
   function setQty(i,q){ q=Math.max(1,Math.min(99,q)); sel[i]=q; saveSel(); renderCat(); renderResumen(); }
   function selItems(){ var a=[]; cfg.servicios.forEach(function(sv,i){ if(sel[i]) a.push({i:i,nombre:sv.nombre,precio:Number(sv.precio)||0,qty:sel[i],img:sv.img||"",emoji:sv.emoji||"🔧"}); }); return a; }
-  function totalSel(){ return selItems().reduce(function(a,it){ return a+it.precio*it.qty; },0); }
+  function planActual(){ return (planSel>=0 && cfg.planes[planSel])?cfg.planes[planSel]:null; }
+  function planTotal(){ var p=planActual(); return p?(Number(p.precio)||0)*equipos:0; }
+  function totalSel(){ return selItems().reduce(function(a,it){ return a+it.precio*it.qty; },0)+planTotal(); }
+  function haySel(){ return selItems().length>0 || !!planActual(); }
+  function renderGal(){ var g=$("gal"); if(!g)return; g.innerHTML=""; (cfg.galeria||[]).forEach(function(src){ var f=document.createElement("figure"); f.innerHTML='<img alt="trabajo" loading="lazy" src="'+src+'">'; g.appendChild(f); }); $("galSec").hidden=!(cfg.galeria||[]).length; }
+  function renderPlanes(){
+    var c=$("planes"); if(!c)return; c.innerHTML="";
+    (cfg.planes||[]).forEach(function(p,i){
+      var on=(planSel===i); var tot=(Number(p.precio)||0)*equipos;
+      var d=document.createElement("div"); d.className="plan"+(on?" on":"");
+      d.innerHTML=(p.destacado?'<span class="badge">★ Recomendado</span>':'')
+        +'<div class="pn">'+esc(p.nombre)+'</div><div class="tp">'+esc(p.tipo||'')+'</div>'
+        +'<div class="pp">'+money(tot)+' <small>'+(equipos>1?('· '+money(p.precio)+' × '+equipos+' equipos'):'por equipo')+'</small></div>'
+        +'<ul>'+(p.incluye||[]).map(function(x){return '<li>'+esc(x)+'</li>';}).join('')+'</ul>'
+        +'<button class="pick">'+(on?'✓ Plan elegido':'Elegir este plan')+'</button>';
+      d.querySelector(".pick").onclick=function(e){ e.stopPropagation(); planSel=(planSel===i?-1:i); saveSel(); renderPlanes(); renderResumen(); };
+      d.onclick=function(){ planSel=(planSel===i?-1:i); saveSel(); renderPlanes(); renderResumen(); };
+      c.appendChild(d);
+    });
+    $("planSec").hidden=!(cfg.planes||[]).length;
+    $("planesCtl").hidden=!(cfg.planes||[]).length;
+    $("eqNum").value=equipos;
+  }
+  function setEq(n){ equipos=Math.max(1,Math.min(999,n|0||1)); $("eqNum").value=equipos; saveSel(); renderPlanes(); renderResumen(); }
 
   function renderResumen(){
-    var items=selItems(); var box=$("resumen");
-    if(!items.length){ box.innerHTML='<div class="empty">Aún no eliges nada. Toca los servicios de arriba para armar tu cotización.</div>'; $("btnAcc").style.display="none"; }
+    var items=selItems(); var p=planActual(); var box=$("resumen"); var n=items.length+(p?1:0);
+    if(!n){ box.innerHTML='<div class="empty">Aún no eliges nada. Toca los servicios o un plan de arriba para armar tu cotización.</div>'; $("btnAcc").style.display="none"; }
     else {
-      box.innerHTML=items.map(function(it){
+      var html=items.map(function(it){
         var th=it.img?('<img src="'+it.img+'" alt="">'):('<div class="ph">'+it.emoji+'</div>');
         return '<div class="rline">'+th+'<div class="n"><b>'+esc(it.nombre)+'</b><small>'+money(it.precio)+' × '+it.qty+'</small></div><div class="st">'+money(it.precio*it.qty)+'</div></div>';
-      }).join("")+'<div class="rtot"><span class="l">Total</span><span class="v tab">'+money(totalSel())+'</span></div>';
+      }).join("");
+      if(p){ html+='<div class="rline"><div class="ph">📋</div><div class="n"><b>Plan '+esc(p.nombre)+'</b><small>'+esc(p.tipo||'')+' · '+money(p.precio)+' × '+equipos+(equipos>1?' equipos':' equipo')+'</small></div><div class="st">'+money(planTotal())+'</div></div>'; }
+      box.innerHTML=html+'<div class="rtot"><span class="l">Total</span><span class="v tab">'+money(totalSel())+'</span></div>';
       $("btnAcc").style.display="";
     }
-    // barra fija
-    var tb=$("totbar"); if(items.length){ tb.classList.add("show"); $("tbCount").textContent=items.length+(items.length===1?" servicio":" servicios"); $("tbTotal").textContent=money(totalSel()); } else tb.classList.remove("show");
+    var tb=$("totbar"); if(n){ tb.classList.add("show"); $("tbCount").textContent=n+(n===1?" ítem":" ítems"); $("tbTotal").textContent=money(totalSel()); } else tb.classList.remove("show");
     renderVigente();
   }
 
@@ -865,6 +951,7 @@ const NEGOCIO = {
   function hashStr(s){ var h=0x811c9dc5>>>0; for(var i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=(h+((h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24)))>>>0; } return ("00000000"+h.toString(16)).slice(-8); }
   function snapActual(){
     var items=selItems().map(function(it){ return {d:it.nombre,c:it.qty,p:it.precio}; });
+    var p=planActual(); if(p){ items.push({d:"Plan "+p.nombre+(p.tipo?(" — "+p.tipo):""),c:equipos,p:(Number(p.precio)||0)}); }
     return { marca:cfg.marca||"", rubro:cfg.rubro||"", whatsapp:cfg.whatsapp||"", correo:cfg.correo||"", moneda:cfg.moneda||"$", logo:cfg.logo||"",
       cliente:"", titulo:"Servicios seleccionados", descripcion:"", items:items, total:totalSel(), nota:"", terminos:cfg.terminos||"", folioBase:cfg.folioBase||"001" };
   }
@@ -873,7 +960,7 @@ const NEGOCIO = {
   function guardarFirma(rec){ var a=firmas(); a.push(rec); try{ localStorage.setItem(LS_F,JSON.stringify(a)); }catch(e){ flash("⚠️ No se pudo guardar (memoria llena)"); } }
 
   function renderVigente(){
-    var box=$("finVigente"); box.innerHTML=""; if(!selItems().length) return;
+    var box=$("finVigente"); box.innerHTML=""; if(!haySel()) return;
     var hAct=huellaDe(snapActual()); var fs=firmas(); var match=null, any=null;
     for(var i=fs.length-1;i>=0;i--){ if(!any) any=fs[i]; if(fs[i].huella===hAct){ match=fs[i]; break; } }
     if(match){ box.innerHTML='<div class="okbox">✅ Esta selección ya fue aceptada y firmada por <b>'+esc(match.nombre)+'</b> el '+esc(match.fechaTxt)+'. Folio '+esc(match.folio)+'.</div>'; }
@@ -882,7 +969,7 @@ const NEGOCIO = {
 
   // ---- modales ----
   function openM(id){ $(id).classList.add("open"); } function closeM(id){ $(id).classList.remove("open"); }
-  [["negModal","negX"],["svcModal","svcX"],["termModal","termX"],["accModal","accX"],["regModal","regX"]].forEach(function(p){ $(p[1]).onclick=function(){ closeM(p[0]); }; var m=$(p[0]); m.addEventListener("click",function(e){ if(e.target===m) closeM(p[0]); }); });
+  [["negModal","negX"],["svcModal","svcX"],["planModal","planX"],["galModal","galX"],["termModal","termX"],["accModal","accX"],["regModal","regX"]].forEach(function(p){ $(p[1]).onclick=function(){ closeM(p[0]); }; var m=$(p[0]); m.addEventListener("click",function(e){ if(e.target===m) closeM(p[0]); }); });
   addEventListener("keydown",function(e){ if(e.key==="Escape") document.querySelectorAll(".modal.open").forEach(function(m){m.classList.remove("open");}); });
 
   // ---- negocio ----
@@ -916,6 +1003,32 @@ const NEGOCIO = {
   $("addSvc").onclick=function(){ cfg.servicios.push({img:"",emoji:"🔧",nombre:"Nuevo servicio",desc:"",precio:0}); renderSvcEdit(); };
   $("svcSave").onclick=function(){ saveCfg(); renderCat(); renderResumen(); closeM("svcModal"); };
 
+  // ---- editor planes ----
+  $("tPlan").onclick=function(){ renderPlanEdit(); openM("planModal"); };
+  function renderPlanEdit(){
+    var c=$("planEdit"); c.innerHTML="";
+    cfg.planes.forEach(function(p,i){
+      var d=document.createElement("div"); d.className="planedit";
+      d.innerHTML='<div class="ph"><input data-k="nombre" placeholder="Nombre" value="'+esc(p.nombre)+'"><input data-k="tipo" placeholder="Tipo" value="'+esc(p.tipo||'')+'"></div>'
+        +'<div class="ph"><input data-k="precio" class="tab" inputmode="numeric" placeholder="Valor por equipo" value="'+(Number(p.precio)||0)+'"><label style="display:flex;align-items:center;gap:6px;color:var(--muted);font-size:.8rem;white-space:nowrap"><input type="checkbox" data-k="destacado" '+(p.destacado?"checked":"")+' style="width:18px;height:18px;margin:0"> Recomendado</label></div>'
+        +'<textarea data-k="incluye" placeholder="Qué incluye (una línea por ítem)">'+esc((p.incluye||[]).join("\n"))+'</textarea>'
+        +'<button class="del" style="background:none;border:0;color:var(--muted);cursor:pointer;font-size:.82rem">✕ Quitar plan</button>';
+      d.querySelectorAll("[data-k]").forEach(function(el){ el.oninput=el.onchange=function(){ var k=el.dataset.k; if(k==="incluye") p.incluye=el.value.split("\n").map(function(x){return x.trim();}).filter(Boolean); else if(k==="destacado"){ cfg.planes.forEach(function(pp){pp.destacado=false;}); p.destacado=el.checked; } else if(k==="precio") p.precio=Number(el.value.replace(/\D/g,''))||0; else p[k]=el.value; }; });
+      d.querySelector(".del").onclick=function(){ cfg.planes.splice(i,1); if(planSel===i)planSel=-1; renderPlanEdit(); };
+      c.appendChild(d);
+    });
+  }
+  $("addPlan").onclick=function(){ cfg.planes.push({nombre:"Nuevo plan",tipo:"",precio:0,destacado:false,incluye:[]}); renderPlanEdit(); };
+  $("planSave").onclick=function(){ saveCfg(); renderPlanes(); renderResumen(); closeM("planModal"); };
+
+  // ---- editor galería ----
+  $("tGal").onclick=function(){ renderGalEdit(); openM("galModal"); };
+  function renderGalEdit(){ var c=$("galEdit"); c.innerHTML=""; (cfg.galeria||[]).forEach(function(src,i){ var d=document.createElement("div"); d.className="ph"; d.innerHTML='<img alt="" src="'+src+'"><button>✕</button>'; d.querySelector("button").onclick=function(){ cfg.galeria.splice(i,1); saveCfg(); renderGalEdit(); renderGal(); }; c.appendChild(d); }); var a=document.createElement("div"); a.className="addg"; a.textContent="＋"; a.onclick=function(){ $("galFile").click(); }; c.appendChild(a); }
+  $("galFile").onchange=function(){ var fs=this.files; if(!fs||!fs.length)return; var arr=[].slice.call(fs); (function next(){ if(!arr.length){ saveCfg(); renderGalEdit(); renderGal(); return; } comprimir(arr.shift(),1000,0.72).then(function(d){ cfg.galeria.push(d); next(); }).catch(next); })(); this.value=""; };
+
+  // ---- stepper equipos ----
+  $("eqMinus").onclick=function(){ setEq(equipos-1); }; $("eqPlus").onclick=function(){ setEq(equipos+1); }; $("eqNum").onchange=function(){ setEq(parseInt(this.value,10)); };
+
   // ---- términos ----
   $("tTerm").onclick=function(){ $("nFolio").value=cfg.folioBase||""; $("nTerm").value=cfg.terminos||""; openM("termModal"); };
   $("termSave").onclick=function(){ cfg.folioBase=$("nFolio").value.trim()||"001"; cfg.terminos=$("nTerm").value; saveCfg(); renderResumen(); closeM("termModal"); };
@@ -940,9 +1053,9 @@ const NEGOCIO = {
   function chkAcc(){ var ok=($("aNom").value.trim().length>1) && $("aChk").checked && padDibujo; var b=$("accConfirm"); b.disabled=!ok; b.style.opacity=ok?"1":".55"; }
   $("aNom").oninput=chkAcc; $("aChk").onchange=chkAcc;
   $("btnAcc").onclick=function(){
-    var items=selItems(); if(!items.length){ flash("Elige al menos un servicio."); return; }
+    if(!haySel()){ flash("Elige al menos un servicio o un plan."); return; }
     var sn=snapActual();
-    var filas=[['Emisor',sn.marca],['Servicios',String(items.length)],['Total',money(sn.total)],['N° cotización',sn.folioBase]];
+    var filas=[['Emisor',sn.marca],['Ítems',String(sn.items.length)],['Total',money(sn.total)],['N° cotización',sn.folioBase]];
     $("accSum").innerHTML=filas.map(function(f){ return '<div class="row"><span>'+esc(f[0])+'</span><b>'+esc(f[1])+'</b></div>'; }).join("");
     $("accTerms").textContent=sn.terminos;
     $("accForm").hidden=false; $("accDone").hidden=true;
@@ -1033,7 +1146,7 @@ const NEGOCIO = {
   function dl(text,name,type){ try{ var b=new Blob([text],{type:type}); var a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){URL.revokeObjectURL(a.href);},1000); }catch(e){} }
   $("cfgExp").onclick=function(){ dl(JSON.stringify(cfg,null,2),(cfg.marca||"armador").replace(/\W+/g,"-").toLowerCase()+".json","application/json"); };
   $("cfgImpBtn").onclick=function(){ $("cfgFile").click(); };
-  $("cfgFile").onchange=function(){ var f=this.files&&this.files[0]; if(!f)return; var r=new FileReader(); r.onload=function(){ try{ cfg=Object.assign(cfg,JSON.parse(r.result)); if(!cfg.servicios)cfg.servicios=[]; saveCfg(); applyBrand(); renderCat(); renderResumen(); }catch(e){} }; r.readAsText(f); this.value=""; };
+  $("cfgFile").onchange=function(){ var f=this.files&&this.files[0]; if(!f)return; var r=new FileReader(); r.onload=function(){ try{ cfg=Object.assign(cfg,JSON.parse(r.result)); if(!cfg.servicios)cfg.servicios=[]; if(!cfg.galeria)cfg.galeria=[]; if(!cfg.planes)cfg.planes=[]; saveCfg(); applyBrand(); renderGal(); renderCat(); renderPlanes(); renderResumen(); }catch(e){} }; r.readAsText(f); this.value=""; };
   $("negDl").onclick=function(){ var clean=JSON.parse(JSON.stringify(cfg)); var html=document.documentElement.outerHTML; var conf="/*NEGOCIO_START*/\nconst NEGOCIO = "+JSON.stringify(clean,null,2)+";\n/*NEGOCIO_END*/"; html=html.replace(/\/\*NEGOCIO_START\*\/[\s\S]*?\/\*NEGOCIO_END\*\//, conf.replace(/\$/g,"$$$$")); dl("<!doctype html>\n<html>\n"+html+"\n</html>","armador-"+(cfg.marca||"negocio").replace(/\W+/g,"-").toLowerCase()+".html","text/html"); };
 
   // input oculto para imagen de servicio
@@ -1041,6 +1154,6 @@ const NEGOCIO = {
   sif.onchange=function(){ var f=this.files&&this.files[0]; if(!f||imgTarget<0)return; comprimir(f,900,0.72).then(function(d){ cfg.servicios[imgTarget].img=d; renderSvcEdit(); }); this.value=""; };
 
   if(cfg.marca && cfg.marca!=="Mi Negocio"){ var bn=$("banner"); if(bn && cfg.logo) bn.remove(); }
-  applyBrand(); renderCat(); renderResumen();
+  applyBrand(); renderGal(); renderCat(); renderPlanes(); renderResumen();
 })();
 </script>
