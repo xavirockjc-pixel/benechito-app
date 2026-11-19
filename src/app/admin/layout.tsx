@@ -44,11 +44,10 @@ function construirModulosSimple(L: Etiquetas): Modulo[] {
       titulo: "Día a día",
       activo: true,
       items: [
-        { href: "/admin/esencial", label: "Lo esencial", icon: "⭐" },
         { href: "/admin/resumen", label: "Resumen de hoy", icon: "📋" },
         { href: "/admin/registro-dia", label: "Registro por día", icon: "📅" },
         { href: "/admin", label: "Panel", icon: "📊" },
-        { href: "/admin/agenda", label: "Agenda", icon: "📅" },
+        { href: "/admin/agenda", label: "Agenda", icon: "🗓️" },
         { href: "/admin/notas", label: "Notas y acciones", icon: "📝" },
         { href: "/admin/mejoras", label: "Asuntos por hacer", icon: "✅" },
       ],
@@ -104,15 +103,14 @@ function construirModulos(L: Etiquetas): Modulo[] {
       titulo: "Inicio",
       activo: true,
       items: [
-        { href: "/admin/esencial", label: "Lo esencial", icon: "⭐" },
         { href: "/admin/resumen", label: "Resumen de hoy", icon: "📋" },
         { href: "/admin/registro-dia", label: "Registro por día", icon: "📅" },
-        { href: "/admin/primeros-pasos", label: "Primeros pasos", icon: "🚀" },
         { href: "/admin", label: "Panel", icon: "📊" },
         { href: "/admin/pendientes", label: "Pendientes del cerebro", icon: "🐝" },
-        { href: "/admin/accesos", label: "Historial de movimiento", icon: "🕑" },
         { href: "/admin/notas", label: "Notas y acciones", icon: "📝" },
-        { href: "/admin/agenda", label: "Agenda", icon: "📅" },
+        { href: "/admin/agenda", label: "Agenda", icon: "🗓️" },
+        { href: "/admin/accesos", label: "Historial de movimiento", icon: "🕑" },
+        { href: "/admin/primeros-pasos", label: "Primeros pasos", icon: "🚀" },
       ],
     },
     {
@@ -173,6 +171,9 @@ function construirModulos(L: Etiquetas): Modulo[] {
     },
     {
       // Herramientas de uso ocasional. Ocultas en modo simple (Configuración lo activa/desactiva).
+      // NOTA (optimización fase 1): se retiraron del menú vistas legado/duplicadas
+      // (Tablero antiguo, Supercerebro, Panorama, Socio, Rentabilidad vieja, Ventas Local).
+      // Las rutas siguen existiendo por si acaso; si en un tiempo nadie las usa, se eliminan.
       titulo: "Más herramientas",
       activo: true,
       avanzado: true,
@@ -182,8 +183,6 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/balance-ruta", label: "Balance de reparto", icon: "🚚" },
         { href: "/admin/repartidores", label: "Repartidores (mapa)", icon: "📍" },
         { href: "/admin/correcciones", label: "Correcciones (deshacer)", icon: "🧹" },
-        { href: "/admin/panorama", label: "Panorama general", icon: "🌎" },
-        { href: "/admin/socio", label: "Socio administrativo", icon: "🐝" },
         { href: "/admin/recordatorios", label: "Recordatorios (clientes)", icon: "🔔" },
         { href: "/admin/clientes-dashboard", label: "Dashboard clientes", icon: "📊" },
         { href: "/admin/calculadora", label: "Calculadora (producto/proyecto)", icon: "🧮" },
@@ -193,8 +192,6 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/higiene", label: "Higiene y EPP", icon: "🧴" },
         { href: "/admin/caja", label: "Cierres de caja", icon: "🧾" },
         { href: "/admin/caja-vecina", label: "Caja Vecina (aparte)", icon: "🏧" },
-        { href: "/admin/rentabilidad", label: "Rentabilidad", icon: "📊" },
-        { href: "/admin/ventas-local", label: "Ventas Local (análisis)", icon: "🏪" },
         { href: "/admin/rutas", label: L.rutas, icon: "🗺️" },
         { href: "/admin/retiros", label: L.retiros, icon: "📥" },
         { href: "/admin/preventa", label: "Preventa", icon: "📲" },
@@ -204,9 +201,6 @@ function construirModulos(L: Etiquetas): Modulo[] {
         { href: "/admin/negocios/duplicados", label: "Duplicados", icon: "🔁" },
         { href: "/admin/iva", label: "Ayudante de IVA", icon: "🧾" },
         { href: "/admin/facturacion", label: "Facturación", icon: "🧾" },
-        // Reemplazados por vistas más nuevas, pero accesibles por si acaso.
-        { href: "/admin/dashboard", label: "Tablero (antiguo)", icon: "📈" },
-        { href: "/admin/supercerebro", label: "Supercerebro", icon: "🧠" },
         { href: "/admin/control-calidad", label: "Control calidad y turnos", icon: "✅" },
       ],
     },
