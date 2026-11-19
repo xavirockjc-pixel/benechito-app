@@ -42,5 +42,17 @@ dueño "📲 Enviarme ahora".
 EasyPanel: programar un cron diario a `/api/analista?token=...` (y opcional cada
 X horas con `&modo=alertas`). Requiere TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID.
 
-## Fase 4 — App por app (pendiente)
-Revisar Caja / Bodega / Vendedor / Producción y dejar solo lo del día a día.
+## Fase 4 — App por app (EN CURSO · Vendedor)
+Decisiones del dueño para Vendedor (NO retirar, se quieren):
+- Mantener: elegir **ruta por sector → ver clientes → preventa**.
+- Mantener: **agendados online** (PedidoReparto) visibles APARTE de la ruta fija
+  (particulares/agendas por día o zona). → Hecho v1: en la pestaña "Clientes",
+  al elegir sector se muestran los agendados online de esa zona.
+- Mantener: **"Por facturar"** (facturas pendientes) porque el facturador
+  automático aún no está; la factura se hace desde el perfil del cliente.
+- Mantener el **registro por cliente** (última visita, deuda, dónde pasar) para
+  que el bot/cerebro responda a futuro.
+- Limpiar solo lo cruzado/duplicado SIN tocar fiados ni ventas comprometidas.
+  (Pendiente: decidir con el dueño qué listas viejas ocultar — ruta/sector
+  vs Clientes, agenda/agendados/entregas/pedidos vs Pedidos online.)
+Caja / Bodega / Producción: pendientes.

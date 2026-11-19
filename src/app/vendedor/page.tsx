@@ -175,6 +175,16 @@ export default async function VendedorHome({
   // Etiqueta de la ruta seleccionada (para el encabezado).
   const sectorLabel = sector ? (rutasPresentes.get(sector) ?? sector) : "";
 
+  // Agendados ONLINE de esta zona: pedidos de reparto (particulares/agendas que
+  // NO están en la ruta fija) cuyo sector cae en la ruta elegida. Se muestran
+  // junto a los clientes de la ruta para no saltárselos.
+  const agendadosZona = sector
+    ? (await prisma.pedidoReparto.findMany({
+        where: { estado: { in: ["pendiente", "en_ruta"] } },
+        orderBy: [{ fecha: "asc" }, { orden: "asc" }], take: 150,
+      })).filter((p) => p.sector && rutaDeComuna(p.sector).clave === sector)
+    : [];
+
   // ---- Modo filtro/todos: lista de clientes ----
   // Busca por nombre del negocio, contacto, comuna/sector o TELÉFONO (normalizado,
   // para encontrar al cliente cuando llega un comprobante de un número no agendado).
@@ -288,6 +298,37 @@ export default async function VendedorHome({
       {filtrando ? (
         /* ---- Lista de clientes (todos / por sector / búsqueda) ---- */
         <div className="mt-4 space-y-2">
+          {/* Agendados online de esta zona (particulares que no están en la ruta fija) */}
+          {sector && agendadosZona.length > 0 && (
+            <div className="rounded-2xl border border-cyan-200 bg-cyan-50/60 p-3">
+              <div className="mb-1 flex items-center justify-between">
+                <h2 className="text-sm font-extrabold text-[#0891b2]">📬 Agendados online · {sectorLabel} <span className="text-cyan-500">({agendadosZona.length})</span></h2>
+                <Link href="/vendedor/pedidos-online" className="text-xs font-bold text-[#0891b2]">Ver todos ›</Link>
+              </div>
+              <p className="mb-2 text-[11px] text-cyan-700">Particulares/agendas de esta zona que no están en la ruta fija. Inclúyelos en tu día.</p>
+              <ul className="space-y-1.5">
+                {agendadosZona.map((p) => {
+                  const dest = p.lat != null && p.lng != null ? `${p.lat},${p.lng}` : null;
+                  return (
+                    <li key={p.id} className="rounded-xl border border-cyan-100 bg-white p-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-bold text-slate-900">{p.cliente || "Cliente"}{p.estado === "en_ruta" ? " · 🚚 en ruta" : ""}</span>
+                          <span className="block truncate text-xs text-slate-500">{p.pedido}{p.monto ? ` · ${fmtCLP(Number(p.monto))}` : ""} · {fmtDia(p.fecha)}</span>
+                        </span>
+                      </div>
+                      <div className="mt-1.5 flex gap-2">
+                        {p.telefono && <a href={`https://wa.me/${p.telefono.replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="flex-1 rounded-lg bg-green-600 py-1.5 text-center text-xs font-bold text-white">💬 WhatsApp</a>}
+                        {(dest || p.mapsUrl) && <a href={dest ? `https://www.google.com/maps/dir/?api=1&destination=${dest}` : p.mapsUrl!} target="_blank" rel="noreferrer" className="flex-1 rounded-lg bg-[#1479c4] py-1.5 text-center text-xs font-bold text-white">🗺️ Cómo llegar</a>}
+                        <Link href="/vendedor/pedidos-online" className="flex-1 rounded-lg bg-slate-100 py-1.5 text-center text-xs font-bold text-slate-600">Atender</Link>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
           <h2 className="text-sm font-extrabold uppercase tracking-wide text-slate-500">
             {sector ? `📍 ${sectorLabel}` : busca ? "Resultados" : "👥 Todos los clientes"} <span className="text-slate-400">({lista.length})</span>
           </h2>
