@@ -72,3 +72,47 @@ Antes de empezar: `git fetch origin` y parte desde `claude/upbeat-goldberg-7mjlg
 Haz tus cambios en **tu propia rama** y súbelos. Para juntar lo de ambas sesiones, se
 mezclan las ramas (merge) cuando corresponda — pídelo y Claude lo hace.
 No edites el mismo archivo desde las dos sesiones a la vez.
+
+---
+
+## 🧭 Los DOS mundos de Panal (clave para no chocar entre sesiones)
+Panal tiene dos infraestructuras distintas. Cada sesión trabaja la suya.
+
+- **Mundo WEB estático — ESTA sesión / repo GitHub `benechito-app`.**
+  Cotizadores, molde de 22 rubros, landing de Panal, menú/agenda/reseñas, centro de
+  montaje. Son páginas autónomas (HTML) que se suben a **Hostinger (hosting web)** por
+  carpetas o subdominios. **Esta sesión ve el repositorio, NO el VPS ni las carpetas
+  locales del PC.**
+- **Mundo APPS + AUTOMATIZACIÓN — sesión del PC Nitro.**
+  El ecosistema de gestión (Benechito vivo), n8n y el nuevo **Panal Marketing IA**. Vive
+  en el **VPS (EasyPanel)**, no en este repo. Esa sesión tiene acceso a las carpetas
+  locales del PC y al VPS.
+
+> Para que la sesión del repo trabaje algo del otro mundo, ese material debe subirse al
+> repositorio o describírmelo. Son compatibles, no se pisan.
+
+## 🎬 Panal Marketing IA (plan de la sesión Nitro — resumen)
+Motor self-hosted de creación + publicación de contenido (reels/video), que luego se
+vende como servicio mensual de Panal.
+- **Stack:** n8n (ya instalado) + **Postiz** (publicador open-source, en EasyPanel) +
+  FFmpeg (montaje económico) + API de video IA (Sora 2 / Veo 3.1) solo para premium +
+  Postgres como "cerebro" por cliente.
+- **Pilotos:** Benechito, Él Va Delante y **Panal** (Panal se publicita con su propio motor).
+- **3 niveles:** económico (fotos reales — Benechito), intermedio, premium (IA — EVD).
+- **Pendiente de esa sesión:** revisar RAM del VPS antes de instalar Postiz; dar HTTPS al
+  panel (`panel.benechito.com`) y a Postiz (`publicar.benechito.com`); luego conectar redes.
+
+## ⛔ Bloqueo actual: validación de Facebook / Meta
+Para que Postiz publique en Instagram/Facebook hay que crear **una app de desarrollador en
+Meta** (una sola vez; sirve para las 3 marcas y futuros clientes). El bloqueo típico: Meta
+pide **verificación de negocio** o la app está en **modo desarrollo**.
+
+**Cómo desbloquear AHORA (solo para tus propias 3 cuentas):**
+- La cuenta de Instagram debe ser **Profesional/Business** y estar **vinculada a una página
+  de Facebook**.
+- En la app de Meta, **agrégate a ti mismo como administrador/tester** y deja la app en
+  **modo Desarrollo**: así publicas en **tus propias** cuentas **sin pasar App Review ni
+  verificación de negocio**.
+- La **App Review + verificación de negocio** (subir datos/documentos de la empresa a Meta)
+  **solo se necesita al conectar cuentas de CLIENTES externos** — NO para los pilotos. Eso
+  queda para cuando la agencia tenga clientes reales.
