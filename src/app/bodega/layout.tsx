@@ -37,6 +37,7 @@ export default async function BodegaLayout({ children }: { children: React.React
       <main className="flex-1 p-4 pb-24">{children}</main>
 
       {/* Barra inferior (navegación) */}
+      {/* Barra inferior: solo lo del día a día. Insumos e Higiene están en el inicio. */}
       <BottomNav
         acento="#b45309"
         items={[
@@ -44,8 +45,6 @@ export default async function BodegaLayout({ children }: { children: React.React
           { href: "/bodega/historial", label: "Registro", icon: "📅" },
           { href: "/bodega/surtidos", label: rubro.labels.surtidos, icon: "🍬" },
           { href: "/bodega/cierre", label: "Cierre", icon: "🧾" },
-          { href: "/bodega/insumos", label: "Insumos", icon: "🧪" },
-          { href: "/bodega/checklist", label: "Higiene", icon: "🧼" },
         ]}
       />
     </div>

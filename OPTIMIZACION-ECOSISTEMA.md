@@ -68,4 +68,11 @@ Nada se borró: las rutas viejas siguen respondiendo (redirección).
 - POS ventas ya tiene: buscar al escribir (type-ahead), descuento y precio
   manual por línea + escalera por cantidad (tramos). Los precios por volumen
   de Tú y Yo (100/300) se cargan en Panel → Precios (dato, no código).
-Bodega / Producción: pendientes.
+## Fase 4 · Bodega (HECHO)
+Ya venía ordenada (entradas/salidas por motivo, registro por día, packs vs por
+unidad, enviar stock por WhatsApp). Ahora: barra inferior a 4 (Bodega · Registro
+· Surtidos · Cierre); Insumos e Higiene pasan a accesos en el inicio (la barra
+quedaba apretada en celular). El registro por día (central) y el bot analista ya
+leen los movimientos de bodega.
+
+## Fase 4 · Producción (pendiente)
