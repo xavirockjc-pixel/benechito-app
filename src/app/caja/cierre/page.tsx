@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { fmtCLP } from "@/lib/dominio/pedidos";
 import { medioPagoLabel } from "@/lib/dominio/ventas";
+import { signoCV } from "@/lib/dominio/caja-vecina";
 import { movimientoCaja, sesionAbierta } from "../actions";
 import CierreCajaForm from "./CierreCajaForm";
 import EnviarWhatsApp from "@/components/EnviarWhatsApp";
@@ -20,10 +21,19 @@ export default async function CierreCajaPage() {
     );
   }
 
-  const [ventas, movimientos] = await Promise.all([
+  const hoy0 = new Date(); hoy0.setHours(0, 0, 0, 0);
+  const [ventas, movimientos, movsCV] = await Promise.all([
     prisma.venta.findMany({ where: { sesionCajaId: sesion.id }, include: { pagos: true } }),
     prisma.movimientoCaja.findMany({ where: { sesionCajaId: sesion.id }, orderBy: { fecha: "desc" } }),
+    prisma.movimientoCajaVecina.findMany({ where: { fecha: { gte: hoy0 } }, orderBy: { fecha: "desc" } }),
   ]);
+
+  // Caja Vecina del día (para el cierre combinado).
+  const cvAbierta = movsCV.some((m) => m.tipo === "apertura");
+  const cvEfectivo = movsCV.reduce((s, m) => s + signoCV(m.tipo) * Number(m.monto), 0);
+  const cvGiros = movsCV.filter((m) => m.tipo === "giro").reduce((s, m) => s + Number(m.monto), 0);
+  const cvDepositar = movsCV.filter((m) => m.tipo === "deposito" || m.tipo === "pago").reduce((s, m) => s + Number(m.monto), 0);
+  const cvComision = movsCV.filter((m) => m.tipo === "comision").reduce((s, m) => s + Number(m.monto), 0);
 
   // Dinero por medio
   const porMedio: Record<string, number> = {};
@@ -45,7 +55,14 @@ export default async function CierreCajaPage() {
     otrosMedios.map(([m, v]) => `Ventas ${medioPagoLabel[m] ?? m}: ${fmtCLP(v)}`).join("\n") + (otrosMedios.length ? "\n" : "") +
     (ingresos > 0 ? `Ingresos: ${fmtCLP(ingresos)}\n` : "") +
     (egresos > 0 ? `Egresos: ${fmtCLP(egresos)}\n` : "") +
-    `\n💵 Efectivo esperado en caja: ${fmtCLP(esperado)}`;
+    `\n💵 Efectivo esperado en caja: ${fmtCLP(esperado)}` +
+    (cvAbierta
+      ? `\n\n🏧 *Caja Vecina*\n` +
+        `Efectivo disponible: ${fmtCLP(cvEfectivo)}\n` +
+        `Giros (salió): ${fmtCLP(cvGiros)}\n` +
+        `Para depositar (entró): ${fmtCLP(cvDepositar)}\n` +
+        `Comisión: ${fmtCLP(cvComision)}`
+      : "");
 
   return (
     <div className="mx-auto max-w-md">
@@ -66,6 +83,20 @@ export default async function CierreCajaPage() {
         {ingresos > 0 && <Row label="Ingresos de caja" valor={fmtCLP(ingresos)} />}
         {egresos > 0 && <Row label="Retiros / egresos" valor={`- ${fmtCLP(egresos)}`} />}
       </section>
+
+      {/* Caja Vecina del día (va en el mismo mensaje de cierre) */}
+      {cvAbierta && (
+        <section className="mt-3 rounded-xl border border-sky-200 bg-sky-50/60 p-4 text-sm">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="font-bold text-sky-800">🏧 Caja Vecina</h2>
+            <Link href="/caja/vecina/cierre" className="text-xs font-bold text-sky-700">Cerrar caja vecina →</Link>
+          </div>
+          <Row label="Efectivo disponible" valor={fmtCLP(cvEfectivo)} />
+          <Row label="Giros (salió)" valor={fmtCLP(cvGiros)} />
+          <Row label="Para depositar (entró)" valor={fmtCLP(cvDepositar)} />
+          <Row label="Comisión" valor={fmtCLP(cvComision)} />
+        </section>
+      )}
 
       {/* Retiro rápido de efectivo */}
       <details className="mt-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm text-sm">

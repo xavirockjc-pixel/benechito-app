@@ -35,6 +35,8 @@ export async function abrirCajaVecina(formData: FormData) {
   const saldoMaquina = numero(val(formData, "saldoMaquina"));
   if ((!Number.isFinite(efectivo) || efectivo < 0) && (!Number.isFinite(saldoMaquina) || saldoMaquina < 0)) return;
   const desglose = val(formData, "efectivo_desglose");
+  const fotoRaw = val(formData, "foto");
+  const foto = fotoRaw.startsWith("data:image") ? fotoRaw : null;
   const u = await usuarioActual();
   await prisma.movimientoCajaVecina.create({
     data: {
@@ -42,6 +44,7 @@ export async function abrirCajaVecina(formData: FormData) {
       monto: efectivo || 0,
       saldoMaquina: Number.isFinite(saldoMaquina) ? saldoMaquina : null,
       detalle: desglose ? `Billetes/monedas: ${desglose}` : null,
+      foto,
       usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
     },
   });

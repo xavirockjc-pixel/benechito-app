@@ -59,4 +59,13 @@ pestaña "Clientes" (filtra por sector) + "Armar ruta". `agendados`, `entregas`,
 entrega desde el perfil del cliente) y los flujos de venta/factura
 (venta-rapida, venta-mano, factura-rapida, "Por facturar") intactos.
 Nada se borró: las rutas viejas siguen respondiendo (redirección).
-Caja / Bodega / Producción: pendientes.
+## Fase 4 · Caja (EN CURSO)
+- Apertura caja vecina: ahora pide EFECTIVO para giros + CUPO para recibir +
+  FOTO del cupo/máquina (campo `foto` ya existía en el modelo).
+- Cierre de caja: el mensaje ahora es COMBINADO (ventas + caja vecina:
+  efectivo, giros, para depositar, comisión) y hay bloque visible + link a
+  cerrar caja vecina. `AvisoAperturas` ya recuerda abrir ambas al llegar.
+- POS ventas ya tiene: buscar al escribir (type-ahead), descuento y precio
+  manual por línea + escalera por cantidad (tramos). Los precios por volumen
+  de Tú y Yo (100/300) se cargan en Panel → Precios (dato, no código).
+Bodega / Producción: pendientes.
