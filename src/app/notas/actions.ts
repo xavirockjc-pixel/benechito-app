@@ -16,6 +16,7 @@ const pick = <T extends readonly string[]>(v: FormDataEntryValue | null, opts: T
 
 function revalidar() {
   revalidatePath("/admin/notas");
+  revalidatePath("/admin/gestor");
   revalidatePath("/admin/supercerebro");
   revalidatePath("/admin/inventario");
 }

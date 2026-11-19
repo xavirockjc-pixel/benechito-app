@@ -5,6 +5,10 @@ quitando lo que sobra. Regla: **ocultar primero, borrar después** — nada se
 elimina de golpe; se retira del menú, se confirma que nadie lo usa y recién
 entonces se borra el código.
 
+> ⛔ **REGLA FIRME:** NUNCA borrar datos de **clientes, fiados (lo que deben) ni
+> ruta**. Son información valiosa. Antes de cualquier limpieza de datos, respaldar.
+> La limpieza de este plan es solo de **pantallas/vistas del panel**, nunca de datos.
+
 ## Diagnóstico (nov 2026)
 - `/admin`: 66 rutas, ~99 ítems de menú → el punto más cargado.
 - Apps de trabajadores razonables: Caja (15), Bodega (7), Producción (8).
@@ -23,9 +27,12 @@ Retirado del **menú** (ruta sigue viva; candidata a borrar si nadie la usa):
 - `/admin/ventas-local` — duplica Historial/Registro por día.
 - `/admin/esencial` — se quitó del menú (duplica "Resumen de hoy").
 
-## Fase 2 — Gestor interno (pendiente)
-Unir en una sola pantalla: Notas + Mejoras + Agenda + Recordatorios +
-Pendientes del cerebro (+ Socio). Es el "administrador interno" de tareas/programas.
+## Fase 2 — Gestor interno (HECHO v1)
+Nueva pantalla `/admin/gestor` que junta en un solo lugar: 🐝 avisos del cerebro,
+✅ por hacer (Mejoras + Notas-tarea), 🗓️ Agenda próxima y 📝 Notas/ideas.
+Reutiliza las acciones existentes (no duplica datos). En modo simple reemplaza el
+trío Notas/Mejoras/Agenda del menú. Las pantallas de detalle siguen accesibles.
+Pendiente opcional: absorber Recordatorios de clientes y Socio.
 
 ## Fase 3 — Bot analista (pendiente)
 Avisos automáticos + resumen diario: ventas bajas vs. ayer, stock bajo, caja

@@ -30,7 +30,7 @@ export async function crearAgenda(formData: FormData) {
     },
   });
 
-  revalidatePath("/admin/agenda");
+  revalidatePath("/admin/agenda"); revalidatePath("/admin/gestor");
 }
 
 /** Cambia el estado de una entrada (pendiente|en_proceso|hecho|cancelado). */
@@ -39,7 +39,7 @@ export async function cambiarEstadoAgenda(formData: FormData) {
   const estado = val(formData, "estado");
   if (!id || !["pendiente", "en_proceso", "hecho", "cancelado"].includes(estado)) return;
   await prisma.agenda.update({ where: { id }, data: { estado } });
-  revalidatePath("/admin/agenda");
+  revalidatePath("/admin/agenda"); revalidatePath("/admin/gestor");
 }
 
 /** Elimina una entrada de la agenda. */
@@ -47,7 +47,7 @@ export async function eliminarAgenda(formData: FormData) {
   const id = val(formData, "id");
   if (!id) return;
   await prisma.agenda.delete({ where: { id } });
-  revalidatePath("/admin/agenda");
+  revalidatePath("/admin/agenda"); revalidatePath("/admin/gestor");
 }
 
 /**
@@ -72,6 +72,6 @@ export async function mandarAFabricar(formData: FormData) {
   });
   await prisma.agenda.update({ where: { id }, data: { estado: "en_proceso" } });
 
-  revalidatePath("/admin/agenda");
+  revalidatePath("/admin/agenda"); revalidatePath("/admin/gestor");
   revalidatePath("/admin/produccion");
 }

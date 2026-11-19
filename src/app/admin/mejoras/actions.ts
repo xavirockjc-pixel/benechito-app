@@ -23,7 +23,7 @@ export async function crearMejora(formData: FormData) {
   await prisma.mejora.create({
     data: { titulo, detalle, area, prioridad, fechaObjetivo: fechaObjetivo && !isNaN(fechaObjetivo.getTime()) ? fechaObjetivo : null, recordar },
   });
-  revalidatePath("/admin/mejoras");
+  revalidatePath("/admin/mejoras"); revalidatePath("/admin/gestor");
 }
 
 /** Cambia el estado (avanzar o marcar). Al pasar a "hecha" guarda la fecha de cumplimiento. */
@@ -35,7 +35,7 @@ export async function setEstadoMejora(formData: FormData) {
     where: { id },
     data: { estado, completadaEn: estado === "hecha" ? new Date() : null },
   });
-  revalidatePath("/admin/mejoras");
+  revalidatePath("/admin/mejoras"); revalidatePath("/admin/gestor");
 }
 
 /** Borra una mejora. */
@@ -43,5 +43,5 @@ export async function eliminarMejora(formData: FormData) {
   const id = String(formData.get("id") ?? "").trim();
   if (!id) return;
   await prisma.mejora.delete({ where: { id } });
-  revalidatePath("/admin/mejoras");
+  revalidatePath("/admin/mejoras"); revalidatePath("/admin/gestor");
 }
