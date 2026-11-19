@@ -53,6 +53,10 @@ Decisiones del dueño para Vendedor (NO retirar, se quieren):
 - Mantener el **registro por cliente** (última visita, deuda, dónde pasar) para
   que el bot/cerebro responda a futuro.
 - Limpiar solo lo cruzado/duplicado SIN tocar fiados ni ventas comprometidas.
-  (Pendiente: decidir con el dueño qué listas viejas ocultar — ruta/sector
-  vs Clientes, agenda/agendados/entregas/pedidos vs Pedidos online.)
+Limpieza de lo cruzado (HECHO): `ruta` y `sector` ahora REDIRIGEN al inicio →
+pestaña "Clientes" (filtra por sector) + "Armar ruta". `agendados`, `entregas`,
+`pedidos` ya redirigían a "Pedidos online". Se mantiene `agenda` (agendar
+entrega desde el perfil del cliente) y los flujos de venta/factura
+(venta-rapida, venta-mano, factura-rapida, "Por facturar") intactos.
+Nada se borró: las rutas viejas siguen respondiendo (redirección).
 Caja / Bodega / Producción: pendientes.
