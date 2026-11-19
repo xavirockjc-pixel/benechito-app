@@ -135,7 +135,7 @@ export async function registrarSalidaDestino(formData: FormData) {
   const destino = String(formData.get("destino") ?? "").trim();
   // Motivo de la salida: venta | distribuidor | local | otro (el camión se registra
   // solo desde la app del vendedor). Por defecto "otro".
-  const motivosOk = new Set(["venta", "distribuidor", "local", "otro"]);
+  const motivosOk = new Set(["pedido", "camion", "venta", "local", "fabrica", "distribuidor", "otro"]);
   const motivoRaw = String(formData.get("motivo") ?? "").trim();
   const motivo = motivosOk.has(motivoRaw) ? motivoRaw : "otro";
   type It = { id: string; nombre?: string; cantidad: number };

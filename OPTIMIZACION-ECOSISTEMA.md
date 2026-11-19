@@ -75,4 +75,14 @@ unidad, enviar stock por WhatsApp). Ahora: barra inferior a 4 (Bodega · Registr
 quedaba apretada en celular). El registro por día (central) y el bot analista ya
 leen los movimientos de bodega.
 
+## Fase 4 · Bodega (ajuste 2)
+- Se RETIRA "Surtidos" (no se usa: los surtidos de postres entran por "Recibir
+  de producción" como bolsas de 16). La ruta redirige a /bodega. Barra inferior:
+  Bodega · Registro · Recibir · Cierre.
+- Más motivos de SALIDA: 🚚 camión (ruta), 📦 pedido, 💰 venta, 🏪 local,
+  🏭 fábrica, 🏭 distribuidor, otro. (Se descuentan de bodega y quedan en el
+  registro por día para el socio/analítica.)
+- Tú y Yo = packs de 50 (Tradicional/Surtido); postres = bolsas de 16. El stock
+  por sabor queda en un recuadro desplegable para no saturar.
+
 ## Fase 4 · Producción (pendiente)

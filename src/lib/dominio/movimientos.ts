@@ -19,19 +19,21 @@ export const esEntrada = (m: MovLike) => m.tipo === "entrada" || m.tipo === "mix
 export const esCorreccion = (m: MovLike) => m.tipo === "ajuste";
 
 // Etiqueta + emoji por motivo de salida (orden de aparición en el registro).
-export const MOTIVOS_SALIDA = ["camion", "local", "distribuidor", "venta", "merma", "otro"] as const;
+export const MOTIVOS_SALIDA = ["camion", "pedido", "venta", "local", "distribuidor", "fabrica", "merma", "otro"] as const;
 export const MOTIVO_INFO: Record<string, { emoji: string; label: string }> = {
-  camion: { emoji: "🚚", label: "Camión / ruta" },
-  local: { emoji: "🏪", label: "Local / sala" },
-  distribuidor: { emoji: "🏭", label: "Distribuidor" },
+  camion: { emoji: "🚚", label: "Traspaso a camión (ruta)" },
+  pedido: { emoji: "📦", label: "Pedido para cliente" },
   venta: { emoji: "💰", label: "Venta" },
+  local: { emoji: "🏪", label: "Traspaso al local" },
+  distribuidor: { emoji: "🏭", label: "Distribuidor" },
+  fabrica: { emoji: "🏭", label: "Traspaso a fábrica" },
   merma: { emoji: "🗑️", label: "Merma" },
   otro: { emoji: "📦", label: "Otro" },
 };
 
-// Motivos que el bodeguero elige al registrar una "salida con destino" a mano
-// (el camión se registra solo desde la app del vendedor al cargar).
-export const MOTIVOS_SALIDA_MANUAL = ["venta", "distribuidor", "local", "otro"] as const;
+// Motivos que el bodeguero elige al registrar una "salida con destino" a mano.
+// (El camión también se registra solo desde la app del vendedor al cargar.)
+export const MOTIVOS_SALIDA_MANUAL = ["pedido", "camion", "venta", "local", "fabrica", "distribuidor", "otro"] as const;
 
 export function motivoLabel(motivo: string): { emoji: string; label: string } {
   return MOTIVO_INFO[motivo] ?? { emoji: "📦", label: motivo || "Otro" };
