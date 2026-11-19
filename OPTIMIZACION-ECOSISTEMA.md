@@ -34,9 +34,13 @@ Reutiliza las acciones existentes (no duplica datos). En modo simple reemplaza e
 trío Notas/Mejoras/Agenda del menú. Las pantallas de detalle siguen accesibles.
 Pendiente opcional: absorber Recordatorios de clientes y Socio.
 
-## Fase 3 — Bot analista (pendiente)
-Avisos automáticos + resumen diario: ventas bajas vs. ayer, stock bajo, caja
-descuadrada, cliente dormido, factura sin enviar. Base: `cerebroPendientes`.
+## Fase 3 — Bot analista (HECHO v1)
+`src/lib/dominio/analista.ts` arma resumen (ventas hoy vs ayer, facturas por
+enviar) + avisos del cerebro. Ruta `GET /api/analista?token=REPORTE_TOKEN`
+(opcional `&modo=alertas`) lo manda por Telegram. En el Gestor hay botón del
+dueño "📲 Enviarme ahora".
+EasyPanel: programar un cron diario a `/api/analista?token=...` (y opcional cada
+X horas con `&modo=alertas`). Requiere TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID.
 
 ## Fase 4 — App por app (pendiente)
 Revisar Caja / Bodega / Vendedor / Producción y dejar solo lo del día a día.

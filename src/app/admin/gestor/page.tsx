@@ -6,6 +6,7 @@ import { tipoNotaIcono } from "@/lib/dominio/notas";
 import { crearMejora, setEstadoMejora } from "@/app/admin/mejoras/actions";
 import { toggleNota } from "@/app/notas/actions";
 import { cambiarEstadoAgenda } from "@/app/admin/agenda/actions";
+import ProbarAnalista from "./ProbarAnalista";
 
 export const dynamic = "force-dynamic";
 
@@ -57,6 +58,9 @@ export default async function GestorPage() {
           <button className="rounded-lg bg-slate-900 px-4 py-2.5 text-sm font-bold text-white active:brightness-110">Agregar</button>
         </div>
       </form>
+
+      {/* 🤖 Bot analista */}
+      <ProbarAnalista />
 
       {/* 🐝 Del cerebro */}
       {cerebro.length > 0 && (
