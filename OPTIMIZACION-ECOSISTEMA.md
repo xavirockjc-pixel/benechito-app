@@ -86,3 +86,12 @@ leen los movimientos de bodega.
   por sabor queda en un recuadro desplegable para no saturar.
 
 ## Fase 4 · Producción (pendiente)
+
+## Fase 4 · Bodega (ajuste 3)
+- Copa Garza + Balde 5 L en el catálogo (por unidad).
+- Stock con icono (dibujito) + corrección manual clara (no merma).
+- Tú y Yo por sabores (texto libre): aparta/vende bolsas de 50 por sabor,
+  descuenta de Tú y Yo Surtido y queda registrado con el sabor.
+- Caja de fábrica (DineroBodega): dinero recibido en bodega por ventas
+  directas (monto + de quién) con cierre; pendiente llevarlo al registro
+  central/analítica.

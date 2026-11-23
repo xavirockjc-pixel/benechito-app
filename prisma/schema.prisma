@@ -659,6 +659,23 @@ model DespachoLote {
 
 /// Registro diario simple de las apps operativas (Bodega y Local).
 /// Denormalizado (guarda el nombre) para mostrar el "registro del día" sin joins.
+// Dinero recibido en bodega/fábrica (ventas directas desde bodega). Cada ítem
+// guarda monto + a quién/de quién, y se "cierra" al final del turno (resumen a central).
+model DineroBodega {
+  id            String    @id @default(cuid())
+  monto         Decimal   @db.Decimal(12, 2)
+  concepto      String? // qué se vendió / por qué
+  contraparte   String? // a quién o de quién
+  cerrado       Boolean   @default(false)
+  usuarioId     String?
+  nombreUsuario String?
+  fecha         DateTime  @default(now())
+  cerradoEn     DateTime?
+
+  @@index([fecha])
+  @@index([cerrado])
+}
+
 model MovimientoBodega {
   id            String   @id @default(cuid())
   zona          String   @default("bodega") // bodega | sala | produccion | ajuste (a qué registro pertenece)

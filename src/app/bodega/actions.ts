@@ -479,6 +479,68 @@ export async function crearProductoBodega(formData: FormData) {
   redirect("/bodega?ok=1");
 }
 
+/**
+ * Apartar/sacar Tú y Yo por sabor (texto libre): descuenta bolsas de 50 del
+ * "Tú y Yo Surtido" en bodega y deja el registro con el sabor para la central.
+ */
+export async function apartarTuyYoSabor(formData: FormData) {
+  type Fila = { sabor: string; bolsas: number };
+  let filas: Fila[] = [];
+  try { filas = JSON.parse(String(formData.get("items") ?? "[]")); } catch { return; }
+  filas = filas.filter((f) => f.sabor?.trim() && Number.isFinite(f.bolsas) && f.bolsas > 0);
+  if (filas.length === 0) return;
+
+  const bodUb = await ubicacionBodegaId();
+  if (!bodUb) return;
+  const u = await usuarioActual();
+
+  // Producto base: Tú y Yo Surtido (los sabores son del surtido).
+  const prod = await prisma.producto.findFirst({ where: { nombre: { contains: "Surtido", mode: "insensitive" }, linea: "helado" } })
+    ?? await prisma.producto.findFirst({ where: { nombre: { contains: "Tú y Yo", mode: "insensitive" } } });
+  if (!prod) return;
+
+  for (const f of filas) {
+    const bolsas = Math.max(0, Math.floor(f.bolsas));
+    if (bolsas <= 0) continue;
+    await prisma.stock.upsert({
+      where: { productoId_ubicacionId: { productoId: prod.id, ubicacionId: bodUb } },
+      update: { cantidad: { decrement: bolsas } },
+      create: { productoId: prod.id, ubicacionId: bodUb, cantidad: -bolsas },
+    });
+    await prisma.movimientoBodega.create({
+      data: {
+        zona: "bodega", ubicacionId: bodUb, tipo: "salida", motivo: "pedido", clase: "producto",
+        refId: prod.id, nombre: `Tú y Yo · ${f.sabor.trim()}`, cantidad: -bolsas,
+        detalle: `Apartado por sabor · ${bolsas} bolsa${bolsas > 1 ? "s" : ""} de 50`,
+        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+      },
+    });
+  }
+  revalidatePath("/bodega");
+  redirect("/bodega?ok=1");
+}
+
+/** Registra dinero recibido en bodega/fábrica (venta directa): monto + de quién. */
+export async function registrarDineroBodega(formData: FormData) {
+  const monto = Math.max(0, Math.floor(Number(String(formData.get("monto") ?? "").replace(/[^\d]/g, "")) || 0));
+  if (monto <= 0) return;
+  const concepto = String(formData.get("concepto") ?? "").trim() || null;
+  const contraparte = String(formData.get("contraparte") ?? "").trim() || null;
+  const u = await usuarioActual();
+  await prisma.dineroBodega.create({
+    data: { monto, concepto, contraparte, usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null },
+  });
+  revalidatePath("/bodega");
+  redirect("/bodega?ok=1");
+}
+
+/** Cierra la caja de dinero de fábrica del día: marca lo pendiente como cerrado. */
+export async function cerrarDineroBodega() {
+  await prisma.dineroBodega.updateMany({ where: { cerrado: false }, data: { cerrado: true, cerradoEn: new Date() } });
+  revalidatePath("/bodega");
+  redirect("/bodega?ok=1");
+}
+
 export async function crearProductoDistribucion(formData: FormData) {
   const tipo = String(formData.get("tipoProducto") ?? "").trim(); // ej: Bebida, Snack
   const sabor = String(formData.get("saborProducto") ?? "").trim(); // ej: Coca, Naranja

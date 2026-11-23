@@ -14,7 +14,10 @@ import { ubicacionProduccionId } from "@/lib/dominio/ubicaciones";
 import { POSTRE_LINEAS } from "@/lib/dominio/produccion";
 import { palabraPack } from "@/lib/dominio/empaque";
 import { esEntrada, esSalida, esCorreccion, motivoDe, motivoLabel, MOTIVOS_SALIDA } from "@/lib/dominio/movimientos";
-import { empezarNuevoDia, productosPostre } from "./actions";
+import TuyYoPorSabor from "./TuyYoPorSabor";
+import { empezarNuevoDia, productosPostre, registrarDineroBodega, cerrarDineroBodega } from "./actions";
+
+const CLP = (n: number) => "$" + Math.round(n).toLocaleString("es-CL");
 
 export const dynamic = "force-dynamic";
 
@@ -125,6 +128,10 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
     : [{ _sum: { cantidad: 0 }, _count: 0 }, { _sum: { cantidad: 0 }, _count: 0 }];
   const pendItems = Number(pendSab._count ?? 0) + Number(pendProd._count ?? 0);
   const pendU = Number(pendSab._sum.cantidad ?? 0) + Number(pendProd._sum.cantidad ?? 0);
+
+  // Dinero recibido en bodega/fábrica del turno (sin cerrar).
+  const dinero = await prisma.dineroBodega.findMany({ where: { cerrado: false }, orderBy: { fecha: "desc" }, take: 100 });
+  const dineroTotal = dinero.reduce((s, d) => s + Number(d.monto), 0);
 
   return (
     <div className="space-y-5">
@@ -309,6 +316,49 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
           El historial por día (movimientos, ventas y devoluciones) está en <b>📅 Registro por día</b>.
         </p>
         <EmpezarNuevoDia action={empezarNuevoDia} />
+      </section>
+
+      {/* Tú y Yo por sabores: apartar/vender 50u por sabor (texto libre) */}
+      <details className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+        <summary className="cursor-pointer text-sm font-extrabold text-slate-900">🍦 Tú y Yo por sabores (apartar)</summary>
+        <p className="mb-2 mt-1 text-[11px] text-slate-400">Para apartar/vender Tú y Yo de 50 por cada sabor. Escribe el sabor y las bolsas.</p>
+        <TuyYoPorSabor />
+      </details>
+
+      {/* Caja de fábrica: dinero recibido en bodega (ventas directas) + cierre */}
+      <section className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-extrabold text-emerald-800">💵 Dinero recibido en bodega</h2>
+          {dineroTotal > 0 && <span className="text-sm font-extrabold text-emerald-700">{CLP(dineroTotal)}</span>}
+        </div>
+        <p className="mb-2 text-[11px] text-emerald-700/80">Ventas directas desde la fábrica. Anota el monto y de quién. Al cerrar, llega a la central.</p>
+
+        <form action={registrarDineroBodega} className="grid grid-cols-[1fr_auto] gap-2">
+          <input name="contraparte" placeholder="¿De quién / a quién?" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+          <input name="monto" inputMode="numeric" placeholder="$ monto" required className="w-28 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold" />
+          <input name="concepto" placeholder="¿Qué vendió? (opcional)" className="col-span-2 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm" />
+          <button className="col-span-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-extrabold text-white active:brightness-95">➕ Agregar dinero recibido</button>
+        </form>
+
+        {dinero.length > 0 && (
+          <>
+            <ul className="mt-3 divide-y divide-emerald-100 text-sm">
+              {dinero.map((d) => (
+                <li key={d.id} className="flex items-center justify-between gap-2 py-1.5">
+                  <span className="min-w-0">
+                    <span className="font-bold text-slate-900">{CLP(Number(d.monto))}</span>
+                    {d.contraparte && <span className="text-slate-500"> · {d.contraparte}</span>}
+                    {d.concepto && <span className="block text-[11px] text-slate-400">{d.concepto}</span>}
+                  </span>
+                  <span className="shrink-0 text-xs text-slate-400">{fmtHora(d.fecha)}</span>
+                </li>
+              ))}
+            </ul>
+            <form action={cerrarDineroBodega} className="mt-3">
+              <button className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-extrabold text-white active:brightness-110">🧾 Cerrar caja de fábrica ({CLP(dineroTotal)})</button>
+            </form>
+          </>
+        )}
       </section>
 
       <RetirosDepto destino="bodega" acento="#b45309" />
