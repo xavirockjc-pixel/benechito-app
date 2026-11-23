@@ -5,6 +5,20 @@ import { fijarStockConteo } from "./actions";
 
 type Item = { id: string; nombre: string; cantidad: number; grupo: "Productos" | "Sabores" };
 
+/** Icono (dibujito) según el producto, estilo Producción. */
+function iconoProducto(nombre: string): string {
+  const n = nombre.toLowerCase();
+  if (n.includes("tú y yo") || n.includes("tu y yo") || n.includes("tuyyo")) return "🍦";
+  if (n.includes("paleta") && n.includes("agua")) return "🧊";
+  if (n.includes("paleta")) return "🍡";
+  if (n.includes("postre")) return "🍨";
+  if (n.includes("copa") || n.includes("garza") || n.includes("vaso")) return "🥤";
+  if (n.includes("balde") || n.includes("litro")) return "🪣";
+  if (n.includes("trufa")) return "🍫";
+  if (n.includes("cuchufl")) return "🥐";
+  return "📦";
+}
+
 /**
  * Stock actual EDITABLE: el bodeguero ve lo que hay y lo corrige ahí mismo —
  * toca el número y lo cambia, o "0" de un toque para dejarlo en cero (y que
@@ -26,6 +40,7 @@ export default function StockActualFix({ items }: { items: Item[] }) {
     <form action={fijarStockConteo}>
       <input type="hidden" name="zona" value="bodega" />
       <input type="hidden" name="items" value={JSON.stringify(cambios)} />
+      <p className="mb-1 text-[11px] text-slate-400">✏️ Toca el número y escribe lo que hay de verdad: queda como <b>corrección</b> (no es merma).</p>
 
       {grupos.map((g) => {
         const rows = items.filter((it) => it.grupo === g);
@@ -40,7 +55,10 @@ export default function StockActualFix({ items }: { items: Item[] }) {
                 const cambiado = val[it.id] !== undefined && Number(val[it.id] || 0) !== it.cantidad;
                 return (
                   <li key={it.id} className="flex items-center justify-between gap-2 py-2">
-                    <span className="min-w-0 flex-1 truncate text-sm text-slate-800">{it.nombre}</span>
+                    <span className="flex min-w-0 flex-1 items-center gap-2 text-sm text-slate-800">
+                      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-lg">{iconoProducto(it.nombre)}</span>
+                      <span className="min-w-0 truncate">{it.nombre}</span>
+                    </span>
                     <input
                       type="number" min="0" step="1" inputMode="numeric"
                       value={v(it)}
