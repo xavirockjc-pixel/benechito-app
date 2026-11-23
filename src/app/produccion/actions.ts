@@ -173,6 +173,49 @@ type ItemProd = { saborId?: string; nombre: string; cantidad: number };
  * stock de sabores de la bodega (StockSabor); si el sabor no existe, se crea.
  * Queda en el registro del día de Producción (zona "produccion").
  */
+/**
+ * Registra HELADOS PRODUCIDOS (Tú y Yo, paletas, postres, baldes, copas) de un
+ * turno/lugar: deja un log por producto para la calculadora de pago por producción.
+ * No mueve stock (el stock de helados se maneja en bodega); esto es para el pago.
+ */
+export async function registrarHeladosProducidos(formData: FormData) {
+  let items: { productoId: string; cantidad: number }[] = [];
+  try { items = JSON.parse(String(formData.get("items") ?? "[]")); } catch { return; }
+  items = items.filter((i) => i.productoId && Number.isFinite(i.cantidad) && i.cantidad > 0);
+  if (items.length === 0) return;
+
+  const bod = await bodegaId();
+  const u = await usuarioActual();
+  const turno = String(formData.get("turno") ?? "").trim() || null;
+  const maquina = String(formData.get("maquina") ?? "").trim() || null;
+  const quien = String(formData.get("nombres") ?? "").trim() || (u?.nombre ?? null);
+
+  for (const it of items) {
+    const p = await prisma.producto.findUnique({ where: { id: it.productoId }, select: { nombre: true } });
+    if (!p) continue;
+    await prisma.movimientoBodega.create({
+      data: {
+        zona: "produccion", ubicacionId: bod, tipo: "entrada", clase: "producto",
+        refId: it.productoId, nombre: p.nombre, cantidad: Math.floor(it.cantidad),
+        detalle: quien, turno, maquina,
+        usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null,
+      },
+    });
+  }
+  revalidatePath("/produccion");
+  revalidatePath("/produccion/pagos");
+  redirect("/produccion?ok=1");
+}
+
+/** Fija el precio de pago por unidad producida (trato) de un helado. */
+export async function setPrecioTrato(formData: FormData) {
+  const productoId = String(formData.get("productoId") ?? "").trim();
+  const precio = Math.max(0, Math.floor(Number(String(formData.get("precio") ?? "").replace(/[^\d]/g, "")) || 0));
+  if (!productoId) return;
+  await prisma.producto.update({ where: { id: productoId }, data: { precioTrato: precio } });
+  revalidatePath("/produccion/pagos");
+}
+
 export async function registrarProduccion(formData: FormData) {
   const linea = String(formData.get("linea") ?? "").trim() || "otro";
   let items: ItemProd[] = [];

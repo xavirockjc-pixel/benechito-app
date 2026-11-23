@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import ProduccionForm from "./ProduccionForm";
+import HeladosProducidos from "./HeladosProducidos";
+import { crearNotaProduccion } from "./actions";
 import { inicioDelDia } from "@/lib/dominio/empresa";
 
 export const dynamic = "force-dynamic";
@@ -52,6 +54,16 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
   for (const r of recs) (recomendaciones[r.linea ?? "__todas__"] ??= []).push(r.texto);
   const equipoTrato = equipoTratoRaw.map((t) => ({ id: t.id, nombre: t.nombre }));
   const totalHoy = registroHoy.reduce((s, m) => s + m.cantidad, 0);
+
+  // Helados (productos terminados) para registrar producción + pago.
+  const heladosProd = await prisma.producto.findMany({
+    where: { activo: true, OR: [{ categoria: "Helados" }, { linea: "helado" }] },
+    orderBy: { nombre: "asc" }, select: { id: true, nombre: true },
+  });
+  // Nota obligatoria de lunes a viernes: ¿ya anotaron lo del día?
+  const diaSemana = new Date().getDay(); // 0 dom … 6 sáb
+  const notaHoy = await prisma.nota.findFirst({ where: { area: "produccion", createdAt: { gte: hoy } }, select: { id: true } });
+  const faltaNota = diaSemana >= 1 && diaSemana <= 5 && !notaHoy;
   // Resumen de hoy POR PERSONA (compacto, para no mostrar el listado largo).
   const porPersonaHoy = new Map<string, number>();
   for (const m of registroHoy) {
@@ -65,6 +77,18 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
         <h1 className="text-xl font-extrabold text-slate-900">🏭 Producción</h1>
         <p className="text-xs text-slate-500">Anota el reporte del turno. Simple y rápido.</p>
       </div>
+
+      {/* Nota OBLIGATORIA de lunes a viernes: qué se hizo en el día */}
+      {faltaNota && (
+        <section className="rounded-2xl border-2 border-amber-400 bg-amber-50 p-4 shadow-sm">
+          <p className="text-sm font-extrabold text-amber-800">📝 Falta anotar lo del día</p>
+          <p className="mb-2 text-[11px] text-amber-700">De lunes a viernes hay que dejar la nota del día (qué se hizo, novedades…).</p>
+          <form action={crearNotaProduccion} className="flex gap-2">
+            <input name="texto" required placeholder="Ej: 1er turno Villamora, 3.000 Tú y Yo, sin novedades" className="min-w-0 flex-1 rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm" />
+            <button className="shrink-0 rounded-lg bg-amber-600 px-4 py-2 text-sm font-extrabold text-white active:brightness-95">Guardar</button>
+          </form>
+        </section>
+      )}
 
       <Link href="/produccion/mantenimiento" className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 px-4 py-3 text-amber-950 shadow-sm active:opacity-90">
         <span className="text-2xl">🐝</span>
@@ -87,6 +111,24 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
 
       {/* Reporte por producto (elige → ventana del producto → guarda → ← Volver) */}
       <ProduccionForm saboresPorLinea={saboresProd} equipo={equipoTrato} recomendaciones={recomendaciones} pines={pines} />
+
+      {/* Helados producidos (para el pago por producción) */}
+      {heladosProd.length > 0 && (
+        <details className="rounded-2xl border border-emerald-200 bg-emerald-50/50 p-4 shadow-sm">
+          <summary className="cursor-pointer text-sm font-extrabold text-emerald-800">🍦 Helados producidos (turno)</summary>
+          <p className="mb-2 mt-1 text-[11px] text-emerald-700/80">Cuántos helados hizo el turno: alimenta el pago por producción.</p>
+          <HeladosProducidos productos={heladosProd} />
+        </details>
+      )}
+
+      {/* Pago por producción */}
+      <Link href="/produccion/pagos" className="flex items-center justify-between rounded-2xl bg-emerald-600 px-4 py-4 text-white shadow active:brightness-110">
+        <span className="min-w-0">
+          <span className="block text-sm font-extrabold">💵 Pago por producción</span>
+          <span className="block text-[11px] font-semibold text-emerald-100">Por día y turno · helados × precio = total</span>
+        </span>
+        <span className="text-xl">›</span>
+      </Link>
 
       {/* Producido hoy (resumen compacto por persona) */}
       <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

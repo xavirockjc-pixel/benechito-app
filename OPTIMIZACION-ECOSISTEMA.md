@@ -95,3 +95,12 @@ leen los movimientos de bodega.
 - Caja de fábrica (DineroBodega): dinero recibido en bodega por ventas
   directas (monto + de quién) con cierre; pendiente llevarlo al registro
   central/analítica.
+
+## Fase 4 · Producción (HECHO v1)
+- Lugar/máquina por registro: Yobilo / Villamora (+ turno).
+- Helados producidos: form para registrar cuántos helados hizo el turno
+  (Tú y Yo, paletas, postres, baldes, copas) → log por turno/lugar/quién.
+- Pago por producción (/produccion/pagos): calendario por día, agrupado por
+  turno+lugar, helado × precioTrato (editable) = total del turno.
+- Nota obligatoria lunes a viernes en el inicio (banner si falta).
+Pendiente (para el cuadre general): llevar pago/producción a la analítica central.

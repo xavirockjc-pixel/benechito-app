@@ -106,6 +106,9 @@ model Producto {
   // seccion del catálogo: propio (fabricación) | distribucion (local) | ruta (ruta/reventa) | promo (promos y combos)
   seccion      String  @default("propio")
   costo        Decimal? @db.Decimal(12, 2) // costo de compra (para reventa: margen)
+  // Pago por producción (trato): $ que se paga por cada unidad producida de este
+  // helado. Editable. Se usa en la calculadora de pago por producción.
+  precioTrato  Decimal? @db.Decimal(12, 2)
   activo       Boolean @default(true)
   // Solo local: producto que vive únicamente en el local (Sala de Ventas) y la
   // central. Se oculta de bodega, rutas y vendedor (ej: bebidas, snacks de reventa).
