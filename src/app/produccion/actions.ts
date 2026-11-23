@@ -213,6 +213,7 @@ export async function registrarProduccion(formData: FormData) {
 
   // Datos internos del turno (no se muestran en la app del operario).
   const turno = String(formData.get("turno") ?? "").trim() || null;
+  const maquina = String(formData.get("maquina") ?? "").trim() || null;
   const litros = Number(String(formData.get("litros") ?? "").replace(",", ".")) || 0;
   const overrun = Number(String(formData.get("overrun") ?? "").replace(",", ".")) || 0;
   const valorUnit = Number(String(formData.get("valorUnit") ?? "").replace(/[^0-9]/g, "")) || 0;
@@ -234,6 +235,7 @@ export async function registrarProduccion(formData: FormData) {
         zona: "produccion", ubicacionId: bod, tipo: "entrada", clase: "sabor",
         refId: saborId, nombre: `${it.nombre.trim()} (${linea})`, cantidad: it.cantidad,
         detalle: operarios, // quién lo produjo (para el registro del día)
+        turno, maquina,
         usuarioId: u?.sub ?? null, nombreUsuario: u?.nombre ?? null, participantes, participantesTrab,
       },
     });

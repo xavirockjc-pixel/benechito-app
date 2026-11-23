@@ -46,6 +46,12 @@ const TURNOS = [
   { id: "3", label: "3er turno" },
 ];
 
+const MAQUINAS = [
+  { id: "grande", label: "🏭 Grande" },
+  { id: "chica", label: "⚙️ Chica" },
+  { id: "yobilo", label: "🧊 Yobilo" },
+];
+
 /**
  * Producción ordenada por PRODUCTO (tablet compartido): primero se elige el producto
  * (cada uno su ventana con su color), luego quién lo hizo, cuántos y de qué (por voz).
@@ -58,6 +64,7 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
   pines?: Record<string, string>; // {linea: pin} — si el producto tiene pin, pide código para abrir
 }) {
   const [turno, setTurno] = useState("1");
+  const [maquina, setMaquina] = useState("grande");
   const [linea, setLinea] = useState<string>(""); // "" = pantalla de elegir producto
   // Bloqueo por PIN: producto que espera código + lo tecleado + error.
   const [pinPara, setPinPara] = useState<string>("");
@@ -221,6 +228,7 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
   return (
     <form action={registrarProduccion} className="overflow-hidden rounded-2xl border-2 bg-white shadow-sm" style={{ borderColor: accent }}>
       <input type="hidden" name="turno" value={turno} />
+      <input type="hidden" name="maquina" value={maquina} />
       <input type="hidden" name="linea" value={lineaFinal} />
       <input type="hidden" name="items" value={JSON.stringify(items)} />
       <input type="hidden" name="nombres" value={nombres.join(",")} />
@@ -251,6 +259,20 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
                 className="flex-1 rounded-xl border-2 py-2 text-sm font-bold"
                 style={turno === t.id ? { borderColor: accent, background: `${accent}14`, color: accent } : { borderColor: "#e2e8f0", color: "#64748b" }}>
                 {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Máquina (para dividir turnos y el pago por producción) */}
+        <div>
+          <p className="mb-1.5 text-sm font-bold text-slate-700">Máquina</p>
+          <div className="flex gap-2">
+            {MAQUINAS.map((m) => (
+              <button key={m.id} type="button" onClick={() => setMaquina(m.id)}
+                className="flex-1 rounded-xl border-2 py-2 text-sm font-bold"
+                style={maquina === m.id ? { borderColor: accent, background: `${accent}14`, color: accent } : { borderColor: "#e2e8f0", color: "#64748b" }}>
+                {m.label}
               </button>
             ))}
           </div>

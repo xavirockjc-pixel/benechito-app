@@ -684,6 +684,10 @@ model MovimientoBodega {
   // Motivo de una salida: camion | local | distribuidor | venta | otro.
   // En entradas: produccion | manual. Da el orden "por sección" del registro.
   motivo        String?
+  // Solo producción: turno (1/2/3) y máquina (grande/chica/yobilo) para dividir
+  // turnos y calcular el pago por producción.
+  turno         String?
+  maquina       String?
   clase         String // producto | sabor
   refId         String // id del producto o sabor
   nombre        String // nombre al momento del registro
