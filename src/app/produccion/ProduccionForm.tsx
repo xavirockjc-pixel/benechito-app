@@ -46,10 +46,10 @@ const TURNOS = [
   { id: "3", label: "3er turno" },
 ];
 
+// Los turnos se dividen por LUGAR/máquina: Yobilo (máquina grande) y Villamora (local).
 const MAQUINAS = [
-  { id: "grande", label: "🏭 Grande" },
-  { id: "chica", label: "⚙️ Chica" },
-  { id: "yobilo", label: "🧊 Yobilo" },
+  { id: "yobilo", label: "🏭 Yobilo" },
+  { id: "villamora", label: "🏪 Villamora" },
 ];
 
 /**
@@ -64,7 +64,7 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
   pines?: Record<string, string>; // {linea: pin} — si el producto tiene pin, pide código para abrir
 }) {
   const [turno, setTurno] = useState("1");
-  const [maquina, setMaquina] = useState("grande");
+  const [maquina, setMaquina] = useState("yobilo");
   const [linea, setLinea] = useState<string>(""); // "" = pantalla de elegir producto
   // Bloqueo por PIN: producto que espera código + lo tecleado + error.
   const [pinPara, setPinPara] = useState<string>("");
@@ -266,7 +266,7 @@ export default function ProduccionForm({ saboresPorLinea = {}, equipo = [], reco
 
         {/* Máquina (para dividir turnos y el pago por producción) */}
         <div>
-          <p className="mb-1.5 text-sm font-bold text-slate-700">Máquina</p>
+          <p className="mb-1.5 text-sm font-bold text-slate-700">Lugar / máquina</p>
           <div className="flex gap-2">
             {MAQUINAS.map((m) => (
               <button key={m.id} type="button" onClick={() => setMaquina(m.id)}
