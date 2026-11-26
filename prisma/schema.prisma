@@ -679,6 +679,22 @@ model DineroBodega {
   @@index([cerrado])
 }
 
+// Notas/recordatorios PRIVADOS de un trabajador (ej. el bodeguero). No van a la
+// central: son solo suyos, con asunto, fecha, color, calendario y buscador.
+model NotaPersonal {
+  id        String   @id @default(cuid())
+  usuarioId String
+  area      String   @default("bodega") // dónde las usa (bodega, caja…)
+  asunto    String? // título / asunto
+  texto     String
+  color     String? // para que salga bonito
+  fecha     DateTime @default(now()) // día de la nota (editable)
+  createdAt DateTime @default(now())
+
+  @@index([usuarioId])
+  @@index([fecha])
+}
+
 model MovimientoBodega {
   id            String   @id @default(cuid())
   zona          String   @default("bodega") // bodega | sala | produccion | ajuste (a qué registro pertenece)

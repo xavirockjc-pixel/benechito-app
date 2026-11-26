@@ -141,7 +141,8 @@ export default async function BodegaHome({ searchParams }: { searchParams: Promi
           <p className="text-xs text-slate-500">Lo que entra y sale, y lo que hay ahora en bodega.</p>
         </div>
         {/* Accesos ocasionales (antes saturaban la barra inferior) */}
-        <div className="flex shrink-0 gap-1.5">
+        <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+          <Link href="/bodega/notas" className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-xs font-bold text-[#b45309] active:bg-amber-100">📔 Mis notas</Link>
           <Link href="/bodega/insumos" className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-600 active:bg-slate-50">🧪 Insumos</Link>
           <Link href="/bodega/checklist" className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-600 active:bg-slate-50">🧼 Higiene</Link>
         </div>

@@ -520,6 +520,33 @@ export async function apartarTuyYoSabor(formData: FormData) {
   redirect("/bodega?ok=1");
 }
 
+/** Crea una nota personal del trabajador (privada, solo suya). */
+export async function crearNotaPersonal(formData: FormData) {
+  const u = await usuarioActual();
+  if (!u?.sub) return;
+  const texto = String(formData.get("texto") ?? "").trim();
+  if (!texto) return;
+  const asunto = String(formData.get("asunto") ?? "").trim() || null;
+  const color = String(formData.get("color") ?? "").trim() || null;
+  const fechaStr = String(formData.get("fecha") ?? "").trim();
+  const fecha = /^\d{4}-\d{2}-\d{2}$/.test(fechaStr) ? new Date(fechaStr + "T12:00:00") : new Date();
+  await prisma.notaPersonal.create({
+    data: { usuarioId: u.sub, area: "bodega", asunto, texto, color, fecha },
+  });
+  revalidatePath("/bodega/notas");
+  redirect("/bodega/notas");
+}
+
+/** Borra una nota personal (solo si es del propio trabajador). */
+export async function eliminarNotaPersonal(formData: FormData) {
+  const u = await usuarioActual();
+  if (!u?.sub) return;
+  const id = String(formData.get("id") ?? "").trim();
+  if (!id) return;
+  await prisma.notaPersonal.deleteMany({ where: { id, usuarioId: u.sub } });
+  revalidatePath("/bodega/notas");
+}
+
 /** Registra dinero recibido en bodega/fábrica (venta directa): monto + de quién. */
 export async function registrarDineroBodega(formData: FormData) {
   const monto = Math.max(0, Math.floor(Number(String(formData.get("monto") ?? "").replace(/[^\d]/g, "")) || 0));
