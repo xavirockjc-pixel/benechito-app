@@ -46,6 +46,8 @@ function construirModulosSimple(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/resumen", label: "Resumen de hoy", icon: "📋" },
         { href: "/admin/gestor", label: "Gestor (tareas)", icon: "🗂️" },
+        { href: "/admin/mis-notas", label: "Mis notas (jefatura)", icon: "📔" },
+        { href: "/admin/notas-equipo", label: "Notas del equipo", icon: "📔" },
         { href: "/admin/registro-dia", label: "Registro por día", icon: "📅" },
         { href: "/admin", label: "Panel", icon: "📊" },
       ],
@@ -103,6 +105,8 @@ function construirModulos(L: Etiquetas): Modulo[] {
       items: [
         { href: "/admin/resumen", label: "Resumen de hoy", icon: "📋" },
         { href: "/admin/gestor", label: "Gestor (tareas)", icon: "🗂️" },
+        { href: "/admin/mis-notas", label: "Mis notas (jefatura)", icon: "📔" },
+        { href: "/admin/notas-equipo", label: "Notas del equipo", icon: "📔" },
         { href: "/admin/registro-dia", label: "Registro por día", icon: "📅" },
         { href: "/admin", label: "Panel", icon: "📊" },
         { href: "/admin/pendientes", label: "Pendientes del cerebro", icon: "🐝" },

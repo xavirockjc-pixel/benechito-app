@@ -117,6 +117,7 @@ export default async function VendedorHome({
           <AccionRapida href="/vendedor/pedidos-online" icon="🛍️" label={`Pedidos online${pendientesTotal > 0 ? ` (${pendientesTotal})` : ""}`} color="#0891b2" />
           <AccionRapida href="/vendedor/nuevo" icon="➕" label="Cliente nuevo" color="#0f766e" />
           <AccionRapida href="/vendedor/camion" icon="📦" label="Cargar camión" color="#b45309" />
+          <AccionRapida href="/vendedor/notas" icon="📔" label="Mis notas" color="#7c3aed" />
         </div>
 
         {/* Por facturar: ventas que esperan su factura (modo manual) */}

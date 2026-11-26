@@ -105,6 +105,9 @@ export default async function ProduccionHome({ searchParams }: { searchParams: P
         <Link href="/produccion/bitacora" className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-bold text-slate-700 shadow-sm active:bg-slate-50">
           📓 Bitácora
         </Link>
+        <Link href="/produccion/notas" className="col-span-2 flex items-center justify-center gap-2 rounded-xl border border-teal-200 bg-teal-50 px-3 py-2.5 text-sm font-bold text-teal-700 active:bg-teal-100">
+          📔 Mis notas (recordatorios privados)
+        </Link>
       </div>
 
       {ok && <p className="rounded-xl bg-green-100 px-4 py-3 text-center text-sm font-bold text-green-700">✓ Guardado. ¡Gracias! Toca otro producto para seguir.</p>}
